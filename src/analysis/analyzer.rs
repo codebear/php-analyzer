@@ -1,0 +1,119 @@
+use std::ffi::OsString;
+use std::os::unix::prelude::OsStrExt;
+
+use crate::autonodes::any::AnyNodeRef;
+use crate::autotree::AutoTree;
+use crate::autotree::NodeAccess;
+use crate::issue::IssueEmitter;
+use crate::nodeanalysis::analysis::AnalyzeableNode;
+use crate::nodeanalysis::analysis::AnalyzeableRoundTwoNode;
+
+use super::state::AnalysisState;
+
+pub struct Analyzer {
+    get_content: Box<dyn FnMut() -> std::io::Result<Vec<u8>> + Send + Sync>,
+    content_id: OsString,
+    // file: PHPFile,
+    tree: Option<AutoTree>,
+}
+
+impl Analyzer {
+    pub fn new(
+        content_provider: Box<dyn FnMut() -> std::io::Result<Vec<u8>> + Send + Sync>,
+        content_id: OsString,
+    ) -> Analyzer {
+        Self {
+            get_content: content_provider,
+            content_id,
+            tree: None,
+        }
+    }
+
+    pub fn new_from_buffer(buffer: OsString, ident: Option<OsString>) -> Self {
+        Self {
+            get_content: Box::new(move || Ok(Vec::from(buffer.as_bytes()))),
+            content_id: ident.unwrap_or_default(),
+            tree: None,
+        }
+    }
+
+    pub fn parse(&mut self) -> Result<(), &'static str> {
+        use crate::parser::PHPParser;
+        let mut parser = PHPParser::new();
+
+        let contents = (self.get_content)().expect("Something went wrong reading the file content");
+
+        let stru = match parser.parse_struct(contents.clone()) {
+            Ok(Some(stru)) => stru,
+            Err(err) => {
+                eprintln!(
+                    "ERROR: {}:{}:{}: {}",
+                    self.content_id.to_string_lossy(),
+                    err.range.start_point.row,
+                    err.range.start_point.column,
+                    err.error
+                );
+                return Err("TODO Trouble with something");
+            }
+            Ok(None) => return Err("TODO Trouble with something else"),
+        };
+
+        self.tree = Some(stru);
+
+        Ok(())
+    }
+
+    pub fn with_node_ref_at_position<T, CB>(
+        &self,
+        line: usize,
+        character: usize,
+        cb: &mut CB,
+    ) -> Option<T>
+    where
+        CB: FnMut(AnyNodeRef) -> T,
+    {
+        let tree = match &self.tree {
+            Some(t) => t,
+            None => return None,
+        };
+        tree.root.with_node_ref_at_position(line, character, cb)
+    }
+
+    pub fn with_node_ref_path_at_position<T, CB>(
+        &self,
+        line: usize,
+        character: usize,
+        cb: &mut CB,
+    ) -> Option<T>
+    where
+        CB: FnMut(&Vec<AnyNodeRef>) -> T,
+    {
+        let tree = match &self.tree {
+            Some(t) => t,
+            None => return None,
+        };
+        tree.root
+            .with_node_ref_path_at_position(line, character, cb)
+    }
+
+    pub fn round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        if let Some(tree) = &self.tree {
+            tree.root.as_any().analyze_round_one(state, emitter);
+        }
+    }
+
+    pub fn round_two(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        if let Some(tree) = &self.tree {
+            let path = vec![];
+            tree.root.as_any().analyze_round_two(state, emitter, &path);
+        }
+    }
+
+    pub fn dump(&self) {
+        if let Some(tree) = &self.tree {
+            tree.debug_dump();
+        } else {
+            eprintln!("FAILED PARSING BUFFER DATA");
+        }
+    }
+}

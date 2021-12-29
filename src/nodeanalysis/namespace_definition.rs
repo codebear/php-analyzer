@@ -1,0 +1,78 @@
+use crate::{
+    analysis::state::AnalysisState,
+    autonodes::{any::AnyNodeRef, namespace_definition::NamespaceDefinitionNode},
+    autotree::NodeAccess,
+    issue::{Issue, IssueEmitter},
+    symbols::FullyQualifiedName,
+    types::union::UnionType,
+};
+
+use super::analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode};
+
+impl NamespaceDefinitionNode {
+    pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
+        crate::missing!("{}.read_from(..)", self.kind());
+    }
+
+    pub fn get_php_value(
+        &self,
+        _state: &mut AnalysisState,
+        _emitter: &dyn IssueEmitter,
+    ) -> Option<crate::value::PHPValue> {
+        crate::missing_none!("{}.get_php_value(..)", self.kind())
+    }
+
+    pub fn get_utype(
+        &self,
+        _state: &mut AnalysisState,
+        _emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        crate::missing_none!("{}.get_utype(..)", self.kind())
+    }
+
+    fn get_namespace(&self) -> FullyQualifiedName {
+        if let Some(name) = &self.name {
+            let mut fq_name = FullyQualifiedName::new();
+            for ns in &name.children {
+                fq_name.push(ns.get_name());
+            }
+            fq_name
+        } else {
+            FullyQualifiedName::new()
+        }
+    }
+}
+
+impl AnalyzeableNode for NamespaceDefinitionNode {
+    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        if let Some(_) = &self.name {
+            let namespace = self.get_namespace();
+            state.namespace = Some(namespace);
+        } else {
+            emitter.emit(Issue::ParseAnomaly(
+                self.pos(state),
+                "Couldn't resolve namespace".into(),
+            ))
+        }
+    }
+}
+
+impl AnalyzeableRoundTwoNode for NamespaceDefinitionNode {
+    fn analyze_round_two(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+        _path: &Vec<AnyNodeRef>,
+    ) -> bool {
+        if let Some(_) = &self.name {
+            let namespace = self.get_namespace();
+            state.namespace = Some(namespace);
+        } else {
+            emitter.emit(Issue::ParseAnomaly(
+                self.pos(state),
+                "Couldn't resolve namespace".into(),
+            ))
+        }
+        true
+    }
+}
