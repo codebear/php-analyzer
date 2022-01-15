@@ -112,7 +112,7 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
         if let Some((doc_comment, range)) = &state.last_doc_comment {
             if let Some(doc_comment) = PHPDocComment::parse(doc_comment, range.clone()) {
                 if let Some((type_str, range)) = doc_comment.get_param("@return") {
-                    if let Some(x) = UnionType::parse(type_str, range, state, emitter) {
+                    if let (Some(x), _description) = UnionType::parse_with_remainder(type_str, range, state, emitter) {
                         return Some((x, range));
                     }
                 }
