@@ -60,6 +60,13 @@ impl SubscriptExpressionNode {
         self.index.as_ref().map(|x| x.read_from(state, emitter));
     }
 
+
+    pub fn get_key_value(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<PHPValue> {
+        self.index
+            .as_ref()
+            .and_then(|i| i.get_php_value(state, emitter))
+    }
+
     pub fn get_php_value(
         &self,
         state: &mut AnalysisState,
@@ -69,10 +76,8 @@ impl SubscriptExpressionNode {
             .dereferencable
             .as_ref()
             .and_then(|x| x.get_php_value(state, emitter));
-        let idx = self
-            .index
-            .as_ref()
-            .and_then(|i| i.get_php_value(state, emitter));
+
+        let idx = self.get_key_value(state, emitter);
         match (val, idx) {
             (Some(PHPValue::Array(arr)), Some(val @ PHPValue::Int(_)))
             | (Some(PHPValue::Array(arr)), Some(val @ PHPValue::String(_)))
@@ -106,7 +111,12 @@ impl SubscriptExpressionNode {
         self.dereferencable
             .as_ref()
             .map(|x| x.write_to(state, emitter, None, None));
-        crate::missing!("write_to subscript_expression_node needs more logic");
+        
+        if let Some(_) = self.get_key_value(state, emitter) {
+            crate::missing!("write_to subscript_expression_node with known index needs more logic");
+        } else {
+            crate::missing!("write_to subscript_expression_node with unknown index needs more logic");
+        }
     }
 }
 
