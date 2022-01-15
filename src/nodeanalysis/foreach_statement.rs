@@ -5,7 +5,10 @@ use crate::{
         foreach_statement::{ForeachStatementNode, ForeachStatementValue},
     },
     issue::{Issue, IssueEmitter},
-    types::union::{DiscreteType, UnionType},
+    types::{
+        traversable::{get_key_type, get_value_type},
+        union::{ UnionType},
+    },
     value::PHPValue,
 };
 
@@ -50,41 +53,14 @@ impl AnalyzeableRoundTwoNode for ForeachStatementNode {
 
             None
         };
+        let value_type = if let Some(trav) = traversable_type {
+            if let Some(key) = &self.key {
+                let key_type = get_key_type(&trav, state.symbol_data.clone());
 
-        if let Some(key) = &self.key {
-            let key_type = if let Some(tt) = &traversable_type {
-                match tt.single_type() {
-                    // Vectors are indiced by int
-                    Some(DiscreteType::Vector(_)) => Some(DiscreteType::Int.into()),
-                    Some(DiscreteType::HashMap(k, _)) => Some(k),
-                    Some(d) => crate::missing_none!(
-                        "Extracting key_type from traversable-type gave {:?}",
-                        d
-                    ),
-                    None => crate::missing_none!(
-                        "Failed to extract single key_type from traversable-type"
-                    ),
-                }
-            } else {
-                None
-            };
-
-            key.write_to(state, emitter, key_type, None);
-        }
-
-        let value_type = if let Some(tt) = &traversable_type {
-            match tt.single_type() {
-                // Vectors are indiced by int
-                Some(DiscreteType::Vector(v)) => Some(v),
-                Some(DiscreteType::HashMap(_, v)) => Some(v),
-                Some(DiscreteType::Named(_, fq_name)) => {
-                    crate::missing_none!("Need to extract a value_type from a class-type of {:?}, Perhaps it's traversable or similar", fq_name)
-                }
-                Some(d) => {
-                    crate::missing_none!("Extracting value_type from traversable-type of {:?}", d)
-                }
-                None => crate::missing_none!("Failed to extract single from traversable-type"),
+                key.write_to(state, emitter, key_type, None);
             }
+
+            get_value_type(&trav, state.symbol_data.clone())
         } else {
             None
         };
