@@ -6,6 +6,7 @@ pub mod phpdoccomment;
 pub mod symbols;
 #[cfg(test)]
 mod tests;
+pub mod phpdoc;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -29,6 +30,9 @@ pub mod value;
 
 #[macro_use]
 extern crate lazy_static;
+
+extern crate nom;
+
 
 static VERBOSE_MISSING: bool = false;
 
