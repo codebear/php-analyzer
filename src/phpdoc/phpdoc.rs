@@ -41,7 +41,7 @@ fn phpdoc_entry(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
 }
 
 fn phpdoc_entry_content(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
-    alt((var, desc, param, general, anything))(input)
+    alt((var, desc, param, parse_return, general, anything))(input)
 }
 
 #[derive(Debug)]
@@ -55,6 +55,9 @@ pub enum PHPDocEntry {
     /// *  .1 Name Not actually optional, but declared as such to allow to parse badly declared params
     /// *  .2 Description  
     Param(UnionOfTypes, Option<OsString>, Option<OsString>),
+    /// *  .0 type
+    /// *  .2 Description (The first word of descripton might be misinterpreted as name)
+    Return(UnionOfTypes, Option<OsString>),
     Description(OsString),
     General(OsString),
     GeneralWithParam(OsString, OsString),
@@ -132,6 +135,18 @@ fn param(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
     let (input, name) = opt(preceded(space1, name_or_var_name))(input)?;
     let (input, desc) = opt(preceded(space1, description))(input)?;
     Ok((input, PHPDocEntry::Param(utype, name, desc)))
+}
+
+fn parse_return(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
+    // https://docs.phpdoc.org/guide/references/phpdoc/tags/return.html
+    // @return [type] <description>
+    let (input, _) = tag_no_case(b"@return")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, tdef) = union_type(input)?;
+    let (input, desc) = opt(preceded(space1, description))(input)?;
+
+    let entry = PHPDocEntry::Return(tdef, desc);
+    Ok((input, entry))
 }
 
 fn general(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {

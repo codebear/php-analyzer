@@ -23,6 +23,7 @@ pub fn parse_test1() {
         * @param string Rock All
         * @param int
         * @param int|string $foobar
+        * @return array<string> Why event bother
         */";
     test_phpdoc(buf);
 }
