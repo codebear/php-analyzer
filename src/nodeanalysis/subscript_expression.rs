@@ -45,12 +45,32 @@ impl SubscriptExpressionNode {
             // If the array type is unknown, there is nothing more we can do...
             return None;
         }
-
-        crate::missing_none!(
-            "subscript.get_utype(..) what get's when looking up in {:?} with a {:?}",
-            array_type,
-            index_type
-        )
+        match array_type.single_type_excluding_null() {
+            Some(DiscreteType::String) => {
+                // String lookup. Index must be integer
+                if let Some(DiscreteType::Int) = index_type.single_type() {
+                    return Some(UnionType::from(&[DiscreteType::String, DiscreteType::NULL] as &[DiscreteType]));
+                }
+                crate::missing_none!(
+                    "subscript.get_utype(..) string indexing with none integer index-type: {:?}",
+                    index_type,
+                )
+            }
+            Some(DiscreteType::Named(_,_)) => crate::missing_none!(
+                "subscript.get_utype(..) what get's when looking up in named type with {:?}",
+                index_type,
+            ),
+            Some(DiscreteType::Generic(_,_)) => crate::missing_none!(
+                "subscript.get_utype(..) what get's when looking up in generic type with {:?}",
+                index_type,
+            ),
+            _ => crate::missing_none!(
+                "subscript.get_utype(..) what get's when looking up in {:?} with a {:?}",
+                array_type,
+                index_type
+            ),
+        }
+        
     }
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {

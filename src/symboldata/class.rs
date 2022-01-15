@@ -5,13 +5,15 @@ use crate::{
     value::PHPValue,
 };
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     sync::{Arc, RwLock},
 };
 
 use super::{FileLocation, SymbolData};
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+type MethodName = Name;
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct ClassName {
     pub name: Name,
     pub fq_name: FullyQualifiedName,
@@ -19,6 +21,11 @@ pub struct ClassName {
 
 impl ClassName {
     pub fn new_with_names(name: Name, fq_name: FullyQualifiedName) -> Self {
+        Self { name, fq_name }
+    }
+
+    pub fn new_with_fq_name(fq_name: FullyQualifiedName) -> Self {
+        let name = fq_name.get_name().unwrap_or_else(|| Name::new());
         Self { name, fq_name }
     }
 
@@ -49,7 +56,20 @@ impl ClassName {
     }
 }
 
-#[derive(Debug)]
+impl From<FullyQualifiedName> for ClassName {
+    fn from(fq_name: FullyQualifiedName) -> Self {
+        ClassName::new_with_fq_name(fq_name)
+    }
+}
+
+impl From<&FullyQualifiedName> for ClassName {
+    fn from(fq_name: &FullyQualifiedName) -> Self {
+        ClassName::new_with_fq_name(fq_name.clone())
+    }
+}
+
+
+#[derive(Clone, Debug)]
 pub enum ClassType {
     None,
     Class(ClassData),
@@ -114,23 +134,43 @@ impl ClassType {
             ClassType::Trait(_) => None,
         }
     }
+
+    pub fn with_generic_args(&self, generic_args: &Vec<UnionType>) -> Self {
+        if generic_args.len() > 0 {
+            crate::missing!("Gi ut en type som er typesatt med generiske argumenter");
+        }
+        self.clone()
+    }
+
+    pub fn implements(&self, iname: &ClassName, symbol_data: Arc<SymbolData>) -> bool {
+        match self {
+            ClassType::None => false,
+            ClassType::Class(c) => c.implements(iname, symbol_data),
+            ClassType::Interface(i) => i.implements(iname, symbol_data),
+            ClassType::Trait(_) => {
+                // traits don't have interface-support, yet 
+                // https://wiki.php.net/rfc/traits-with-interfaces
+                false
+            }
+        }  
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ClassModifier {
     Abstract,
     Final,
     None,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ClassMemberVisibility {
     Public,
     Private,
     Protected,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ClassData {
     pub class_name: ClassName,
     pub position: FileLocation,
@@ -190,15 +230,37 @@ impl ClassData {
         None
     }
 
+    fn get_methods_from_interfaces(
+        &self,
+        method_name: &Name,
+        symbol_data: Arc<SymbolData>,
+    ) -> Option<Vec<MethodData>> {
+        let mut set: BTreeSet<MethodData> = BTreeSet::new();
+
+        for iface in &self.interfaces {
+            if let Some(iface_data) = &symbol_data.get_interface(iface) {
+                if let Some(mdata) = &iface_data.get_method(&method_name, symbol_data.clone()) {
+                    set.insert(mdata.clone());
+                }
+            }
+        }
+        if set.len() > 0 {
+            Some(set.iter().cloned().collect())
+        } else {
+            None
+        }
+    }
+
     pub fn get_or_create_method(
         &mut self,
         method_name: &Name,
         position: FileLocation,
     ) -> Arc<RwLock<MethodData>> {
+        let class_name = self.class_name.clone();
         let entry = self
             .methods
             .entry(method_name.to_ascii_lowercase())
-            .or_insert_with(|| Arc::new(RwLock::new(MethodData::new(position))));
+            .or_insert_with(|| Arc::new(RwLock::new(MethodData::new(position, class_name))));
 
         entry.clone()
     }
@@ -261,9 +323,26 @@ impl ClassData {
 
         None
     }
+
+    pub fn implements(&self, iname: &ClassName, symbol_data: Arc<SymbolData>) -> bool {
+        for iface in &self.interfaces {
+            if let Some(iface_data) = &symbol_data.get_interface(iface) {
+                if iface_data.implements(iname, symbol_data.clone()) {
+                    return true;
+                }
+            }
+        }
+        if let Some(base) = &self.base_class_name {
+            if let Some(cdata_handle) = symbol_data.get_class(base) {
+                let cdata = cdata_handle.read().unwrap();
+                return cdata.implements(iname, symbol_data);
+            }
+        }
+        return false;
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InterfaceData {
     pub interface_name: ClassName,
     pub position: FileLocation,
@@ -282,18 +361,39 @@ impl InterfaceData {
             methods: HashMap::new(),
         }
     }
+
     pub fn get_own_method(&self, method_name: &Name) -> Option<Arc<RwLock<MethodData>>> {
         self.methods.get(method_name).cloned()
     }
+
     pub fn get_method(
         &self,
         method_name: &Name,
-        _symbol_data: Arc<SymbolData>,
+        symbol_data: Arc<SymbolData>,
     ) -> Option<MethodData> {
-        if let Some(mdata) = self.methods.get(&method_name.to_ascii_lowercase()) {
+        let lc_mname = method_name.to_ascii_lowercase();
+        if let Some(mdata) = self.methods.get(&lc_mname) {
             Some(mdata.read().unwrap().clone())
-        } else {
+        } else if let Some(bases) = &self.base_interface_names {
+            for base in bases {
+                if let Some(locked_idata) = symbol_data.get_class(base) {
+                    let unlocked = locked_idata.read().unwrap();
+                    match &*unlocked {
+                        ClassType::Interface(idata) => {
+                            if let Some(mdata) = idata.get_method(&lc_mname, symbol_data.clone()) {
+                                return Some(mdata);
+                            }
+                        }
+                        _ => crate::missing!(
+                            "Found non-interface as interface-parent, should emit something?"
+                        ),
+                    }
+                }
+            }
+
             crate::missing_none!("Interface.get_method(..) look in parent interface(s)?")
+        } else {
+            None
         }
     }
 
@@ -302,10 +402,11 @@ impl InterfaceData {
         method_name: &Name,
         position: FileLocation,
     ) -> Arc<RwLock<MethodData>> {
+        let interface_name = self.interface_name.clone();
         let entry = self
             .methods
             .entry(method_name.to_ascii_lowercase())
-            .or_insert_with(|| Arc::new(RwLock::new(MethodData::new(position))));
+            .or_insert_with(|| Arc::new(RwLock::new(MethodData::new(position, interface_name))));
 
         entry.clone()
     }
@@ -313,9 +414,35 @@ impl InterfaceData {
     pub fn get_fq_name(&self) -> FullyQualifiedName {
         self.interface_name.fq_name.clone()
     }
+
+    pub fn implements(&self, iname: &ClassName, symbol_data: Arc<SymbolData>) -> bool {
+        let fq_iname = iname.get_fq_name();
+        if self.get_fq_name().eq(iname.get_fq_name()) {
+            return true;
+        }
+        let parent_inames = if let Some(i) = &self.base_interface_names {
+            i
+        } else {
+            return false;
+        };
+
+        for parent_iname in parent_inames {
+            if parent_iname.get_fq_name().eq(fq_iname) {
+                return true;
+            }
+        }
+        for parent_iname in parent_inames {
+            if let Some(idata) = symbol_data.get_interface(&parent_iname) {
+                if idata.implements(iname, symbol_data.clone()) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TraitData {
     pub trait_name: ClassName,
     pub position: FileLocation,
@@ -350,10 +477,11 @@ impl TraitData {
         method_name: &Name,
         position: FileLocation,
     ) -> Arc<RwLock<MethodData>> {
+        let trait_name = self.trait_name.clone();
         let entry = self
             .methods
             .entry(method_name.to_ascii_lowercase())
-            .or_insert_with(|| Arc::new(RwLock::new(MethodData::new(position))));
+            .or_insert_with(|| Arc::new(RwLock::new(MethodData::new(position, trait_name))));
 
         entry.clone()
     }
@@ -362,7 +490,7 @@ impl TraitData {
         self.trait_name.fq_name.clone()
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct FunctionArgumentData {
     pub name: Name,
     pub arg_type: Option<UnionType>,
@@ -371,9 +499,11 @@ pub struct FunctionArgumentData {
     pub optional: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct MethodData {
     pub name: Name,
+    pub description: String,
+    pub declared_in: ClassName,
     pub position: FileLocation,
     pub php_return_type: Option<UnionType>,
     pub comment_return_type: Option<UnionType>,
@@ -386,13 +516,15 @@ pub struct MethodData {
 }
 
 impl MethodData {
-    pub fn new(position: FileLocation) -> Self {
-        Self::new_with_name(position, Name::new())
+    pub fn new(position: FileLocation, class_name: ClassName) -> Self {
+        Self::new_with_name(position, class_name, Name::new())
     }
 
-    pub fn new_with_name(position: FileLocation, name: Name) -> MethodData {
+    pub fn new_with_name(position: FileLocation, class_name: ClassName, name: Name) -> MethodData {
         Self {
             name,
+            description: "".into(),
+            declared_in: class_name,
             position,
             php_return_type: None,
             comment_return_type: None,

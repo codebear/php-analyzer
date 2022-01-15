@@ -2,7 +2,7 @@ use crate::{
     autonodes::any::AnyNodeRef,
     autotree::NodeAccess,
     issue::{Issue, VoidEmitter},
-    symbols::{Name, Symbol, SymbolClass, SymbolMethod},
+    symbols::{Name, Symbol, SymbolClass, SymbolMethod}, symboldata::class::MethodData,
 };
 
 use crate::{
@@ -35,7 +35,7 @@ impl MemberCallExpressionNode {
         // If the method is marked for overload-analysis, and we
         // have concrete argument values, register them with method-data for analysis in next pass
 
-        let method_name = self.name.get_method_name()?;
+        let method_name = self.name.get_method_name(state)?;
 
         let class_names = self.get_object_class_name(state, emitter)?;
 
@@ -70,6 +70,54 @@ impl MemberCallExpressionNode {
         } else {
             None
         }
+    }
+
+    pub fn get_methods_data(&self, state: &mut AnalysisState) -> Vec<Option<(ClassName, MethodData)>> {
+        let mut methods = vec!();
+
+        let method_name = if let Some(mname) = self.name.get_method_name(state) {
+            mname
+        } else {
+            return methods;
+        };
+
+        let class_names = if let Some(cnames) = self.get_object_class_name(state, &VoidEmitter::new()) {
+            cnames
+        } else {
+            return methods;
+        };
+
+ 
+        for class_name in class_names {
+            // If we have one missing class-type, abandon generating a result
+            let class_name = if let Some(cname) = class_name {
+                cname
+            } else {
+                methods.push(None);
+                continue;
+            };
+
+            let cdata_handle = if let Some(ch) = state.symbol_data.get_class(&class_name) {
+                ch
+            } else {
+                methods.push(None);
+                continue;
+            };
+
+            let method_data = if let Some(md) = {
+                let unlocked = cdata_handle.read().unwrap();
+                unlocked.get_method(&method_name, state.symbol_data.clone())
+            } {
+                md
+            } else {
+                methods.push(None);
+                continue;
+            };
+
+            methods.push(Some((class_name, method_data)));
+        }
+
+        methods
     }
 
     pub fn get_php_value(
@@ -109,7 +157,7 @@ impl MemberCallExpressionNode {
         let mut symbols: Vec<_> = vec![];
         for cname in cnames {
             let cname = cname?;
-            let name = self.name.get_method_name()?;
+            let name = self.name.get_method_name(state)?;
             let class = SymbolClass {
                 name: cname.name.clone(),
                 ns: cname.get_namespace(),
@@ -121,12 +169,20 @@ impl MemberCallExpressionNode {
 }
 
 impl MemberCallExpressionName {
-    pub fn get_method_name(&self) -> Option<Name> {
+    pub fn get_method_name(&self, state: &mut AnalysisState) -> Option<Name> {
         match self {
             MemberCallExpressionName::_Expression(_) => crate::missing_none!(),
             MemberCallExpressionName::DynamicVariableName(_) => crate::missing_none!(),
             MemberCallExpressionName::Name(n) => Some(n.get_name()),
-            MemberCallExpressionName::VariableName(_) => crate::missing_none!(),
+            MemberCallExpressionName::VariableName(vname) => {
+                let noe = vname.get_php_value(state, &VoidEmitter::new())?;
+                if let PHPValue::String(s) = noe {
+                    let name = Name::from(s);
+                    Some(name)
+                } else {
+                    crate::missing_none!("Hente ut metode-navn fra noe som ikke er en PHPValue::String(..)?")
+                }
+            },
 
             MemberCallExpressionName::Comment(_)
             | MemberCallExpressionName::TextInterpolation(_)
@@ -148,7 +204,7 @@ impl AnalyzeableRoundTwoNode for MemberCallExpressionNode {
             return false;
         }
 
-        if let Some(method_name) = self.name.get_method_name() {
+        if let Some(method_name) = self.name.get_method_name(state) {
             if let Some(cnames) = self.get_object_class_name(state, emitter) {
                 for cname in cnames {
                     if let Some(cname) = cname {

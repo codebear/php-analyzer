@@ -11,6 +11,7 @@ use crate::value::PHPValue;
 use self::class::ClassName;
 use self::class::ClassType;
 use self::class::FunctionArgumentData;
+use self::class::InterfaceData;
 use self::class::PropertyData;
 use std::collections::HashMap;
 
@@ -22,7 +23,7 @@ use self::class::MethodData;
 
 pub mod class;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct FilePosition {
     pub byte: usize,
     pub line: usize,
@@ -49,7 +50,7 @@ impl From<(usize, Point)> for FilePosition {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct FileLocation {
     pub uri: OsString,
     pub start: FilePosition,
@@ -115,6 +116,16 @@ impl SymbolData {
             .unwrap()
             .get(&name.get_fq_name().to_ascii_lowercase())
             .cloned()
+    }
+
+    pub fn get_interface(&self, name: &ClassName) -> Option<InterfaceData> {
+        let locked_data = self.get_class(name)?;
+
+        let unlocked_data = locked_data.read().ok()?;
+        match &*unlocked_data {
+            ClassType::Interface(idata) => Some(idata.clone()),
+            _ => None,
+        }
     }
 
     pub fn get_or_create_class(&self, name: &ClassName) -> Arc<RwLock<ClassType>> {

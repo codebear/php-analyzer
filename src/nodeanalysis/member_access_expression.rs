@@ -73,7 +73,6 @@ impl MemberAccessExpressionNode {
         // * mark property as written to
         // * gather statistics to inferr possible types of undefined/untyped variables
         if state.in_constructor() {
-            crate::missing!("MemberAccessExpressionNode.write_to(..) in constructor");
             if let Some(writable) = self.get_mut_property_data(state, emitter) {
                 let mut property_data = writable.write().unwrap();
                 // void
@@ -85,6 +84,9 @@ impl MemberAccessExpressionNode {
                         property_data.constructor_type = Some(val_type);
                     }
                 }
+            } else {
+                // FIXME if we accept this as a property declaration, we can achieve better type-analysis throughout the code, and
+                // rather emit a local error here of missing declaration
             }
             // FIXME we could also store the value in constructor_value, but for now, we make no use of it,
             // because there are to many factors to determine if it's trustable or not

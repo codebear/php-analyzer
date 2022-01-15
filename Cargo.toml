@@ -1,5 +1,5 @@
 [package]
-name = "php-analyzer"
+name = "phpanalyzer"
 version = "0.1.0"
 authors = ["Bjørn Tore Hagen <bjorn.hagen@gmail.com>"]
 edition = "2018"
@@ -10,7 +10,7 @@ edition = "2018"
 tree-sitter="*"
 lazy_static = "1"
 regex = "1"
-
+nom = "7"
 
 [build-dependencies]
 cc="*"

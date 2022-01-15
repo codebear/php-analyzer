@@ -70,10 +70,12 @@ impl PropertyElementNode {
         let (raw_doc_comment, doc_comment_range) = state.last_doc_comment.clone()?;
 
         let doc_comment = PHPDocComment::parse(&raw_doc_comment, doc_comment_range)?;
-
+        // https://docs.phpdoc.org/guide/references/phpdoc/tags/var.html
+        // @var [type] [name] <description>
         let (type_str, range) = doc_comment.get_param("@var")?;
 
-        UnionType::parse(type_str, range, state, emitter)
+        let (utype, _) = UnionType::parse_with_remainder(type_str, range, state, emitter);
+        utype
     }
 
     pub fn analyze_round_one_with_declaration(

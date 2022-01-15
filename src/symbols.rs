@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     symboldata::class::ClassName,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, UnionType, SpecialType},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -119,8 +119,14 @@ impl FullyQualifiedName {
         self.path.last().cloned()
     }
 
+    pub fn append(&mut self, path: Vec<Name>) {
+        let mut path = path;
+        self.path.append(&mut path);
+    }
+
     pub fn get_utype(&self) -> UnionType {
-        DiscreteType::Named(self.get_name().unwrap_or_else(|| Name::new()), self.clone()).into()
+        let dtype: DiscreteType = ClassName::new_with_fq_name(self.clone()).into();
+        dtype.into()
     }
 
     pub fn to_ascii_lowercase(&self) -> Self {
@@ -194,6 +200,14 @@ impl From<&Name> for FullyQualifiedName {
     }
 }
 
+impl From<Vec<Name>> for FullyQualifiedName {
+    fn from(path: Vec<Name>) -> Self {
+        Self {
+            path
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct SymbolClass {
     pub name: Name,
@@ -202,7 +216,16 @@ pub struct SymbolClass {
 
 impl SymbolClass {
     pub fn new(name: Name, ns: FullyQualifiedName) -> Self {
-        SymbolClass { name, ns }
+        Self { name, ns }
+    }
+
+    pub fn new_from_cname(cname: ClassName) -> Self {
+        let ns = cname.get_namespace();
+        let name = cname.name;
+        Self {
+            name,
+            ns
+        }
     }
 }
 
@@ -284,13 +307,19 @@ impl From<DiscreteType> for Symbol {
             DiscreteType::Array => Symbol::Native("array"),
             DiscreteType::Object => Symbol::Native("object"),
             DiscreteType::Callable => Symbol::Native("callable"),
+            // FIXME, maybe to a better one here
+            DiscreteType::TypedCallable(_,_) => Symbol::Native("callable"),
             DiscreteType::Vector(_) => Symbol::Native("array"),
             DiscreteType::HashMap(_, _) => Symbol::Native("array"),
+            DiscreteType::Special(SpecialType::Static) => Symbol::Native("static"),
+            DiscreteType::Special(SpecialType::Self_) => Symbol::Native("self"),
             DiscreteType::Unknown => Symbol::None,
             DiscreteType::Named(name, fqname) => {
                 let cname = ClassName::new_with_names(name, fqname);
                 Symbol::Class(SymbolClass::new(cname.name.clone(), cname.get_namespace()))
             }
+            DiscreteType::Generic(_, _) => todo!(),
+            DiscreteType::Shape(_) => todo!(),
         }
     }
 }

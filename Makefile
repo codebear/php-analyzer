@@ -1,7 +1,7 @@
 autonodes:
 	cd tree-sitter-php && tree-sitter generate
 	node gennodes.mjs
-	rustfmt src/autonodes/**/*.rs
+	rustfmt src/autonodes/*.rs
 
 native:
 	cd src/native && php generate.php
