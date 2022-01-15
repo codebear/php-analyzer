@@ -21,14 +21,19 @@ impl NodeDescription for MethodDeclarationNode {
 
         Some(format!(
             "
-|   |   |
-|---|---|
-| Method | {:?} |
+### `{}(..)`
+|     |     |
+| --- | --- |
+| Method | {} |
 | Comment-type | {:?} |
 | Declared-type | {:?} |
 | Inferred | {:?} |
         ",
-            data.name, data.comment_return_type, data.php_return_type, data.inferred_return_type
+            data.name,
+            data.name,
+            data.comment_return_type,
+            data.php_return_type,
+            data.inferred_return_type
         ))
     }
 }

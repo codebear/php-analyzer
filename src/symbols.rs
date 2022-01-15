@@ -1,6 +1,6 @@
 use std::{
     ffi::{OsStr, OsString},
-    os::unix::prelude::OsStrExt,
+    os::unix::prelude::OsStrExt, fmt::Display,
 };
 
 use crate::{
@@ -26,6 +26,10 @@ impl Name {
             return false;
         }
         b[0] == arg
+    }
+
+    pub fn to_os_string(&self) -> OsString {
+        self.0.clone()
     }
 
     pub(crate) fn eq_ignore_ascii_case<S>(&self, method_name: S) -> bool
@@ -76,6 +80,12 @@ impl From<&str> for Name {
     }
 }
 
+impl Display for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.to_string_lossy())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct FullyQualifiedName {
     pub path: Vec<Name>,
@@ -119,14 +129,6 @@ impl FullyQualifiedName {
         }
     }
 
-    pub(crate) fn to_string(&self) -> String {
-        self.to_os_string().to_string_lossy().into()
-    }
-
-    fn to_os_string(&self) -> OsString {
-        todo!("Create OsString from FullyQualifiedName")
-    }
-
     pub(crate) fn level(&self) -> usize {
         let len = self.path.len();
         if len > 0 {
@@ -134,6 +136,15 @@ impl FullyQualifiedName {
         } else {
             0
         }
+    }
+}
+
+impl Display for FullyQualifiedName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for p in &self.path {
+            write!(f, "\\{}", p)?;
+        }
+        Ok(())
     }
 }
 

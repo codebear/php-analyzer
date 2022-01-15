@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState,
-    autonodes::{any::AnyNodeRef, scoped_call_expression::ScopedCallExpressionNode},
+    autonodes::{any::AnyNodeRef, scoped_call_expression::ScopedCallExpressionNode}, symboldata::class::{ClassName, MethodData},
 };
 
 use super::NodeDescription;
@@ -13,8 +13,38 @@ impl NodeDescription for ScopedCallExpressionNode {
     fn describe_node(
         &self,
         _path: Option<&[AnyNodeRef]>,
-        _state: &mut AnalysisState,
+        state: &mut AnalysisState,
     ) -> Option<String> {
-        Some("ScopedCallExpressionNode call of sorts. Finn ut hvilke egenskaper den har...".into())
+        if let Some((class_name, data)) = self.get_method_data(state) {
+            Some(describe_method(&class_name, &data))
+        } else {
+            Some("Static method call with no known info".into())
+        }
     }
+}
+
+pub fn describe_method(class_name: &ClassName, data: &MethodData) -> String {
+    let mut buffer = String::new();
+    buffer.push_str(&format!("### `{}::{}(..)`\n", class_name.get_fq_name(), data.name));
+    buffer.push_str(&format!("{}  \n", data.description));
+    buffer.push_str("|   |   |\n| --- | --- |\n");
+    buffer.push_str(&format!("| Declared in | {:?}:{} |\n", data.position.uri, data.position.start.line));
+    let mut any_known_type = false;
+    if let Some(ptype) = &data.php_return_type {
+        buffer.push_str(&format!("| Declared return | {} |\n", ptype));
+        any_known_type = true;
+    }
+    if let Some(itype) = &data.inferred_return_type {
+        buffer.push_str(&format!("| Inferred return type | {} |\n", itype));
+        any_known_type = true;
+    }
+    if let Some(ctype) = &data.comment_return_type {
+        buffer.push_str(&format!("| Doc-comment return type | {} |\n", ctype));
+        any_known_type = true;
+    }
+    if !any_known_type {
+        buffer.push_str(&format!("| No known return-type | |\n"));
+
+    }
+    buffer
 }
