@@ -3,10 +3,10 @@ use crate::{
     autonodes::scoped_call_expression::{
         ScopedCallExpressionName, ScopedCallExpressionNode, ScopedCallExpressionScope,
     },
-    issue::IssueEmitter,
-    symboldata::class::ClassName,
-    symbols::Name,
-    types::union::UnionType,
+    issue::{IssueEmitter, VoidEmitter},
+    symboldata::class::{ClassName, MethodData},
+    symbols::{Name, SymbolClass, SymbolMethod},
+    types::union::{DiscreteType, SpecialType, UnionType},
     value::PHPValue,
 };
 
@@ -30,7 +30,7 @@ impl ScopedCallExpressionNode {
         //         crate::missing_none!("{}.get_php_value(..)", self.kind())
     }
 
-    pub fn get_class_name(&self, state: &AnalysisState) -> Option<ClassName> {
+    pub fn get_class_name(&self, state: &mut AnalysisState) -> Option<ClassName> {
         match &*self.scope {
             ScopedCallExpressionScope::ArrayCreationExpression(_) => {
                 crate::missing_none!("{}", self.kind())
@@ -65,9 +65,21 @@ impl ScopedCallExpressionNode {
             ScopedCallExpressionScope::ParenthesizedExpression(_) => {
                 crate::missing_none!("{}", self.kind())
             }
-            ScopedCallExpressionScope::QualifiedName(_) => crate::missing_none!("{}", self.kind()),
+            ScopedCallExpressionScope::QualifiedName(qname) => Some(ClassName::new_with_names(
+                qname.get_name(),
+                qname.get_fq_name(),
+            )),
             ScopedCallExpressionScope::RelativeScope(_) => crate::missing_none!("{}", self.kind()),
-            ScopedCallExpressionScope::ScopedCallExpression(_) => {
+            ScopedCallExpressionScope::ScopedCallExpression(sc) => {
+                if let Some(utype) = sc.get_utype(state, &VoidEmitter::new()) {
+                    match utype.single_type() {
+                        Some(DiscreteType::Named(_, fq_name)) => {
+                            return Some(ClassName::new_with_fq_name(fq_name));
+                        }
+                        _ => (),
+                    }
+                }
+                
                 crate::missing_none!("{}", self.kind())
             }
             ScopedCallExpressionScope::ScopedPropertyAccessExpression(_) => {
@@ -119,31 +131,71 @@ impl ScopedCallExpressionNode {
         }
     }
 
-    pub fn get_utype(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    pub fn get_method_data(&self, state: &mut AnalysisState) -> Option<(ClassName, MethodData)> {
         let class_name = self.get_class_name(state)?;
 
         let class_data_handle = state.symbol_data.get_class(&class_name)?;
 
-        let method_name = self.get_method_name(state, emitter)?;
+        let method_name = self.get_method_name(state, &VoidEmitter::new())?;
 
-        let method_data = class_data_handle
+        let noe = class_data_handle
             .read()
-            .unwrap()
-            .get_method(&method_name, state.symbol_data.clone())?;
+            .unwrap();
+        
+        if let Some(mdata) = noe.get_method(&method_name, state.symbol_data.clone()) {
+            Some((class_name, mdata))
+        } else {
+            None
+        }
+    }
 
-        if let Some(t) = method_data.inferred_return_type {
-            return Some(t);
+    pub fn get_utype(
+        &self,
+        state: &mut AnalysisState,
+        _emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+   
+    
+        let (class_name, method_data) = self.get_method_data(state)?;
+
+        // FIXME sjekk etter `static`, og konverter til fq_class_name
+        let utype = if let Some(t) = method_data.inferred_return_type {
+            t
+        } else if let Some(c) = method_data.comment_return_type {
+            c
+        } else if let Some(t) = method_data.php_return_type {
+            t
+        } else {
+            return None;
+        };
+        let mut ret_type = UnionType::new();
+        for ut in utype.types {
+            match ut {
+                DiscreteType::Special(SpecialType::Static) => {
+
+                    // Find static called class
+                    ret_type.push(DiscreteType::Named(
+                        class_name.get_name().clone(),
+                        class_name.get_fq_name().clone(),
+                    ))
+                }
+                _ => ret_type.push(ut),
+            }
         }
-        if let Some(c) = method_data.comment_return_type {
-            return Some(c);
-        }
-        if let Some(t) = method_data.php_return_type {
-            return Some(t);
-        }
-        None
+        Some(ret_type)
+    }
+
+    pub fn get_method_symbol(&self, state: &mut AnalysisState) -> Option<SymbolMethod> {
+        // FIXME should this check for existence, or just return symbol?
+
+        let cname = self.get_class_name(state)?;
+        let mname = self.get_method_name(state, &VoidEmitter::new())?;
+
+        let locked_cdata = state.symbol_data.get_class(&cname)?;
+
+        let cdata = locked_cdata.read().ok()?;
+        cdata.get_method(&mname, state.symbol_data.clone())?;
+
+        Some(SymbolMethod::new(mname, SymbolClass::new_from_cname(cname)))
     }
 }
