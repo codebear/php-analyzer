@@ -4,7 +4,7 @@ use crate::{
         ObjectCreationExpressionChildren, ObjectCreationExpressionNode,
     },
     issue::IssueEmitter,
-    symbols::Name,
+    symbols::{FullyQualifiedName, Name},
     types::union::{DiscreteType, UnionType},
     value::{ObjectInstance, PHPValue},
 };
@@ -100,7 +100,7 @@ impl ObjectCreationExpressionNode {
     pub fn get_utype(
         &self,
         state: &mut AnalysisState,
-        _emitter: &dyn IssueEmitter,
+        emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         let data = self.get_creation_data();
         let maybe_fq_name = match &data.name {
@@ -110,6 +110,13 @@ impl ObjectCreationExpressionNode {
                 Some(fq_name)
             }
             Some(ObjectCreationExpressionChildren::QualifiedName(qn)) => Some(qn.get_fq_name()),
+            Some(ObjectCreationExpressionChildren::VariableName(vname)) => {
+                let value = vname.get_php_value(state, emitter)?;
+                match value {
+                    PHPValue::String(vname_str) => Some(FullyQualifiedName::from(vname_str)),
+                    _ => crate::missing_none!("get object-name from value of type: {:?}", value.get_utype()),
+                }
+            }
             Some(noe) => {
                 crate::missing_none!("get object-name from kind: {:?}", noe.kind())
             }
