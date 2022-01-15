@@ -9,7 +9,7 @@ use crate::{
     issue::IssueEmitter,
     missing,
     types::union::{DiscreteType, UnionType},
-    value::PHPValue,
+    value::{PHPValue, PHPFloat},
 };
 
 use super::analysis::AnalyzeableRoundTwoNode;
@@ -186,20 +186,31 @@ impl BinaryExpressionNode {
 
                             if rfloat == 0.0 {
                                 // FIXME Emit div by zero, men i analyze-pass?
+                                // Eventuelt return en Some(...::NaN)??
                                 return None;
                             }
-                            Some(PHPValue::Float(lfloat / rfloat))
+                            Some(PHPValue::Float(PHPFloat::new(lfloat / rfloat)))
                         }
                     }
                     (PHPValue::Int(_), PHPValue::Float(b)) => {
-                        if b == 0.0 {
+                        let fval = match b {
+                            PHPFloat::Real(f) => f,
+                            PHPFloat::NaN |
+                            PHPFloat::Infinite => return None,
+                        };
+                        if fval == 0.0 {
                             // FIXME Emit div by zero, men i analyze-pass?
                             return None;
                         }
                         let lfloat = lval.as_php_float()?.as_f64()?;
-                        Some(PHPValue::Float(lfloat / b))
+                        Some(PHPValue::Float(PHPFloat::new(lfloat / fval)))
                     }
                     (PHPValue::Float(a), PHPValue::Int(b)) => {
+                        let a = match a {
+                            PHPFloat::Real(f) => f,
+                            PHPFloat::NaN |
+                            PHPFloat::Infinite => return None    
+                        };
                         if b == 0 {
                             // FIXME Emit div by zero, men i analyze-pass?
                             return None;
@@ -209,14 +220,19 @@ impl BinaryExpressionNode {
                             // FIXME Emit div by zero, men i analyze-pass?
                             return None;
                         }
-                        Some(PHPValue::Float(a / rfloat))
+                        Some(PHPValue::Float(PHPFloat::Real(a / rfloat)))
                     }
-                    (PHPValue::Float(a), PHPValue::Float(b)) => {
+                    (PHPValue::Float(PHPFloat::NaN), PHPValue::Float(_)) |
+                    (PHPValue::Float(_), PHPValue::Float(PHPFloat::NaN))  => {
+                        None
+                    }
+                    
+                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
                         if b == 0.0 {
                             // FIXME emit div by zero, men gjør det i analyze pass
                             None
                         } else {
-                            Some(PHPValue::Float(a / b))
+                            Some(PHPValue::Float(PHPFloat::new(a / b)))
                         }
                     }
                     _ => None,
@@ -233,7 +249,7 @@ impl BinaryExpressionNode {
                     (PHPValue::Float(_a), PHPValue::Int(_b)) => {
                         crate::missing_none!("i64 to f64 conversion")
                     } // Some(PHPValue::Float(a+b.into())),
-                    (PHPValue::Float(a), PHPValue::Float(b)) => Some(PHPValue::Float(a + b)),
+                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => Some(PHPValue::Float(PHPFloat::new(a + b))),
                     _ => None,
                 }
             }
@@ -248,7 +264,7 @@ impl BinaryExpressionNode {
                     (PHPValue::Float(_a), PHPValue::Int(_b)) => {
                         crate::missing_none!("i64 to f64 conversion")
                     } // Some(PHPValue::Float(a-b.into())),
-                    (PHPValue::Float(a), PHPValue::Float(b)) => Some(PHPValue::Float(a - b)),
+                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => Some(PHPValue::Float(PHPFloat::new(a - b))),
                     _ => None,
                 }
             }
@@ -263,7 +279,7 @@ impl BinaryExpressionNode {
                     (PHPValue::Float(_a), PHPValue::Int(_b)) => {
                         crate::missing_none!("i64 to f64 conversion")
                     } // Some(PHPValue::Float(a*b.into())),
-                    (PHPValue::Float(a), PHPValue::Float(b)) => Some(PHPValue::Float(a * b)),
+                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => Some(PHPValue::Float(PHPFloat::new(a * b))),
                     _ => None,
                 }
             }

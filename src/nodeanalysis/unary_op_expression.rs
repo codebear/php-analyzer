@@ -3,7 +3,7 @@ use crate::{
     autonodes::unary_op_expression::{UnaryOpExpressionNode, UnaryOpExpressionOperator},
     issue::IssueEmitter,
     types::union::{DiscreteType, UnionType},
-    value::PHPValue,
+    value::{PHPFloat, PHPValue},
 };
 
 impl UnaryOpExpressionNode {
@@ -62,10 +62,16 @@ impl UnaryOpExpressionNode {
         };
 
         match (&**operator, value) {
-            (UnaryOpExpressionOperator::Not(_, _), _) => crate::missing_none!("unary not"),
-            (UnaryOpExpressionOperator::Add(_, _), _) => crate::missing_none!("unary add"),
+            (UnaryOpExpressionOperator::Not(_, _), v) => {
+                v.as_bool().map(|x| PHPValue::Boolean(!x))
+            }
+            (UnaryOpExpressionOperator::Add(op, _), _) => {
+                crate::missing_none!("unary add [{}]", op)
+            }
             (UnaryOpExpressionOperator::Sub(_, _), PHPValue::Int(i)) => Some(PHPValue::Int(-i)),
-            (UnaryOpExpressionOperator::Sub(_, _), PHPValue::Float(f)) => Some(PHPValue::Float(-f)),
+            (UnaryOpExpressionOperator::Sub(_, _), PHPValue::Float(PHPFloat::Real(f))) => {
+                Some(PHPValue::Float(PHPFloat::new(-f)))
+            }
             // (UnaryOpExpressionOperator::Squelch(_, _), _) => todo!(),
             (UnaryOpExpressionOperator::BinaryNot(_, _), _) => {
                 crate::missing_none!("unary binary not")

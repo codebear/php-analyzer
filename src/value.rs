@@ -1,7 +1,7 @@
 use std::{
     convert::TryInto,
     ffi::{OsStr, OsString},
-    os::unix::prelude::OsStrExt,
+    os::unix::prelude::OsStrExt, cmp::Ordering,
 };
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
     types::union::{DiscreteType, UnionType},
 };
 
-#[derive(Clone, Debug, PartialOrd, PartialEq)]
+#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq)]
 pub struct ObjectInstance {
     pub fq_name: FullyQualifiedName,
     pub constructor_args: Option<Vec<Option<PHPValue>>>,
@@ -32,12 +32,57 @@ impl ObjectInstance {
     }
 }
 
-#[derive(Clone, Debug, PartialOrd, PartialEq)]
+/// We separate float into a separate type to handle eq and ord 
+/// more easily in a separate way
+#[derive(Clone, Debug, PartialOrd)]
+pub enum PHPFloat{
+    Real(f64),
+    NaN,
+    Infinite
+}
+
+impl PHPFloat {
+    pub fn new(fval: f64) -> Self {
+        if fval.is_infinite() {
+            return Self::Infinite;
+        } else if fval.is_nan() {
+            return Self::NaN;
+        } else {
+            return Self::Real(fval);
+        }
+    }
+}
+
+impl PartialEq for PHPFloat {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Real(l0), Self::Real(r0)) => l0 == r0,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
+// FIXME verify that this holds
+impl Eq for PHPFloat {
+
+}
+
+impl Ord for PHPFloat {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if let Some(ord) = self.partial_cmp(other) {
+            ord
+        } else {
+            todo!();
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
 pub enum PHPValue {
     NULL,
     Boolean(bool),
     Int(i64),
-    Float(f64),
+    Float(PHPFloat),
     String(OsString),
     Array(Vec<(PHPValue, PHPValue)>),
     // .0 = Fully qualified class name, .1 = Constructor arg-vector
@@ -98,7 +143,7 @@ impl PHPValue {
             PHPValue::NULL => PHPValue::Int(0),
             PHPValue::Boolean(b) => PHPValue::Int(if *b { 1 } else { 0 }),
             PHPValue::Int(i) => PHPValue::Int(*i),
-            PHPValue::Float(f) => {
+            PHPValue::Float(PHPFloat::Real(f)) => {
                 const INTEGRAL_LIMIT: f64 = 9007199254740992.0;
                 let f = if *f >= 0.0 { f.floor() } else { f.ceil() };
                 // These out of bounds-cases must emit in round two
@@ -116,6 +161,8 @@ impl PHPValue {
 
                 PHPValue::Int(i_val)
             }
+            PHPValue::Float(PHPFloat::NaN) => return crate::missing_none!("Float(NaN).as_php_int()"),
+            PHPValue::Float(PHPFloat::Infinite) => return crate::missing_none!("Float(Infinite).as_php_int()"),
             PHPValue::String(_) => return crate::missing_none!("String.as_php_int()"),
             PHPValue::Array(_) => return self.as_php_bool().and_then(|x| x.as_php_int()),
             PHPValue::ObjectInstance(_) => {
@@ -131,7 +178,8 @@ impl PHPValue {
             PHPValue::NULL => PHPValue::Boolean(false),
             PHPValue::Boolean(b) => PHPValue::Boolean(*b),
             PHPValue::Int(i) => PHPValue::Boolean(if *i != 0 { true } else { false }),
-            PHPValue::Float(f) => PHPValue::Boolean(if *f != 0.0 { true } else { false }),
+            PHPValue::Float(PHPFloat::Real(f)) => PHPValue::Boolean(if *f != 0.0 { true } else { false }),
+            PHPValue::Float(_) => return crate::missing_none!("Non real float .as_php_bool()"),
             PHPValue::String(s) => {
                 if s.len() == 0 {
                     PHPValue::Boolean(false)
@@ -152,7 +200,7 @@ impl PHPValue {
             PHPValue::NULL => PHPValue::Int(0),
             PHPValue::Boolean(b) => PHPValue::Int(if *b { 1 } else { 0 }),
             PHPValue::Int(i) => PHPValue::Int(*i),
-            PHPValue::Float(f) => PHPValue::Float(*f),
+            PHPValue::Float(f) => PHPValue::Float(f.clone()),
             PHPValue::String(_) => return crate::missing_none!(),
             PHPValue::Array(_) => return crate::missing_none!(),
             PHPValue::ObjectInstance(_) => return crate::missing_none!(),
@@ -161,8 +209,8 @@ impl PHPValue {
 
     pub fn as_php_float(&self) -> Option<Self> {
         Some(match self {
-            PHPValue::NULL => PHPValue::Float(0.0),
-            PHPValue::Boolean(b) => PHPValue::Float(if *b { 1.0 } else { 0.0 }),
+            PHPValue::NULL => PHPValue::Float(PHPFloat::new(0.0)),
+            PHPValue::Boolean(b) => PHPValue::Float(PHPFloat::new(if *b { 1.0 } else { 0.0 })),
             PHPValue::Int(i) => {
                 let int32: Result<i32, _> = (*i).try_into();
                 let ival = match int32 {
@@ -170,9 +218,9 @@ impl PHPValue {
                     Err(_) => return crate::missing_none!("i64 to f64 conversion is inadequate"),
                 };
                 let b_as_f: f64 = ival.into();
-                PHPValue::Float(b_as_f)
+                PHPValue::Float(PHPFloat::new(b_as_f))
             }
-            PHPValue::Float(f) => PHPValue::Float(*f),
+            PHPValue::Float(f) => PHPValue::Float(f.clone()),
             PHPValue::String(_) => {
                 return crate::missing_none!("string to f64 conversion is missing")
             }
@@ -192,7 +240,7 @@ impl PHPValue {
     }
 
     pub fn as_f64(&self) -> Option<f64> {
-        if let Some(PHPValue::Float(f)) = self.as_php_float() {
+        if let Some(PHPValue::Float(PHPFloat::Real(f))) = self.as_php_float() {
             Some(f)
         } else {
             None

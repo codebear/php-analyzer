@@ -5,7 +5,7 @@ use crate::{
     autonodes::float::FloatNode,
     issue::IssueEmitter,
     types::union::{DiscreteType, UnionType},
-    value::PHPValue,
+    value::{PHPValue, PHPFloat},
 };
 
 impl FloatNode {
@@ -21,7 +21,7 @@ impl FloatNode {
         let raw = self.get_raw();
         let fval = String::from_utf8_lossy(raw.as_bytes());
         match fval.parse::<f64>() {
-            Ok(f) => Some(PHPValue::Float(f)),
+            Ok(f) => Some(PHPValue::Float(PHPFloat::new(f))),
             Err(e) => crate::missing_none!(
                 "get_php_value from {:?} found invalid float: {:?}, error: {}",
                 self.kind(),

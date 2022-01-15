@@ -9,7 +9,7 @@ use crate::{
     },
     issue::{Issue, IssueEmitter},
     types::union::{DiscreteType, UnionType},
-    value::PHPValue,
+    value::{PHPValue, PHPFloat},
 };
 
 use super::analysis::AnalyzeableRoundTwoNode;
@@ -86,8 +86,8 @@ impl UpdateExpressionNode {
                 (UpdateExpressionPrefix::Increment(_, _), PHPValue::Int(i)) => {
                     Some(PHPValue::Int(i + 1))
                 }
-                (UpdateExpressionPrefix::Increment(_, _), PHPValue::Float(f)) => {
-                    Some(PHPValue::Float(f + 1.0))
+                (UpdateExpressionPrefix::Increment(_, _), PHPValue::Float(PHPFloat::Real(f))) => {
+                    Some(PHPValue::Float(PHPFloat::new(f + 1.0)))
                 }
 
                 (UpdateExpressionPrefix::Decrement(_, _), PHPValue::NULL) => Some(PHPValue::NULL),
@@ -95,10 +95,10 @@ impl UpdateExpressionNode {
                 (UpdateExpressionPrefix::Decrement(_, _), PHPValue::Int(i)) => {
                     Some(PHPValue::Int(i - 1))
                 }
-                (UpdateExpressionPrefix::Decrement(_, _), PHPValue::Float(f)) => {
-                    Some(PHPValue::Float(f - 1.0))
+                (UpdateExpressionPrefix::Decrement(_, _), PHPValue::Float(PHPFloat::Real(f))) => {
+                    Some(PHPValue::Float(PHPFloat::new(f - 1.0)))
                 }
-
+                (_, PHPValue::Float(_)) => crate::missing_none!("++$none_finite_float/--$none_finite_float is not implemented"),
                 (_, PHPValue::String(_)) => crate::missing_none!("++$str/--$str does funky things"),
                 (_, PHPValue::Array(_)) => None, // this emits in analysis round two
                 (_, PHPValue::ObjectInstance(_)) => None, // this emits in analysis round two,
@@ -211,7 +211,8 @@ impl AnalyzeableRoundTwoNode for UpdateExpressionNode {
                     PHPValue::NULL => Some(PHPValue::Int(1)),
                     PHPValue::Boolean(_) => None,
                     PHPValue::Int(i) => Some(PHPValue::Int(i + 1)),
-                    PHPValue::Float(f) => Some(PHPValue::Float(f + 1.0)),
+                    PHPValue::Float(PHPFloat::Real(f)) => Some(PHPValue::Float(PHPFloat::new(f + 1.0))),
+                    PHPValue::Float(_) => crate::missing_none!("None-Real float increment"),
                     PHPValue::String(_) => crate::missing_none!("String increment"),
                     PHPValue::Array(_) => {
                         let atype = val
@@ -232,7 +233,8 @@ impl AnalyzeableRoundTwoNode for UpdateExpressionNode {
                     PHPValue::NULL => None,
                     PHPValue::Boolean(_) => None,
                     PHPValue::Int(i) => Some(PHPValue::Int(i - 1)),
-                    PHPValue::Float(f) => Some(PHPValue::Float(f - 1.0)),
+                    PHPValue::Float(PHPFloat::Real(f)) => Some(PHPValue::Float(PHPFloat::new(f - 1.0))),
+                    PHPValue::Float(_) => crate::missing_none!("None-Real float decrement"),
                     PHPValue::String(_) => crate::missing_none!("String decrement"),
                     PHPValue::Array(_) => {
                         let atype = val
