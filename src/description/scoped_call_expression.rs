@@ -28,7 +28,10 @@ pub fn describe_method(class_name: &ClassName, data: &MethodData) -> String {
     buffer.push_str(&format!("### `{}::{}(..)`\n", class_name.get_fq_name(), data.name));
     buffer.push_str(&format!("{}  \n", data.description));
     buffer.push_str("|   |   |\n| --- | --- |\n");
-    buffer.push_str(&format!("| Declared in | {:?}:{} |\n", data.position.uri, data.position.start.line));
+    buffer.push_str(&format!("| Declared in | [{}:{}]({}#L{}) |\n", 
+        data.position.uri.to_string_lossy(), data.position.start.line,
+        data.position.uri.to_string_lossy(), data.position.start.line
+    ));
     let mut any_known_type = false;
     if let Some(ptype) = &data.php_return_type {
         buffer.push_str(&format!("| Declared return | {} |\n", ptype));

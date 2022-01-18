@@ -2,7 +2,8 @@ use crate::{
     autonodes::any::AnyNodeRef,
     autotree::NodeAccess,
     issue::{Issue, VoidEmitter},
-    symbols::{Name, Symbol, SymbolClass, SymbolMethod}, symboldata::class::MethodData,
+    symboldata::class::MethodData,
+    symbols::{Name, Symbol, SymbolClass, SymbolMethod},
 };
 
 use crate::{
@@ -37,7 +38,7 @@ impl MemberCallExpressionNode {
 
         let method_name = self.name.get_method_name(state)?;
 
-        let class_names = self.get_object_class_name(state, emitter)?;
+        let class_names = self.get_object_class_names(state, emitter)?;
 
         let mut types = UnionType::new();
 
@@ -57,7 +58,13 @@ impl MemberCallExpressionNode {
 
                 return None;
             };
-
+            if method_name == Name::from(b"getAddress" as &[u8]) {
+                if let Some(t) = &method_data.comment_return_type {
+                    eprintln!("BALLE1: {}::{}(): {}", &class_name, &method_name, t);
+                } else {
+                    eprintln!("BALLE2: {}::{}():*None*", &class_name, &method_name);
+                }
+            }
             let call_return_type = method_data
                 .comment_return_type
                 .or(method_data.php_return_type)
@@ -72,8 +79,11 @@ impl MemberCallExpressionNode {
         }
     }
 
-    pub fn get_methods_data(&self, state: &mut AnalysisState) -> Vec<Option<(ClassName, MethodData)>> {
-        let mut methods = vec!();
+    pub fn get_methods_data(
+        &self,
+        state: &mut AnalysisState,
+    ) -> Vec<Option<(ClassName, MethodData)>> {
+        let mut methods = vec![];
 
         let method_name = if let Some(mname) = self.name.get_method_name(state) {
             mname
@@ -81,13 +91,13 @@ impl MemberCallExpressionNode {
             return methods;
         };
 
-        let class_names = if let Some(cnames) = self.get_object_class_name(state, &VoidEmitter::new()) {
-            cnames
-        } else {
-            return methods;
-        };
+        let class_names =
+            if let Some(cnames) = self.get_object_class_names(state, &VoidEmitter::new()) {
+                cnames
+            } else {
+                return methods;
+            };
 
- 
         for class_name in class_names {
             // If we have one missing class-type, abandon generating a result
             let class_name = if let Some(cname) = class_name {
@@ -130,30 +140,34 @@ impl MemberCallExpressionNode {
     }
 
     /// Return if the object has one single type
-    fn get_object_class_name(
+    fn get_object_class_names(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<Vec<Option<ClassName>>> {
         let object_utype = self.object.get_utype(state, emitter)?;
 
-        Some(
-            object_utype
-                .types
-                .iter()
-                .map(|object_type| match &object_type {
-                    DiscreteType::Named(lname, fq_name) => {
-                        let cname = ClassName::new_with_names(lname.clone(), fq_name.clone());
-                        Some(cname)
-                    }
-                    _ => None,
-                })
-                .collect(),
-        )
+        let mut cnames = vec![];
+        for dtype in object_utype.types {
+            let class_name = match &dtype {
+                DiscreteType::Named(lname, fq_name) => {
+                    eprintln!("1. Calling method on type: {}", fq_name);
+                    let cname = ClassName::new_with_names(lname.clone(), fq_name.clone());
+                    Some(cname)
+                }
+                DiscreteType::NULL => continue,
+                t @ _ => {
+                    eprintln!("2. Calling method on type: {}", t);
+                    None
+                }
+            };
+            cnames.push(class_name);
+        }
+        Some(cnames)
     }
 
     pub fn get_symbols(&self, state: &mut AnalysisState) -> Option<Vec<Symbol>> {
-        let cnames = self.get_object_class_name(state, &VoidEmitter::new())?;
+        let cnames = self.get_object_class_names(state, &VoidEmitter::new())?;
         let mut symbols: Vec<_> = vec![];
         for cname in cnames {
             let cname = cname?;
@@ -180,9 +194,11 @@ impl MemberCallExpressionName {
                     let name = Name::from(s);
                     Some(name)
                 } else {
-                    crate::missing_none!("Hente ut metode-navn fra noe som ikke er en PHPValue::String(..)?")
+                    crate::missing_none!(
+                        "Hente ut metode-navn fra noe som ikke er en PHPValue::String(..)?"
+                    )
                 }
-            },
+            }
 
             MemberCallExpressionName::Comment(_)
             | MemberCallExpressionName::TextInterpolation(_)
@@ -204,8 +220,19 @@ impl AnalyzeableRoundTwoNode for MemberCallExpressionNode {
             return false;
         }
 
-        if let Some(method_name) = self.name.get_method_name(state) {
-            if let Some(cnames) = self.get_object_class_name(state, emitter) {
+        let maybe_method_name = self.name.get_method_name(state);
+
+        if let Some(object_utype) = self.object.get_utype(state, emitter) {
+            if object_utype.is_nullable() {
+                emitter.emit(Issue::MethodCallOnNullableType(
+                    self.object.pos(state),
+                    maybe_method_name.clone(),
+                ));
+            }
+        }
+
+        if let Some(method_name) = maybe_method_name {
+            if let Some(cnames) = self.get_object_class_names(state, emitter) {
                 for cname in cnames {
                     if let Some(cname) = cname {
                         if let Some(cdata_handle) = state.symbol_data.get_class(&cname) {
@@ -221,10 +248,17 @@ impl AnalyzeableRoundTwoNode for MemberCallExpressionNode {
                                     method_name.clone(),
                                 ));
                             }
+                        } else {
+                            emitter.emit(Issue::MethodCallOnUnknownType(
+                                self.object.pos(state),
+                                Some(cname.get_fq_name().clone()),
+                                Some(method_name.clone()),
+                            ));
                         }
                     } else {
                         emitter.emit(Issue::MethodCallOnUnknownType(
                             self.object.pos(state),
+                            None,
                             Some(method_name.clone()),
                         ));
                     }
@@ -232,6 +266,7 @@ impl AnalyzeableRoundTwoNode for MemberCallExpressionNode {
             } else {
                 emitter.emit(Issue::MethodCallOnUnknownType(
                     self.object.pos(state),
+                    None,
                     Some(method_name),
                 ));
             }

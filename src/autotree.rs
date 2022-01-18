@@ -105,6 +105,10 @@ pub trait NodeAccess {
         IssuePosition::new(&state.filename, self.range())
     }
 
+    fn pos_from_range(&self, state: &AnalysisState, range: Range) -> IssuePosition {
+        IssuePosition::new(&state.filename, range)
+    }
+
     fn with_node_ref_at_position<T, CB>(
         &self,
         line: usize,

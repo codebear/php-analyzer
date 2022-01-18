@@ -62,8 +62,14 @@ pub enum Issue {
 
     /// We're unable to determine the type of the target of the method call
     /// *  .0 position
+    /// *  .1 type if available
+    /// *  .2 method_name if avaiable
+    MethodCallOnUnknownType(IssuePosition, Option<FullyQualifiedName>, Option<Name>),
+
+    /// The target of the method call is nullable
+    /// *  .0 position
     /// *  .1 method_name if avaiable
-    MethodCallOnUnknownType(IssuePosition, Option<Name>),
+    MethodCallOnNullableType(IssuePosition, Option<Name>),
 
     /// We're unable to determine the type of the target of the property access
     /// *  .0 position
@@ -114,6 +120,8 @@ pub enum Issue {
     /// The analyzer arrived at a parse-state it considers impossible
     ParseAnomaly(IssuePosition, OsString),
     VariableNotInitializedInAllBranhces(IssuePosition, Name),
+
+    PHPDocParseError(IssuePosition),
 }
 
 impl Issue {
@@ -154,7 +162,8 @@ impl Issue {
             | Self::UnknownConstant(pos, _)
             | Self::UnreachableCode(pos)
             | Self::UnknownMethod(pos, _, _)
-            | Self::MethodCallOnUnknownType(pos, _)
+            | Self::MethodCallOnUnknownType(pos, _, _)
+            | Self::MethodCallOnNullableType(pos, _)
             | Self::TraversalOfUnknownType(pos)
             | Self::ConditionalConstantDeclaration(pos)
             | Self::WrongNumberOfArguments(pos, _, _, _)
@@ -167,7 +176,8 @@ impl Issue {
             | Self::PropertyAccessOnUnknownType(pos, _)
             | Self::PropertyAccessOnInterfaceType(pos, _, _)
             | Self::IndeterminablePropertyName(pos, _)
-            | Self::VariableNotInitializedInAllBranhces(pos, _) => pos.clone(),
+            | Self::VariableNotInitializedInAllBranhces(pos, _) 
+            | Self::PHPDocParseError(pos) => pos.clone(),
         }
     }
 
@@ -195,7 +205,8 @@ impl Issue {
             Self::IncrementIsIllegalOnType(_, _) => "IncrementIsIllegalOnType",
             Self::UnknownConstant(_, _) => "UnknownConstant",
             Self::UnreachableCode(_) => "UnreachableCode",
-            Self::MethodCallOnUnknownType(_, _) => "MethodCallOnUnknownType",
+            Self::MethodCallOnUnknownType(_, _, _) => "MethodCallOnUnknownType",
+            Self::MethodCallOnNullableType(_, _) => "MethodCallOnNullableType",
             Self::PropertyAccessOnUnknownType(_, _) => "PropertyAccessOnUnknownType",
             Self::PropertyAccessOnInterfaceType(_, _, _) => "PropertyAccessOnInterfaceType",
             Self::IndeterminablePropertyName(_, _) => "IndeterminablePropertyName",
@@ -212,6 +223,7 @@ impl Issue {
             Self::VariableNotInitializedInAllBranhces(_, _) => {
                 "VariableNotInitializedInAllBranhces"
             }
+            Self::PHPDocParseError(_) => "PHPDocParseError",
         }
     }
 
@@ -233,8 +245,13 @@ impl Issue {
             Self::IncrementIsIllegalOnType(_, n) => format!("<expr>++ is illegal on {:?}", n),
             Self::UnknownConstant(_, c) => format!("Unknown constant {:?}", c),
             Self::UnreachableCode(_) => format!("Unreachable code"),
-            Self::MethodCallOnUnknownType(_, mname) => format!(
-                "Method call {:?} on a target with unidentifiyable type",
+            Self::MethodCallOnUnknownType(_, cname, mname) => format!(
+                "Method call {:?} on a target with unidentifiyable type {:?}",
+                mname,
+                cname
+            ),
+            Self::MethodCallOnNullableType(_, mname) => format!(
+                "Method call {:?} on a target which can be null",
                 mname
             ),
             Self::UnknownMethod(_, c, m) => format!("Unknown method {:?} on {:?}", m, c),
@@ -274,6 +291,7 @@ impl Issue {
                 "Unable to determine the name of the property, accessed on {:?}",
                 cname
             ),
+            Self::PHPDocParseError(_) => format!("Unable to parse PHP Doc-comment"),
         }
     }
 

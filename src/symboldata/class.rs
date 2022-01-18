@@ -1,11 +1,14 @@
 use crate::{
     analysis::state::AnalysisState,
+    phpdoc::types::PHPDocComment,
     symbols::{FullyQualifiedName, Name},
     types::union::UnionType,
     value::PHPValue,
 };
+
 use std::{
     collections::{BTreeSet, HashMap},
+    fmt::Display,
     sync::{Arc, RwLock},
 };
 
@@ -68,6 +71,11 @@ impl From<&FullyQualifiedName> for ClassName {
     }
 }
 
+impl Display for ClassName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.fq_name)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum ClassType {
@@ -148,11 +156,11 @@ impl ClassType {
             ClassType::Class(c) => c.implements(iname, symbol_data),
             ClassType::Interface(i) => i.implements(iname, symbol_data),
             ClassType::Trait(_) => {
-                // traits don't have interface-support, yet 
+                // traits don't have interface-support, yet
                 // https://wiki.php.net/rfc/traits-with-interfaces
                 false
             }
-        }  
+        }
     }
 }
 
@@ -171,6 +179,11 @@ pub enum ClassMemberVisibility {
 }
 
 #[derive(Clone, Debug)]
+pub struct TraitImport {
+    pub trait_name: ClassName,
+}
+
+#[derive(Clone, Debug)]
 pub struct ClassData {
     pub class_name: ClassName,
     pub position: FileLocation,
@@ -181,8 +194,8 @@ pub struct ClassData {
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
     pub properties: HashMap<Name, Arc<RwLock<PropertyData>>>,
     pub is_native: bool,
-    // FIXME, trait-imports are much more complex
-    pub traits: Vec<ClassName>,
+    pub traits: Vec<TraitImport>,
+    pub phpdoc: Option<PHPDocComment>,
 }
 
 impl ClassData {
@@ -198,6 +211,7 @@ impl ClassData {
             properties: HashMap::new(),
             traits: vec![],
             is_native: false,
+            phpdoc: None,
         }
     }
 
@@ -349,6 +363,7 @@ pub struct InterfaceData {
     pub base_interface_names: Option<Vec<ClassName>>,
     pub constants: HashMap<Name, PHPValue>,
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
+    pub phpdoc: Option<PHPDocComment>,
 }
 
 impl InterfaceData {
@@ -359,6 +374,7 @@ impl InterfaceData {
             base_interface_names: None,
             constants: HashMap::new(),
             methods: HashMap::new(),
+            phpdoc: None,
         }
     }
 
@@ -449,6 +465,7 @@ pub struct TraitData {
     pub base_name: Option<ClassName>,
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
     pub is_native: bool,
+    pub phpdoc: Option<PHPDocComment>,
 }
 
 impl TraitData {
@@ -459,6 +476,7 @@ impl TraitData {
             base_name: None,
             methods: HashMap::new(),
             is_native: false,
+            phpdoc: None,
         }
     }
     pub fn get_own_method(&self, method_name: &Name) -> Option<Arc<RwLock<MethodData>>> {
@@ -497,6 +515,7 @@ pub struct FunctionArgumentData {
     pub default_value: Option<PHPValue>,
     pub nullable: bool,
     pub optional: bool,
+    pub phpdoc: Option<PHPDocComment>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -513,6 +532,7 @@ pub struct MethodData {
     pub modifier: ClassModifier,
     pub is_static: bool,
     pub visibility: ClassMemberVisibility,
+    pub phpdoc: Option<PHPDocComment>,
 }
 
 impl MethodData {
@@ -534,6 +554,7 @@ impl MethodData {
             is_static: false,
             modifier: ClassModifier::None,
             visibility: ClassMemberVisibility::Public,
+            phpdoc: None,
         }
     }
 }
@@ -553,6 +574,7 @@ pub struct PropertyData {
     pub read_from: usize,
     pub written_to: usize,
     pub written_data: Vec<(UnionType, Option<PHPValue>)>,
+    pub phpdoc_entries: Option<PHPDocComment>,
     // void
 }
 
@@ -572,6 +594,7 @@ impl PropertyData {
             read_from: 0,
             written_to: 0,
             written_data: vec![],
+            phpdoc_entries: None,
         }
     }
 

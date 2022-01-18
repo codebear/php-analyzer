@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, RwLock},
-};
-
+use std::sync::{Arc, RwLock};
 
 use crate::{
     analysis::state::{AnalysisState, ClassState, FunctionState},
@@ -14,7 +11,7 @@ use crate::{
     issue::{Issue, IssueEmitter},
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::{
-        class::{ClassMemberVisibility, ClassModifier, ClassName, MethodData},
+        class::{ClassMemberVisibility, ClassModifier, MethodData},
         FileLocation,
     },
     symbols::Name,
@@ -101,7 +98,6 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
         }
     }
 
-
     fn get_inferred_return_type(
         &self,
         _state: &mut AnalysisState,
@@ -149,7 +145,7 @@ impl AnalyzeableNode for MethodDeclarationNode {
         let mut is_static = false;
         let mut visibility = ClassMemberVisibility::Public;
 
-        let mut phpdoc_entries = None;
+        let mut phpdoc = None;
         let mut comment_return_type = None;
         if let Some((doc_comment, range)) = &state.last_doc_comment {
             match PHPDocComment::parse(doc_comment, range) {
@@ -170,7 +166,7 @@ impl AnalyzeableNode for MethodDeclarationNode {
                             _ => (),
                         }
                     }
-                    phpdoc_entries = Some(doc_comment);
+                    phpdoc = Some(doc_comment);
                 }
                 Err(_) => emitter.emit(Issue::PHPDocParseError(
                     self.pos_from_range(state, range.clone()),
@@ -215,7 +211,7 @@ impl AnalyzeableNode for MethodDeclarationNode {
             unlocked.modifier = modifier;
             unlocked.is_static = is_static;
             unlocked.visibility = visibility;
-            unlocked.phpdoc_entries = phpdoc_entries;
+            unlocked.phpdoc = phpdoc;
         }
         // eprintln!("Tolket metode: {:?}", method_data);
         state.last_doc_comment = None;
