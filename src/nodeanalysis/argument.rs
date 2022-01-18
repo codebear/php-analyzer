@@ -6,7 +6,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl ArgumentNode {
@@ -31,14 +31,14 @@ impl ArgumentNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for ArgumentNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for ArgumentNode {
+    fn analyze_third_pass(
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
-        if !self.analyze_round_two_children(&self.as_any(), state, emitter, path) {
+        if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;
         }
         self.child.read_from(state, emitter);

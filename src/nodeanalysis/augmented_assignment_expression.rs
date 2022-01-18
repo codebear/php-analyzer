@@ -12,7 +12,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl AugmentedAssignmentExpressionNode {
@@ -59,8 +59,8 @@ impl AugmentedAssignmentExpressionNode {
 
 // FIXME den her må sjekk at right-operanden har rett type
 
-impl AnalyzeableRoundTwoNode for AugmentedAssignmentExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for AugmentedAssignmentExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -130,7 +130,7 @@ impl AnalyzeableRoundTwoNode for AugmentedAssignmentExpressionNode {
         };
         // let val_type = self.right.get_utype(state, emitter);
         self.left.write_to(state, emitter, val_type, value);
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }
 

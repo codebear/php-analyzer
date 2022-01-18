@@ -6,7 +6,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 
 impl ForStatementNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -30,8 +30,8 @@ impl ForStatementNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for ForStatementNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for ForStatementNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -41,14 +41,14 @@ impl AnalyzeableRoundTwoNode for ForStatementNode {
         if let Some(false) = self
             .initialize
             .as_ref()
-            .map(|x| x.as_any().analyze_round_two(state, emitter, path))
+            .map(|x| x.as_any().analyze_third_pass(state, emitter, path))
         {
             return false;
         }
 
         if let Some(false) = self.condition.as_ref().map(|x| {
             x.read_from(state, emitter);
-            x.as_any().analyze_round_two(state, emitter, path)
+            x.as_any().analyze_third_pass(state, emitter, path)
         }) {
             return false;
         }
@@ -56,13 +56,13 @@ impl AnalyzeableRoundTwoNode for ForStatementNode {
         //        self.initialize.map(|x| x.read_from(state, emitter));
         crate::missing!("for-loop analysis needs attention");
         for child in &self.children {
-            if !child.as_any().analyze_round_two(state, emitter, path) {
+            if !child.as_any().analyze_third_pass(state, emitter, path) {
                 return false;
             }
         }
         self.increment
             .as_ref()
-            .map(|x| x.as_any().analyze_round_two(state, emitter, path))
+            .map(|x| x.as_any().analyze_third_pass(state, emitter, path))
             .unwrap_or(true)
     }
 }

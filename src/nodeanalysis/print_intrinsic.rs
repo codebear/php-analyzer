@@ -6,7 +6,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl PrintIntrinsicNode {
@@ -32,8 +32,8 @@ impl PrintIntrinsicNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for PrintIntrinsicNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for PrintIntrinsicNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -41,6 +41,6 @@ impl AnalyzeableRoundTwoNode for PrintIntrinsicNode {
     ) -> bool {
         self.child.read_from(state, emitter);
         // todo
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }

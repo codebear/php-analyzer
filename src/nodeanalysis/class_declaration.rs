@@ -16,7 +16,7 @@ use crate::{
 };
 
 use super::{
-    analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode},
+    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode},
     class::{AnalysisOfClassBaseLikeNode, AnalysisOfDeclaredNameNode},
 };
 use crate::nodeanalysis::class::AnalysisOfClassLikeNode;
@@ -85,8 +85,8 @@ impl AnalysisOfClassLikeNode for ClassDeclarationNode {
     }
 }
 
-impl AnalyzeableNode for ClassDeclarationNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for ClassDeclarationNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         let class_name = self.get_class_name(state);
         let base_name = self.get_declared_base_class_name(state, emitter);
 
@@ -140,13 +140,13 @@ impl AnalyzeableNode for ClassDeclarationNode {
         // eprintln!("ClassDeclarationNode.analyze_round_one(): Analyzed os fram til {:?}", class_data);
         state.in_class = Some(ClassState::Class(class_name));
         state.last_doc_comment = None;
-        self.analyze_round_one_children(&self.as_any(), state, emitter);
+        self.analyze_first_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
     }
 }
 
-impl AnalyzeableRoundTwoNode for ClassDeclarationNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for ClassDeclarationNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -155,7 +155,7 @@ impl AnalyzeableRoundTwoNode for ClassDeclarationNode {
         let class_name = self.get_class_name(state);
         state.in_class = Some(ClassState::Class(class_name));
         state.last_doc_comment = None;
-        let res = self.analyze_round_two_children(&self.as_any(), state, emitter, path);
+        let res = self.analyze_third_pass_children(&self.as_any(), state, emitter, path);
         state.in_class = None;
         res
     }

@@ -1,4 +1,4 @@
-use super::analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::property_declaration::PropertyDeclarationProperties;
 use crate::{
@@ -28,8 +28,8 @@ impl PropertyDeclarationNode {
     }
 }
 
-impl AnalyzeableNode for PropertyDeclarationNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         for prop in &self.properties {
             match &**prop {
                 PropertyDeclarationProperties::PropertyElement(p) => {
@@ -41,8 +41,8 @@ impl AnalyzeableNode for PropertyDeclarationNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for PropertyDeclarationNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for PropertyDeclarationNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,

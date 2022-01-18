@@ -7,7 +7,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
 use crate::autotree::NodeAccess;
 
 impl SimpleParameterNode {
@@ -40,10 +40,10 @@ impl SimpleParameterNode {
     }
 }
 
-impl AnalyzeableNode for SimpleParameterNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for SimpleParameterNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         // eprintln!("Fang opp hvilke argument-signatur en metode har");
-        self.analyze_round_one_children(&self.as_any(), state, emitter)
+        self.analyze_first_pass_children(&self.as_any(), state, emitter)
     }
 }
 
@@ -69,8 +69,8 @@ impl FindDefaultValue for SimpleParameterNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for SimpleParameterNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for SimpleParameterNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,

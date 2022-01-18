@@ -5,7 +5,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl ReturnStatementNode {
@@ -30,8 +30,8 @@ impl ReturnStatementNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for ReturnStatementNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for ReturnStatementNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -53,6 +53,6 @@ impl AnalyzeableRoundTwoNode for ReturnStatementNode {
             }
         }
 
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }

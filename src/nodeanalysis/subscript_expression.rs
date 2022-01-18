@@ -11,7 +11,7 @@ use crate::{
 
 use crate::autotree::NodeAccess;
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 
 impl SubscriptExpressionNode {
     pub fn get_utype(
@@ -214,14 +214,14 @@ impl SubscriptExpressionDereferencable {
     }
 }
 
-impl AnalyzeableRoundTwoNode for SubscriptExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for SubscriptExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
         self.index.as_ref().map(|i| i.read_from(state, emitter));
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }

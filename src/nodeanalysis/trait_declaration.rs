@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode},
+    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode},
     class::{AnalysisOfClassBaseLikeNode, AnalysisOfDeclaredNameNode},
 };
 
@@ -53,8 +53,8 @@ impl AnalysisOfDeclaredNameNode for TraitDeclarationNode {
 }
 impl AnalysisOfClassBaseLikeNode for TraitDeclarationNode {}
 
-impl AnalyzeableNode for TraitDeclarationNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for TraitDeclarationNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         let trait_name = self.get_trait_name(state);
         let base_name = self.get_declared_base_class_name(state, emitter);
 
@@ -75,13 +75,13 @@ impl AnalyzeableNode for TraitDeclarationNode {
 
         state.last_doc_comment = None;
         state.in_class = Some(ClassState::Trait(trait_name));
-        self.analyze_round_one_children(&self.as_any(), state, emitter);
+        self.analyze_first_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
     }
 }
 
-impl AnalyzeableRoundTwoNode for TraitDeclarationNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for TraitDeclarationNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -90,7 +90,7 @@ impl AnalyzeableRoundTwoNode for TraitDeclarationNode {
         let trait_name = self.get_trait_name(state);
         state.last_doc_comment = None;
         state.in_class = Some(ClassState::Trait(trait_name));
-        let carry_on = self.analyze_round_two_children(&self.as_any(), state, emitter, path);
+        let carry_on = self.analyze_third_pass_children(&self.as_any(), state, emitter, path);
         state.in_class = None;
 
         carry_on

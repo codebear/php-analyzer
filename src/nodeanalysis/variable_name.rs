@@ -12,7 +12,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::{analysis::AnalyzeableRoundTwoNode, lang::AnalysisOfType};
+use super::{analysis::ThirdPassAnalyzeableNode, lang::AnalysisOfType};
 
 impl VariableNameNode {
     pub fn get_variable_name(&self) -> Name {
@@ -126,8 +126,8 @@ impl VariableNameNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for VariableNameNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for VariableNameNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,

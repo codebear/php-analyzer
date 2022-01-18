@@ -5,7 +5,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl TryStatementNode {
@@ -30,8 +30,8 @@ impl TryStatementNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for TryStatementNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for TryStatementNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -39,6 +39,6 @@ impl AnalyzeableRoundTwoNode for TryStatementNode {
     ) -> bool {
         // FIXME noe scope-greier
         crate::missing!();
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }

@@ -5,7 +5,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 
 use crate::autotree::NodeAccess;
 
@@ -30,8 +30,8 @@ impl SwitchStatementNode {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }
-impl AnalyzeableRoundTwoNode for SwitchStatementNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for SwitchStatementNode {
+    fn analyze_third_pass(
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
@@ -41,6 +41,6 @@ impl AnalyzeableRoundTwoNode for SwitchStatementNode {
         crate::missing!("analyze_round_two of switch");
         // Vi kjører på som om ingenting har hendt enn så lenge
         // Her må vi inn med noe semikomplisert scope/branch-analysis-greier
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }

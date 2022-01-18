@@ -12,7 +12,7 @@ use crate::{
     value::{PHPValue, PHPFloat},
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 
 enum Operator {
     Increment,
@@ -194,14 +194,14 @@ impl UpdateExpressionNode {
 //
 
 use crate::autotree::NodeAccess;
-impl AnalyzeableRoundTwoNode for UpdateExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
-        if !self.analyze_round_two_children(&self.as_any(), state, emitter, path) {
+        if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;
         }
 

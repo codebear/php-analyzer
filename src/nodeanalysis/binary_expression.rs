@@ -12,7 +12,7 @@ use crate::{
     value::{PHPValue, PHPFloat},
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl BinaryExpressionNode {
@@ -461,8 +461,8 @@ impl BinaryExpressionRight {
     }
 }
 
-impl AnalyzeableRoundTwoNode for BinaryExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for BinaryExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
@@ -503,6 +503,6 @@ impl AnalyzeableRoundTwoNode for BinaryExpressionNode {
             }
         }*/
         // eprintln!("TODO: {}", state.pos_as_string(self.range));
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }

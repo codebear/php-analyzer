@@ -15,7 +15,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl MemberAccessExpressionNode {
@@ -190,8 +190,8 @@ impl MemberAccessExpressionName {
     }
 }
 
-impl AnalyzeableRoundTwoNode for MemberAccessExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for MemberAccessExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -252,7 +252,7 @@ impl AnalyzeableRoundTwoNode for MemberAccessExpressionNode {
             // FIXME This should emit unknown object-type or something on round three
         }
 
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }
 

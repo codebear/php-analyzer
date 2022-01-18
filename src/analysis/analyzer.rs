@@ -5,8 +5,8 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autotree::AutoTree;
 use crate::autotree::NodeAccess;
 use crate::issue::IssueEmitter;
-use crate::nodeanalysis::analysis::AnalyzeableNode;
-use crate::nodeanalysis::analysis::AnalyzeableRoundTwoNode;
+use crate::nodeanalysis::analysis::FirstPassAnalyzeableNode;
+use crate::nodeanalysis::analysis::ThirdPassAnalyzeableNode;
 
 use super::state::AnalysisState;
 
@@ -98,14 +98,14 @@ impl Analyzer {
 
     pub fn round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(tree) = &self.tree {
-            tree.root.as_any().analyze_round_one(state, emitter);
+            tree.root.as_any().analyze_first_pass(state, emitter);
         }
     }
 
     pub fn round_two(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(tree) = &self.tree {
             let path = vec![];
-            tree.root.as_any().analyze_round_two(state, emitter, &path);
+            tree.root.as_any().analyze_third_pass(state, emitter, &path);
         }
     }
 

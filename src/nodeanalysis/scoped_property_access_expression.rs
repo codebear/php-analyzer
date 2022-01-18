@@ -11,7 +11,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl ScopedPropertyAccessExpressionNode {
@@ -46,23 +46,23 @@ impl ScopedPropertyAccessExpressionNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for ScopedPropertyAccessExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for ScopedPropertyAccessExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
-        if !self.scope.as_any().analyze_round_two(state, emitter, path) {
+        if !self.scope.as_any().analyze_third_pass(state, emitter, path) {
             return false;
         }
 
-        self.name.analyze_round_two(state, emitter, path)
+        self.name.analyze_third_pass(state, emitter, path)
     }
 }
 
-impl AnalyzeableRoundTwoNode for ScopedPropertyAccessExpressionName {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for ScopedPropertyAccessExpressionName {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -71,7 +71,7 @@ impl AnalyzeableRoundTwoNode for ScopedPropertyAccessExpressionName {
         match self {
             ScopedPropertyAccessExpressionName::DynamicVariableName(dv) => {
                 // a statement like { Foo:$$bar; } $bar needs to be found, so let's dig down here
-                dv.as_any().analyze_round_two(state, emitter, path)
+                dv.as_any().analyze_third_pass(state, emitter, path)
             }
             ScopedPropertyAccessExpressionName::VariableName(_) => {
                 // The VariableName node thinks it's a regular variable

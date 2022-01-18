@@ -7,7 +7,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
 
 impl NamespaceDefinitionNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -43,8 +43,8 @@ impl NamespaceDefinitionNode {
     }
 }
 
-impl AnalyzeableNode for NamespaceDefinitionNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for NamespaceDefinitionNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(_) = &self.name {
             let namespace = self.get_namespace();
             state.namespace = Some(namespace);
@@ -57,8 +57,8 @@ impl AnalyzeableNode for NamespaceDefinitionNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for NamespaceDefinitionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for NamespaceDefinitionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,

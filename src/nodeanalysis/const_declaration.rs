@@ -6,7 +6,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::AnalyzeableNode;
+use super::analysis::FirstPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl ConstDeclarationNode {
@@ -31,8 +31,8 @@ impl ConstDeclarationNode {
     }
 }
 
-impl AnalyzeableNode for ConstDeclarationNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for ConstDeclarationNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         // Finn ut av
         // self.attributes;
         // Finn ut av

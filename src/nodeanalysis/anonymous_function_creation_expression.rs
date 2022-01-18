@@ -8,7 +8,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl AnonymousFunctionCreationExpressionNode {
@@ -35,8 +35,8 @@ impl AnonymousFunctionCreationExpressionNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for AnonymousFunctionCreationExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for AnonymousFunctionCreationExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -44,7 +44,7 @@ impl AnalyzeableRoundTwoNode for AnonymousFunctionCreationExpressionNode {
     ) -> bool {
         let function = FunctionState::new_anonymous();
         state.in_function_stack.push(function);
-        let ret = self.analyze_round_two_children(&self.as_any(), state, emitter, path);
+        let ret = self.analyze_third_pass_children(&self.as_any(), state, emitter, path);
         state.in_function_stack.pop();
         ret
     }

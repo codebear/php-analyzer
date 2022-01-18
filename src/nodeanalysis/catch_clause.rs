@@ -4,7 +4,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::analysis::scope::BranchableScope;
 use crate::autotree::NodeAccess;
 
@@ -30,8 +30,8 @@ impl CatchClauseNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for CatchClauseNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for CatchClauseNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -45,7 +45,7 @@ impl AnalyzeableRoundTwoNode for CatchClauseNode {
             let utype = self.type_.get_utype(state, emitter);
             catch_var.write_to(state, emitter, utype, None);
         }
-        let carry_on = self.analyze_round_two_children(&self.body.as_any(), state, emitter, path);
+        let carry_on = self.analyze_third_pass_children(&self.body.as_any(), state, emitter, path);
         state.pop_scope();
 
         carry_on

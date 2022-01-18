@@ -1,15 +1,17 @@
 use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::issue::IssueEmitter;
-use crate::nodeanalysis::analysis::AnalyzeableNode;
-use crate::nodeanalysis::analysis::IntoAnalyzeable;
+use crate::nodeanalysis::analysis::FirstPassAnalyzeableNode;
+use crate::nodeanalysis::analysis::IntoFirstPassAnalyzeable;
 
-use super::analysis::{AnalyzeableRoundTwoNode, IntoAnalyzeableRoundTwo};
+use super::analysis::IntoSecondPassAnalyzeable;
+use super::analysis::SecondPassAnalyzeableNode;
+use super::analysis::{ThirdPassAnalyzeableNode, IntoThirdPassAnalyzeable};
 
-impl IntoAnalyzeable for AnyNodeRef<'_> {
-    fn with_analyzeable<T, CB>(&self, cb: &mut CB) -> std::option::Option<T>
+impl IntoFirstPassAnalyzeable for AnyNodeRef<'_> {
+    fn with_first_pass_analyzeable<T, CB>(&self, cb: &mut CB) -> std::option::Option<T>
     where
-        CB: FnMut(&dyn AnalyzeableNode) -> T,
+        CB: FnMut(&dyn FirstPassAnalyzeableNode) -> T,
     {
         Some(match self {
             // Class like definitions
@@ -45,10 +47,22 @@ impl IntoAnalyzeable for AnyNodeRef<'_> {
     }
 }
 
-impl IntoAnalyzeableRoundTwo for AnyNodeRef<'_> {
-    fn with_analyzeable_round_two<T, CB>(&self, cb: &mut CB) -> Option<T>
+impl IntoSecondPassAnalyzeable for AnyNodeRef<'_> {
+    fn with_second_pass_analyzeable<T, CB>(&self, cb: &mut CB) -> Option<T>
     where
-        CB: FnMut(&dyn AnalyzeableRoundTwoNode) -> T,
+        CB: FnMut(&dyn SecondPassAnalyzeableNode) -> T,
+    {
+        Some(match self {
+            AnyNodeRef::MethodDeclaration(md) => cb(*md),
+            _ => return None,
+        })
+    }
+}
+
+impl IntoThirdPassAnalyzeable for AnyNodeRef<'_> {
+    fn with_third_pass_analyzeable<T, CB>(&self, cb: &mut CB) -> Option<T>
+    where
+        CB: FnMut(&dyn ThirdPassAnalyzeableNode) -> T,
     {
         Some(match self {
             AnyNodeRef::ClassDeclaration(c) => cb(*c),
@@ -99,28 +113,40 @@ impl IntoAnalyzeableRoundTwo for AnyNodeRef<'_> {
     }
 }
 
-impl AnalyzeableNode for AnyNodeRef<'_> {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for AnyNodeRef<'_> {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(_) = self
-            .with_analyzeable(&mut |x: &dyn AnalyzeableNode| x.analyze_round_one(state, emitter))
+            .with_first_pass_analyzeable(&mut |x: &dyn FirstPassAnalyzeableNode| x.analyze_first_pass(state, emitter))
         {
             // good
         } else {
-            self.analyze_round_one_children(self, state, emitter);
+            self.analyze_first_pass_children(self, state, emitter);
         }
     }
 }
 
-impl AnalyzeableRoundTwoNode for AnyNodeRef<'_> {
-    fn analyze_round_two(
+impl SecondPassAnalyzeableNode for AnyNodeRef<'_> {
+    fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        if let Some(_) = self
+            .with_second_pass_analyzeable(&mut |x: &dyn SecondPassAnalyzeableNode| x.analyze_second_pass(state, emitter))
+        {
+            // good
+        } else {
+            self.analyze_second_pass_children(self, state, emitter);
+        }
+    }
+}
+
+impl ThirdPassAnalyzeableNode for AnyNodeRef<'_> {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
         if let Some(carry_on) =
-            self.with_analyzeable_round_two(&mut |x: &dyn AnalyzeableRoundTwoNode| {
-                x.analyze_round_two(state, emitter, path)
+            self.with_third_pass_analyzeable(&mut |x: &dyn ThirdPassAnalyzeableNode| {
+                x.analyze_third_pass(state, emitter, path)
             })
         {
             /*if let Some(looking_for) = state.looking_for_node {
@@ -128,7 +154,7 @@ impl AnalyzeableRoundTwoNode for AnyNodeRef<'_> {
             }*/
             carry_on
         } else {
-            self.analyze_round_two_children(self, state, emitter, path)
+            self.analyze_third_pass_children(self, state, emitter, path)
         }
     }
 }

@@ -3,7 +3,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autotree::NodeAccess;
 use crate::issue::IssueEmitter;
 
-pub trait AnalyzeableNode {
+pub trait FirstPassAnalyzeableNode {
     ///
     /// Simple inline analysis of basic symbols thats declared
     /// * class/interface/trait names and properties
@@ -11,18 +11,23 @@ pub trait AnalyzeableNode {
     /// * declared native return types
     /// * capturing of doc-comment declarations
     ///
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter);
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter);
 
-    fn analyze_round_one_children(
+    fn analyze_first_pass_children(
         &self,
         node_ref: &AnyNodeRef,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) {
         for child in node_ref.children_any() {
-            child.analyze_round_one(state, emitter);
+            child.analyze_first_pass(state, emitter);
+
             if let AnyNodeRef::Comment(c) = &child {
-                state.last_doc_comment = Some((c.get_raw(), c.range()));
+                state.last_doc_comment = if c.is_doc_comment() { 
+                   Some((c.get_raw(), c.range()))
+                } else {
+                    None
+                }
             } else if let Some(_) = state.last_doc_comment {
                 state.last_doc_comment = None;
             }
@@ -30,18 +35,40 @@ pub trait AnalyzeableNode {
     }
 }
 
-pub trait AnalyzeableRoundTwoNode {
+
+pub trait SecondPassAnalyzeableNode {
     ///
     /// Second round, iterative
     ///
-    fn analyze_round_two(
+    fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter);
+
+
+    fn analyze_second_pass_children(
+        &self,
+        node_ref: &AnyNodeRef,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> bool {
+
+        for child in node_ref.children_any() {
+            child.analyze_second_pass(state, emitter);
+        }
+        return true;
+    }
+}
+
+pub trait ThirdPassAnalyzeableNode {
+    ///
+    /// Second round, iterative
+    ///
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool;
 
-    fn analyze_round_two_children(
+    fn analyze_third_pass_children(
         &self,
         node_ref: &AnyNodeRef,
         state: &mut AnalysisState,
@@ -52,7 +79,7 @@ pub trait AnalyzeableRoundTwoNode {
         our_path.push(node_ref.clone());
 
         for child in node_ref.children_any() {
-            if !child.analyze_round_two(state, emitter, &our_path) {
+            if !child.analyze_third_pass(state, emitter, &our_path) {
                 return false;
             }
             let mut found = false;
@@ -78,14 +105,20 @@ pub trait AnalyzeableRoundTwoNode {
     }
 }
 
-pub trait IntoAnalyzeable {
-    fn with_analyzeable<T, CB>(&self, cb: &mut CB) -> Option<T>
+pub trait IntoFirstPassAnalyzeable {
+    fn with_first_pass_analyzeable<T, CB>(&self, cb: &mut CB) -> Option<T>
     where
-        CB: FnMut(&dyn AnalyzeableNode) -> T;
+        CB: FnMut(&dyn FirstPassAnalyzeableNode) -> T;
 }
 
-pub trait IntoAnalyzeableRoundTwo {
-    fn with_analyzeable_round_two<T, CB>(&self, cb: &mut CB) -> Option<T>
+pub trait IntoSecondPassAnalyzeable {
+    fn with_second_pass_analyzeable<T, CB>(&self, cb: &mut CB) -> Option<T>
     where
-        CB: FnMut(&dyn AnalyzeableRoundTwoNode) -> T;
+        CB: FnMut(&dyn SecondPassAnalyzeableNode) -> T;
+}
+
+pub trait IntoThirdPassAnalyzeable {
+    fn with_third_pass_analyzeable<T, CB>(&self, cb: &mut CB) -> Option<T>
+    where
+        CB: FnMut(&dyn ThirdPassAnalyzeableNode) -> T;
 }

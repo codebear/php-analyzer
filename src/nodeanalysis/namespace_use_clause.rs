@@ -10,7 +10,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
 
 impl NamespaceUseClauseNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -34,21 +34,21 @@ impl NamespaceUseClauseNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for NamespaceUseClauseNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for NamespaceUseClauseNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         _path: &Vec<AnyNodeRef>,
     ) -> bool {
-        self.analyze_round_one(state, emitter);
+        self.analyze_first_pass(state, emitter);
 
         true
     }
 }
 
-impl AnalyzeableNode for NamespaceUseClauseNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for NamespaceUseClauseNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         // eprintln!("\n\n************************");
         let mut use_fq_name: Option<FullyQualifiedName> = None;
         let mut use_name: Option<Name> = None;

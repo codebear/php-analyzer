@@ -19,7 +19,7 @@ use crate::{
 };
 
 use super::{
-    analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode},
+    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode},
     class::AnalysisOfDeclaredNameNode,
 };
 use crate::autotree::NodeAccess;
@@ -128,10 +128,10 @@ impl MethodDeclarationNode {
     }
 }
 
-impl AnalyzeableNode for MethodDeclarationNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for MethodDeclarationNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if state.in_class.is_none() {
-            self.analyze_round_one_children(&self.as_any(), state, emitter);
+            self.analyze_first_pass_children(&self.as_any(), state, emitter);
             emitter.emit(Issue::ParseAnomaly(
                 self.pos(state),
                 "Got method declaration, while not in a class".into(),
@@ -218,13 +218,19 @@ impl AnalyzeableNode for MethodDeclarationNode {
         state
             .in_function_stack
             .push(FunctionState::new_method(method_name));
-        self.analyze_round_one_children(&self.as_any(), state, emitter);
+        self.analyze_first_pass_children(&self.as_any(), state, emitter);
         state.in_function_stack.pop();
     }
 }
 
-impl AnalyzeableRoundTwoNode for MethodDeclarationNode {
-    fn analyze_round_two(
+impl SecondPassAnalyzeableNode for MethodDeclarationNode {
+    fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        self.analyze_first_pass_children(&self.as_any(), state, emitter)
+    }
+}
+
+impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -280,7 +286,7 @@ impl AnalyzeableRoundTwoNode for MethodDeclarationNode {
             this_data.read_from += 1;
         }
 
-        if !self.analyze_round_two_children(&self.as_any(), state, emitter, path) {
+        if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;
         }
 

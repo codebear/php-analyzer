@@ -6,7 +6,7 @@ use crate::{
     issue::IssueEmitter, types::union::UnionType, value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 ///
 /// Ternary: $a ? $b : $c
@@ -102,8 +102,8 @@ impl ConditionalExpressionNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for ConditionalExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for ConditionalExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -112,7 +112,7 @@ impl AnalyzeableRoundTwoNode for ConditionalExpressionNode {
         if !self
             .condition
             .as_any()
-            .analyze_round_two(state, emitter, path)
+            .analyze_third_pass(state, emitter, path)
         {
             return false;
         }
@@ -141,7 +141,7 @@ impl AnalyzeableRoundTwoNode for ConditionalExpressionNode {
             if true_branch {
                 let branch = scope.branch();
                 state.push_scope(branch);
-                let carry_on = b.as_any().analyze_round_two(state, emitter, path);
+                let carry_on = b.as_any().analyze_third_pass(state, emitter, path);
                 scopes.push(state.pop_scope());
                 if !carry_on {
                     return false;
@@ -156,7 +156,7 @@ impl AnalyzeableRoundTwoNode for ConditionalExpressionNode {
             let carry_on = self
                 .alternative
                 .as_any()
-                .analyze_round_two(state, emitter, path);
+                .analyze_third_pass(state, emitter, path);
             scopes.push(state.pop_scope());
             if !carry_on {
                 return false;

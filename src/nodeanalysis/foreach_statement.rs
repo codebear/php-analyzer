@@ -12,7 +12,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl ForeachStatementNode {
@@ -37,8 +37,8 @@ impl ForeachStatementNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for ForeachStatementNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for ForeachStatementNode {
+    fn analyze_third_pass(
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
@@ -67,7 +67,7 @@ impl AnalyzeableRoundTwoNode for ForeachStatementNode {
 
         self.value.write_to(state, emitter, value_type, None);
 
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }
 

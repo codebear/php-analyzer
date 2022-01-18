@@ -15,7 +15,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 
 impl MemberCallExpressionNode {
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
@@ -207,8 +207,8 @@ impl MemberCallExpressionName {
     }
 }
 
-impl AnalyzeableRoundTwoNode for MemberCallExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for MemberCallExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -216,7 +216,7 @@ impl AnalyzeableRoundTwoNode for MemberCallExpressionNode {
     ) -> bool {
         self.object.read_from(state, emitter);
         self.name.read_from(state, emitter);
-        if !self.analyze_round_two_children(&self.as_any(), state, emitter, path) {
+        if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;
         }
 

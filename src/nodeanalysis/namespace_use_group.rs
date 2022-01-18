@@ -3,7 +3,7 @@ use crate::{
     issue::IssueEmitter, types::union::UnionType,
 };
 
-use super::analysis::AnalyzeableNode;
+use super::analysis::FirstPassAnalyzeableNode;
 
 impl NamespaceUseGroupNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -27,8 +27,8 @@ impl NamespaceUseGroupNode {
     }
 }
 
-impl AnalyzeableNode for NamespaceUseGroupNode {
-    fn analyze_round_one(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for NamespaceUseGroupNode {
+    fn analyze_first_pass(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         todo!("WHAT: {:?}", self);
     }
 }

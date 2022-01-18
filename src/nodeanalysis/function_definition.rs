@@ -16,7 +16,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
 
 use crate::autotree::NodeAccess;
 
@@ -60,8 +60,8 @@ impl FunctionDefinitionNode {
     }
 }
 
-impl AnalyzeableNode for FunctionDefinitionNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         let fname = self.get_function_name(state, emitter);
 
         state
@@ -100,14 +100,14 @@ impl AnalyzeableNode for FunctionDefinitionNode {
                 write.insert(fname.to_ascii_lowercase(), fdata);
             }
         }
-        self.analyze_round_one_children(&self.as_any(), state, emitter);
+        self.analyze_first_pass_children(&self.as_any(), state, emitter);
 
         state.in_function_stack.pop();
     }
 }
 
-impl AnalyzeableRoundTwoNode for FunctionDefinitionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for FunctionDefinitionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -115,7 +115,7 @@ impl AnalyzeableRoundTwoNode for FunctionDefinitionNode {
     ) -> bool {
         let function = FunctionState::new_function(self.get_function_name(state, emitter));
         state.in_function_stack.push(function);
-        if !self.analyze_round_two_children(&self.as_any(), state, emitter, path) {
+        if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;
         }
         let func = state

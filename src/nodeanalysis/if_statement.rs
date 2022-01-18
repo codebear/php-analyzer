@@ -9,7 +9,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::AnalyzeableRoundTwoNode;
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl IfStatementNode {
@@ -34,8 +34,8 @@ impl IfStatementNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for IfStatementNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for IfStatementNode {
+    fn analyze_third_pass(
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
@@ -47,7 +47,7 @@ impl AnalyzeableRoundTwoNode for IfStatementNode {
         if !self
             .condition
             .as_any()
-            .analyze_round_two(state, emitter, path)
+            .analyze_third_pass(state, emitter, path)
         {
             return false;
         }
@@ -75,7 +75,7 @@ impl AnalyzeableRoundTwoNode for IfStatementNode {
                 state.in_conditional_branch = true;
             }
 
-            let carry_on = self.body.as_any().analyze_round_two(state, emitter, path);
+            let carry_on = self.body.as_any().analyze_third_pass(state, emitter, path);
 
             if false_branch {
                 state.in_conditional_branch = was_conditional;
@@ -100,7 +100,7 @@ impl AnalyzeableRoundTwoNode for IfStatementNode {
                 for a in alts {
                     let branch = scope.branch();
                     state.push_scope(branch);
-                    carry_on = a.as_any().analyze_round_two(state, emitter, path);
+                    carry_on = a.as_any().analyze_third_pass(state, emitter, path);
                     scopes.push(state.pop_scope());
                 }
                 state.in_conditional_branch = was_conditional;
@@ -120,8 +120,8 @@ impl AnalyzeableRoundTwoNode for IfStatementNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for IfStatementAlternative {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for IfStatementAlternative {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -129,7 +129,7 @@ impl AnalyzeableRoundTwoNode for IfStatementAlternative {
     ) -> bool {
         let else_if = match self {
             IfStatementAlternative::ElseClause(e) => {
-                return e.as_any().analyze_round_two(state, emitter, path)
+                return e.as_any().analyze_third_pass(state, emitter, path)
             }
             IfStatementAlternative::ElseIfClause(else_if) => else_if,
 
@@ -141,7 +141,7 @@ impl AnalyzeableRoundTwoNode for IfStatementAlternative {
         if !else_if
             .condition
             .as_any()
-            .analyze_round_two(state, emitter, path)
+            .analyze_third_pass(state, emitter, path)
         {
             return false;
         }
@@ -161,7 +161,7 @@ impl AnalyzeableRoundTwoNode for IfStatementAlternative {
         let carry_on = else_if
             .body
             .as_any()
-            .analyze_round_two(state, emitter, path);
+            .analyze_third_pass(state, emitter, path);
         let scopes = vec![state.pop_scope()];
         scope.join(scopes, emitter);
         carry_on

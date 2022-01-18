@@ -17,7 +17,7 @@ use crate::{
     value::PHPValue,
 };
 
-use super::analysis::{AnalyzeableNode, AnalyzeableRoundTwoNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
 use crate::autotree::NodeAccess;
 
 impl FunctionCallExpressionNode {
@@ -238,8 +238,8 @@ fn analyze_define_call(
     //}
 }
 
-impl AnalyzeableNode for FunctionCallExpressionNode {
-    fn analyze_round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl FirstPassAnalyzeableNode for FunctionCallExpressionNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(fname) = self.function.get_fq_function_name(state, emitter) {
             // FIXME check if newer rust does this cast automatically
             if fname.to_ascii_lowercase() == b"\\define" as &[u8] {
@@ -249,8 +249,8 @@ impl AnalyzeableNode for FunctionCallExpressionNode {
     }
 }
 
-impl AnalyzeableRoundTwoNode for FunctionCallExpressionNode {
-    fn analyze_round_two(
+impl ThirdPassAnalyzeableNode for FunctionCallExpressionNode {
+    fn analyze_third_pass(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -285,6 +285,6 @@ impl AnalyzeableRoundTwoNode for FunctionCallExpressionNode {
 
         // FIXME analyze if arguments are correct
 
-        self.analyze_round_two_children(&self.as_any(), state, emitter, path)
+        self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }
