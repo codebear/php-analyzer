@@ -2,7 +2,12 @@ use std::ffi::OsString;
 
 use tree_sitter::{Point, Range};
 
-use crate::phpdoccomment::PHPDocComment;
+use crate::{
+    phpdoc::types::{PHPDocComment, PHPDocEntry},
+    types::{
+        parser::union_type,
+    },
+};
 
 fn fake_range(_buffer: &OsString) -> Range {
     let point = Point { row: 0, column: 0 };
@@ -14,21 +19,22 @@ fn fake_range(_buffer: &OsString) -> Range {
     }
 }
 
-fn test_parse(buffer: OsString) -> Option<PHPDocComment> {
+fn test_parse(buffer: OsString) -> Result<PHPDocComment, OsString> {
     let range = fake_range(&buffer);
-    PHPDocComment::parse(&buffer, range)
+    PHPDocComment::parse(&buffer, &range)
 }
 
 #[test]
 pub fn test_var() {
     assert!(true);
     // void
-    if let Some(phpdoc) = test_parse("/** @var int */".into()) {
-        if let Some((param, _)) = phpdoc.get_param("@var") {
-            assert_eq!("int", param);
-        } else {
-            assert!(false, "Finner ikke @var");
-        }
+    if let Ok(phpdoc) = test_parse("/** @var int */".into()) {
+        let (_, reference_type) = union_type(b"int").unwrap();
+
+        assert_eq!(
+            phpdoc.entries,
+            vec![PHPDocEntry::Var(reference_type, None, None,)]
+        );
     } else {
         assert!(false, "Unable to parse doccomment");
     }
@@ -38,17 +44,22 @@ pub fn test_var() {
 pub fn test_var2() {
     assert!(true);
     // void
-    if let Some(phpdoc) = test_parse(
+    if let Ok(phpdoc) = test_parse(
         "/** 
                 * @var int
                 */"
         .into(),
     ) {
-        if let Some((param, _range)) = phpdoc.get_param("@var") {
-            assert_eq!("int", param);
-        } else {
-            assert!(false, "Finner ikke @var");
-        }
+        let (_, reference_type) = union_type(b"int").unwrap();
+
+        assert_eq!(
+            phpdoc.entries,
+            vec![
+                PHPDocEntry::EmptyLine,
+                PHPDocEntry::Var(reference_type, None, None),
+                PHPDocEntry::EmptyLine,
+            ]
+        );
     } else {
         assert!(false, "Unable to parse doccomment");
     }
@@ -58,16 +69,21 @@ pub fn test_var2() {
 pub fn test_var3() {
     assert!(true);
     // void
-    if let Some(phpdoc) = test_parse(
+    if let Ok(phpdoc) = test_parse(
         "/** 
                 * @var CantorPairing
                 */"
         .into(),
     ) {
-        if let Some((param, _range)) = phpdoc.get_param("@var") {
-            assert_eq!("CantorPairing", param);
-        } else {
-            assert!(false, "Finner ikke @var");
-        }
+        let (_, reference_type) = union_type(b"CantorPairing").unwrap();
+
+        assert_eq!(
+            phpdoc.entries,
+            vec![
+                PHPDocEntry::EmptyLine,
+                PHPDocEntry::Var(reference_type, None, None,),
+                PHPDocEntry::EmptyLine,
+            ]
+        );
     }
 }

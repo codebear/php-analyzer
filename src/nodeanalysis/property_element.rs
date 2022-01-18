@@ -8,7 +8,7 @@ use crate::{
     },
     autotree::NodeAccess,
     issue::{Issue, IssueEmitter},
-    phpdoccomment::PHPDocComment,
+    phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::{
         class::{ClassMemberVisibility, ClassModifier, PropertyData},
         FileLocation,
@@ -60,22 +60,6 @@ impl PropertyElementNode {
                 FileLocation::new(self.pos(state)),
             )
             .clone()
-    }
-
-    pub fn get_doc_comment_type(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
-        let (raw_doc_comment, doc_comment_range) = state.last_doc_comment.clone()?;
-
-        let doc_comment = PHPDocComment::parse(&raw_doc_comment, doc_comment_range)?;
-        // https://docs.phpdoc.org/guide/references/phpdoc/tags/var.html
-        // @var [type] [name] <description>
-        let (type_str, range) = doc_comment.get_param("@var")?;
-
-        let (utype, _) = UnionType::parse_with_remainder(type_str, range, state, emitter);
-        utype
     }
 
     pub fn analyze_round_one_with_declaration(
@@ -137,20 +121,36 @@ impl PropertyElementNode {
             .as_ref()
             .and_then(|x| x.get_utype(state, emitter));
 
-        let comment_type = self.get_doc_comment_type(state, emitter);
+        let doc_comment =
+            if let Some((raw_doc_comment, doc_comment_range)) = state.last_doc_comment.clone() {
+                match PHPDocComment::parse(&raw_doc_comment, &doc_comment_range) {
+                    Ok(doc_comment) => Some(doc_comment),
+                    Err(_) => {
+                        emitter.emit(Issue::PHPDocParseError(
+                            self.pos_from_range(state, doc_comment_range),
+                        ));
+                        None
+                    }
+                }
+            } else {
+                None
+            };
 
-        /*let cname: String = if let Some(x) = &state.in_class {
-            x.get_name().get_fq_name().to_string_lossy().to_string()
-        } else {
-            "".into()
+        let mut comment_type = None;
+
+        if let Some(doc_comment) = &doc_comment {
+            for entry in &doc_comment.entries {
+                // void
+                match entry {
+                    PHPDocEntry::Var(property_type, _opt_name, _opt_desc) => {
+                        comment_type =
+                            UnionType::from_parsed_type(property_type.clone(), state, emitter)
+                    }
+                    _ => (),
+                }
+            }
         };
-        eprintln!(
-            "PROP: {}::${}: {:?} | {:?}",
-            cname,
-            self.get_property_name().to_string_lossy(),
-            declared_type,
-            comment_type
-        );*/
+
         {
             let mut data = data_handle.write().unwrap();
             data.declared_type = declared_type;
@@ -158,6 +158,7 @@ impl PropertyElementNode {
             data.is_static = is_static;
             data.modifier = modifier;
             data.visibility = visibility;
+            data.phpdoc_entries = doc_comment;
         }
     }
 

@@ -5,13 +5,13 @@ use crate::symbols::{Name, FullyQualifiedName};
 
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TypeStruct {
     pub type_name: TypeName,
     pub generics: Option<Vec<Vec<ConcreteType>>>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ShapeKey {
     String(Name),
     Num(i64),
@@ -30,7 +30,7 @@ impl ShapeStruct {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct ShapeEntry(pub Option<(ShapeKey, bool)>, pub Vec<ConcreteType>);
 
 
@@ -40,7 +40,7 @@ pub type ArgumentVector = Vec<UnionOfTypes>;
 
 pub type ReturnType = UnionOfTypes;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ParsedType {
     Type(TypeStruct),
     Shape(Vec<ShapeEntry>),
@@ -48,7 +48,7 @@ pub enum ParsedType {
     CallableUntyped,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum TypeName {
     Name(Name),
     FQName(FullyQualifiedName),
@@ -56,7 +56,7 @@ pub enum TypeName {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct ConcreteType {
     pub nullable: bool,
     pub ptype: ParsedType,

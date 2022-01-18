@@ -5,14 +5,19 @@ use super::phpdoc::parse_phpdoc;
 
 #[test]
 pub fn parse_test1() {
-    let buf = b"/** @desc balle */";
-    test_phpdoc(buf);
+    let buf = b"/** @desc balle1 */";
+    test_phpdoc(buf, 1);
     
     let buf = b"/** 
-        * @desc balle 
+        * @desc balle2 
         */";
-    test_phpdoc(buf);
+    test_phpdoc(buf, 3);
 
+    let buf = b"/**
+    * @var Y
+    */";
+
+    test_phpdoc(buf, 3);
 
     let buf = b"/** 
         * @desc balle 
@@ -25,13 +30,14 @@ pub fn parse_test1() {
         * @param int|string $foobar
         * @return array<string> Why event bother
         */";
-    test_phpdoc(buf);
+    test_phpdoc(buf, 11);
 }
 
-pub fn test_phpdoc(buf: &[u8]) {
+pub fn test_phpdoc(buf: &[u8], expect_entries: usize) {
     match parse_phpdoc(buf) {
         Ok((rest, phpdoc)) => {
             assert!(rest.len() == 0);
+            assert_eq!(phpdoc.len(), expect_entries);
             eprintln!("BOLLOCKS: {:#?}", phpdoc);
         }
         Err(err) => {

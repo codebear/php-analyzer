@@ -1,6 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::{
+    sync::{Arc, RwLock},
+};
 
-use tree_sitter::Range;
 
 use crate::{
     analysis::state::{AnalysisState, ClassState, FunctionState},
@@ -11,7 +12,7 @@ use crate::{
         type_list::TypeListChildren,
     },
     issue::{Issue, IssueEmitter},
-    phpdoccomment::PHPDocComment,
+    phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::{
         class::{ClassMemberVisibility, ClassModifier, ClassName, MethodData},
         FileLocation,
@@ -65,11 +66,7 @@ trait AnalysisOfFunctionLike {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType>;
-    fn get_comment_declared_return_type(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<(UnionType, Range)>;
+
     fn get_inferred_return_type(
         &self,
         state: &mut AnalysisState,
@@ -104,23 +101,6 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
         }
     }
 
-    fn get_comment_declared_return_type(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<(UnionType, Range)> {
-        if let Some((doc_comment, range)) = &state.last_doc_comment {
-            if let Some(doc_comment) = PHPDocComment::parse(doc_comment, range.clone()) {
-                if let Some((type_str, range)) = doc_comment.get_param("@return") {
-                    if let (Some(x), _description) = UnionType::parse_with_remainder(type_str, range, state, emitter) {
-                        return Some((x, range));
-                    }
-                }
-            }
-            // eprintln!("\n{:?}: Prøv å tolke en doc-comment her: {:?}", self.get_declared_name(), comment);
-        }
-        None
-    }
 
     fn get_inferred_return_type(
         &self,
@@ -164,12 +144,39 @@ impl AnalyzeableNode for MethodDeclarationNode {
         };
         let method_name = self.get_declared_name();
         let php_return_type = self.get_php_declared_return_type(state, emitter);
-        let comment_return_type = self
-            .get_comment_declared_return_type(state, emitter)
-            .map(|x| x.0);
+
         let mut modifier = ClassModifier::None;
         let mut is_static = false;
         let mut visibility = ClassMemberVisibility::Public;
+
+        let mut phpdoc_entries = None;
+        let mut comment_return_type = None;
+        if let Some((doc_comment, range)) = &state.last_doc_comment {
+            match PHPDocComment::parse(doc_comment, range) {
+                Ok(doc_comment) => {
+                    for entry in &doc_comment.entries {
+                        match entry {
+                            PHPDocEntry::Return(ptype, _desc) => {
+                                if method_name == Name::from(b"getAddress" as &[u8]) {
+                                    eprintln!("ptype: {:?}", ptype);
+                                }
+                                comment_return_type =
+                                    UnionType::from_parsed_type(ptype.clone(), state, emitter);
+
+                                if method_name == Name::from(b"getAddress" as &[u8]) {
+                                    eprintln!("comment_return_type: {:?}", comment_return_type);
+                                }
+                            }
+                            _ => (),
+                        }
+                    }
+                    phpdoc_entries = Some(doc_comment);
+                }
+                Err(_) => emitter.emit(Issue::PHPDocParseError(
+                    self.pos_from_range(state, range.clone()),
+                )),
+            }
+        }
 
         for child in &self.children {
             match &**child {
@@ -202,12 +209,13 @@ impl AnalyzeableNode for MethodDeclarationNode {
         {
             // We scope the locked state to make it as short as possible
             let mut unlocked = method_data.write().unwrap();
-            (*unlocked).name = method_name.clone();
-            (*unlocked).php_return_type = php_return_type;
-            (*unlocked).comment_return_type = comment_return_type;
-            (*unlocked).modifier = modifier;
-            (*unlocked).is_static = is_static;
-            (*unlocked).visibility = visibility;
+            unlocked.name = method_name.clone();
+            unlocked.php_return_type = php_return_type;
+            unlocked.comment_return_type = comment_return_type;
+            unlocked.modifier = modifier;
+            unlocked.is_static = is_static;
+            unlocked.visibility = visibility;
+            unlocked.phpdoc_entries = phpdoc_entries;
         }
         // eprintln!("Tolket metode: {:?}", method_data);
         state.last_doc_comment = None;
@@ -232,7 +240,9 @@ impl AnalyzeableRoundTwoNode for MethodDeclarationNode {
         }
 
         // Check if the doc-comment-type is valid
-        if let Some((utype, range)) = self.get_comment_declared_return_type(state, emitter) {
+        crate::missing!("Den her sjekken ska inn i nye phase 2");
+        /*        if let Some((utype, range)) = self.get_comment_declared_return_type(state, emitter) {
+            todo!("WHAT");
             for ut in utype.types {
                 match ut {
                     DiscreteType::Named(name, fq_name) => {
@@ -246,7 +256,7 @@ impl AnalyzeableRoundTwoNode for MethodDeclarationNode {
                     _ => {}
                 }
             }
-        }
+        }*/
 
         let function = FunctionState::new_method(self.get_declared_name());
         state.in_function_stack.push(function);

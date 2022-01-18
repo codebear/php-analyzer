@@ -15,7 +15,7 @@ use crate::{
     symbols::{FullyQualifiedName, Name},
 };
 
-use super::parse_types::{ConcreteType, ParsedType, ShapeKey, TypeName, TypeStruct};
+use super::parse_types::{ConcreteType, ParsedType, ShapeKey, TypeName, TypeStruct, UnionOfTypes};
 use super::parser::union_type;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -129,7 +129,7 @@ impl Display for UnionType {
                 .iter()
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
-                .join("|")
+                .join(" -or- ")
         )
     }
 }
@@ -205,6 +205,15 @@ impl UnionType {
         None
     }
 
+    pub fn from_parsed_type(
+        parsed_type: UnionOfTypes,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        from_vec_parsed_type(parsed_type, state, Some(emitter))
+        
+    }
+
     pub fn parse_with_remainder(
         type_str: OsString,
         _range: Range,
@@ -278,6 +287,16 @@ impl UnionType {
         } else {
             None
         }
+    }
+
+    pub(crate) fn is_nullable(&self) -> bool {
+        for t in &self.types {
+            match t {
+                DiscreteType::NULL => return true,
+                _ => ()
+            }
+        }
+        return false;
     }
 }
 

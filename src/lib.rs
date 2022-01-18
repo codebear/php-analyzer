@@ -2,7 +2,6 @@ pub mod parser;
 
 pub mod extra;
 pub mod native;
-pub mod phpdoccomment;
 pub mod symbols;
 #[cfg(test)]
 mod tests;

@@ -23,4 +23,9 @@ impl CommentNode {
     ) -> Option<UnionType> {
         None
     }
+
+    pub(crate) fn is_doc_comment(&self) -> bool {
+        // The shortes possible doc-comment is /***/,
+        self.raw.len() > 4 && &self.raw[0..3] == b"/**"
+    }
 }

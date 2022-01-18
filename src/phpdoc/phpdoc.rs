@@ -6,16 +6,17 @@ use std::{
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case, take_until},
-    character::complete::{
-        alpha1, alphanumeric0, line_ending, space0, space1,
-    },
+    character::complete::{alpha1, alphanumeric0, line_ending, space0, space1},
     combinator::opt,
+    error::Error,
     multi::{many0, separated_list0},
     sequence::preceded,
     Err, IResult,
 };
 
-use crate::types::{parse_types::UnionOfTypes, parser::union_type};
+use crate::types::parser::union_type;
+
+use super::types::PHPDocEntry;
 
 pub fn parse_phpdoc(input: &[u8]) -> IResult<&[u8], Vec<PHPDocEntry>> {
     let (input, _) = tag(b"/**")(input)?;
@@ -42,28 +43,6 @@ fn phpdoc_entry(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
 
 fn phpdoc_entry_content(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
     alt((var, desc, param, parse_return, general, anything))(input)
-}
-
-#[derive(Debug)]
-pub enum PHPDocEntry {
-    /// *  .0 type
-    /// *  .1 Name
-    /// *  .2 Description (The first word of descripton might be misinterpreted as name)
-    Var(UnionOfTypes, Option<OsString>, Option<OsString>),
-    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/param.html
-    /// *  .0 type
-    /// *  .1 Name Not actually optional, but declared as such to allow to parse badly declared params
-    /// *  .2 Description  
-    Param(UnionOfTypes, Option<OsString>, Option<OsString>),
-    /// *  .0 type
-    /// *  .2 Description (The first word of descripton might be misinterpreted as name)
-    Return(UnionOfTypes, Option<OsString>),
-    Description(OsString),
-    General(OsString),
-    GeneralWithParam(OsString, OsString),
-
-    Anything(OsString),
-    EmptyLine,
 }
 
 fn var(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
@@ -105,7 +84,14 @@ fn description(input: &[u8]) -> IResult<&[u8], OsString> {
         Err(e) => return Err(e),
     };
     // FIXME maybe this should exclude a potential \r in front of the \n
-    Ok((input, desc))
+    if desc.len() > 0 {
+        Ok((input, desc))
+    } else {
+        Err(Err::Error(Error {
+            input,
+            code: nom::error::ErrorKind::IsNot,
+        }))
+    }
 }
 
 fn name(input: &[u8]) -> IResult<&[u8], OsString> {
@@ -117,7 +103,7 @@ fn name(input: &[u8]) -> IResult<&[u8], OsString> {
     Ok((input, name))
 }
 
-fn name_or_var_name(input:&[u8]) -> IResult<&[u8], OsString> {
+fn name_or_var_name(input: &[u8]) -> IResult<&[u8], OsString> {
     alt((var_name, name))(input)
 }
 
@@ -165,14 +151,18 @@ fn general(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
 
 fn anything(input: &[u8]) -> IResult<&[u8], PHPDocEntry> {
     let (input, _) = space0(input)?;
-    let (input, rest_of_line) = description(input)?;
+    let (input, rest_of_line) = opt(description)(input)?;
 
     Ok((
         input,
-        if rest_of_line.len() == 0 {
-            PHPDocEntry::EmptyLine
+        if let Some(rest_of_line) = rest_of_line {
+            if rest_of_line.len() == 0 {
+                PHPDocEntry::EmptyLine
+            } else {
+                PHPDocEntry::Anything(rest_of_line)
+            }
         } else {
-            PHPDocEntry::Anything(rest_of_line)
+            PHPDocEntry::EmptyLine
         },
     ))
 }
