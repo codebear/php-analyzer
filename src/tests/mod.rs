@@ -108,16 +108,29 @@ where
         assert!(analyzer.parse().is_ok());
 
         // analyzer.dump();
-        analyzer.round_one(&mut state, &emitter);
+        analyzer.first_pass(&mut state, &emitter);
     }
+
+    for (buffer_name, outer_buffer) in &buffers {
+        let mut state = AnalysisState::new_with_symbols(symbols.clone());
+        state.pass = 2;
+        let mut analyzer =
+            Analyzer::new_from_buffer(outer_buffer.clone(), Some(buffer_name.clone()));
+        assert!(analyzer.parse().is_ok());
+
+        // analyzer.dump();
+        analyzer.second_pass(&mut state, &emitter);
+    }
+
+
     for idx in 0..1 {
         for (buffer_name, outer_buffer) in &buffers {
             let mut state = AnalysisState::new_with_symbols(symbols.clone());
-            state.pass = 2 + idx;
+            state.pass = 3 + idx;
             let mut analyzer =
                 Analyzer::new_from_buffer(outer_buffer.clone(), Some(buffer_name.clone()));
             assert!(analyzer.parse().is_ok());
-            analyzer.round_two(&mut state, &emitter);
+            analyzer.third_pass(&mut state, &emitter);
         }
     }
 
@@ -142,9 +155,10 @@ fn evaluate_php_code_in_function<T: Into<OsString>>(buffer: T) -> EvaluationResu
     crate::native::register(&mut state);
     let emitter = TestEmitter::new();
     // analyzer.dump();
-    analyzer.round_one(&mut state, &emitter);
-    analyzer.round_two(&mut state, &emitter);
-    analyzer.round_two(&mut state, &emitter);
+    analyzer.first_pass(&mut state, &emitter);
+    analyzer.second_pass(&mut state, &emitter);
+    analyzer.third_pass(&mut state, &emitter);
+    analyzer.third_pass(&mut state, &emitter);
 
     let mut result = EvaluationResult::new();
     let func_name = FullyQualifiedName::from("\\test_output");

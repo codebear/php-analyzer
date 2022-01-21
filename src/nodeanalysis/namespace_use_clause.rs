@@ -10,7 +10,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode};
 
 impl NamespaceUseClauseNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -31,6 +31,16 @@ impl NamespaceUseClauseNode {
         _emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         None
+    }
+}
+
+impl SecondPassAnalyzeableNode for NamespaceUseClauseNode {
+    fn analyze_second_pass(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) {
+        self.analyze_first_pass(state, emitter);
     }
 }
 
@@ -109,7 +119,7 @@ impl FirstPassAnalyzeableNode for NamespaceUseClauseNode {
         match (use_fq_name, use_name) {
             (Some(fq_name), Some(name)) => {
                 if let Some(_) = state.use_map.get(&name) {
-                    if state.pass <= 2 {
+                    if state.pass == 1 {
                         emitter.emit(Issue::DuplicateSymbol(self.pos(state), name));
                     }
                 } else {

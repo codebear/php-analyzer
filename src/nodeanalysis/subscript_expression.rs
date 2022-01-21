@@ -31,7 +31,7 @@ impl SubscriptExpressionNode {
         let index_type = if let Some(itype) = index.get_utype(state, emitter) {
             itype
         } else {
-            if state.pass == 2 {
+            if state.pass == 3 {
                 // Maybe it should be on pass 3
 
                 // FIXME move this emitting to an analysis-method

@@ -6,6 +6,7 @@ use crate::autotree::AutoTree;
 use crate::autotree::NodeAccess;
 use crate::issue::IssueEmitter;
 use crate::nodeanalysis::analysis::FirstPassAnalyzeableNode;
+use crate::nodeanalysis::analysis::SecondPassAnalyzeableNode;
 use crate::nodeanalysis::analysis::ThirdPassAnalyzeableNode;
 
 use super::state::AnalysisState;
@@ -96,13 +97,19 @@ impl Analyzer {
             .with_node_ref_path_at_position(line, character, cb)
     }
 
-    pub fn round_one(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+    pub fn first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(tree) = &self.tree {
             tree.root.as_any().analyze_first_pass(state, emitter);
         }
     }
 
-    pub fn round_two(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+    pub fn second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        if let Some(tree) = &self.tree {
+            tree.root.as_any().analyze_second_pass(state, emitter);
+        }
+    }
+
+    pub fn third_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(tree) = &self.tree {
             let path = vec![];
             tree.root.as_any().analyze_third_pass(state, emitter, &path);

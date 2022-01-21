@@ -53,6 +53,13 @@ impl IntoSecondPassAnalyzeable for AnyNodeRef<'_> {
         CB: FnMut(&dyn SecondPassAnalyzeableNode) -> T,
     {
         Some(match self {
+            AnyNodeRef::NamespaceDefinition(ns) => cb(*ns),
+            AnyNodeRef::NamespaceUseClause(n) => cb(*n),
+            AnyNodeRef::NamespaceUseGroup(n) => cb(*n),
+
+            AnyNodeRef::ClassDeclaration(cd) => cb(*cd),
+            AnyNodeRef::InterfaceDeclaration(id) => cb(*id),
+            AnyNodeRef::TraitDeclaration(td) => cb(*td),
             AnyNodeRef::MethodDeclaration(md) => cb(*md),
             _ => return None,
         })
@@ -79,7 +86,9 @@ impl IntoThirdPassAnalyzeable for AnyNodeRef<'_> {
             AnyNodeRef::AugmentedAssignmentExpression(e) => cb(*e),
             AnyNodeRef::UpdateExpression(ue) => cb(*ue),
 
+            AnyNodeRef::NamespaceDefinition(ns) => cb(*ns),
             AnyNodeRef::NamespaceUseClause(n) => cb(*n),
+            AnyNodeRef::NamespaceUseGroup(n) => cb(*n),
 
             AnyNodeRef::PropertyDeclaration(x) => cb(*x),
             AnyNodeRef::IfStatement(x) => cb(*x),
@@ -99,7 +108,6 @@ impl IntoThirdPassAnalyzeable for AnyNodeRef<'_> {
 
             AnyNodeRef::MemberCallExpression(mce) => cb(*mce),
             AnyNodeRef::FunctionCallExpression(fc) => cb(*fc),
-            AnyNodeRef::NamespaceDefinition(ns) => cb(*ns),
             AnyNodeRef::MemberAccessExpression(ma) => cb(*ma),
             AnyNodeRef::SubscriptExpression(se) => cb(*se),
 

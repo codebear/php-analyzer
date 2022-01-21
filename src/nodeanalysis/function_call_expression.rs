@@ -105,7 +105,7 @@ impl FunctionCallExpressionFunction {
                 Some(self.fq_name_or_global_name(state, fq_name))
             }
             FunctionCallExpressionFunction::VariableName(vn) => {
-                if state.pass == 1 {
+                if state.pass < 3 {
                     return None;
                 }
                 let val = vn.get_php_value(state, emitter);

@@ -7,7 +7,7 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode};
 
 impl NamespaceDefinitionNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -56,6 +56,21 @@ impl FirstPassAnalyzeableNode for NamespaceDefinitionNode {
         }
     }
 }
+
+impl SecondPassAnalyzeableNode for NamespaceDefinitionNode {
+    fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        if let Some(_) = &self.name {
+            let namespace = self.get_namespace();
+            state.namespace = Some(namespace);
+        } else {
+            emitter.emit(Issue::ParseAnomaly(
+                self.pos(state),
+                "Couldn't resolve namespace".into(),
+            ))
+        }
+    }
+}
+
 
 impl ThirdPassAnalyzeableNode for NamespaceDefinitionNode {
     fn analyze_third_pass(

@@ -58,13 +58,6 @@ impl MemberCallExpressionNode {
 
                 return None;
             };
-            if method_name == Name::from(b"getAddress" as &[u8]) {
-                if let Some(t) = &method_data.comment_return_type {
-                    eprintln!("BALLE1: {}::{}(): {}", &class_name, &method_name, t);
-                } else {
-                    eprintln!("BALLE2: {}::{}():*None*", &class_name, &method_name);
-                }
-            }
             let call_return_type = method_data
                 .comment_return_type
                 .or(method_data.php_return_type)
@@ -151,13 +144,13 @@ impl MemberCallExpressionNode {
         for dtype in object_utype.types {
             let class_name = match &dtype {
                 DiscreteType::Named(lname, fq_name) => {
-                    eprintln!("1. Calling method on type: {}", fq_name);
+                    //eprintln!("1. Calling method on type: {}", fq_name);
                     let cname = ClassName::new_with_names(lname.clone(), fq_name.clone());
                     Some(cname)
                 }
                 DiscreteType::NULL => continue,
                 t @ _ => {
-                    eprintln!("2. Calling method on type: {}", t);
+                    //eprintln!("2. Calling method on type: {}", t);
                     None
                 }
             };

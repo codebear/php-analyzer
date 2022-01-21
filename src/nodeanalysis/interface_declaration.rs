@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode},
+    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode},
     class::AnalysisOfDeclaredNameNode,
 };
 use crate::autotree::NodeAccess;
@@ -81,6 +81,15 @@ impl FirstPassAnalyzeableNode for InterfaceDeclarationNode {
         state.last_doc_comment = None;
         state.in_class = Some(ClassState::Interface(if_name));
         self.analyze_first_pass_children(&self.as_any(), state, emitter);
+        state.in_class = None;
+    }
+}
+
+impl SecondPassAnalyzeableNode for InterfaceDeclarationNode {
+    fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        let if_name = self.get_interface_name(state);
+        state.in_class = Some(ClassState::Interface(if_name));
+        self.analyze_second_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
     }
 }

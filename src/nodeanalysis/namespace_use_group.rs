@@ -1,9 +1,9 @@
 use crate::{
-    analysis::state::AnalysisState, autonodes::namespace_use_group::NamespaceUseGroupNode,
+    analysis::state::AnalysisState, autonodes::{namespace_use_group::NamespaceUseGroupNode, any::AnyNodeRef},
     issue::IssueEmitter, types::union::UnionType,
 };
 
-use super::analysis::FirstPassAnalyzeableNode;
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode};
 
 impl NamespaceUseGroupNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -29,6 +29,18 @@ impl NamespaceUseGroupNode {
 
 impl FirstPassAnalyzeableNode for NamespaceUseGroupNode {
     fn analyze_first_pass(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
+        todo!("WHAT: {:?}", self);
+    }
+}
+
+impl SecondPassAnalyzeableNode for NamespaceUseGroupNode {
+    fn analyze_second_pass(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
+        todo!("WHAT: {:?}", self);
+    }
+}
+
+impl ThirdPassAnalyzeableNode for NamespaceUseGroupNode {
+    fn analyze_third_pass(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter, _path: &Vec<AnyNodeRef>) -> bool {
         todo!("WHAT: {:?}", self);
     }
 }

@@ -175,7 +175,7 @@ impl SymbolData {
             .get(&class.get_fq_name().to_ascii_lowercase())
             .expect(&format!(
                 "The class {:?} must exist when attempting to register method {:?}",
-                class.fq_name.to_ascii_lowercase(),
+                class.fq_name.clone(),
                 method
             ));
 
@@ -194,8 +194,8 @@ impl SymbolData {
         let cdata = handle
             .get(&class.get_fq_name().to_ascii_lowercase())
             .expect(&format!(
-                "The class {:?} must exist when attempting to register method {:?}",
-                class.fq_name.to_ascii_lowercase(),
+                "The class {:?} must exist when attempting to register property {:?}",
+                class.fq_name.clone(),
                 property_name
             ));
 

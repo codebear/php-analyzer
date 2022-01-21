@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode},
+    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode},
     class::{AnalysisOfClassBaseLikeNode, AnalysisOfDeclaredNameNode},
 };
 
@@ -80,6 +80,15 @@ impl FirstPassAnalyzeableNode for TraitDeclarationNode {
     }
 }
 
+
+impl SecondPassAnalyzeableNode for TraitDeclarationNode {
+    fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        let trait_name = self.get_trait_name(state);
+        state.in_class = Some(ClassState::Trait(trait_name));
+        self.analyze_second_pass_children(&self.as_any(), state, emitter);
+        state.in_class = None;
+    }
+}
 impl ThirdPassAnalyzeableNode for TraitDeclarationNode {
     fn analyze_third_pass(
         &self,

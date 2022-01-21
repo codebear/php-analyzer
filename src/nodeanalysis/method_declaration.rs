@@ -19,7 +19,7 @@ use crate::{
 };
 
 use super::{
-    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode},
+    analysis::{FirstPassAnalyzeableNode, SecondPassAnalyzeableNode, ThirdPassAnalyzeableNode},
     class::AnalysisOfDeclaredNameNode,
 };
 use crate::autotree::NodeAccess;
@@ -153,15 +153,8 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                     for entry in &doc_comment.entries {
                         match entry {
                             PHPDocEntry::Return(ptype, _desc) => {
-                                if method_name == Name::from(b"getAddress" as &[u8]) {
-                                    eprintln!("ptype: {:?}", ptype);
-                                }
                                 comment_return_type =
                                     UnionType::from_parsed_type(ptype.clone(), state, emitter);
-
-                                if method_name == Name::from(b"getAddress" as &[u8]) {
-                                    eprintln!("comment_return_type: {:?}", comment_return_type);
-                                }
                             }
                             _ => (),
                         }
@@ -189,18 +182,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
             }
         }
 
-        let class = &state
-            .in_class
-            .as_ref()
-            .expect("We checked it at the start of the function");
-
-        let method_data = state.symbol_data.get_or_create_method(
-            &class.get_name(),
-            &method_name,
-            FileLocation::new(self.name.pos(state)),
-        );
-
-        // eprintln!("ICK parse method {:?}::{:?}", class.name.get_fq_name(), self.get_declared_name());
+        let method_data = self.get_method_data(state).unwrap();
 
         {
             // We scope the locked state to make it as short as possible
@@ -225,7 +207,29 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
 
 impl SecondPassAnalyzeableNode for MethodDeclarationNode {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        self.analyze_first_pass_children(&self.as_any(), state, emitter)
+        // Check types used in phpdoc
+        let locked_data = self.get_method_data(state).unwrap();
+        let method_data = locked_data.read().unwrap();
+        if let Some(phpdoc) = &method_data.phpdoc {
+            for entry in &phpdoc.entries {
+                let concrete_types = match entry {
+                    PHPDocEntry::Param(ptype, pname, pdesc) => ptype,
+                    PHPDocEntry::Return(rtype, rdesc) => rtype,
+                    _ => continue,
+                };
+
+                if let Some(utype) =
+                    UnionType::from_parsed_type(concrete_types.clone(), state, emitter)
+                {
+                    crate::missing!("Fix sjekk at gyldig type");
+                    // utype.ensure_exists(state, emitter);
+                } else {
+                    crate::missing!("Fix emit defekt type");
+                    // Emit something?
+                }
+            }
+        }
+        self.analyze_second_pass_children(&self.as_any(), state, emitter);
     }
 }
 
