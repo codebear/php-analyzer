@@ -305,6 +305,7 @@ impl From<DiscreteType> for Symbol {
             DiscreteType::Bool => Symbol::Native("bool"),
             DiscreteType::False => Symbol::Native("bool"),
             DiscreteType::Array => Symbol::Native("array"),
+            DiscreteType::Mixed => Symbol::Native("mixed"),
             DiscreteType::Object => Symbol::Native("object"),
             DiscreteType::Callable => Symbol::Native("callable"),
             // FIXME, maybe to a better one here

@@ -73,6 +73,13 @@ impl ShapeType {
         let map = BTreeMap::new();
         Self { map }
     }
+
+    fn ensure_valid(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter, range: &Range) {
+        for vtype in self.map.values() {
+            vtype.ensure_valid(state, emitter, range);
+        }
+        crate::missing!("Determine if we need to validate shape keys in some way?");
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -84,6 +91,7 @@ pub enum DiscreteType {
     Resource,
     String,
     Bool,
+    Mixed,
 
     False,
     /// General common array, of unknown content
@@ -211,7 +219,6 @@ impl UnionType {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         from_vec_parsed_type(parsed_type, state, Some(emitter))
-        
     }
 
     pub fn parse_with_remainder(
@@ -293,16 +300,65 @@ impl UnionType {
         for t in &self.types {
             match t {
                 DiscreteType::NULL => return true,
-                _ => ()
+                _ => (),
             }
         }
         return false;
+    }
+
+    pub(crate) fn ensure_valid(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+        range: &Range,
+    ) {
+        for dtype in &self.types {
+            dtype.ensure_valid(state, emitter, range);
+        }
     }
 }
 
 impl DiscreteType {
     pub fn to_markdown(&self) -> String {
         self.to_string()
+    }
+
+    fn ensure_valid(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter, range: &Range) {
+        match self {
+            DiscreteType::NULL => (),
+            DiscreteType::Void => (),
+            DiscreteType::Int => (),
+            DiscreteType::Float => (),
+            DiscreteType::Resource => (),
+            DiscreteType::String => (),
+            DiscreteType::Mixed => (),
+            DiscreteType::Bool => (),
+            DiscreteType::False => (),
+            DiscreteType::Array => (),
+            DiscreteType::Object => (),
+            DiscreteType::Callable => (),
+            DiscreteType::TypedCallable(a, b) => {
+                for u in a {
+                    u.ensure_valid(state, emitter, range);
+                }
+                b.ensure_valid(state, emitter, range);
+            }
+            DiscreteType::Special(s) => s.ensure_valid(state, emitter, range),
+            DiscreteType::Vector(v) => v.ensure_valid(state, emitter, range),
+            DiscreteType::HashMap(k, v) => {
+                // FIXME k needs to be constrained to string or int, but where is that validated?
+                k.ensure_valid(state, emitter, range);
+                v.ensure_valid(state, emitter, range);
+            },
+            DiscreteType::Shape(s) => s.ensure_valid(state, emitter, range),
+            DiscreteType::Unknown => (),
+            DiscreteType::Named(_, fqname) => {
+                todo!("VALIDATE x {}", fqname);
+            }
+            a @ DiscreteType::Generic(dtype, utypes) => {
+                todo!("VALIDATE Generic {:#?}", a);
+            }
+        }
     }
 }
 
@@ -398,15 +454,35 @@ fn from_type_struct(
         let lc_type_str = tname.to_os_string().to_ascii_lowercase();
         // check for native types
         //    let type_str = lc_types.as_bytes();
-
+        // FIXME ensure that any non-used generics are being reported
         match lc_type_str.as_bytes() {
             b"string" => Some(DiscreteType::String),
             b"int" => Some(DiscreteType::Int),
+            b"integer" => Some(DiscreteType::Int),
             b"float" | b"double" => Some(DiscreteType::Float),
             b"boolean" | b"bool" => Some(DiscreteType::Bool),
-
+            b"resource" => Some(DiscreteType::Resource),
             b"self" => Some(DiscreteType::Special(SpecialType::Self_)),
             b"static" => Some(DiscreteType::Special(SpecialType::Static)),
+            b"mixed" => Some(DiscreteType::Mixed),
+            b"array" => {
+                if let Some(gen) = &type_struct.generics {
+                    if gen.len() == 2 {
+                        let key = from_vec_parsed_type(gen[0].clone(), state, maybe_emitter)?;
+                        let value = from_vec_parsed_type(gen[1].clone(), state, maybe_emitter)?;
+
+                        Some(DiscreteType::HashMap(key, value))
+                    } else if gen.len() == 1 {
+                        let value = from_vec_parsed_type(gen[0].clone(), state, maybe_emitter)?;
+                        Some(DiscreteType::Vector(value))
+                    } else {
+                        // void
+                        None
+                    }
+                } else {
+                    Some(DiscreteType::Array)
+                }
+            }
             _ => None,
         }
     } else {
@@ -478,6 +554,7 @@ impl Display for DiscreteType {
                 DiscreteType::Bool => "boolean".to_string(),
                 DiscreteType::Array => "array".to_string(),
                 DiscreteType::Callable => "callable".to_string(),
+                DiscreteType::Mixed => "mixed".to_string(),
                 DiscreteType::TypedCallable(arg_types, return_type) => format!(
                     "callable({}):{}",
                     arg_types
@@ -586,5 +663,20 @@ impl<'a> FromIterator<&'a DiscreteType> for UnionType {
             ut.push(discrete.clone());
         }
         ut
+    }
+}
+impl SpecialType {
+    fn ensure_valid(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter, range: &Range) {
+        crate::missing!("Ensure that self and static only are used in usable contexts");
+    }
+}
+impl ShapeTypeValue {
+    pub(crate) fn ensure_valid(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+        range: &Range,
+    ) {
+        self.utype.ensure_valid(state, emitter, range);
     }
 }

@@ -152,9 +152,17 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                 Ok(doc_comment) => {
                     for entry in &doc_comment.entries {
                         match entry {
-                            PHPDocEntry::Return(ptype, _desc) => {
+                            PHPDocEntry::Return(range, ptype, _desc) => {
                                 comment_return_type =
-                                    UnionType::from_parsed_type(ptype.clone(), state, emitter);
+                                    UnionType::from_parsed_type(ptype.clone(), state, emitter)
+                                        .map(|x| (x, range.clone()));
+                            }
+                            PHPDocEntry::Param(_, _, _, _) => () /* FIXME somewhere we need to validate that the params relates to actual params */,
+                            PHPDocEntry::Var(range, _, _, _) => {
+                                emitter.emit(Issue::MisplacedPHPDocEntry(
+                                    self.pos_from_range(state, range.clone()),
+                                    "@var can't be used on a method-declaration".into(),
+                                ));
                             }
                             _ => (),
                         }
@@ -212,20 +220,18 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
         let method_data = locked_data.read().unwrap();
         if let Some(phpdoc) = &method_data.phpdoc {
             for entry in &phpdoc.entries {
-                let concrete_types = match entry {
-                    PHPDocEntry::Param(ptype, pname, pdesc) => ptype,
-                    PHPDocEntry::Return(rtype, rdesc) => rtype,
+                let (range, concrete_types) = match entry {
+                    PHPDocEntry::Param(range, ptype, pname, pdesc) => (range, ptype),
+                    PHPDocEntry::Return(range, rtype, rdesc) => (range, rtype),
                     _ => continue,
                 };
 
                 if let Some(utype) =
                     UnionType::from_parsed_type(concrete_types.clone(), state, emitter)
                 {
-                    crate::missing!("Fix sjekk at gyldig type");
-                    // utype.ensure_exists(state, emitter);
+                    utype.ensure_valid(state, emitter, range);
                 } else {
-                    crate::missing!("Fix emit defekt type");
-                    // Emit something?
+                    emitter.emit(Issue::InvalidPHPDocEntry(self.pos_from_range(state, range.clone()), "Invalid type".into()));
                 }
             }
         }

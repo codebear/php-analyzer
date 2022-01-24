@@ -122,6 +122,9 @@ pub enum Issue {
     VariableNotInitializedInAllBranhces(IssuePosition, Name),
 
     PHPDocParseError(IssuePosition),
+
+    MisplacedPHPDocEntry(IssuePosition, OsString),
+    InvalidPHPDocEntry(IssuePosition, OsString),
 }
 
 impl Issue {
@@ -177,7 +180,10 @@ impl Issue {
             | Self::PropertyAccessOnInterfaceType(pos, _, _)
             | Self::IndeterminablePropertyName(pos, _)
             | Self::VariableNotInitializedInAllBranhces(pos, _) 
-            | Self::PHPDocParseError(pos) => pos.clone(),
+            | Self::PHPDocParseError(pos) 
+            | Self::MisplacedPHPDocEntry(pos, _)
+            | Self::InvalidPHPDocEntry(pos, _)
+            => pos.clone(),
         }
     }
 
@@ -224,6 +230,8 @@ impl Issue {
                 "VariableNotInitializedInAllBranhces"
             }
             Self::PHPDocParseError(_) => "PHPDocParseError",
+            Self::MisplacedPHPDocEntry(_, _) => "MisplacedPHPDocEntry",
+            Self::InvalidPHPDocEntry(_,_) => "InvalidPHPDocEntry",
         }
     }
 
@@ -292,6 +300,8 @@ impl Issue {
                 cname
             ),
             Self::PHPDocParseError(_) => format!("Unable to parse PHP Doc-comment"),
+            Self::MisplacedPHPDocEntry(_, reason) => format!("PHPDocEntry used in the wrong context: {}", reason.to_string_lossy()),
+            Self::InvalidPHPDocEntry(_, reason) => format!("Invalid PHPDocEntry: {}", reason.to_string_lossy()),
         }
     }
 
