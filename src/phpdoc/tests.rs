@@ -1,13 +1,17 @@
-use std::{ffi::OsStr, os::unix::prelude::OsStrExt};
+use std::{
+    ffi::{OsStr, OsString},
+    os::unix::prelude::OsStrExt,
+};
 
-use super::phpdoc::parse_phpdoc;
+use crate::tests::phpdocs::fake_range;
 
+use super::{phpdoc::parse_phpdoc, position::PHPDocInput};
 
 #[test]
 pub fn parse_test1() {
     let buf = b"/** @desc balle1 */";
     test_phpdoc(buf, 1);
-    
+
     let buf = b"/** 
         * @desc balle2 
         */";
@@ -34,14 +38,16 @@ pub fn parse_test1() {
 }
 
 pub fn test_phpdoc(buf: &[u8], expect_entries: usize) {
-    match parse_phpdoc(buf) {
+    let buffer: OsString = OsStr::from_bytes(buf).into();
+    let parse_input = PHPDocInput(buf, fake_range(&buffer));
+    match parse_phpdoc(parse_input) {
         Ok((rest, phpdoc)) => {
             assert!(rest.len() == 0);
             assert_eq!(phpdoc.len(), expect_entries);
             eprintln!("BOLLOCKS: {:#?}", phpdoc);
         }
         Err(err) => {
-            let err = err.map_input(|i| OsStr::from_bytes(i));
+            let err = err.map_input(|i| OsStr::from_bytes(i.0));
             eprintln!("Error parsing phpdoc: {:?}", err);
             assert!(false);
         }

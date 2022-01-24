@@ -42,7 +42,7 @@ pub fn describe_method(class_name: &ClassName, data: &MethodData) -> String {
         any_known_type = true;
     }
     if let Some(ctype) = &data.comment_return_type {
-        buffer.push_str(&format!("| Doc-comment return type | {} |\n", ctype));
+        buffer.push_str(&format!("| Doc-comment return type | {} |\n", ctype.0));
         any_known_type = true;
     }
     if !any_known_type {

@@ -1,21 +1,26 @@
-use std::ffi::OsString;
+use std::{ffi::OsString, os::unix::prelude::OsStrExt};
 
 use tree_sitter::{Point, Range};
 
 use crate::{
-    phpdoc::types::{PHPDocComment, PHPDocEntry},
-    types::{
-        parser::union_type,
+    phpdoc::{
+        position::adjust_point_based_on_buffer,
+        types::{PHPDocComment, PHPDocEntry},
     },
+    types::parser::union_type,
 };
 
-fn fake_range(_buffer: &OsString) -> Range {
-    let point = Point { row: 0, column: 0 };
+pub fn fake_range(buffer: &OsString) -> Range {
+    let start_point = Point { row: 0, column: 0 };
+    let mut end_point = start_point.clone();
+    let bytes = buffer.as_bytes();
+    adjust_point_based_on_buffer(&mut end_point, bytes);
+
     Range {
         start_byte: 0,
-        end_byte: 1,
-        start_point: point.clone(),
-        end_point: point,
+        end_byte: buffer.len(),
+        start_point,
+        end_point,
     }
 }
 
@@ -29,11 +34,21 @@ pub fn test_var() {
     assert!(true);
     // void
     if let Ok(phpdoc) = test_parse("/** @var int */".into()) {
-        let (_, reference_type) = union_type(b"int").unwrap();
-
+        let (_, reference_type) = union_type(false)(b"int").unwrap();
+        // let range = fake_range(&OsString::new());
         assert_eq!(
             phpdoc.entries,
-            vec![PHPDocEntry::Var(reference_type, None, None,)]
+            vec![PHPDocEntry::Var(
+                Range {
+                    start_byte: 4,
+                    start_point: Point { row: 0, column: 4 },
+                    end_byte: 12,
+                    end_point: Point { row: 0, column: 12 }
+                },
+                reference_type,
+                None,
+                None,
+            )]
         );
     } else {
         assert!(false, "Unable to parse doccomment");
@@ -50,14 +65,34 @@ pub fn test_var2() {
                 */"
         .into(),
     ) {
-        let (_, reference_type) = union_type(b"int").unwrap();
+        let (_, reference_type) = union_type(false)(b"int").unwrap();
 
         assert_eq!(
             phpdoc.entries,
             vec![
-                PHPDocEntry::EmptyLine,
-                PHPDocEntry::Var(reference_type, None, None),
-                PHPDocEntry::EmptyLine,
+                PHPDocEntry::EmptyLine(Range {
+                    start_byte: 4,
+                    start_point: Point { row: 0, column: 4 },
+                    end_byte: 4,
+                    end_point: Point { row: 0, column: 4 }
+                }),
+                PHPDocEntry::Var(
+                    Range {
+                        start_byte: 23,
+                        start_point: Point { row: 1, column: 19 },
+                        end_byte: 31,
+                        end_point: Point { row: 1, column: 27 }
+                    },
+                    reference_type,
+                    None,
+                    None
+                ),
+                PHPDocEntry::EmptyLine(Range {
+                    start_byte: 48,
+                    start_point: Point { row: 2, column: 17 },
+                    end_byte: 48,
+                    end_point: Point { row: 2, column: 17 }
+                }),
             ]
         );
     } else {
@@ -75,14 +110,34 @@ pub fn test_var3() {
                 */"
         .into(),
     ) {
-        let (_, reference_type) = union_type(b"CantorPairing").unwrap();
+        let (_, reference_type) = union_type(false)(b"CantorPairing").unwrap();
 
         assert_eq!(
             phpdoc.entries,
             vec![
-                PHPDocEntry::EmptyLine,
-                PHPDocEntry::Var(reference_type, None, None,),
-                PHPDocEntry::EmptyLine,
+                PHPDocEntry::EmptyLine(Range {
+                    start_byte: 4,
+                    start_point: Point { row: 0, column: 4 },
+                    end_byte: 4,
+                    end_point: Point { row: 0, column: 4 }
+                }),
+                PHPDocEntry::Var(
+                    Range {
+                        start_byte: 23,
+                        start_point: Point { row: 1, column: 19 },
+                        end_byte: 41,
+                        end_point: Point { row: 1, column: 37 }
+                    },
+                    reference_type,
+                    None,
+                    None,
+                ),
+                PHPDocEntry::EmptyLine(Range {
+                    start_byte: 58,
+                    start_point: Point { row: 2, column: 17 },
+                    end_byte: 58,
+                    end_point: Point { row: 2, column: 17 }
+                }),
             ]
         );
     }

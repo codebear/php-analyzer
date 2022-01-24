@@ -1,10 +1,11 @@
-use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode};
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::property_declaration::PropertyDeclarationProperties;
 use crate::{
     analysis::state::AnalysisState, autonodes::property_declaration::PropertyDeclarationNode,
     issue::IssueEmitter, types::union::UnionType,
 };
+use crate::autotree::NodeAccess;
 
 impl PropertyDeclarationNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -41,6 +42,13 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
     }
 }
 
+impl SecondPassAnalyzeableNode for PropertyDeclarationNode {
+    fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        crate::missing!("PropertyDeclarationNode.analyze_second_pass()");
+        self.analyze_second_pass_children(&self.as_any(), state, emitter);
+    }
+}
+
 impl ThirdPassAnalyzeableNode for PropertyDeclarationNode {
     fn analyze_third_pass(
         &self,
@@ -51,7 +59,7 @@ impl ThirdPassAnalyzeableNode for PropertyDeclarationNode {
         for prop in &self.properties {
             match &**prop {
                 PropertyDeclarationProperties::PropertyElement(p) => {
-                    p.analyze_round_two_with_declaration(state, emitter, self)
+                    p.analyze_third_pass_with_declaration(state, emitter, self)
                 }
                 _ => (),
             }

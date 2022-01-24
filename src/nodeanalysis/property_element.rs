@@ -142,9 +142,10 @@ impl PropertyElementNode {
             for entry in &doc_comment.entries {
                 // void
                 match entry {
-                    PHPDocEntry::Var(property_type, _opt_name, _opt_desc) => {
+                    PHPDocEntry::Var(range, property_type, _opt_name, _opt_desc) => {
                         comment_type =
                             UnionType::from_parsed_type(property_type.clone(), state, emitter)
+                                .map(|x| (x, range.clone()))
                     }
                     _ => (),
                 }
@@ -158,11 +159,11 @@ impl PropertyElementNode {
             data.is_static = is_static;
             data.modifier = modifier;
             data.visibility = visibility;
-            data.phpdoc_entries = doc_comment;
+            data.phpdoc = doc_comment;
         }
     }
 
-    pub fn analyze_round_two_with_declaration(
+    pub fn analyze_third_pass_with_declaration(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,

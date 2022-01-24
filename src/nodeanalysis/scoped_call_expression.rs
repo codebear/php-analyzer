@@ -162,7 +162,7 @@ impl ScopedCallExpressionNode {
         let utype = if let Some(t) = method_data.inferred_return_type {
             t
         } else if let Some(c) = method_data.comment_return_type {
-            c
+            c.0
         } else if let Some(t) = method_data.php_return_type {
             t
         } else {

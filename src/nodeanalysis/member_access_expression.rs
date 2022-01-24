@@ -50,7 +50,7 @@ impl MemberAccessExpressionNode {
         if let Some(x) = data.declared_type {
             Some(x.clone())
         } else if let Some(dt) = data.comment_type {
-            Some(dt.clone())
+            Some(dt.0.clone())
         } else if let ClassMemberVisibility::Private = data.visibility {
             // If the property is private, we can during the rest of the analysis make sure
             // that no other type is written to the property,

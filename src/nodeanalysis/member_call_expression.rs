@@ -59,7 +59,7 @@ impl MemberCallExpressionNode {
                 return None;
             };
             let call_return_type = method_data
-                .comment_return_type
+                .comment_return_type.map(|x|x.0)
                 .or(method_data.php_return_type)
                 .or(method_data.inferred_return_type)?;
 
@@ -149,7 +149,7 @@ impl MemberCallExpressionNode {
                     Some(cname)
                 }
                 DiscreteType::NULL => continue,
-                t @ _ => {
+                _ => {
                     //eprintln!("2. Calling method on type: {}", t);
                     None
                 }

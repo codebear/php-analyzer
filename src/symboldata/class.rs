@@ -1,6 +1,8 @@
+use tree_sitter::Range;
+
 use crate::{
     analysis::state::AnalysisState,
-    phpdoc::types::PHPDocComment,
+    phpdoc::types::{PHPDocComment, PHPDocEntry},
     symbols::{FullyQualifiedName, Name},
     types::union::UnionType,
     value::PHPValue,
@@ -515,7 +517,8 @@ pub struct FunctionArgumentData {
     pub default_value: Option<PHPValue>,
     pub nullable: bool,
     pub optional: bool,
-    pub phpdoc: Option<PHPDocComment>,
+    pub own_phpdoc: Option<PHPDocComment>,
+    pub phpdoc_entry: Option<(PHPDocEntry, Range)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -525,7 +528,7 @@ pub struct MethodData {
     pub declared_in: ClassName,
     pub position: FileLocation,
     pub php_return_type: Option<UnionType>,
-    pub comment_return_type: Option<UnionType>,
+    pub comment_return_type: Option<(UnionType, Range)>,
     pub inferred_return_type: Option<UnionType>,
     pub arguments: Vec<FunctionArgumentData>,
     pub variadic: bool,
@@ -568,13 +571,13 @@ pub struct PropertyData {
     pub is_static: bool,
     pub default_value: Option<PHPValue>,
     pub declared_type: Option<UnionType>,
-    pub comment_type: Option<UnionType>,
+    pub comment_type: Option<(UnionType, Range)>,
     pub constructor_type: Option<UnionType>,
     pub constructor_value: Option<PHPValue>,
     pub read_from: usize,
     pub written_to: usize,
     pub written_data: Vec<(UnionType, Option<PHPValue>)>,
-    pub phpdoc_entries: Option<PHPDocComment>,
+    pub phpdoc: Option<PHPDocComment>,
     // void
 }
 
@@ -594,7 +597,7 @@ impl PropertyData {
             read_from: 0,
             written_to: 0,
             written_data: vec![],
-            phpdoc_entries: None,
+            phpdoc: None,
         }
     }
 
