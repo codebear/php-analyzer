@@ -160,7 +160,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                             PHPDocEntry::Param(_, _, _, _) => () /* FIXME somewhere we need to validate that the params relates to actual params */,
                             PHPDocEntry::Var(range, _, _, _) => {
                                 emitter.emit(Issue::MisplacedPHPDocEntry(
-                                    self.pos_from_range(state, range.clone()),
+                                    state.pos_from_range(range.clone()),
                                     "@var can't be used on a method-declaration".into(),
                                 ));
                             }
@@ -170,7 +170,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                     phpdoc = Some(doc_comment);
                 }
                 Err(_) => emitter.emit(Issue::PHPDocParseError(
-                    self.pos_from_range(state, range.clone()),
+                    state.pos_from_range(range.clone()),
                 )),
             }
         }
@@ -231,7 +231,7 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
                 {
                     utype.ensure_valid(state, emitter, range);
                 } else {
-                    emitter.emit(Issue::InvalidPHPDocEntry(self.pos_from_range(state, range.clone()), "Invalid type".into()));
+                    emitter.emit(Issue::InvalidPHPDocEntry(state.pos_from_range(range.clone()), "Invalid type".into()));
                 }
             }
         }

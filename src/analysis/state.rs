@@ -7,6 +7,7 @@ use tree_sitter::Point;
 use tree_sitter::Range;
 
 use crate::autonodes::any::AnyNodeRef;
+use crate::issue::IssuePosition;
 use crate::symboldata::class::ClassName;
 use crate::symboldata::SymbolData;
 use crate::symbols::FullyQualifiedName;
@@ -204,6 +205,10 @@ impl AnalysisState {
             range.start_point.row + 1,
             range.start_point.column + 1,
         )
+    }
+
+    pub fn pos_from_range(&self, range: Range) -> IssuePosition {
+        IssuePosition::new(&self.filename, range)
     }
 
     /// Appends namespace to local names. Does no lookup in use-map

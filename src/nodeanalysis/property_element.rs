@@ -127,7 +127,7 @@ impl PropertyElementNode {
                     Ok(doc_comment) => Some(doc_comment),
                     Err(_) => {
                         emitter.emit(Issue::PHPDocParseError(
-                            self.pos_from_range(state, doc_comment_range),
+                            state.pos_from_range(doc_comment_range),
                         ));
                         None
                     }
