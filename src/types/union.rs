@@ -220,7 +220,7 @@ impl UnionType {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> (Option<UnionType>, Option<OsString>) {
-        let parse_result = union_type(type_str.as_bytes());
+        let parse_result = union_type(true)(type_str.as_bytes());
 
         let (rest, parsed_type) = if let Some((rest, parsed_type)) = parse_result.ok() {
             (rest, parsed_type)
