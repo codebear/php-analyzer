@@ -10,7 +10,7 @@ use tree_sitter::Range;
 
 use crate::{
     analysis::state::AnalysisState,
-    issue::IssueEmitter,
+    issue::{Issue, IssueEmitter},
     symboldata::class::ClassName,
     symbols::{FullyQualifiedName, Name},
 };
@@ -22,6 +22,7 @@ use super::parser::union_type;
 pub enum SpecialType {
     Static,
     Self_,
+    ClassString(Option<FullyQualifiedName>),
 }
 
 impl Display for SpecialType {
@@ -29,6 +30,13 @@ impl Display for SpecialType {
         match self {
             Self::Static => write!(f, "static"),
             Self::Self_ => write!(f, "self"),
+            Self::ClassString(class) => {
+                if let Some(c) = class {
+                    write!(f, "class-string<{}>", c.to_string())
+                } else {
+                    write!(f, "class-string")
+                }
+            }
         }
     }
 }
@@ -275,8 +283,15 @@ impl UnionType {
     }
 
     pub fn to_markdown(&self) -> String {
-        // void
-        self.to_string()
+        let str_types: Vec<_> = self.types.iter().map(|x| x.to_markdown()).collect();
+        let buffer = str_types.join("|");
+
+        // let buffer = str::replace(&buffer, "\\", "\\\\");
+        let buffer = str::replace(&buffer, "|", "\\|");
+
+        let x = format!("`{}`", buffer);
+        eprintln!("DEBUG: markdown generated: {}", x);
+        x
     }
 
     pub(crate) fn single_type_excluding_null(&self) -> Option<DiscreteType> {
@@ -347,16 +362,38 @@ impl DiscreteType {
             DiscreteType::Vector(v) => v.ensure_valid(state, emitter, range),
             DiscreteType::HashMap(k, v) => {
                 // FIXME k needs to be constrained to string or int, but where is that validated?
+                // Should we have a separate type/enum for hash-key?
                 k.ensure_valid(state, emitter, range);
                 v.ensure_valid(state, emitter, range);
-            },
+            }
             DiscreteType::Shape(s) => s.ensure_valid(state, emitter, range),
             DiscreteType::Unknown => (),
             DiscreteType::Named(_, fqname) => {
-                todo!("VALIDATE x {}", fqname);
+                if let Some(_cdata_handle) = state.symbol_data.get_class(&fqname.into()) {
+                    // alles ok?
+                } else {
+                    emitter.emit(Issue::UnknownClass(
+                        state.pos_from_range(range.clone()),
+                        fqname.clone(),
+                    ))
+                }
             }
             a @ DiscreteType::Generic(dtype, utypes) => {
-                todo!("VALIDATE Generic {:#?}", a);
+                dtype.ensure_valid(state, emitter, range);
+                match &**dtype {
+                    DiscreteType::Named(_, fqname) => {
+                        if let Some(_cdata_handle) = state.symbol_data.get_class(&fqname.into()) {
+                            // alles ok?
+                            crate::missing!("Validate that generic arguments are as expected");
+                        } else {
+                            emitter.emit(Issue::UnknownClass(
+                                state.pos_from_range(range.clone()),
+                                fqname.clone(),
+                            ))
+                        }
+                    }
+                    _ => (),
+                }
             }
         }
     }
@@ -465,6 +502,44 @@ fn from_type_struct(
             b"self" => Some(DiscreteType::Special(SpecialType::Self_)),
             b"static" => Some(DiscreteType::Special(SpecialType::Static)),
             b"mixed" => Some(DiscreteType::Mixed),
+            b"void" => Some(DiscreteType::Void),
+            b"null" => Some(DiscreteType::NULL),
+            b"class-string" => {
+                if let Some(gen) = &type_struct.generics {
+                    // FIXME emit or othervise make sure that any problems here aren't overlooked
+                    let noe = if gen.len() == 1 {
+                        let x = &gen[0];
+                        if x.len() == 1 {
+                            let y = &x[0];
+                            if y.nullable {
+                                return None;
+                            }
+                            match &y.ptype {
+                                ParsedType::Type(z) if z.generics.is_none() => {
+                                    z.type_name.clone()
+                                },
+                                _ => return None
+                            }
+                        } else {
+                            return None;
+                        }
+                    } else {
+                        return None;
+                    };
+         
+                    let fqname = match noe {
+                        TypeName::Name(name) => {
+                            state.get_fq_symbol_name_from_local_name(&name)
+                        }
+                        TypeName::FQName(fq) => fq,
+                        TypeName::RelativeName(_) => todo!(),
+                    };
+                    Some(DiscreteType::Special(SpecialType::ClassString(Some(fqname))))
+                } else {
+                    Some(DiscreteType::Special(SpecialType::ClassString(None)))
+                }
+            }
+            b"object" => Some(DiscreteType::Object),
             b"array" => {
                 if let Some(gen) = &type_struct.generics {
                     if gen.len() == 2 {
@@ -545,8 +620,8 @@ impl Display for DiscreteType {
             f,
             "{}",
             match self {
-                DiscreteType::NULL => "*null*".into(),
-                DiscreteType::Void => "*void*".into(),
+                DiscreteType::NULL => "null".into(),
+                DiscreteType::Void => "void".into(),
                 DiscreteType::Int => "int".to_string(),
                 DiscreteType::Float => "double".to_string(),
                 DiscreteType::Resource => "resource".to_string(),

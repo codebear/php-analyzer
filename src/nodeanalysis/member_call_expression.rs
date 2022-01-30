@@ -132,6 +132,26 @@ impl MemberCallExpressionNode {
         //         crate::missing_none!("{}.get_php_value(..)", self.kind())
     }
 
+    fn get_class_name_from_discrete_type(&self, dtype: &DiscreteType) -> Option<ClassName> {
+        match dtype {
+            DiscreteType::Named(lname, fq_name) => {
+                //eprintln!("1. Calling method on type: {}", fq_name);
+                let cname = ClassName::new_with_names(lname.clone(), fq_name.clone());
+                Some(cname)
+            }
+            DiscreteType::Generic(btype, _) => {
+                crate::missing!("Trying to get class-name from a generic type which a method is being called on, for now ignoring generic arguments");
+                self.get_class_name_from_discrete_type(&**btype)
+            }
+            DiscreteType::NULL => None,
+            _ => {
+                crate::missing_none!("Trying to get class-name from a {} which a method is being called on", dtype)
+                //eprintln!("2. Calling method on type: {}", t);
+//                    None
+            }
+        }
+    }
+
     /// Return if the object has one single type
     fn get_object_class_names(
         &self,
@@ -142,18 +162,10 @@ impl MemberCallExpressionNode {
 
         let mut cnames = vec![];
         for dtype in object_utype.types {
-            let class_name = match &dtype {
-                DiscreteType::Named(lname, fq_name) => {
-                    //eprintln!("1. Calling method on type: {}", fq_name);
-                    let cname = ClassName::new_with_names(lname.clone(), fq_name.clone());
-                    Some(cname)
-                }
-                DiscreteType::NULL => continue,
-                _ => {
-                    //eprintln!("2. Calling method on type: {}", t);
-                    None
-                }
-            };
+            if let DiscreteType::NULL = dtype {
+                continue;
+            }
+            let class_name = self.get_class_name_from_discrete_type(&dtype);
             cnames.push(class_name);
         }
         Some(cnames)

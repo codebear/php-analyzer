@@ -1,4 +1,4 @@
-use std::{ffi::OsString, path::PathBuf};
+use std::{ffi::OsString, path::PathBuf, sync::atomic::{AtomicUsize, Ordering}};
 
 use tree_sitter::Range;
 
@@ -237,53 +237,56 @@ impl Issue {
 
     pub fn as_string(&self) -> String {
         match self {
-            Self::UnusedVariable(_, vn) => format!("Unused variable {:?}", vn),
-            Self::UnknownVariable(_, vn) => format!("Unknown variable {:?}", vn),
-            Self::UnknownFunction(_, fun) => format!("Unknown function {:?}", fun),
-            Self::UnknownClass(_, c) => format!("Unknown class {:?}", c),
+            Self::UnusedVariable(_, vn) => format!("Unused variable {}", vn),
+            Self::UnknownVariable(_, vn) => format!("Unknown variable {}", vn),
+            Self::UnknownFunction(_, fun) => format!("Unknown function {}", fun),
+            Self::UnknownClass(_, c) => format!("Unknown class {}", c),
             Self::UnknownType(_, c) => format!("Unknown type {:?}", c),
-            Self::UnknownProperty(_, c, p) => format!("Unknown property {:?} in {:?}", p, c),
-            Self::DuplicateClass(_, c) => format!("Duplicate class {:?}", c),
-            Self::DuplicateSymbol(_, s) => format!("Duplicate symbol {:?}", s),
+            Self::UnknownProperty(_, c, p) => format!("Unknown property {} in {}", p, c),
+            Self::DuplicateClass(_, c) => format!("Duplicate class {}", c),
+            Self::DuplicateSymbol(_, s) => format!("Duplicate symbol {}", s),
             Self::NotAVerifiedCallableVariable(_, vn) => {
-                format!("Could not verify that variable {:?} is callable", vn)
+                format!("Could not verify that variable {} is callable", vn)
             }
-            Self::NotACallableVariable(_, vn) => format!("Variable {:?} is not callable", vn),
-            Self::DecrementIsIllegalOnType(_, n) => format!("<expr>-- is illegal on {:?}", n),
-            Self::IncrementIsIllegalOnType(_, n) => format!("<expr>++ is illegal on {:?}", n),
-            Self::UnknownConstant(_, c) => format!("Unknown constant {:?}", c),
+            Self::NotACallableVariable(_, vn) => format!("Variable {} is not callable", vn),
+            Self::DecrementIsIllegalOnType(_, n) => format!("<expr>-- is illegal on {}", n),
+            Self::IncrementIsIllegalOnType(_, n) => format!("<expr>++ is illegal on {}", n),
+            Self::UnknownConstant(_, c) => format!("Unknown constant {}", c),
             Self::UnreachableCode(_) => format!("Unreachable code"),
-            Self::MethodCallOnUnknownType(_, cname, mname) => format!(
-                "Method call {:?} on a target with unidentifiyable type {:?}",
+            Self::MethodCallOnUnknownType(_, cname, mname) => {
+                let mname = mname.clone().unwrap_or_else(|| Name::new());
+                let cname = cname.clone().unwrap_or_else(|| FullyQualifiedName::new());
+                format!(
+                "Method call {} on a target with unidentifiyable type {}",
                 mname,
                 cname
-            ),
+            )},
             Self::MethodCallOnNullableType(_, mname) => format!(
                 "Method call {:?} on a target which can be null",
                 mname
             ),
-            Self::UnknownMethod(_, c, m) => format!("Unknown method {:?} on {:?}", m, c),
+            Self::UnknownMethod(_, c, m) => format!("Unknown method {} on {}", m, c),
             Self::TraversalOfUnknownType(_) => format!("Traversal of unknown type"),
             Self::ConditionalConstantDeclaration(_) => {
                 format!("Conditional declaration of constant is not recommended")
             }
             Self::WrongNumberOfArguments(_, fname, expected_argcount, got_argcount) => format!(
-                "Wrong number of arguments to {:?}, got {}, expected {}",
+                "Wrong number of arguments to {}, got {}, expected {}",
                 fname, expected_argcount, got_argcount
             ),
-            Self::DuplicateConstant(_, c) => format!("Duplicate constant {:?}", c),
-            Self::DuplicateFunction(_, f) => format!("Duplicate function {:?}", f),
+            Self::DuplicateConstant(_, c) => format!("Duplicate constant {}", c),
+            Self::DuplicateFunction(_, f) => format!("Duplicate function {}", f),
             Self::DuplicateClassConstant(_, class, cons) => {
-                format!("Duplicate class constant {:?}::{:?}", class, cons)
+                format!("Duplicate class constant {}::{}", class, cons)
             }
             Self::UnknownIndexType(_) => format!("Unknown index type"),
             Self::ParseAnomaly(_, pa) => format!("Arrived at an unexpected parse state: {:?}", pa),
             Self::VariableNotInitializedInAllBranhces(_, vname) => {
-                format!("Variable {:?} is not initialized in all branches", vname)
+                format!("Variable {} is not initialized in all branches", vname)
             }
 
             Self::WrongFunctionNameCasing(_, expected, provided) => format!(
-                "Function name is cased differently [{:?}] than in the declaration [{:?}]",
+                "Function name is cased differently [{}] than in the declaration [{}]",
                 provided, expected
             ),
             Self::PropertyAccessOnUnknownType(_, property_name) => {
@@ -291,7 +294,7 @@ impl Issue {
             }
             Self::PropertyAccessOnInterfaceType(_, interface_name, property_name) => {
                 format!(
-                    "Not possible to access property {:?} on interface {:?}.",
+                    "Not possible to access property {:?} on interface {}.",
                     property_name, interface_name
                 )
             }
@@ -323,16 +326,31 @@ impl Issue {
 
 pub trait IssueEmitter {
     fn emit(&self, issue: Issue);
+
+    fn get_status(&self) -> Option<String> {
+        None
+    }
 }
 
-pub struct VoidEmitter {}
+pub struct VoidEmitter {
+    pub count: AtomicUsize,
+}
 
 impl VoidEmitter {
     pub fn new() -> Self {
-        VoidEmitter {}
+        VoidEmitter {
+            count: AtomicUsize::new(0),
+        }
     }
 }
 
 impl IssueEmitter for VoidEmitter {
-    fn emit(&self, _issue: Issue) {}
+    fn emit(&self, _issue: Issue) {
+        self.count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn get_status(&self) -> Option<String> {
+        let cnt = self.count.load(Ordering::Relaxed);
+        Some(format!("Found {} issues", cnt))
+    }
 }

@@ -1,3 +1,5 @@
+
+
 use crate::{
     analysis::state::AnalysisState,
     autonodes::{
@@ -45,32 +47,44 @@ impl SubscriptExpressionNode {
             // If the array type is unknown, there is nothing more we can do...
             return None;
         }
-        match array_type.single_type_excluding_null() {
-            Some(DiscreteType::String) => {
-                // String lookup. Index must be integer
-                if let Some(DiscreteType::Int) = index_type.single_type() {
-                    return Some(UnionType::from(&[DiscreteType::String, DiscreteType::NULL] as &[DiscreteType]));
+        let mut ret_type = UnionType::new();
+        for dtype in array_type.types {
+            match dtype {
+                DiscreteType::String => {
+                    // String lookup. Index must be integer
+                    if let Some(DiscreteType::Int) = index_type.single_type() {
+                        ret_type.merge_into(UnionType::from(&[
+                            DiscreteType::String,
+                            DiscreteType::NULL,
+                        ]
+                            as &[DiscreteType]));
+                    } else {
+                        crate::missing!(
+                            "subscript.get_utype(..) string indexing with none integer index-type: {:?}",
+                            index_type,
+                        );
+                    }
                 }
-                crate::missing_none!(
-                    "subscript.get_utype(..) string indexing with none integer index-type: {:?}",
+                DiscreteType::Named(_, _) => crate::missing!(
+                    "subscript.get_utype(..) what get's when looking up in named type with {:?}",
                     index_type,
-                )
+                ),
+                DiscreteType::Generic(_, _) => crate::missing!(
+                    "subscript.get_utype(..) what get's when looking up in generic type with {:?}",
+                    index_type,
+                ),
+                _ => crate::missing!(
+                    "subscript.get_utype(..) what get's when looking up in {:?} with a {:?}",
+                    dtype,
+                    index_type
+                ),
             }
-            Some(DiscreteType::Named(_,_)) => crate::missing_none!(
-                "subscript.get_utype(..) what get's when looking up in named type with {:?}",
-                index_type,
-            ),
-            Some(DiscreteType::Generic(_,_)) => crate::missing_none!(
-                "subscript.get_utype(..) what get's when looking up in generic type with {:?}",
-                index_type,
-            ),
-            _ => crate::missing_none!(
-                "subscript.get_utype(..) what get's when looking up in {:?} with a {:?}",
-                array_type,
-                index_type
-            ),
         }
-        
+        if ret_type.len() > 0 {
+            Some(ret_type)
+        } else {
+            None
+        }
     }
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
@@ -80,8 +94,11 @@ impl SubscriptExpressionNode {
         self.index.as_ref().map(|x| x.read_from(state, emitter));
     }
 
-
-    pub fn get_key_value(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<PHPValue> {
+    pub fn get_key_value(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<PHPValue> {
         self.index
             .as_ref()
             .and_then(|i| i.get_php_value(state, emitter))
@@ -131,11 +148,13 @@ impl SubscriptExpressionNode {
         self.dereferencable
             .as_ref()
             .map(|x| x.write_to(state, emitter, None, None));
-        
+
         if let Some(_) = self.get_key_value(state, emitter) {
             crate::missing!("write_to subscript_expression_node with known index needs more logic");
         } else {
-            crate::missing!("write_to subscript_expression_node with unknown index needs more logic");
+            crate::missing!(
+                "write_to subscript_expression_node with unknown index needs more logic"
+            );
         }
     }
 }

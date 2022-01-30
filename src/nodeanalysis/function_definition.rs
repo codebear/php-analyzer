@@ -66,7 +66,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
 
         state
             .in_function_stack
-            .push(FunctionState::new_function(fname.clone()));
+            .push(FunctionState::new_function(fname.get_name().unwrap()));
 
         let mut is_dup = false;
         {
@@ -113,7 +113,7 @@ impl ThirdPassAnalyzeableNode for FunctionDefinitionNode {
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
-        let function = FunctionState::new_function(self.get_function_name(state, emitter));
+        let function = FunctionState::new_function(self.get_function_name(state, emitter).get_name().unwrap());
         state.in_function_stack.push(function);
         if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;

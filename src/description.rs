@@ -29,11 +29,10 @@ pub trait NodeDescription {
                 last -= 1;
 
                 let path_to_him = &path[..last];
-                if let Some(desc) = ancestor.describe_node(Some(path_to_him), state) {
-                    let mut all_desc =
-                        format!("\n## Path\n{}\n\n", path_vec_to_string(path_to_him));
-                    all_desc.push_str(&desc);
-                    return Some(all_desc);
+                if let Some(mut desc) = ancestor.describe_node(Some(path_to_him), state) {
+
+                    desc.push_str(&format!("\n### Additional info:\nAST-Path: {}\n\n", path_vec_to_string(path_to_him)));
+                    return Some(desc);
                 }
                 if ancestor.intersect_up_traversal() {
                     eprintln!("Avbryter desc-leting med en {}", ancestor.brief_desc());

@@ -116,14 +116,8 @@ impl FunctionState {
         Self::new(Some(method_name), true)
     }
 
-    pub(crate) fn new_function(name: FullyQualifiedName) -> FunctionState {
-        if name.level() > 0 {
-            crate::missing!(
-                "FunctionState::new_function({:?}) drops namespace info... verify correctness",
-                name
-            );
-        }
-        Self::new(name.get_name(), false)
+    pub(crate) fn new_function(name: Name) -> FunctionState {
+        Self::new(Some(name), false)
     }
 
     pub(crate) fn new_anonymous() -> FunctionState {

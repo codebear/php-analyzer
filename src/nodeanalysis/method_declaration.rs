@@ -11,11 +11,11 @@ use crate::{
     issue::{Issue, IssueEmitter},
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::{
-        class::{ClassMemberVisibility, ClassModifier, MethodData},
+        class::{ClassMemberVisibility, ClassModifier, ClassName, MethodData},
         FileLocation,
     },
     symbols::Name,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, UnionType, SpecialType},
 };
 
 use super::{
@@ -92,6 +92,17 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
                     utype.merge_into(child_type);
                 }
             }
+            let utype: UnionType = utype
+                .types
+                .iter()
+                .map(|x| match x {
+                    DiscreteType::Special(SpecialType::Self_) => {
+                        let cname = self.get_class_name(state);
+                        todo!()
+                    }
+                    x @ _ => x,
+                })
+                .collect();
             Some(utype)
         } else {
             None
@@ -108,18 +119,20 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
 }
 
 impl MethodDeclarationNode {
+    pub fn get_class_name(&self, state: &mut AnalysisState) -> Option<ClassName> {
+        state.in_class.as_ref().map(|x| x.get_name())
+    }
+
     pub fn get_method_data(&self, state: &mut AnalysisState) -> Option<Arc<RwLock<MethodData>>> {
         let method_name = self.get_declared_name();
-        let class = if let Some(c) = &state.in_class {
-            c
-        } else {
-            return None;
-        };
+
+        let class = self.get_class_name(state)?;
+
         Some(
             state
                 .symbol_data
                 .get_or_create_method(
-                    &class.get_name(),
+                    &class,
                     &method_name,
                     FileLocation::new(self.name.pos(state)),
                 )
@@ -157,7 +170,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                                     UnionType::from_parsed_type(ptype.clone(), state, emitter)
                                         .map(|x| (x, range.clone()));
                             }
-                            PHPDocEntry::Param(_, _, _, _) => () /* FIXME somewhere we need to validate that the params relates to actual params */,
+                            PHPDocEntry::Param(_, _, _, _) => (), /* FIXME somewhere we need to validate that the params relates to actual params */
                             PHPDocEntry::Var(range, _, _, _) => {
                                 emitter.emit(Issue::MisplacedPHPDocEntry(
                                     state.pos_from_range(range.clone()),
@@ -169,9 +182,9 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                     }
                     phpdoc = Some(doc_comment);
                 }
-                Err(_) => emitter.emit(Issue::PHPDocParseError(
-                    state.pos_from_range(range.clone()),
-                )),
+                Err(_) => {
+                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(range.clone())))
+                }
             }
         }
 
@@ -231,11 +244,26 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
                 {
                     utype.ensure_valid(state, emitter, range);
                 } else {
-                    emitter.emit(Issue::InvalidPHPDocEntry(state.pos_from_range(range.clone()), "Invalid type".into()));
+                    emitter.emit(Issue::InvalidPHPDocEntry(
+                        state.pos_from_range(range.clone()),
+                        "Invalid type".into(),
+                    ));
                 }
             }
         }
+        if let Some((utype, range)) = &method_data.comment_return_type {
+            utype.ensure_valid(state, emitter, range);
+        }
+
+        let function = FunctionState::new_method(self.get_declared_name());
+        state.in_function_stack.push(function);
+
         self.analyze_second_pass_children(&self.as_any(), state, emitter);
+
+        let func = state
+            .in_function_stack
+            .pop()
+            .expect("There must be a state");
     }
 }
 
@@ -247,28 +275,9 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
         path: &Vec<AnyNodeRef>,
     ) -> bool {
         if let Some(ClassState::Interface(_)) = state.in_class {
-            // Drop round two-analyse av interfacer-metoder
+            // Drop third-pass-analyse av interfacer-metoder
             return true;
         }
-
-        // Check if the doc-comment-type is valid
-        crate::missing!("Den her sjekken ska inn i nye phase 2");
-        /*        if let Some((utype, range)) = self.get_comment_declared_return_type(state, emitter) {
-            todo!("WHAT");
-            for ut in utype.types {
-                match ut {
-                    DiscreteType::Named(name, fq_name) => {
-                        let cname = ClassName::new_with_names(name, fq_name.clone());
-                        if state.symbol_data.get_class(&cname).is_none() {
-                            let mut pos = self.pos(state);
-                            pos.range = range;
-                            emitter.emit(Issue::UnknownClass(pos, fq_name));
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }*/
 
         let function = FunctionState::new_method(self.get_declared_name());
         state.in_function_stack.push(function);
