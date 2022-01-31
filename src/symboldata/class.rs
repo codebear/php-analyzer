@@ -11,7 +11,7 @@ use crate::{
 use std::{
     collections::{BTreeSet, HashMap},
     fmt::Display,
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock}, ffi::OsString,
 };
 
 use super::{FileLocation, SymbolData};
@@ -198,6 +198,8 @@ pub struct ClassData {
     pub is_native: bool,
     pub traits: Vec<TraitImport>,
     pub phpdoc: Option<PHPDocComment>,
+    pub deprecated: Option<OsString>, 
+    pub generic_templates: Option<Vec<Name>>
 }
 
 impl ClassData {
@@ -214,6 +216,8 @@ impl ClassData {
             traits: vec![],
             is_native: false,
             phpdoc: None,
+            deprecated: None,
+            generic_templates: None,
         }
     }
 

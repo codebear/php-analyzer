@@ -115,6 +115,9 @@ pub enum Issue {
     /// *  .2 provided const name
     DuplicateClassConstant(IssuePosition, FullyQualifiedName, Name),
 
+    /// Duplicates of other declarations, used i.e. on PHPDoc-entries
+    DuplicateDeclaration(IssuePosition, OsString),
+
     UnknownIndexType(IssuePosition),
 
     /// The analyzer arrived at a parse-state it considers impossible
@@ -125,6 +128,8 @@ pub enum Issue {
 
     MisplacedPHPDocEntry(IssuePosition, OsString),
     InvalidPHPDocEntry(IssuePosition, OsString),
+    // PHPDocEntry which is not needed
+    RedundantPHPDocEntry(IssuePosition, OsString),
 }
 
 impl Issue {
@@ -173,6 +178,7 @@ impl Issue {
             | Self::DuplicateConstant(pos, _)
             | Self::DuplicateFunction(pos, _)
             | Self::DuplicateClassConstant(pos, _, _)
+            | Self::DuplicateDeclaration(pos, _)
             | Self::UnknownIndexType(pos)
             | Self::ParseAnomaly(pos, _)
             | Self::WrongFunctionNameCasing(pos, _, _)
@@ -183,6 +189,7 @@ impl Issue {
             | Self::PHPDocParseError(pos) 
             | Self::MisplacedPHPDocEntry(pos, _)
             | Self::InvalidPHPDocEntry(pos, _)
+            | Self::RedundantPHPDocEntry(pos, _)
             => pos.clone(),
         }
     }
@@ -224,6 +231,7 @@ impl Issue {
             Self::DuplicateConstant(_, _) => "DuplicateConstant",
             Self::DuplicateFunction(_, _) => "DuplicateFunction",
             Self::DuplicateClassConstant(_, _, _) => "DuplicateClassConstant",
+            Self::DuplicateDeclaration(_,_) => "DuplicateDeclaration",
             Self::UnknownIndexType(_) => "UnknownIndexType",
             Self::ParseAnomaly(_, _) => "ParseAnomaly",
             Self::VariableNotInitializedInAllBranhces(_, _) => {
@@ -232,6 +240,7 @@ impl Issue {
             Self::PHPDocParseError(_) => "PHPDocParseError",
             Self::MisplacedPHPDocEntry(_, _) => "MisplacedPHPDocEntry",
             Self::InvalidPHPDocEntry(_,_) => "InvalidPHPDocEntry",
+            Self::RedundantPHPDocEntry(_,_) => "RedundantPHPDocEntry",
         }
     }
 
@@ -279,6 +288,7 @@ impl Issue {
             Self::DuplicateClassConstant(_, class, cons) => {
                 format!("Duplicate class constant {}::{}", class, cons)
             }
+            Self::DuplicateDeclaration(_, desc) => format!("Duplicate declaration: {}", desc.to_string_lossy()),
             Self::UnknownIndexType(_) => format!("Unknown index type"),
             Self::ParseAnomaly(_, pa) => format!("Arrived at an unexpected parse state: {:?}", pa),
             Self::VariableNotInitializedInAllBranhces(_, vname) => {
@@ -303,8 +313,9 @@ impl Issue {
                 cname
             ),
             Self::PHPDocParseError(_) => format!("Unable to parse PHP Doc-comment"),
-            Self::MisplacedPHPDocEntry(_, reason) => format!("PHPDocEntry used in the wrong context: {}", reason.to_string_lossy()),
-            Self::InvalidPHPDocEntry(_, reason) => format!("Invalid PHPDocEntry: {}", reason.to_string_lossy()),
+            Self::MisplacedPHPDocEntry(_, reason) => format!("PHPDoc-entry used in the wrong context: {}", reason.to_string_lossy()),
+            Self::InvalidPHPDocEntry(_, reason) => format!("Invalid PHPDoc-entry: {}", reason.to_string_lossy()),
+            Self::RedundantPHPDocEntry(_, reason) => format!("Redundant PHPDoc-entry: {}", reason.to_string_lossy()),
         }
     }
 

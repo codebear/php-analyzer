@@ -1,3 +1,5 @@
+use std::ffi::OsString;
+
 use crate::{
     analysis::state::{AnalysisState, ClassState},
     autonodes::{
@@ -7,6 +9,7 @@ use crate::{
     },
     autotree::NodeAccess,
     issue::{Issue, IssueEmitter},
+    phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::{
         class::{ClassData, ClassModifier, ClassName, ClassType},
         FileLocation,
@@ -16,7 +19,7 @@ use crate::{
 };
 
 use super::{
-    analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode},
+    analysis::{FirstPassAnalyzeableNode, SecondPassAnalyzeableNode, ThirdPassAnalyzeableNode},
     class::{AnalysisOfClassBaseLikeNode, AnalysisOfDeclaredNameNode},
 };
 use crate::nodeanalysis::class::AnalysisOfClassLikeNode;
@@ -90,7 +93,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
         let class_name = self.get_class_name(state);
         let base_name = self.get_declared_base_class_name(state, emitter);
 
-        let modifier = if let Some(modifier) = &self.modifier {
+        let mut modifier = if let Some(modifier) = &self.modifier {
             match &**modifier {
                 ClassDeclarationModifier::AbstractModifier(_) => ClassModifier::Abstract,
                 ClassDeclarationModifier::FinalModifier(_) => ClassModifier::Final,
@@ -100,6 +103,107 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
             ClassModifier::None
         };
 
+        let mut deprecated = None;
+
+        let mut generic_templates = vec![];
+
+        if let Some((raw_doc_comment, php_doc_range)) = &state.last_doc_comment {
+            match PHPDocComment::parse(&raw_doc_comment, &php_doc_range) {
+                Ok(doc) => {
+                    for entry in &doc.entries {
+                        match entry {
+                            PHPDocEntry::EmptyLine(_) => continue,
+                            PHPDocEntry::Template(_, template, _) => {
+                                // void
+                                generic_templates.push(template.into());
+                            }
+                            PHPDocEntry::Deprecated(dep_range, desc) => {
+                                // void
+                                if let Some(_) = deprecated {
+                                    emitter.emit(Issue::DuplicateDeclaration(
+                                        state.pos_from_range(dep_range.clone()),
+                                        "@deprecated".into(),
+                                    ));
+                                }
+                                deprecated = Some(if let Some(d) = desc {
+                                    d.clone()
+                                } else {
+                                    OsString::new()
+                                });
+                            }
+                            PHPDocEntry::Author(_, _) => {
+                                // void
+                            }
+                            PHPDocEntry::Anything(_, _) => {
+                                // void
+                            }
+                            PHPDocEntry::Description(_, _) => {
+                                // void
+                            }
+
+                            PHPDocEntry::Todo(_, _) => {
+                                // void
+                            }
+                            PHPDocEntry::Copyright(_, _) => {
+                                // void
+                            }
+                            PHPDocEntry::Version(_, _) => {
+                                // void
+                            }
+                            PHPDocEntry::See(_, _, _) => {
+                                // void
+                            }
+
+                            PHPDocEntry::Abstract(range) => {
+                                if modifier == ClassModifier::None {
+                                    modifier = ClassModifier::Abstract;
+                                    // FIXME emit hint to declare class as abstract for real
+                                } else if modifier == ClassModifier::Abstract {
+                                    emitter.emit(Issue::RedundantPHPDocEntry(
+                                        state.pos_from_range(range.clone()),
+                                        "Class is already declared abstract".into(),
+                                    ));
+                                } else if modifier == ClassModifier::Final {
+                                    emitter.emit(Issue::InvalidPHPDocEntry(
+                                        state.pos_from_range(range.clone()),
+                                        "Can't declare a final class as abstract".into(),
+                                    ));
+                                }
+                                // void
+                            }
+                            PHPDocEntry::GeneralWithParam(_, param, data) => {
+                                crate::missing!(
+                                    "Unknown PHPDoc-entry @{} {}",
+                                    param.to_string_lossy(),
+                                    data.to_string_lossy()
+                                );
+                                // void
+                            }
+                            PHPDocEntry::General(_, param) => {
+                                // void
+                                crate::missing!(
+                                    "Unknown PHPDoc-entry @{}",
+                                    param.to_string_lossy()
+                                );
+                            }
+                            _ => {
+                                todo!(
+                                    "E in {:?}:{} {:?}",
+                                    state.filename,
+                                    php_doc_range.start_point.row,
+                                    entry
+                                );
+                            }
+                        }
+                    }
+                }
+                Err(_) => emitter.emit(Issue::PHPDocParseError(
+
+                    state.pos_from_range(php_doc_range.clone()),
+                )),
+            }
+        }
+
         let interfaces = self.get_interfaces(state);
 
         let mut class_data =
@@ -107,6 +211,10 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
         class_data.modifier = modifier;
         if let Some(_) = &base_name {
             class_data.base_class_name = base_name;
+        }
+        class_data.deprecated = deprecated;
+        if generic_templates.len() > 0 {
+            class_data.generic_templates = Some(generic_templates);
         }
         if let Some(int) = interfaces {
             class_data.interfaces = int
