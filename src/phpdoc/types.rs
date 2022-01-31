@@ -13,19 +13,49 @@ use super::position::PHPDocInput;
 
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum PHPDocEntry {
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/var.html
     /// *  .0 type
     /// *  .1 Name
     /// *  .2 Description (The first word of descripton might be misinterpreted as name)
     Var(Range, UnionOfTypes, Option<OsString>, Option<OsString>),
+
     /// https://docs.phpdoc.org/guide/references/phpdoc/tags/param.html
     /// *  .0 type
     /// *  .1 Name Not actually optional, but declared as such to allow to parse badly declared params
     /// *  .2 Description  
     Param(Range, UnionOfTypes, Option<OsString>, Option<OsString>),
+
     /// *  .0 type
     /// *  .2 Description (The first word of descripton might be misinterpreted as name)
     Return(Range, UnionOfTypes, Option<OsString>),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/desc.html
     Description(Range, OsString),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/deprecated.html
+    Deprecated(Range, Option<OsString>),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/see.html
+    See(Range, OsString, Option<OsString>),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/template.html
+    Template(Range, OsString, Option<OsString>),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/author.html
+    Author(Range, OsString),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/version.html
+    Version(Range, OsString),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/todo.html
+    Todo(Range, OsString),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/abstract.html
+    Abstract(Range),
+
+    /// https://docs.phpdoc.org/guide/references/phpdoc/tags/copyright.html
+    Copyright(Range, OsString),
+
     General(Range, OsString),
     GeneralWithParam(Range, OsString, OsString),
 
