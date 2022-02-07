@@ -146,7 +146,7 @@ impl MemberCallExpressionNode {
             DiscreteType::NULL => None,
             DiscreteType::Void => {
                 // FIXME emit something somehow, somewhere?
-                crate::missing_none!("Trying to get class-name from a void which a method is being called on", dtype)
+                crate::missing_none!("Trying to get class-name from a void which a method is being called on")
 
             }
             _ => {
