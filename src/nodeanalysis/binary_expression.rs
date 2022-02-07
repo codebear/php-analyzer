@@ -385,11 +385,13 @@ impl BinaryExpressionNode {
             },
             BinaryExpressionOperator::Add(op, _) => match (&ltype, &rtype) {
                 (DiscreteType::Int, DiscreteType::Int) => Some(DiscreteType::Int.into()),
-                (DiscreteType::Float, DiscreteType::Int) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Int, DiscreteType::Float) => Some(DiscreteType::Float.into()),
+                (DiscreteType::Float, DiscreteType::Int) |
+                (DiscreteType::Int, DiscreteType::Float) |
                 (DiscreteType::Float, DiscreteType::Float) => Some(DiscreteType::Float.into()),
+                (DiscreteType::Int, DiscreteType::Bool) |
+                (DiscreteType::Bool, DiscreteType::Bool) |
+                (DiscreteType::Bool, DiscreteType::Int) => Some(DiscreteType::Int.into()),
                 (DiscreteType::Unknown, _) | (_, DiscreteType::Unknown) => None,
-
                 _ => crate::missing_none!("{:?} {} {:?}", ltype, op, rtype),
             },
             BinaryExpressionOperator::Sub(op, _) => match (&ltype, &rtype) {

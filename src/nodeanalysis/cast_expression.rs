@@ -22,6 +22,8 @@ impl CastExpressionNode {
         match cast.as_bytes() {
             b"int" => val.as_php_int(),
             b"string" => val.as_php_string(),
+            b"bool" => val.as_php_bool(),
+            b"float" => val.as_php_float(),
             _ => crate::missing_none!("{}.get_php_value(..) cast to {:?}", self.kind(), cast),
         }
     }

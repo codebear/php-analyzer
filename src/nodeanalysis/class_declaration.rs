@@ -173,9 +173,9 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                             }
                             PHPDocEntry::GeneralWithParam(_, param, data) => {
                                 crate::missing!(
-                                    "Unknown PHPDoc-entry @{} {}",
-                                    param.to_string_lossy(),
-                                    data.to_string_lossy()
+                                    "Unknown PHPDoc-entry @{}",
+                                    param.to_string_lossy()
+                                    // data.to_string_lossy()
                                 );
                                 // void
                             }

@@ -73,6 +73,10 @@ impl SubscriptExpressionNode {
                     "subscript.get_utype(..) what get's when looking up in generic type with {:?}",
                     index_type,
                 ),
+                DiscreteType::Int => {
+                    // This should emit
+                    crate::missing!("Emit something when attempting array lookup of Int");
+                }
                 _ => crate::missing!(
                     "subscript.get_utype(..) what get's when looking up in {:?} with a {:?}",
                     dtype,

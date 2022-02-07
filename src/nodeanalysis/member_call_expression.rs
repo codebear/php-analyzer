@@ -144,6 +144,11 @@ impl MemberCallExpressionNode {
                 self.get_class_name_from_discrete_type(&**btype)
             }
             DiscreteType::NULL => None,
+            DiscreteType::Void => {
+                // FIXME emit something somehow, somewhere?
+                crate::missing_none!("Trying to get class-name from a void which a method is being called on", dtype)
+
+            }
             _ => {
                 crate::missing_none!("Trying to get class-name from a {} which a method is being called on", dtype)
                 //eprintln!("2. Calling method on type: {}", t);
