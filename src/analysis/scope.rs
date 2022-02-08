@@ -176,10 +176,18 @@ impl BranchableScope for Arc<RwLock<Scope>> {
                 }
                 if !var_name.starts_with(b'_') {
                     for range in &data.referenced_ranges {
-                        emitter.emit(Issue::UnusedVariable(
-                            IssuePosition::new(&state.filename, range.clone()),
-                            var_name.clone(),
-                        ));
+                        if data.is_argument {
+                            emitter.emit(Issue::UnusedArgument(
+                                IssuePosition::new(&state.filename, range.clone()),
+                                var_name.clone(),
+                            ));
+
+                        } else {
+                            emitter.emit(Issue::UnusedVariable(
+                                IssuePosition::new(&state.filename, range.clone()),
+                                var_name.clone(),
+                            ));
+                        }
                     }
                 }
             }

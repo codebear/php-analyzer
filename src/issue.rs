@@ -38,6 +38,7 @@ impl IssuePosition {
 #[derive(Clone, Debug)]
 pub enum Issue {
     UnusedVariable(IssuePosition, Name),
+    UnusedArgument(IssuePosition, Name),
     UnknownVariable(IssuePosition, Name),
     UnknownFunction(IssuePosition, FullyQualifiedName),
     UnknownClass(IssuePosition, FullyQualifiedName),
@@ -137,6 +138,7 @@ impl Issue {
         match self {
             // Warnings
             Self::UnusedVariable(_, _) => Severity::Warning,
+            Self::UnusedArgument(_, _) => Severity::Hint,
             Self::VariableNotInitializedInAllBranhces(_, _) => Severity::Warning,
             Self::NotAVerifiedCallableVariable(_, _) => Severity::Warning,
 
@@ -156,6 +158,7 @@ impl Issue {
     pub fn issue_pos(&self) -> IssuePosition {
         match self {
             Self::UnusedVariable(pos, _)
+            | Self::UnusedArgument(pos, _)
             | Self::UnknownVariable(pos, _)
             | Self::UnknownFunction(pos, _)
             | Self::UnknownClass(pos, _)
@@ -205,6 +208,7 @@ impl Issue {
     pub fn get_name(&self) -> &'static str {
         match self {
             Self::UnusedVariable(_, _) => "UnusedVariable",
+            Self::UnusedArgument(_, _) => "UnusedArgument",
             Self::UnknownVariable(_, _) => "UnknownVariable",
             Self::UnknownFunction(_, _) => "UnknownFunction",
             Self::UnknownClass(_, _) => "UnknownClass",
@@ -247,6 +251,7 @@ impl Issue {
     pub fn as_string(&self) -> String {
         match self {
             Self::UnusedVariable(_, vn) => format!("Unused variable {}", vn),
+            Self::UnusedArgument(_, vn) => format!("Unused argument {}", vn),
             Self::UnknownVariable(_, vn) => format!("Unknown variable {}", vn),
             Self::UnknownFunction(_, fun) => format!("Unknown function {}", fun),
             Self::UnknownClass(_, c) => format!("Unknown class {}", c),

@@ -87,6 +87,7 @@ impl ThirdPassAnalyzeableNode for SimpleParameterNode {
         let mut var_data = write_ax.write().unwrap();
         var_data.referenced_ranges.push(self.range.clone());
         var_data.php_declared_type = declared_type;
+        var_data.is_argument = true;
         // FIXME extract comment types
         var_data.default_value = default_value;
         var_data.written_to += 1;

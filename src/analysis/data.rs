@@ -12,6 +12,7 @@ pub struct VarData {
     pub written_to: usize,
     pub read_from: usize,
     pub referenced_ranges: Vec<Range>,
+    pub is_argument: bool,
     // Some branches did not initialize this variable
     pub is_partial: bool,
 }
@@ -27,6 +28,7 @@ impl VarData {
             written_to: 0,
             read_from: 0,
             referenced_ranges: vec![],
+            is_argument: false,
             is_partial: false,
         }
     }
