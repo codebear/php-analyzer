@@ -1,37 +1,19 @@
 use std::ffi::OsString;
 
-use crate::{tests::{get_inferred_return_value, evaluate_php_buffers}, value::PHPValue};
+use crate::tests::evaluate_php_buffers;
 
 #[test]
-fn return_array_sub() {
-    let returned_value = if let Some(value) = get_inferred_return_value(
-        "
-        $x = [5,6,3,8];
-        $i = 1;
-        
-        return $x[++$i];
-    ",
-    ) {
-        value
-    } else {
-        assert!(false, "Didn't get proper value");
-        return;
-    };
-    assert_eq!(&PHPValue::Int(3), &returned_value);
-}
-
-#[test]
-fn test_array() {
+fn test_traversable() {
     let buffers: &[(OsString, OsString)] = &[
         (
             "something.php".into(),
             r#"<?php 
 
             /**
-             * @return array<string>
+             * @return Traversable<string>
              */
             function get_str_array() {
-                return ["foo", "bar", "baz"];
+                return new ArrayIterator(["foo", "bar", "baz"]);
             }
 
             function get_something() {
@@ -51,4 +33,5 @@ fn test_array() {
         Some(DiscreteType::Named("DOMElement".into(), "\\DOMElement".into()).into())
     );*/
     assert_eq!(result.issues.len(), 0);
+    assert!(false); // Missing real test case
 }

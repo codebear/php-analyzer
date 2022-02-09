@@ -2,10 +2,12 @@ mod array;
 mod basic;
 pub mod interface;
 pub mod namespace;
+pub mod native;
 mod objects;
 pub mod phpdocs;
 pub mod try_catch;
 mod values;
+pub mod traversable;
 
 use std::{
     ffi::OsString,
@@ -121,7 +123,6 @@ where
         // analyzer.dump();
         analyzer.second_pass(&mut state, &emitter);
     }
-
 
     for idx in 0..1 {
         for (buffer_name, outer_buffer) in &buffers {
