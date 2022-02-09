@@ -59,7 +59,8 @@ impl MemberCallExpressionNode {
                 return None;
             };
             let call_return_type = method_data
-                .comment_return_type.map(|x|x.0)
+                .comment_return_type
+                .map(|x| x.0)
                 .or(method_data.php_return_type)
                 .or(method_data.inferred_return_type)?;
 
@@ -146,13 +147,17 @@ impl MemberCallExpressionNode {
             DiscreteType::NULL => None,
             DiscreteType::Void => {
                 // FIXME emit something somehow, somewhere?
-                crate::missing_none!("Trying to get class-name from a void which a method is being called on")
-
+                crate::missing_none!(
+                    "Trying to get class-name from a void which a method is being called on"
+                )
             }
             _ => {
-                crate::missing_none!("Trying to get class-name from a {} which a method is being called on", dtype)
+                crate::missing_none!(
+                    "Trying to get class-name from a {} which a method is being called on",
+                    dtype
+                )
                 //eprintln!("2. Calling method on type: {}", t);
-//                    None
+                //                    None
             }
         }
     }

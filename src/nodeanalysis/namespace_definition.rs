@@ -7,7 +7,9 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode};
+use super::analysis::{
+    FirstPassAnalyzeableNode, SecondPassAnalyzeableNode, ThirdPassAnalyzeableNode,
+};
 
 impl NamespaceDefinitionNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -70,7 +72,6 @@ impl SecondPassAnalyzeableNode for NamespaceDefinitionNode {
         }
     }
 }
-
 
 impl ThirdPassAnalyzeableNode for NamespaceDefinitionNode {
     fn analyze_third_pass(

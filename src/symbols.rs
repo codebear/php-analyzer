@@ -314,7 +314,7 @@ impl From<DiscreteType> for Symbol {
             DiscreteType::HashMap(_, _) => Symbol::Native("array"),
             DiscreteType::Special(SpecialType::Static) => Symbol::Native("static"),
             DiscreteType::Special(SpecialType::Self_) => Symbol::Native("self"),
-            DiscreteType::Special(c @ SpecialType::ClassString(_)) => {
+            DiscreteType::Special(_c @ SpecialType::ClassString(_)) => {
                 // FIXME this should be something more precise?
                 Symbol::Native("string")
             }

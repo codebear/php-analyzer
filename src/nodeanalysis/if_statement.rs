@@ -65,7 +65,7 @@ impl ThirdPassAnalyzeableNode for IfStatementNode {
             (true, true)
         };
         crate::missing!("Harden types in scope based on conditionals");
-        
+
         let mut scopes = vec![];
         if true_branch {
             let branch = scope.branch();

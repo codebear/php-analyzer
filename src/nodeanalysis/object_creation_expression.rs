@@ -114,7 +114,10 @@ impl ObjectCreationExpressionNode {
                 let value = vname.get_php_value(state, emitter)?;
                 match value {
                     PHPValue::String(vname_str) => Some(FullyQualifiedName::from(vname_str)),
-                    _ => crate::missing_none!("get object-name from value of type: {:?}", value.get_utype()),
+                    _ => crate::missing_none!(
+                        "get object-name from value of type: {:?}",
+                        value.get_utype()
+                    ),
                 }
             }
             Some(noe) => {

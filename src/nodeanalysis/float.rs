@@ -5,7 +5,7 @@ use crate::{
     autonodes::float::FloatNode,
     issue::IssueEmitter,
     types::union::{DiscreteType, UnionType},
-    value::{PHPValue, PHPFloat},
+    value::{PHPFloat, PHPValue},
 };
 
 impl FloatNode {

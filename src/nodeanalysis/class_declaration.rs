@@ -171,11 +171,10 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                 }
                                 // void
                             }
-                            PHPDocEntry::GeneralWithParam(_, param, data) => {
+                            PHPDocEntry::GeneralWithParam(_, param, _data) => {
                                 crate::missing!(
                                     "Unknown PHPDoc-entry @{}",
-                                    param.to_string_lossy()
-                                    // data.to_string_lossy()
+                                    param.to_string_lossy() // data.to_string_lossy()
                                 );
                                 // void
                             }
@@ -198,7 +197,6 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                     }
                 }
                 Err(_) => emitter.emit(Issue::PHPDocParseError(
-
                     state.pos_from_range(php_doc_range.clone()),
                 )),
             }

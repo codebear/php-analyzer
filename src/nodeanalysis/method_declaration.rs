@@ -15,7 +15,7 @@ use crate::{
         FileLocation,
     },
     symbols::Name,
-    types::union::{DiscreteType, UnionType, SpecialType},
+    types::union::{DiscreteType, SpecialType, UnionType},
 };
 
 use super::{
@@ -97,7 +97,7 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
                 .iter()
                 .map(|x| match x {
                     DiscreteType::Special(SpecialType::Self_) => {
-                        let cname = self.get_class_name(state);
+                        let _cname = self.get_class_name(state);
                         todo!()
                     }
                     x @ _ => x,
@@ -234,8 +234,8 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
         if let Some(phpdoc) = &method_data.phpdoc {
             for entry in &phpdoc.entries {
                 let (range, concrete_types) = match entry {
-                    PHPDocEntry::Param(range, ptype, pname, pdesc) => (range, ptype),
-                    PHPDocEntry::Return(range, rtype, rdesc) => (range, rtype),
+                    PHPDocEntry::Param(range, ptype, _pname, _pdesc) => (range, ptype),
+                    PHPDocEntry::Return(range, rtype, _rdesc) => (range, rtype),
                     _ => continue,
                 };
 
@@ -260,7 +260,7 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
 
         self.analyze_second_pass_children(&self.as_any(), state, emitter);
 
-        let func = state
+        let _func = state
             .in_function_stack
             .pop()
             .expect("There must be a state");

@@ -1,6 +1,9 @@
 use crate::{
-    analysis::state::AnalysisState, autonodes::list_literal::{ListLiteralNode, ListLiteralChildren}, issue::IssueEmitter,
-    types::union::UnionType, value::PHPValue,
+    analysis::state::AnalysisState,
+    autonodes::list_literal::{ListLiteralChildren, ListLiteralNode},
+    issue::IssueEmitter,
+    types::union::UnionType,
+    value::PHPValue,
 };
 
 impl ListLiteralNode {
@@ -39,26 +42,50 @@ impl ListLiteralNode {
         }
         for child in &self.children {
             match &**child {
-                ListLiteralChildren::_Expression(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::ByRef(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::DynamicVariableName(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::FunctionCallExpression(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::ListLiteral(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::MemberAccessExpression(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::MemberCallExpression(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::NullsafeMemberAccessExpression(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::NullsafeMemberCallExpression(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::ScopedCallExpression(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::ScopedPropertyAccessExpression(_) => crate::missing!("list({:?}) write to", child.kind()),
-                ListLiteralChildren::SubscriptExpression(_) => crate::missing!("list({:?}) write to", child.kind()),
+                ListLiteralChildren::_Expression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::ByRef(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::DynamicVariableName(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::FunctionCallExpression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::ListLiteral(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::MemberAccessExpression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::MemberCallExpression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::NullsafeMemberAccessExpression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::NullsafeMemberCallExpression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::ScopedCallExpression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::ScopedPropertyAccessExpression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
+                ListLiteralChildren::SubscriptExpression(_) => {
+                    crate::missing!("list({:?}) write to", child.kind())
+                }
                 ListLiteralChildren::VariableName(vname) => {
                     vname.write_to(state, emitter, None, None);
                     crate::missing!("list({:?}) write to", child.kind())
-                },
+                }
 
-                ListLiteralChildren::Comment(_) |
-                ListLiteralChildren::TextInterpolation(_) |
-                ListLiteralChildren::Error(_) => ()
+                ListLiteralChildren::Comment(_)
+                | ListLiteralChildren::TextInterpolation(_)
+                | ListLiteralChildren::Error(_) => (),
             }
         }
         crate::missing!("list literal write_to");

@@ -9,7 +9,7 @@ use crate::{
     issue::IssueEmitter,
     missing,
     types::union::{DiscreteType, UnionType},
-    value::{PHPValue, PHPFloat},
+    value::{PHPFloat, PHPValue},
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -195,8 +195,7 @@ impl BinaryExpressionNode {
                     (PHPValue::Int(_), PHPValue::Float(b)) => {
                         let fval = match b {
                             PHPFloat::Real(f) => f,
-                            PHPFloat::NaN |
-                            PHPFloat::Infinite => return None,
+                            PHPFloat::NaN | PHPFloat::Infinite => return None,
                         };
                         if fval == 0.0 {
                             // FIXME Emit div by zero, men i analyze-pass?
@@ -208,8 +207,7 @@ impl BinaryExpressionNode {
                     (PHPValue::Float(a), PHPValue::Int(b)) => {
                         let a = match a {
                             PHPFloat::Real(f) => f,
-                            PHPFloat::NaN |
-                            PHPFloat::Infinite => return None    
+                            PHPFloat::NaN | PHPFloat::Infinite => return None,
                         };
                         if b == 0 {
                             // FIXME Emit div by zero, men i analyze-pass?
@@ -222,11 +220,9 @@ impl BinaryExpressionNode {
                         }
                         Some(PHPValue::Float(PHPFloat::Real(a / rfloat)))
                     }
-                    (PHPValue::Float(PHPFloat::NaN), PHPValue::Float(_)) |
-                    (PHPValue::Float(_), PHPValue::Float(PHPFloat::NaN))  => {
-                        None
-                    }
-                    
+                    (PHPValue::Float(PHPFloat::NaN), PHPValue::Float(_))
+                    | (PHPValue::Float(_), PHPValue::Float(PHPFloat::NaN)) => None,
+
                     (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
                         if b == 0.0 {
                             // FIXME emit div by zero, men gjør det i analyze pass
@@ -249,7 +245,9 @@ impl BinaryExpressionNode {
                     (PHPValue::Float(_a), PHPValue::Int(_b)) => {
                         crate::missing_none!("i64 to f64 conversion")
                     } // Some(PHPValue::Float(a+b.into())),
-                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => Some(PHPValue::Float(PHPFloat::new(a + b))),
+                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
+                        Some(PHPValue::Float(PHPFloat::new(a + b)))
+                    }
                     _ => None,
                 }
             }
@@ -264,7 +262,9 @@ impl BinaryExpressionNode {
                     (PHPValue::Float(_a), PHPValue::Int(_b)) => {
                         crate::missing_none!("i64 to f64 conversion")
                     } // Some(PHPValue::Float(a-b.into())),
-                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => Some(PHPValue::Float(PHPFloat::new(a - b))),
+                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
+                        Some(PHPValue::Float(PHPFloat::new(a - b)))
+                    }
                     _ => None,
                 }
             }
@@ -279,7 +279,9 @@ impl BinaryExpressionNode {
                     (PHPValue::Float(_a), PHPValue::Int(_b)) => {
                         crate::missing_none!("i64 to f64 conversion")
                     } // Some(PHPValue::Float(a*b.into())),
-                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => Some(PHPValue::Float(PHPFloat::new(a * b))),
+                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
+                        Some(PHPValue::Float(PHPFloat::new(a * b)))
+                    }
                     _ => None,
                 }
             }
@@ -385,12 +387,12 @@ impl BinaryExpressionNode {
             },
             BinaryExpressionOperator::Add(op, _) => match (&ltype, &rtype) {
                 (DiscreteType::Int, DiscreteType::Int) => Some(DiscreteType::Int.into()),
-                (DiscreteType::Float, DiscreteType::Int) |
-                (DiscreteType::Int, DiscreteType::Float) |
-                (DiscreteType::Float, DiscreteType::Float) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Int, DiscreteType::Bool) |
-                (DiscreteType::Bool, DiscreteType::Bool) |
-                (DiscreteType::Bool, DiscreteType::Int) => Some(DiscreteType::Int.into()),
+                (DiscreteType::Float, DiscreteType::Int)
+                | (DiscreteType::Int, DiscreteType::Float)
+                | (DiscreteType::Float, DiscreteType::Float) => Some(DiscreteType::Float.into()),
+                (DiscreteType::Int, DiscreteType::Bool)
+                | (DiscreteType::Bool, DiscreteType::Bool)
+                | (DiscreteType::Bool, DiscreteType::Int) => Some(DiscreteType::Int.into()),
                 (DiscreteType::Unknown, _) | (_, DiscreteType::Unknown) => None,
                 _ => crate::missing_none!("{:?} {} {:?}", ltype, op, rtype),
             },

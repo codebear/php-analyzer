@@ -23,8 +23,8 @@ pub trait FirstPassAnalyzeableNode {
             child.analyze_first_pass(state, emitter);
 
             if let AnyNodeRef::Comment(c) = &child {
-                state.last_doc_comment = if c.is_doc_comment() { 
-                   Some((c.get_raw(), c.range()))
+                state.last_doc_comment = if c.is_doc_comment() {
+                    Some((c.get_raw(), c.range()))
                 } else {
                     None
                 }
@@ -35,13 +35,11 @@ pub trait FirstPassAnalyzeableNode {
     }
 }
 
-
 pub trait SecondPassAnalyzeableNode {
     ///
     /// Second round, iterative
     ///
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter);
-
 
     fn analyze_second_pass_children(
         &self,
@@ -49,7 +47,6 @@ pub trait SecondPassAnalyzeableNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> bool {
-
         for child in node_ref.children_any() {
             child.analyze_second_pass(state, emitter);
         }

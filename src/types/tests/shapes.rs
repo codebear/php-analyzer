@@ -1,6 +1,2 @@
-
-
 #[test]
-pub fn test_shapes() {
-
-}
+pub fn test_shapes() {}

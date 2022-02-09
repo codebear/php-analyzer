@@ -1,6 +1,7 @@
 use crate::{
     analysis::state::AnalysisState,
-    autonodes::{any::AnyNodeRef, scoped_call_expression::ScopedCallExpressionNode}, symboldata::class::{ClassName, MethodData},
+    autonodes::{any::AnyNodeRef, scoped_call_expression::ScopedCallExpressionNode},
+    symboldata::class::{ClassName, MethodData},
 };
 
 use super::NodeDescription;
@@ -25,12 +26,19 @@ impl NodeDescription for ScopedCallExpressionNode {
 
 pub fn describe_method(class_name: &ClassName, data: &MethodData) -> String {
     let mut buffer = String::new();
-    buffer.push_str(&format!("### `{}::{}(..)`\n", class_name.get_fq_name(), data.name));
+    buffer.push_str(&format!(
+        "### `{}::{}(..)`\n",
+        class_name.get_fq_name(),
+        data.name
+    ));
     buffer.push_str(&format!("{}  \n", data.description));
     buffer.push_str("|   |   |\n| --- | --- |\n");
-    buffer.push_str(&format!("| Declared in | [{}:{}]({}#L{}) |\n", 
-        data.position.uri.to_string_lossy(), data.position.start.line,
-        data.position.uri.to_string_lossy(), data.position.start.line
+    buffer.push_str(&format!(
+        "| Declared in | [{}:{}]({}#L{}) |\n",
+        data.position.uri.to_string_lossy(),
+        data.position.start.line,
+        data.position.uri.to_string_lossy(),
+        data.position.start.line
     ));
     let mut any_known_type = false;
     if let Some(ptype) = &data.php_return_type {
@@ -47,7 +55,6 @@ pub fn describe_method(class_name: &ClassName, data: &MethodData) -> String {
     }
     if !any_known_type {
         buffer.push_str(&format!("| No known return-type | |\n"));
-
     }
     buffer
 }

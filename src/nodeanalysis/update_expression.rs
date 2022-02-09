@@ -9,7 +9,7 @@ use crate::{
     },
     issue::{Issue, IssueEmitter},
     types::union::{DiscreteType, UnionType},
-    value::{PHPValue, PHPFloat},
+    value::{PHPFloat, PHPValue},
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -98,7 +98,9 @@ impl UpdateExpressionNode {
                 (UpdateExpressionPrefix::Decrement(_, _), PHPValue::Float(PHPFloat::Real(f))) => {
                     Some(PHPValue::Float(PHPFloat::new(f - 1.0)))
                 }
-                (_, PHPValue::Float(_)) => crate::missing_none!("++$none_finite_float/--$none_finite_float is not implemented"),
+                (_, PHPValue::Float(_)) => crate::missing_none!(
+                    "++$none_finite_float/--$none_finite_float is not implemented"
+                ),
                 (_, PHPValue::String(_)) => crate::missing_none!("++$str/--$str does funky things"),
                 (_, PHPValue::Array(_)) => None, // this emits in analysis round two
                 (_, PHPValue::ObjectInstance(_)) => None, // this emits in analysis round two,
@@ -211,7 +213,9 @@ impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
                     PHPValue::NULL => Some(PHPValue::Int(1)),
                     PHPValue::Boolean(_) => None,
                     PHPValue::Int(i) => Some(PHPValue::Int(i + 1)),
-                    PHPValue::Float(PHPFloat::Real(f)) => Some(PHPValue::Float(PHPFloat::new(f + 1.0))),
+                    PHPValue::Float(PHPFloat::Real(f)) => {
+                        Some(PHPValue::Float(PHPFloat::new(f + 1.0)))
+                    }
                     PHPValue::Float(_) => crate::missing_none!("None-Real float increment"),
                     PHPValue::String(_) => crate::missing_none!("String increment"),
                     PHPValue::Array(_) => {
@@ -233,7 +237,9 @@ impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
                     PHPValue::NULL => None,
                     PHPValue::Boolean(_) => None,
                     PHPValue::Int(i) => Some(PHPValue::Int(i - 1)),
-                    PHPValue::Float(PHPFloat::Real(f)) => Some(PHPValue::Float(PHPFloat::new(f - 1.0))),
+                    PHPValue::Float(PHPFloat::Real(f)) => {
+                        Some(PHPValue::Float(PHPFloat::new(f - 1.0)))
+                    }
                     PHPValue::Float(_) => crate::missing_none!("None-Real float decrement"),
                     PHPValue::String(_) => crate::missing_none!("String decrement"),
                     PHPValue::Array(_) => {

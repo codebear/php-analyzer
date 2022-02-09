@@ -7,7 +7,7 @@ use crate::{
     issue::{Issue, IssueEmitter},
     types::{
         traversable::{get_key_type, get_value_type},
-        union::{ UnionType},
+        union::UnionType,
     },
     value::PHPValue,
 };

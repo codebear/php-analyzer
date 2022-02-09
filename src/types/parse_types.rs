@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::symbols::{Name, FullyQualifiedName};
-
-
-
+use crate::symbols::{FullyQualifiedName, Name};
 
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TypeStruct {
@@ -33,7 +30,6 @@ impl ShapeStruct {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct ShapeEntry(pub Option<(ShapeKey, bool)>, pub Vec<ConcreteType>);
 
-
 pub type UnionOfTypes = Vec<ConcreteType>;
 
 pub type ArgumentVector = Vec<UnionOfTypes>;
@@ -54,7 +50,6 @@ pub enum TypeName {
     FQName(FullyQualifiedName),
     RelativeName(Vec<Name>),
 }
-
 
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct ConcreteType {

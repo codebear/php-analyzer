@@ -76,7 +76,6 @@ fn phpdoc_entry_content(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry>
         todo,
         parse_abstract,
         copyright,
-
         // these two must be at the end
         general,
         anything,
@@ -238,7 +237,7 @@ fn parse_abstract(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
     let (input, abstr) = our_tag_no_case(b"@abstract")(input)?;
     let range = from_until_ranges(abstr.1, input.1);
     let entry = PHPDocEntry::Abstract(range);
-    Ok((input, entry))    
+    Ok((input, entry))
 }
 
 fn desc(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {

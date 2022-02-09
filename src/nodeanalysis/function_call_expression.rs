@@ -1,5 +1,6 @@
 use std::{
     ffi::OsString,
+    os::unix::prelude::OsStrExt,
     sync::{Arc, RwLock},
 };
 
@@ -84,8 +85,14 @@ impl FunctionCallExpressionFunction {
         if state.symbol_data.get_function(&fq_name).is_some() {
             fq_name
         } else {
-            let root_name =
-                FullyQualifiedName::from(fq_name.get_name().unwrap_or_else(|| Name::new()));
+            let name = fq_name.get_name().unwrap_or_else(|| Name::new());
+            let root_name = FullyQualifiedName::from(name.clone());
+            match name.to_os_string().as_bytes() {
+                b"empty" | b"isset" | b"unset" => {
+                    return root_name;
+                }
+                _ => (),
+            }
             if state.symbol_data.get_function(&root_name).is_some() {
                 root_name
             } else {
@@ -101,6 +108,8 @@ impl FunctionCallExpressionFunction {
     ) -> Option<FullyQualifiedName> {
         match self {
             FunctionCallExpressionFunction::Name(n) => {
+                // https://www.php.net/manual/en/language.namespaces.fallback.php
+                // For functions and constants, PHP will fall back to global functions or constants if a namespaced function or constant does not exist.
                 let fq_name = state.get_fq_symbol_name_from_local_name(&n.get_name());
                 Some(self.fq_name_or_global_name(state, fq_name))
             }

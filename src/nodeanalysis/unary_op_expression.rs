@@ -62,9 +62,7 @@ impl UnaryOpExpressionNode {
         };
 
         match (&**operator, value) {
-            (UnaryOpExpressionOperator::Not(_, _), v) => {
-                v.as_bool().map(|x| PHPValue::Boolean(!x))
-            }
+            (UnaryOpExpressionOperator::Not(_, _), v) => v.as_bool().map(|x| PHPValue::Boolean(!x)),
             (UnaryOpExpressionOperator::Add(op, _), _) => {
                 crate::missing_none!("unary add [{}]", op)
             }

@@ -81,6 +81,7 @@ macro_rules! missing_none {
 }
 
 pub fn dump_missing_stats() {
+    eprintln!("...");
     let logged = MISSING_FEATURES.read().unwrap();
     let mut list: Vec<_> = logged.iter().collect();
     list.sort_by(|a, b| a.1.cmp(b.1));

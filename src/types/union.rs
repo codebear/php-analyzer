@@ -378,7 +378,7 @@ impl DiscreteType {
                     ))
                 }
             }
-            a @ DiscreteType::Generic(dtype, utypes) => {
+            _a @ DiscreteType::Generic(dtype, _utypes) => {
                 dtype.ensure_valid(state, emitter, range);
                 match &**dtype {
                     DiscreteType::Named(_, fqname) => {
@@ -515,10 +515,8 @@ fn from_type_struct(
                                 return None;
                             }
                             match &y.ptype {
-                                ParsedType::Type(z) if z.generics.is_none() => {
-                                    z.type_name.clone()
-                                },
-                                _ => return None
+                                ParsedType::Type(z) if z.generics.is_none() => z.type_name.clone(),
+                                _ => return None,
                             }
                         } else {
                             return None;
@@ -526,15 +524,15 @@ fn from_type_struct(
                     } else {
                         return None;
                     };
-         
+
                     let fqname = match noe {
-                        TypeName::Name(name) => {
-                            state.get_fq_symbol_name_from_local_name(&name)
-                        }
+                        TypeName::Name(name) => state.get_fq_symbol_name_from_local_name(&name),
                         TypeName::FQName(fq) => fq,
                         TypeName::RelativeName(_) => todo!(),
                     };
-                    Some(DiscreteType::Special(SpecialType::ClassString(Some(fqname))))
+                    Some(DiscreteType::Special(SpecialType::ClassString(Some(
+                        fqname,
+                    ))))
                 } else {
                     Some(DiscreteType::Special(SpecialType::ClassString(None)))
                 }
@@ -741,7 +739,12 @@ impl<'a> FromIterator<&'a DiscreteType> for UnionType {
     }
 }
 impl SpecialType {
-    fn ensure_valid(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter, range: &Range) {
+    fn ensure_valid(
+        &self,
+        _state: &mut AnalysisState,
+        _emitter: &dyn IssueEmitter,
+        _range: &Range,
+    ) {
         crate::missing!("Ensure that self and static only are used in usable contexts");
     }
 }

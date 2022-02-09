@@ -79,7 +79,7 @@ impl ScopedCallExpressionNode {
                         _ => (),
                     }
                 }
-                
+
                 crate::missing_none!("{}", self.kind())
             }
             ScopedCallExpressionScope::ScopedPropertyAccessExpression(_) => {
@@ -138,10 +138,8 @@ impl ScopedCallExpressionNode {
 
         let method_name = self.get_method_name(state, &VoidEmitter::new())?;
 
-        let noe = class_data_handle
-            .read()
-            .unwrap();
-        
+        let noe = class_data_handle.read().unwrap();
+
         if let Some(mdata) = noe.get_method(&method_name, state.symbol_data.clone()) {
             Some((class_name, mdata))
         } else {
@@ -154,8 +152,6 @@ impl ScopedCallExpressionNode {
         state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
-   
-    
         let (class_name, method_data) = self.get_method_data(state)?;
 
         // FIXME sjekk etter `static`, og konverter til fq_class_name
@@ -172,7 +168,6 @@ impl ScopedCallExpressionNode {
         for ut in utype.types {
             match ut {
                 DiscreteType::Special(SpecialType::Static) => {
-
                     // Find static called class
                     ret_type.push(DiscreteType::Named(
                         class_name.get_name().clone(),

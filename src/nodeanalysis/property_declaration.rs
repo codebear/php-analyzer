@@ -1,11 +1,13 @@
-use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode};
+use super::analysis::{
+    FirstPassAnalyzeableNode, SecondPassAnalyzeableNode, ThirdPassAnalyzeableNode,
+};
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::property_declaration::PropertyDeclarationProperties;
+use crate::autotree::NodeAccess;
 use crate::{
     analysis::state::AnalysisState, autonodes::property_declaration::PropertyDeclarationNode,
     issue::IssueEmitter, types::union::UnionType,
 };
-use crate::autotree::NodeAccess;
 
 impl PropertyDeclarationNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {

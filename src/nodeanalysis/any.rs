@@ -6,7 +6,7 @@ use crate::nodeanalysis::analysis::IntoFirstPassAnalyzeable;
 
 use super::analysis::IntoSecondPassAnalyzeable;
 use super::analysis::SecondPassAnalyzeableNode;
-use super::analysis::{ThirdPassAnalyzeableNode, IntoThirdPassAnalyzeable};
+use super::analysis::{IntoThirdPassAnalyzeable, ThirdPassAnalyzeableNode};
 
 impl IntoFirstPassAnalyzeable for AnyNodeRef<'_> {
     fn with_first_pass_analyzeable<T, CB>(&self, cb: &mut CB) -> std::option::Option<T>
@@ -124,8 +124,10 @@ impl IntoThirdPassAnalyzeable for AnyNodeRef<'_> {
 
 impl FirstPassAnalyzeableNode for AnyNodeRef<'_> {
     fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if let Some(_) = self
-            .with_first_pass_analyzeable(&mut |x: &dyn FirstPassAnalyzeableNode| x.analyze_first_pass(state, emitter))
+        if let Some(_) =
+            self.with_first_pass_analyzeable(&mut |x: &dyn FirstPassAnalyzeableNode| {
+                x.analyze_first_pass(state, emitter)
+            })
         {
             // good
         } else {
@@ -136,8 +138,10 @@ impl FirstPassAnalyzeableNode for AnyNodeRef<'_> {
 
 impl SecondPassAnalyzeableNode for AnyNodeRef<'_> {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if let Some(_) = self
-            .with_second_pass_analyzeable(&mut |x: &dyn SecondPassAnalyzeableNode| x.analyze_second_pass(state, emitter))
+        if let Some(_) =
+            self.with_second_pass_analyzeable(&mut |x: &dyn SecondPassAnalyzeableNode| {
+                x.analyze_second_pass(state, emitter)
+            })
         {
             // good
         } else {

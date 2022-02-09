@@ -3,7 +3,7 @@ use crate::{
     autonodes::{any::AnyNodeRef, member_call_expression::MemberCallExpressionNode},
 };
 
-use super::{NodeDescription, scoped_call_expression::describe_method};
+use super::{scoped_call_expression::describe_method, NodeDescription};
 
 impl NodeDescription for MemberCallExpressionNode {
     fn describe_node(
@@ -14,14 +14,20 @@ impl NodeDescription for MemberCallExpressionNode {
         let methods = self.get_methods_data(state);
         if methods.len() == 0 {
             return if let Some(mname) = self.name.get_method_name(state) {
-                 Some(format!("Dynamic method call to method {} with no known data", mname))
+                Some(format!(
+                    "Dynamic method call to method {} with no known data",
+                    mname
+                ))
             } else {
-                 Some("Dynamic method call with no known data".to_string())
-            }
+                Some("Dynamic method call with no known data".to_string())
+            };
         }
         let mut buffer = String::new();
         if methods.len() > 1 {
-            buffer.push_str(&format!("Call to {} possible different methods<br />\n", methods.len()));
+            buffer.push_str(&format!(
+                "Call to {} possible different methods<br />\n",
+                methods.len()
+            ));
         }
         for maybe in methods {
             if let Some((class_name, method_data)) = maybe {
@@ -36,5 +42,3 @@ impl NodeDescription for MemberCallExpressionNode {
         Some(buffer)
     }
 }
-
-

@@ -10,7 +10,9 @@ use crate::{
     types::union::UnionType,
 };
 
-use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode, SecondPassAnalyzeableNode};
+use super::analysis::{
+    FirstPassAnalyzeableNode, SecondPassAnalyzeableNode, ThirdPassAnalyzeableNode,
+};
 
 impl NamespaceUseClauseNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -35,11 +37,7 @@ impl NamespaceUseClauseNode {
 }
 
 impl SecondPassAnalyzeableNode for NamespaceUseClauseNode {
-    fn analyze_second_pass(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) {
+    fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         self.analyze_first_pass(state, emitter);
     }
 }

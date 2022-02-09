@@ -181,7 +181,6 @@ impl BranchableScope for Arc<RwLock<Scope>> {
                                 IssuePosition::new(&state.filename, range.clone()),
                                 var_name.clone(),
                             ));
-
                         } else {
                             emitter.emit(Issue::UnusedVariable(
                                 IssuePosition::new(&state.filename, range.clone()),
