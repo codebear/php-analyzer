@@ -1,17 +1,58 @@
-use crate::autonodes::formal_parameters::FormalParametersNode;
+use std::sync::{Arc, RwLock};
 
-impl FormalParametersNode {}
-/*
-impl AnalyzeableRoundTwoNode for FormalParametersChildren {
-    fn analyze_round_two(&self, state: &mut crate::analysis::AnalysisState, emitter: &dyn crate::issue::IssueEmitter) {
-        /*match self {
-            FormalParametersChildren::PropertyPromotionParameter(_) => todo!(),
-            FormalParametersChildren::SimpleParameter() => todo!(),
-            FormalParametersChildren::VariadicParameter(_) => todo!(),
-            FormalParametersChildren::Comment(_) => todo!(),
-            FormalParametersChildren::TextInterpolation(_) => todo!(),
-            FormalParametersChildren::Error(_) => todo!(),
-        }*/
-        self.analyze_round_two_children(&self.as_any(), state, emitter)
+use crate::{
+    analysis::state::AnalysisState,
+    autonodes::formal_parameters::{FormalParametersChildren, FormalParametersNode},
+    issue::IssueEmitter,
+    symboldata::class::{FunctionArgumentData, MethodData},
+};
+
+use super::analysis::FirstPassAnalyzeableNode;
+use crate::autotree::NodeAccess;
+
+impl FormalParametersNode {
+    pub(crate) fn analyze_first_pass_parameters(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+        _method_data: Arc<RwLock<MethodData>>,
+    ) -> Vec<FunctionArgumentData> {
+        let mut params = vec![];
+        for child in &self.children {
+            match &**child {
+                FormalParametersChildren::PropertyPromotionParameter(_) => {
+                    crate::missing!("PropertyPromotionParameter")
+                }
+                FormalParametersChildren::SimpleParameter(s) => {
+                    let name = s.get_variable_name();
+                    let arg_type = s.get_utype(state, emitter);
+                    let default_value = s.get_default_value(state, emitter);
+                    crate::missing!("Determine optional and nullable and phpdoc-properties");
+                    let optional = false;
+                    let nullable = false;
+
+                    let data = FunctionArgumentData {
+                        name,
+                        arg_type,
+                        default_value,
+                        nullable,
+                        optional,
+                        own_phpdoc: None,
+                        phpdoc_entry: None,
+                    };
+
+                    params.push(data);
+                }
+                FormalParametersChildren::VariadicParameter(_) => {
+                    crate::missing!("Variadic parameter")
+                }
+
+                FormalParametersChildren::Comment(_)
+                | FormalParametersChildren::TextInterpolation(_)
+                | FormalParametersChildren::Error(_) => (),
+            }
+        }
+
+        params
     }
-}*/
+}

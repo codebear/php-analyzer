@@ -157,7 +157,6 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
         let mut modifier = ClassModifier::None;
         let mut is_static = false;
         let mut visibility = ClassMemberVisibility::Public;
-
         let mut phpdoc = None;
         let mut comment_return_type = None;
         if let Some((doc_comment, range)) = &state.last_doc_comment {
@@ -204,6 +203,9 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
         }
 
         let method_data = self.get_method_data(state).unwrap();
+        let arguments =
+            self.parameters
+                .analyze_first_pass_parameters(state, emitter, method_data.clone());
 
         {
             // We scope the locked state to make it as short as possible
@@ -215,7 +217,9 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
             unlocked.is_static = is_static;
             unlocked.visibility = visibility;
             unlocked.phpdoc = phpdoc;
+            unlocked.arguments = arguments;
         }
+
         // eprintln!("Tolket metode: {:?}", method_data);
         state.last_doc_comment = None;
         state

@@ -134,6 +134,19 @@ impl FullyQualifiedName {
             path: self.path.iter().map(|n| n.to_ascii_lowercase()).collect(),
         }
     }
+    pub fn to_os_string(&self) -> OsString {
+
+        
+        let mut parts: Vec<&[u8]> = vec![];
+        for part in &self.path {
+            parts.push(b"\\");
+            parts.push(part.0.as_bytes());
+        }
+
+        let sum = parts.concat();
+        let str = OsStr::from_bytes(&sum);
+        str.into()
+    }
 
     pub(crate) fn level(&self) -> usize {
         let len = self.path.len();

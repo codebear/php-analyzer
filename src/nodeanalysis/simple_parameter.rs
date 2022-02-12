@@ -35,28 +35,11 @@ impl SimpleParameterNode {
         }
     }
 
-    fn get_variable_name(&self) -> Name {
+    pub fn get_variable_name(&self) -> Name {
         self.name.get_variable_name()
     }
-}
 
-impl FirstPassAnalyzeableNode for SimpleParameterNode {
-    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        // eprintln!("Fang opp hvilke argument-signatur en metode har");
-        self.analyze_first_pass_children(&self.as_any(), state, emitter)
-    }
-}
-
-pub trait FindDefaultValue {
-    fn get_default_value(
-        &self,
-        state: &mut AnalysisState,
-        _emitter: &dyn IssueEmitter,
-    ) -> Option<PHPValue>;
-}
-
-impl FindDefaultValue for SimpleParameterNode {
-    fn get_default_value(
+    pub fn get_default_value(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,

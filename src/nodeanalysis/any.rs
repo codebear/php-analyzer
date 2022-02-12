@@ -37,7 +37,6 @@ impl IntoFirstPassAnalyzeable for AnyNodeRef<'_> {
 
             // Function like declarations
             AnyNodeRef::FunctionDefinition(f) => cb(*f),
-            AnyNodeRef::SimpleParameter(sp) => cb(*sp),
 
             // Function call
             AnyNodeRef::FunctionCallExpression(fce) => cb(*fce),
