@@ -120,6 +120,15 @@ impl ClassType {
         }
     }
 
+    pub fn get_own_methods(&self, symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
+        match self {
+            ClassType::None => vec![],
+            ClassType::Class(c) => c.get_own_methods(symbol_data),
+            ClassType::Interface(i) => i.get_own_methods(symbol_data),
+            ClassType::Trait(t) => t.get_own_methods(symbol_data),
+        }
+    }
+
     pub fn get_or_create_method(
         &mut self,
         method_name: &Name,
@@ -361,6 +370,13 @@ impl ClassData {
         }
         return false;
     }
+
+    fn get_own_methods(&self, symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
+        self.methods
+            .iter()
+            .map(|x| x.1.read().unwrap().clone())
+            .collect()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -463,6 +479,13 @@ impl InterfaceData {
         }
         false
     }
+
+    fn get_own_methods(&self, symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
+        self.methods
+            .iter()
+            .map(|x| x.1.read().unwrap().clone())
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -513,6 +536,13 @@ impl TraitData {
 
     fn get_fq_name(&self) -> FullyQualifiedName {
         self.trait_name.fq_name.clone()
+    }
+
+    fn get_own_methods(&self, symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
+        self.methods
+            .iter()
+            .map(|x| x.1.read().unwrap().clone())
+            .collect()
     }
 }
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
