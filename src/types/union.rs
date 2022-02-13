@@ -624,7 +624,7 @@ impl Display for DiscreteType {
                 DiscreteType::Float => "double".to_string(),
                 DiscreteType::Resource => "resource".to_string(),
                 DiscreteType::String => "string".to_string(),
-                DiscreteType::Bool => "boolean".to_string(),
+                DiscreteType::Bool => "bool".to_string(),
                 DiscreteType::Array => "array".to_string(),
                 DiscreteType::Callable => "callable".to_string(),
                 DiscreteType::Mixed => "mixed".to_string(),

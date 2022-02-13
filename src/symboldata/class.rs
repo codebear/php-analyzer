@@ -386,6 +386,7 @@ pub struct InterfaceData {
     pub base_interface_names: Option<Vec<ClassName>>,
     pub constants: HashMap<Name, PHPValue>,
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
+    pub is_native: bool,
     pub phpdoc: Option<PHPDocComment>,
 }
 
@@ -397,6 +398,7 @@ impl InterfaceData {
             base_interface_names: None,
             constants: HashMap::new(),
             methods: HashMap::new(),
+            is_native: false,
             phpdoc: None,
         }
     }
