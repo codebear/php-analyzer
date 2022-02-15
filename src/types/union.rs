@@ -274,9 +274,15 @@ impl UnionType {
 
         if let Some(rest) = remainder {
             if rest.len() > 0 {
-                // Check if only whitespace
-                eprintln!("Rest etter type-parsing av [{:?}]: {:?}", type_str, rest);
-                return None;
+                for ch in rest.as_bytes() {
+                    match ch {
+                        b' ' | b'\t' => (),
+                        _ => {
+                            eprintln!("Rest etter type-parsing av [{:?}]: {:?}", type_str, rest);
+                            return None;
+                        }
+                    }
+                }
             }
         }
         utype

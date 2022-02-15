@@ -371,7 +371,7 @@ impl ClassData {
         return false;
     }
 
-    fn get_own_methods(&self, symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
+    fn get_own_methods(&self, _symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
         self.methods
             .iter()
             .map(|x| x.1.read().unwrap().clone())
@@ -482,7 +482,7 @@ impl InterfaceData {
         false
     }
 
-    fn get_own_methods(&self, symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
+    fn get_own_methods(&self, _symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
         self.methods
             .iter()
             .map(|x| x.1.read().unwrap().clone())
@@ -540,7 +540,7 @@ impl TraitData {
         self.trait_name.fq_name.clone()
     }
 
-    fn get_own_methods(&self, symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
+    fn get_own_methods(&self, _symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
         self.methods
             .iter()
             .map(|x| x.1.read().unwrap().clone())

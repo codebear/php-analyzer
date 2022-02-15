@@ -1,6 +1,9 @@
 use std::ffi::OsString;
 
-use crate::{tests::{get_inferred_return_value, evaluate_php_buffers}, value::PHPValue};
+use crate::{
+    tests::{evaluate_php_buffers, get_inferred_return_value},
+    value::PHPValue,
+};
 
 #[test]
 fn return_array_sub() {
@@ -22,10 +25,9 @@ fn return_array_sub() {
 
 #[test]
 fn test_array() {
-    let buffers: &[(OsString, OsString)] = &[
-        (
-            "something.php".into(),
-            r#"<?php 
+    let buffers: &[(OsString, OsString)] = &[(
+        "something.php".into(),
+        r#"<?php 
 
             /**
              * @return array<string>
@@ -41,9 +43,8 @@ fn test_array() {
             }
           
             "#
-            .into(),
-        ),
-    ];
+        .into(),
+    )];
     let result = evaluate_php_buffers(buffers.to_vec(), false);
     //eprintln!("FOO: {:?}", result);
     /*assert_eq!(

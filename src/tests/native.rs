@@ -55,5 +55,3 @@ fn test_dom_api3() {
     );
     assert_eq!(result.issues.len(), 0);
 }
-
-

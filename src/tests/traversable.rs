@@ -4,10 +4,9 @@ use crate::tests::evaluate_php_buffers;
 
 #[test]
 fn test_traversable() {
-    let buffers: &[(OsString, OsString)] = &[
-        (
-            "something.php".into(),
-            r#"<?php 
+    let buffers: &[(OsString, OsString)] = &[(
+        "something.php".into(),
+        r#"<?php 
 
             /**
              * @return Traversable<string>
@@ -23,9 +22,8 @@ fn test_traversable() {
             }
           
             "#
-            .into(),
-        ),
-    ];
+        .into(),
+    )];
     let result = evaluate_php_buffers(buffers.to_vec(), false);
     //eprintln!("FOO: {:?}", result);
     /*assert_eq!(
