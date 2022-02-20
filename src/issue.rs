@@ -127,6 +127,9 @@ pub enum Issue {
 
     PHPDocParseError(IssuePosition),
 
+    /// Parse error while parsing a type in a phpdoc-comment
+    PHPDocTypeError(IssuePosition, String),
+
     MisplacedPHPDocEntry(IssuePosition, OsString),
     InvalidPHPDocEntry(IssuePosition, OsString),
     // PHPDocEntry which is not needed
@@ -190,6 +193,7 @@ impl Issue {
             | Self::IndeterminablePropertyName(pos, _)
             | Self::VariableNotInitializedInAllBranhces(pos, _) 
             | Self::PHPDocParseError(pos) 
+            | Self::PHPDocTypeError(pos, _)
             | Self::MisplacedPHPDocEntry(pos, _)
             | Self::InvalidPHPDocEntry(pos, _)
             | Self::RedundantPHPDocEntry(pos, _)
@@ -242,6 +246,7 @@ impl Issue {
                 "VariableNotInitializedInAllBranhces"
             }
             Self::PHPDocParseError(_) => "PHPDocParseError",
+            Self::PHPDocTypeError(_,_) => "PHPDocTypeError",
             Self::MisplacedPHPDocEntry(_, _) => "MisplacedPHPDocEntry",
             Self::InvalidPHPDocEntry(_,_) => "InvalidPHPDocEntry",
             Self::RedundantPHPDocEntry(_,_) => "RedundantPHPDocEntry",
@@ -318,6 +323,7 @@ impl Issue {
                 cname
             ),
             Self::PHPDocParseError(_) => format!("Unable to parse PHP Doc-comment"),
+            Self::PHPDocTypeError(_, err) => format!("Parse error while parsing type in phpdoc-comment: {}", err),
             Self::MisplacedPHPDocEntry(_, reason) => format!("PHPDoc-entry used in the wrong context: {}", reason.to_string_lossy()),
             Self::InvalidPHPDocEntry(_, reason) => format!("Invalid PHPDoc-entry: {}", reason.to_string_lossy()),
             Self::RedundantPHPDocEntry(_, reason) => format!("Redundant PHPDoc-entry: {}", reason.to_string_lossy()),

@@ -278,7 +278,10 @@ impl UnionType {
                     match ch {
                         b' ' | b'\t' => (),
                         _ => {
-                            eprintln!("Rest etter type-parsing av [{:?}]: {:?}", type_str, rest);
+                            emitter.emit(Issue::PHPDocTypeError(
+                                state.pos_from_range(range),
+                                format!("Remainder from parsing: {:?}", rest),
+                            ));
                             return None;
                         }
                     }
