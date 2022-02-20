@@ -27,7 +27,7 @@ pub struct ClassName {
 
 impl PartialEq for ClassName {
     fn eq(&self, other: &Self) -> bool {
-       self.fq_name == other.fq_name
+        self.fq_name == other.fq_name
     }
 }
 
@@ -188,7 +188,7 @@ impl ClassType {
             ClassType::None => false,
             ClassType::Class(c) => c.instanceof(tname, symbol_data),
             ClassType::Interface(i) => i.instanceof(tname, symbol_data),
-            ClassType::Trait(t) => false,
+            ClassType::Trait(_) => false,
         }
     }
 }
@@ -530,13 +530,13 @@ impl InterfaceData {
         if self.interface_name == *tname {
             return true;
         }
-          let parent_inames = if let Some(i) = &self.base_interface_names {
+        let parent_inames = if let Some(i) = &self.base_interface_names {
             i
         } else {
             return false;
         };
         for parent_iname in parent_inames {
-            if parent_iname == *tname {
+            if parent_iname == tname {
                 return true;
             }
         }
