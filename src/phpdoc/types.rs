@@ -82,7 +82,13 @@ impl PHPDocComment {
                 entries,
             }),
             Err(parse_err) => {
-                todo!("ERR: {:?}", parse_err)
+                let kind = parse_err.code.description();
+                let mut error = OsString::new();
+                error.push(kind);
+                error.push(": ");
+                error.push(parse_err.input);
+                Err(error)
+                //                todo!("ERR: {:?}", parse_err)
             }
         }
     }
