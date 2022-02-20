@@ -78,13 +78,20 @@ impl Ord for PHPFloat {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
+pub enum PHPArray {
+    Empty,
+    Vector(Vec<PHPValue>),
+    HashMap(Vec<(PHPValue, PHPValue)>),
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
 pub enum PHPValue {
     NULL,
     Boolean(bool),
     Int(i64),
     Float(PHPFloat),
     String(OsString),
-    Array(Vec<(PHPValue, PHPValue)>),
+    Array(PHPArray),
     // .0 = Fully qualified class name, .1 = Constructor arg-vector
     ObjectInstance(ObjectInstance),
 }
@@ -309,5 +316,54 @@ impl PHPValue {
             PHPValue::Array(_) => None,
             PHPValue::ObjectInstance(_) => None,
         }
+    }
+}
+
+
+impl PHPArray {
+    pub fn len(&self) -> usize {
+        match self {
+            PHPArray::Empty => 0,
+            PHPArray::Vector(v) => v.len(),
+            PHPArray::HashMap(h) =>h.len(),
+        }
+    }
+
+    pub(crate) fn get_value_by_key(&self, key_val: PHPValue) -> Option<PHPValue> {
+        let array_key = key_val.as_php_array_key()?;
+        match self {
+            PHPArray::Empty => None,
+            PHPArray::Vector(v) => {
+                let idx = array_key.as_i64()?;
+
+                let uidx_res: Result<usize, _> = idx.try_into();
+                if let Ok(idx) = uidx_res {
+                    if idx > v.len() {
+                        // FIXME: emit because we're out of range
+                        None
+                    } else {
+                        v.get(idx).cloned()
+                    }
+                } else {
+                    // FIXME: Emit error beacuse this will fail
+                    None
+                }
+            },
+            PHPArray::HashMap(arr) => {
+                for (key, value) in arr {
+                    if key.equal_to(&array_key).unwrap_or(false) {
+                        return Some(value.clone());
+                    }
+                }
+                None
+            },
+        }
+      
+      
+    }
+
+    pub(crate) fn get_type_by_key(&self, php_idx: PHPValue) -> Option<UnionType> {
+        let v = self.get_value_by_key(php_idx)?;
+        v.get_utype()
     }
 }

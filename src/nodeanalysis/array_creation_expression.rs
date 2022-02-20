@@ -1,6 +1,7 @@
 use std::{convert::TryInto, os::unix::prelude::OsStrExt};
 
 use crate::autotree::NodeAccess;
+use crate::value::PHPArray;
 use crate::{
     analysis::state::AnalysisState,
     autonodes::{
@@ -66,10 +67,12 @@ impl ArrayCreationExpressionNode {
         // Increment index for each element
         // If key is numeric and positive, set the index to key,
         // else don't increment index
+        let mut hashmap = false;
         for child in &self.children {
             // idx += 1;
             let entry_key = if let Some(key) = &child.key {
                 if let Some(key_val) = key.get_php_value(state, emitter) {
+                    hashmap = true;
                     match key_val {
                         PHPValue::Int(ival) if ival > 0 && idx < ival.try_into().unwrap() => {
                             // FIXME this should probably not unwrap, but result in a None return
@@ -121,6 +124,16 @@ impl ArrayCreationExpressionNode {
                 return None;
             }
         }
-        Some(PHPValue::Array(entries))
+        if entries.len() > 0 {
+            if hashmap {
+                Some(PHPValue::Array(PHPArray::HashMap(entries)))
+            } else {
+                Some(PHPValue::Array(PHPArray::Vector(
+                    entries.iter().map(|x| x.1.clone()).collect(),
+                )))
+            }
+        } else {
+            Some(PHPValue::Array(PHPArray::Empty))
+        }
     }
 }
