@@ -48,7 +48,7 @@ pub enum PHPDocEntry {
     Version(Range, OsString),
 
     /// https://docs.phpdoc.org/guide/references/phpdoc/tags/todo.html
-    Todo(Range, OsString),
+    Todo(Range, Option<OsString>),
 
     /// https://docs.phpdoc.org/guide/references/phpdoc/tags/abstract.html
     Abstract(Range),

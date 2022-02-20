@@ -253,7 +253,7 @@ fn copyright(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
 }
 
 fn todo(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
-    let (input, (range, desc)) = _simple_tagged_no_case_with_data(b"@todo")(input)?;
+    let (input, (range, desc)) = _simple_tagged_no_case_with_opt_data(b"@todo")(input)?;
     Ok((input, PHPDocEntry::Todo(range, desc)))
 }
 
