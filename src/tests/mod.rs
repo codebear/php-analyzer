@@ -5,9 +5,9 @@ pub mod namespace;
 pub mod native;
 mod objects;
 pub mod phpdocs;
+pub mod traversable;
 pub mod try_catch;
 mod values;
-pub mod traversable;
 
 use std::{
     ffi::OsString,

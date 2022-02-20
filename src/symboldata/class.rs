@@ -19,10 +19,16 @@ use super::{FileLocation, SymbolData};
 
 type MethodName = Name;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialOrd)]
 pub struct ClassName {
     pub name: Name,
     pub fq_name: FullyQualifiedName,
+}
+
+impl PartialEq for ClassName {
+    fn eq(&self, other: &Self) -> bool {
+       self.fq_name == other.fq_name
+    }
 }
 
 impl ClassName {
@@ -162,6 +168,7 @@ impl ClassType {
         self.clone()
     }
 
+    /// check if the type implements a specific interface
     pub fn implements(&self, iname: &ClassName, symbol_data: Arc<SymbolData>) -> bool {
         match self {
             ClassType::None => false,
@@ -172,6 +179,16 @@ impl ClassType {
                 // https://wiki.php.net/rfc/traits-with-interfaces
                 false
             }
+        }
+    }
+
+    /// check if the type is an instancoef a specific class, interface or trait
+    pub fn instanceof(&self, tname: &ClassName, symbol_data: Arc<SymbolData>) -> bool {
+        match self {
+            ClassType::None => false,
+            ClassType::Class(c) => c.instanceof(tname, symbol_data),
+            ClassType::Interface(i) => i.instanceof(tname, symbol_data),
+            ClassType::Trait(t) => false,
         }
     }
 }
@@ -371,6 +388,26 @@ impl ClassData {
         return false;
     }
 
+    fn instanceof(&self, tname: &ClassName, symbol_data: Arc<SymbolData>) -> bool {
+        if self.class_name == *tname {
+            return true;
+        }
+        for iface in &self.interfaces {
+            if let Some(iface_data) = &symbol_data.get_interface(iface) {
+                if iface_data.instanceof(tname, symbol_data.clone()) {
+                    return true;
+                }
+            }
+        }
+        if let Some(base) = &self.base_class_name {
+            if let Some(cdata_handle) = symbol_data.get_class(base) {
+                let cdata = cdata_handle.read().unwrap();
+                return cdata.instanceof(tname, symbol_data);
+            }
+        }
+        return false;
+    }
+
     fn get_own_methods(&self, _symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
         self.methods
             .iter()
@@ -487,6 +524,30 @@ impl InterfaceData {
             .iter()
             .map(|x| x.1.read().unwrap().clone())
             .collect()
+    }
+
+    fn instanceof(&self, tname: &ClassName, symbol_data: Arc<SymbolData>) -> bool {
+        if self.interface_name == *tname {
+            return true;
+        }
+          let parent_inames = if let Some(i) = &self.base_interface_names {
+            i
+        } else {
+            return false;
+        };
+        for parent_iname in parent_inames {
+            if parent_iname == *tname {
+                return true;
+            }
+        }
+        for parent_iname in parent_inames {
+            if let Some(idata) = symbol_data.get_interface(&parent_iname) {
+                if idata.instanceof(tname, symbol_data.clone()) {
+                    return true;
+                }
+            }
+        }
+        false
     }
 }
 

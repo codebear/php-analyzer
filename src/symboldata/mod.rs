@@ -13,6 +13,7 @@ use self::class::ClassType;
 use self::class::FunctionArgumentData;
 use self::class::InterfaceData;
 use self::class::PropertyData;
+use self::class::TraitData;
 use std::collections::HashMap;
 
 use std::ffi::OsString;
@@ -116,6 +117,16 @@ impl SymbolData {
             .unwrap()
             .get(&name.get_fq_name().to_ascii_lowercase())
             .cloned()
+    }
+
+    pub fn get_trait(&self, name: &ClassName) -> Option<TraitData> {
+        let locked_data = self.get_class(name)?;
+
+        let unlocked_data = locked_data.read().ok()?;
+        match &*unlocked_data {
+            ClassType::Trait(tdata) => Some(tdata.clone()),
+            _ => None,
+        }
     }
 
     pub fn get_interface(&self, name: &ClassName) -> Option<InterfaceData> {
