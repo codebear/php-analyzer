@@ -40,6 +40,7 @@ impl ListLiteralNode {
         if let Some(_) = value {
             crate::missing!("list(..) = .. har verdi, som blir ignorert");
         }
+        let mut idx = 0;
         for child in &self.children {
             match &**child {
                 ListLiteralChildren::_Expression(_) => {
@@ -79,14 +80,32 @@ impl ListLiteralNode {
                     crate::missing!("list({:?}) write to", child.kind())
                 }
                 ListLiteralChildren::VariableName(vname) => {
-                    vname.write_to(state, emitter, None, None);
-                    crate::missing!("list({:?}) write to", child.kind())
+                    let mut sub_val_type = None;
+                    let mut sub_value = None;
+                    match &value {
+                        Some(PHPValue::Array(a)) => {
+                            let php_idx = PHPValue::Int(idx);
+                            sub_value = a.get_value_by_key(php_idx.clone());
+                            sub_val_type = a.get_type_by_key(php_idx);
+                        }
+                        Some(v) => {
+                            crate::missing!("Extract something fra value in list(...) = {:?}", v);
+                        }
+                        None => match &val_type {
+                            Some(x @ _) => {
+                                crate::missing!("list(..) = type: {:?}", x);
+                            }
+                            None => (),
+                        },
+                    }
+                    vname.write_to(state, emitter, sub_val_type, sub_value);
                 }
 
                 ListLiteralChildren::Comment(_)
                 | ListLiteralChildren::TextInterpolation(_)
                 | ListLiteralChildren::Error(_) => (),
             }
+            idx += 1;
         }
         crate::missing!("list literal write_to");
     }
