@@ -308,7 +308,7 @@ impl UnionType {
         remainder: Option<OsString>,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        range: Range
+        range: Range,
     ) -> Option<UnionType> {
         if let Some(rest) = remainder {
             if rest.len() > 0 {
@@ -769,9 +769,8 @@ fn from_type_struct(
         cname.into()
     };
     match &base_type {
-        DiscreteType::Vector(_) |
-        DiscreteType::HashMap(_,_) => return Some(base_type.into()),
-        _ => ()
+        DiscreteType::Vector(_) | DiscreteType::HashMap(_, _) => return Some(base_type.into()),
+        _ => (),
     }
 
     if let Some(generic_args) = type_struct.generics {

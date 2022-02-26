@@ -74,7 +74,7 @@ pub fn union_type_with_colon(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8]
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, _) = tag(":")(input)?;
         let (input, _) = ourspace0(multiline)(input)?;
-        separated_list1(union_separator(multiline), concrete_type(multiline))(input)  
+        separated_list1(union_separator(multiline), concrete_type(multiline))(input)
         //      union_type(multiline)
     }
 }

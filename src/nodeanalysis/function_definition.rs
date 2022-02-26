@@ -75,7 +75,10 @@ impl FunctionDefinitionNode {
         ret.get_utype(state, emitter)
     }
 
-    fn get_inline_phpdoc_return_type(&self, state: &mut AnalysisState) -> Option<(UnionType, Range)> {
+    fn get_inline_phpdoc_return_type(
+        &self,
+        state: &mut AnalysisState,
+    ) -> Option<(UnionType, Range)> {
         let arg_range = self.parameters.range;
         let statement_range = self.body.range;
         eprintln!(
@@ -117,8 +120,7 @@ impl FunctionDefinitionNode {
         } else {
             return None;
         };
-        UnionType::parse_with_colon(raw_utype, range, state, &emitter)
-            .map(|utype| (utype, range))
+        UnionType::parse_with_colon(raw_utype, range, state, &emitter).map(|utype| (utype, range))
     }
 }
 

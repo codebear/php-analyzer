@@ -9,8 +9,8 @@ mod objects;
 pub mod phpdocs;
 pub mod traversable;
 pub mod try_catch;
-mod values;
 pub mod types;
+mod values;
 
 use std::{
     ffi::OsString,
