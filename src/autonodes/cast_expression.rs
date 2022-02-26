@@ -317,7 +317,12 @@ impl CastExpressionNode {
             range,
             type_,
             value,
-            extras: vec![], // todo lookup unused nodes
+            extras: ExtraChild::parse_vec(
+                node.named_children(&mut node.walk())
+                    .filter(|node| node.kind() == "comment"),
+                source,
+            )
+            .unwrap(),
         })
     }
 
