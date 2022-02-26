@@ -1,12 +1,13 @@
-use std::sync::{Arc, RwLock};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 use crate::{
     analysis::state::{AnalysisState, ClassState, FunctionState},
     autonodes::{
-        _type::_TypeNode,
         any::AnyNodeRef,
         method_declaration::{MethodDeclarationChildren, MethodDeclarationNode},
-        type_list::TypeListChildren,
     },
     issue::{Issue, IssueEmitter},
     phpdoc::types::{PHPDocComment, PHPDocEntry},
@@ -79,34 +80,20 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
-        if let Some(_TypeNode::TypeList(ret)) = &self.return_type {
-            let mut utype = UnionType::new();
-
-            for typed in &*ret.children {
-                if let Some(child_type) = match &**typed {
-                    TypeListChildren::PrimitiveType(t) => t.get_utype(state, emitter),
-                    TypeListChildren::NamedType(named_type) => named_type.get_utype(state, emitter),
-                    TypeListChildren::OptionalType(_) => todo!(),
-                    _ => None,
-                } {
-                    utype.merge_into(child_type);
+        let ret = &self.return_type.as_ref()?;
+        let utype = ret.get_utype(state, emitter)?;
+        let utype: UnionType = utype
+            .types
+            .iter()
+            .map(|x| match x {
+                DiscreteType::Special(SpecialType::Self_) => {
+                    let _cname = self.get_class_name(state);
+                    todo!()
                 }
-            }
-            let utype: UnionType = utype
-                .types
-                .iter()
-                .map(|x| match x {
-                    DiscreteType::Special(SpecialType::Self_) => {
-                        let _cname = self.get_class_name(state);
-                        todo!()
-                    }
-                    x @ _ => x,
-                })
-                .collect();
-            Some(utype)
-        } else {
-            None
-        }
+                x @ _ => x,
+            })
+            .collect();
+        Some(utype)
     }
 
     fn get_inferred_return_type(
@@ -159,6 +146,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
         let mut visibility = ClassMemberVisibility::Public;
         let mut phpdoc = None;
         let mut comment_return_type = None;
+        let mut param_map = HashMap::new();
         if let Some((doc_comment, range)) = &state.last_doc_comment {
             match PHPDocComment::parse(doc_comment, range) {
                 Ok(doc_comment) => {
@@ -169,7 +157,18 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                                     UnionType::from_parsed_type(ptype.clone(), state, emitter)
                                         .map(|x| (x, range.clone()));
                             }
-                            PHPDocEntry::Param(_, _, _, _) => (), /* FIXME somewhere we need to validate that the params relates to actual params */
+                            PHPDocEntry::Param(_, _, osstr_name, _) => {
+                                if let Some(osstr_name) = osstr_name {
+                                    let name: Name = osstr_name.into();
+                                    if param_map.contains_key(&name) {
+                                        crate::missing!("Emit duplicate phpdoc param name");
+                                    } else {
+                                        param_map.insert(name, entry.clone());
+                                    }
+                                } else {
+                                    crate::missing!("Emit phpdoc param without name");
+                                }
+                            }
                             PHPDocEntry::Var(range, _, _, _) => {
                                 emitter.emit(Issue::MisplacedPHPDocEntry(
                                     state.pos_from_range(range.clone()),
@@ -203,9 +202,9 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
         }
 
         let method_data = self.get_method_data(state).unwrap();
-        let arguments =
-            self.parameters
-                .analyze_first_pass_parameters(state, emitter, method_data.clone());
+        let arguments = self
+            .parameters
+            .analyze_first_pass_parameters(state, emitter, &param_map);
 
         {
             // We scope the locked state to make it as short as possible
@@ -224,7 +223,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
         state.last_doc_comment = None;
         state
             .in_function_stack
-            .push(FunctionState::new_method(method_name));
+            .push(FunctionState::new_method(method_name, method_data));
         self.analyze_first_pass_children(&self.as_any(), state, emitter);
         state.in_function_stack.pop();
     }
@@ -234,32 +233,33 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         // Check types used in phpdoc
         let locked_data = self.get_method_data(state).unwrap();
-        let method_data = locked_data.read().unwrap();
-        if let Some(phpdoc) = &method_data.phpdoc {
-            for entry in &phpdoc.entries {
-                let (range, concrete_types) = match entry {
-                    PHPDocEntry::Param(range, ptype, _pname, _pdesc) => (range, ptype),
-                    PHPDocEntry::Return(range, rtype, _rdesc) => (range, rtype),
-                    _ => continue,
-                };
+        {
+            let method_data = locked_data.read().unwrap();
+            if let Some(phpdoc) = &method_data.phpdoc {
+                for entry in &phpdoc.entries {
+                    let (range, concrete_types) = match entry {
+                        PHPDocEntry::Param(range, ptype, _pname, _pdesc) => (range, ptype),
+                        PHPDocEntry::Return(range, rtype, _rdesc) => (range, rtype),
+                        _ => continue,
+                    };
 
-                if let Some(utype) =
-                    UnionType::from_parsed_type(concrete_types.clone(), state, emitter)
-                {
-                    utype.ensure_valid(state, emitter, range);
-                } else {
-                    emitter.emit(Issue::InvalidPHPDocEntry(
-                        state.pos_from_range(range.clone()),
-                        "Invalid type".into(),
-                    ));
+                    if let Some(utype) =
+                        UnionType::from_parsed_type(concrete_types.clone(), state, emitter)
+                    {
+                        utype.ensure_valid(state, emitter, range);
+                    } else {
+                        emitter.emit(Issue::InvalidPHPDocEntry(
+                            state.pos_from_range(range.clone()),
+                            "Invalid type".into(),
+                        ));
+                    }
                 }
             }
+            if let Some((utype, range)) = &method_data.comment_return_type {
+                utype.ensure_valid(state, emitter, range);
+            }
         }
-        if let Some((utype, range)) = &method_data.comment_return_type {
-            utype.ensure_valid(state, emitter, range);
-        }
-
-        let function = FunctionState::new_method(self.get_declared_name());
+        let function = FunctionState::new_method(self.get_declared_name(), locked_data);
         state.in_function_stack.push(function);
 
         self.analyze_second_pass_children(&self.as_any(), state, emitter);
@@ -282,8 +282,9 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
             // Drop third-pass-analyse av interfacer-metoder
             return true;
         }
+        let locked_data = self.get_method_data(state).unwrap();
 
-        let function = FunctionState::new_method(self.get_declared_name());
+        let function = FunctionState::new_method(self.get_declared_name(), locked_data);
         state.in_function_stack.push(function);
 
         {

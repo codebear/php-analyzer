@@ -1,5 +1,7 @@
 mod array;
 mod basic;
+pub mod hardening;
+pub mod inline;
 pub mod interface;
 pub mod namespace;
 pub mod native;
@@ -8,6 +10,7 @@ pub mod phpdocs;
 pub mod traversable;
 pub mod try_catch;
 mod values;
+pub mod types;
 
 use std::{
     ffi::OsString,

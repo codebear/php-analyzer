@@ -3,8 +3,15 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use tree_sitter::Range;
+
 use crate::{
-    analysis::scope::BranchableScope, autonodes::any::AnyNodeRef, symboldata::FileLocation,
+    analysis::scope::BranchableScope,
+    autonodes::any::AnyNodeRef,
+    extra::ExtraChild,
+    issue::VoidEmitter,
+    phpdoc::types::{PHPDocComment, PHPDocEntry},
+    symboldata::FileLocation,
     symbols::FullyQualifiedName,
 };
 use crate::{
@@ -56,17 +63,68 @@ impl FunctionDefinitionNode {
     ) -> Option<Arc<RwLock<FunctionData>>> {
         let fname = self.get_function_name(state, emitter);
         let read = state.symbol_data.functions.read().unwrap();
-        read.get(&fname).cloned()
+        read.get(&fname.to_ascii_lowercase()).cloned()
+    }
+
+    fn get_php_declared_return_type(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        let ret = &self.return_type.as_ref()?;
+        ret.get_utype(state, emitter)
+    }
+
+    fn get_inline_phpdoc_return_type(&self, state: &mut AnalysisState) -> Option<(UnionType, Range)> {
+        let arg_range = self.parameters.range;
+        let statement_range = self.body.range;
+        eprintln!(
+            "Looking between {} and {}",
+            arg_range.end_byte, statement_range.start_byte
+        );
+
+        let emitter = VoidEmitter::new();
+
+        let comments: Vec<_> = self
+            .extras
+            .iter()
+            .filter_map(|x| {
+                if let ExtraChild::Comment(c) = &**x {
+                    Some(c.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let comment = comments.first()?;
+
+        if comment.range.start_byte <= arg_range.end_byte {
+            return None;
+        }
+        if comment.range.end_byte >= statement_range.start_byte {
+            return None;
+        }
+        let phpdoc = PHPDocComment::parse(&comment.get_raw(), &comment.range).ok()?;
+
+        if phpdoc.entries.len() != 1 {
+            return None;
+        }
+
+        let entry = phpdoc.entries.first().cloned()?;
+        let (range, raw_utype) = if let PHPDocEntry::Anything(range, raw_utype) = entry {
+            (range, raw_utype)
+        } else {
+            return None;
+        };
+        UnionType::parse_with_colon(raw_utype, range, state, &emitter)
+            .map(|utype| (utype, range))
     }
 }
 
 impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
     fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         let fname = self.get_function_name(state, emitter);
-
-        state
-            .in_function_stack
-            .push(FunctionState::new_function(fname.get_name().unwrap()));
 
         let mut is_dup = false;
         {
@@ -76,6 +134,60 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                 is_dup = true;
             }
         }
+
+        let mut comment_return_type = None;
+        let mut param_map = HashMap::new();
+        let mut phpdoc = None;
+        if let Some((doc_comment, range)) = &state.last_doc_comment {
+            match PHPDocComment::parse(doc_comment, range) {
+                Ok(doc_comment) => {
+                    for entry in &doc_comment.entries {
+                        match entry {
+                            PHPDocEntry::Return(range, ptype, _desc) => {
+                                comment_return_type =
+                                    UnionType::from_parsed_type(ptype.clone(), state, emitter)
+                                        .map(|x| (x, range.clone()));
+                            }
+                            PHPDocEntry::Param(_, _, osstr_name, _) => {
+                                if let Some(osstr_name) = osstr_name {
+                                    let name = osstr_name.into();
+                                    if param_map.contains_key(&name) {
+                                        crate::missing!("Emit duplicate phpdoc param name");
+                                    } else {
+                                        param_map.insert(name, entry.clone());
+                                    }
+                                } else {
+                                    crate::missing!("Emit phpdoc param without name");
+                                }
+                            }
+                            PHPDocEntry::Var(range, _, _, _) => {
+                                emitter.emit(Issue::MisplacedPHPDocEntry(
+                                    state.pos_from_range(range.clone()),
+                                    "@var can't be used on a function-declaration".into(),
+                                ));
+                            }
+                            _ => (),
+                        }
+                    }
+                    phpdoc = Some(doc_comment);
+                }
+                Err(_) => {
+                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(range.clone())))
+                }
+            }
+        }
+
+        if let None = comment_return_type {
+            comment_return_type = self.get_inline_phpdoc_return_type(state);
+        }
+
+        let php_return_type = self.get_php_declared_return_type(state, emitter);
+
+        let arguments = self
+            .parameters
+            .analyze_first_pass_parameters(state, emitter, &param_map);
+
+        let mut maybe_fdata = None;
         if !is_dup {
             let mut write = state.symbol_data.functions.write().unwrap();
             if let Some(_) = write.get(&fname.to_ascii_lowercase()) {
@@ -86,20 +198,25 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                 let fdata = Arc::new(RwLock::new(FunctionData {
                     name: fname.clone(),
                     position,
-                    php_return_type: None,
-                    comment_return_type: None,
+                    php_return_type,
+                    comment_return_type,
                     inferred_return_type: None,
-                    arguments: vec![],
+                    arguments,
                     variadic: false,
                     pure: false,
                     deterministic: false,
                     return_value: None,
                     overload_map: HashMap::new(),
                 }));
-
+                maybe_fdata = Some(fdata.clone());
                 write.insert(fname.to_ascii_lowercase(), fdata);
             }
         }
+        state.in_function_stack.push(FunctionState::new_function(
+            fname.get_name().unwrap(),
+            maybe_fdata,
+        ));
+
         self.analyze_first_pass_children(&self.as_any(), state, emitter);
 
         state.in_function_stack.pop();
@@ -113,8 +230,19 @@ impl ThirdPassAnalyzeableNode for FunctionDefinitionNode {
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
-        let function =
-            FunctionState::new_function(self.get_function_name(state, emitter).get_name().unwrap());
+        let data = if let Some(dt) = self.get_function_data(state, emitter) {
+            dt
+        } else {
+            eprintln!(
+                "missing function_data for {}",
+                self.get_function_name(state, emitter)
+            );
+            return true;
+        };
+        let function = FunctionState::new_function(
+            self.get_function_name(state, emitter).get_name().unwrap(),
+            Some(data),
+        );
         state.in_function_stack.push(function);
         if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;

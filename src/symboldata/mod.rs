@@ -1,4 +1,5 @@
 use tree_sitter::Point;
+use tree_sitter::Range;
 
 use crate::issue::IssuePosition;
 use crate::symbols::FullyQualifiedName;
@@ -86,7 +87,7 @@ pub struct FunctionData {
     pub name: FullyQualifiedName,
     pub position: FileLocation,
     pub php_return_type: Option<UnionType>,
-    pub comment_return_type: Option<UnionType>,
+    pub comment_return_type: Option<(UnionType, Range)>,
     pub inferred_return_type: Option<UnionType>,
     pub arguments: Vec<FunctionArgumentData>,
     pub variadic: bool,

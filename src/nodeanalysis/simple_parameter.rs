@@ -1,13 +1,15 @@
 use crate::{
-    analysis::state::AnalysisState,
+    analysis::state::{AnalysisState, FunctionDataPointer},
     autonodes::{any::AnyNodeRef, simple_parameter::SimpleParameterNode},
     issue::IssueEmitter,
+    phpdoc::types::PHPDocEntry,
+    symboldata::class::FunctionArgumentData,
     symbols::Name,
-    types::union::UnionType,
+    types::union::{DiscreteType, UnionType},
     value::PHPValue,
 };
 
-use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
+use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
 impl SimpleParameterNode {
@@ -28,15 +30,62 @@ impl SimpleParameterNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
+        let comment_type = self.get_declared_comment_type(state, emitter);
+        let mut utype = comment_type.or_else(|| self.get_declared_native_type(state, emitter))?;
+        if let Some(x) = &self.default_value {
+            if let Some(PHPValue::NULL) = x.get_php_value(state, emitter) {
+                utype.types.insert(DiscreteType::NULL);
+            }
+        }
+        Some(utype)
+    }
+
+    pub fn get_variable_name(&self) -> Name {
+        self.name.get_variable_name()
+    }
+
+    pub fn get_declared_comment_type(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        let param_data = self.get_parameter_data(state)?;
+        if let Some(PHPDocEntry::Param(_range, union_of_types, _name, _desc)) =
+            param_data.phpdoc_entry
+        {
+            UnionType::from_parsed_type(union_of_types, state, emitter)
+        } else {
+            param_data.inline_phpdoc_type.map(|x| x.1)
+        }
+    }
+
+    fn get_parameter_data(&self, state: &mut AnalysisState) -> Option<FunctionArgumentData> {
+        let func_state_ref = state.in_function_stack.last()?;
+        let data = &func_state_ref.data.as_ref()?;
+        let name = self.get_variable_name();
+        let args = match data {
+            FunctionDataPointer::Method(m) => m.read().unwrap().arguments.clone(),
+            FunctionDataPointer::Function(f) => f.read().unwrap().arguments.clone(),
+        };
+
+        for arg in args {
+            if arg.name == name {
+                return Some(arg);
+            }
+        }
+        None
+    }
+
+    pub fn get_declared_native_type(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
         if let Some(t) = &self.type_ {
             t.get_utype(state, emitter)
         } else {
             None
         }
-    }
-
-    pub fn get_variable_name(&self) -> Name {
-        self.name.get_variable_name()
     }
 
     pub fn get_default_value(

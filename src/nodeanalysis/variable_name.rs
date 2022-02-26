@@ -97,7 +97,7 @@ impl VariableNameNode {
     ) -> Option<crate::value::PHPValue> {
         let val_data_handle = self.get_var_data(state)?;
         let val_data = val_data_handle.read().unwrap();
-        let data_iter = val_data.written_data.iter();
+        let data_iter = val_data.all_written_data.iter();
         let (_, data) = data_iter.as_ref().last()?;
         data.clone()
     }
@@ -113,15 +113,13 @@ impl VariableNameNode {
         {
             let mut wr_val_data = val_data.write().unwrap();
 
-            wr_val_data.written_data.push((
-                val_type.unwrap_or_else(|| DiscreteType::Unknown.into()),
-                if state.in_conditional_branch {
-                    None
-                } else {
-                    value
-                },
-            ));
-            wr_val_data.written_to += 1;
+            let written_type = val_type.unwrap_or_else(|| DiscreteType::Unknown.into());
+            let written_data = if state.in_conditional_branch {
+                None
+            } else {
+                value
+            };
+            wr_val_data.single_write_to(written_type, written_data);
         }
     }
 }
@@ -175,7 +173,7 @@ impl AnalysisOfType for VariableNameNode {
         let var_name = self.get_variable_name();
         let var_data_handle = scope.get_var(&var_name)?;
         let var_data = var_data_handle.read().ok()?;
-        if let Some((vtype, _)) = var_data.written_data.last() {
+        if let Some((vtype, _)) = var_data.all_written_data.last() {
             Some(vtype.clone())
         } else {
             return None;

@@ -4,19 +4,24 @@ use std::{
     fmt::Display,
     iter::FromIterator,
     os::unix::prelude::OsStrExt,
+    sync::Arc,
 };
 
+use nom::error::Error;
 use tree_sitter::Range;
 
 use crate::{
     analysis::state::AnalysisState,
     issue::{Issue, IssueEmitter},
-    symboldata::class::ClassName,
+    symboldata::{class::ClassName, SymbolData},
     symbols::{FullyQualifiedName, Name},
 };
 
-use super::parse_types::{ConcreteType, ParsedType, ShapeKey, TypeName, TypeStruct, UnionOfTypes};
 use super::parser::union_type;
+use super::{
+    parse_types::{ConcreteType, ParsedType, ShapeKey, TypeName, TypeStruct, UnionOfTypes},
+    parser::union_type_with_colon,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SpecialType {
@@ -123,6 +128,8 @@ pub enum DiscreteType {
     Named(Name, FullyQualifiedName),
 
     Generic(Box<DiscreteType>, Vec<UnionType>),
+
+    ClassType(FullyQualifiedName, Name),
 }
 /*
 impl Ord for DiscreteType {
@@ -237,6 +244,15 @@ impl UnionType {
     ) -> (Option<UnionType>, Option<OsString>) {
         let parse_result = union_type(true)(type_str.as_bytes());
 
+        Self::handle_parse_result(type_str.clone(), parse_result, state, emitter)
+    }
+
+    fn handle_parse_result(
+        type_str: OsString,
+        parse_result: Result<(&[u8], Vec<ConcreteType>), nom::Err<Error<&[u8]>>>,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> (Option<UnionType>, Option<OsString>) {
         let (rest, parsed_type) = if let Some((rest, parsed_type)) = parse_result.ok() {
             (rest, parsed_type)
         } else {
@@ -263,6 +279,18 @@ impl UnionType {
         (found_types, remainder)
     }
 
+    pub fn parse_with_colon(
+        type_str: OsString,
+        range: Range,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        let parse_result = union_type_with_colon(true)(type_str.as_bytes());
+        let (utype, remainder) =
+            Self::handle_parse_result(type_str.clone(), parse_result, state, emitter);
+        Self::handle_remainder(utype, remainder, state, emitter, range)
+    }
+
     pub fn parse(
         type_str: OsString,
         range: Range,
@@ -272,6 +300,16 @@ impl UnionType {
         let (utype, remainder) =
             Self::parse_with_remainder(type_str.clone(), range, state, emitter);
 
+        Self::handle_remainder(utype, remainder, state, emitter, range)
+    }
+
+    fn handle_remainder(
+        utype: Option<UnionType>,
+        remainder: Option<OsString>,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+        range: Range
+    ) -> Option<UnionType> {
         if let Some(rest) = remainder {
             if rest.len() > 0 {
                 for ch in rest.as_bytes() {
@@ -340,6 +378,14 @@ impl UnionType {
             dtype.ensure_valid(state, emitter, range);
         }
     }
+
+    pub fn filter_types<P>(&self, predicate: P) -> UnionType
+    where
+        P: Sized + FnMut(&&DiscreteType) -> bool,
+    {
+        let types: Vec<DiscreteType> = self.types.iter().filter(predicate).cloned().collect();
+        UnionType::from(types)
+    }
 }
 
 impl DiscreteType {
@@ -387,6 +433,7 @@ impl DiscreteType {
                     ))
                 }
             }
+            DiscreteType::ClassType(_, _) => todo!(),
             _a @ DiscreteType::Generic(dtype, _utypes) => {
                 dtype.ensure_valid(state, emitter, range);
                 match &**dtype {
@@ -403,6 +450,114 @@ impl DiscreteType {
                     }
                     _ => (),
                 }
+            }
+        }
+    }
+
+    pub fn can_evaluate_to_true(&self) -> bool {
+        match self {
+            DiscreteType::NULL => false,
+            DiscreteType::Void => false,
+            DiscreteType::Int => true,
+            DiscreteType::Float => true,
+            DiscreteType::Resource => true,
+            DiscreteType::String => true,
+            DiscreteType::Bool => true,
+            DiscreteType::Mixed => true,
+            DiscreteType::False => false,
+            DiscreteType::Array => true,
+            DiscreteType::Object => true,
+            DiscreteType::Callable => true,
+            DiscreteType::TypedCallable(_, _) => true,
+            DiscreteType::Special(_) => true,
+            DiscreteType::Vector(_) => true,
+            DiscreteType::HashMap(_, _) => true,
+            DiscreteType::Shape(_) => true,
+            DiscreteType::Unknown => true,
+            DiscreteType::Named(_, _) => true,
+            DiscreteType::Generic(_, _) => true,
+            DiscreteType::ClassType(_, _) => true,
+        }
+    }
+
+    pub fn can_evaluate_to_false(&self) -> bool {
+        match self {
+            DiscreteType::NULL => true,
+            DiscreteType::Void => true,
+            DiscreteType::Int => true,
+            DiscreteType::Float => true,
+            DiscreteType::Resource => false,
+            DiscreteType::String => true,
+            DiscreteType::Bool => true,
+            DiscreteType::Mixed => true,
+            DiscreteType::False => true,
+            DiscreteType::Array => true,
+            DiscreteType::Object => false,
+            DiscreteType::Callable => false,
+            DiscreteType::TypedCallable(_, _) => false,
+            DiscreteType::Special(_) => false,
+            DiscreteType::Vector(_) => true,
+            DiscreteType::HashMap(_, _) => true,
+            DiscreteType::Shape(_) => true,
+            DiscreteType::Unknown => true,
+            DiscreteType::Named(_, _) => false,
+            DiscreteType::Generic(_, _) => {
+                crate::missing!("ensure that a generic type never can evaluate to boolean false");
+                false
+            }
+            DiscreteType::ClassType(_, _) => true,
+        }
+    }
+
+    ///
+    /// When someting with this type is an argument to `<some> instanceof SomeThing`
+    /// could this type evaluate to true?
+    pub fn can_be_instance_of(
+        &self,
+        check_cname: FullyQualifiedName,
+        symbol_data: &Arc<SymbolData>,
+    ) -> bool {
+        match self {
+            DiscreteType::NULL => false,
+            DiscreteType::Void => false,
+            DiscreteType::Int => false,
+            DiscreteType::Float => false,
+            DiscreteType::Resource => false,
+            DiscreteType::String => false,
+            DiscreteType::Bool => false,
+            DiscreteType::Mixed => true,
+            DiscreteType::False => false,
+            DiscreteType::Array => false,
+            DiscreteType::Object => true,
+            DiscreteType::Callable => true,
+            DiscreteType::TypedCallable(_, _) => true,
+            DiscreteType::Special(_) => {
+                // Needs more thight hardening
+                crate::missing!();
+                true
+            }
+            DiscreteType::Vector(_) => false,
+            DiscreteType::HashMap(_, _) => false,
+            DiscreteType::Shape(_) => false,
+            DiscreteType::Unknown => true,
+            DiscreteType::Named(_, fq_named) => {
+                let cname: ClassName = fq_named.into();
+                let check_cname: ClassName = check_cname.into();
+                if let Some(class_data) = symbol_data.get_class(&cname) {
+                    return class_data
+                        .read()
+                        .unwrap()
+                        .instanceof(&check_cname, symbol_data.clone());
+                }
+                return false;
+            }
+            DiscreteType::Generic(_, _) => {
+                crate::missing!();
+                true
+            }
+            DiscreteType::ClassType(_, _) => {
+                crate::missing!();
+                true
             }
         }
     }
@@ -478,6 +633,20 @@ fn from_parsed_type(
         ParsedType::CallableUntyped => {
             Some(DiscreteType::Callable.into())
             //             crate::missing_none!("callable type with not details must be cast to UnionType")
+        }
+        ParsedType::ClassType(cname, tname) => {
+            let fq_name = match cname {
+                TypeName::Name(symbol_name) => {
+                    state.get_fq_symbol_name_from_local_name(&symbol_name)
+                }
+                TypeName::FQName(fq) => fq,
+                TypeName::RelativeName(_r) => {
+                    return crate::missing_none!(
+                        "Missing support for types in relative class-names"
+                    );
+                }
+            };
+            Some(DiscreteType::ClassType(fq_name, tname).into())
         }
     };
 
@@ -599,6 +768,11 @@ fn from_type_struct(
         };
         cname.into()
     };
+    match &base_type {
+        DiscreteType::Vector(_) |
+        DiscreteType::HashMap(_,_) => return Some(base_type.into()),
+        _ => ()
+    }
 
     if let Some(generic_args) = type_struct.generics {
         let mut generics: Vec<UnionType> = vec![];
@@ -674,6 +848,9 @@ impl Display for DiscreteType {
                     let indre: Vec<_> = v.iter().map(|x| x.to_string()).collect();
 
                     format!("{}<{}>", base_type, indre.join(", "))
+                }
+                DiscreteType::ClassType(fq_cname, tname) => {
+                    format!("{}::{}", fq_cname, tname)
                 }
             }
         )

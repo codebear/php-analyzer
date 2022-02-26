@@ -338,6 +338,7 @@ impl From<DiscreteType> for Symbol {
             }
             DiscreteType::Generic(_, _) => todo!(),
             DiscreteType::Shape(_) => todo!(),
+            DiscreteType::ClassType(_,_) => todo!(),
         }
     }
 }

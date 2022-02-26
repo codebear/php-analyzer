@@ -615,8 +615,8 @@ pub struct FunctionArgumentData {
     pub default_value: Option<PHPValue>,
     pub nullable: bool,
     pub optional: bool,
-    pub own_phpdoc: Option<PHPDocComment>,
-    pub phpdoc_entry: Option<(PHPDocEntry, Range)>,
+    pub inline_phpdoc_type: Option<(Range, UnionType)>,
+    pub phpdoc_entry: Option<PHPDocEntry>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]

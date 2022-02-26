@@ -553,7 +553,10 @@ for(const node_def of node_defs) {
             child_cast += "     child_vec.extend(self.extras.iter().map(|n| n.as_any()));\n";
 
         } else if (child_count) {
-            impl_members += "extras: vec![], // todo lookup unused nodes\n";
+            // impl_members += "extras: vec![], // todo lookup unused nodes\n";
+            impl_members += `extras: ExtraChild::parse_vec(
+                node.named_children(&mut node.walk())
+                    .filter(|node| node.kind() == "comment"), source).unwrap(),`;
         }
         let raw_getter = "";
         if (!child_count) {

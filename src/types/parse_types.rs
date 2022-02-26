@@ -41,6 +41,7 @@ pub enum ParsedType {
     Type(TypeStruct),
     Shape(Vec<ShapeEntry>),
     Callable(ArgumentVector, Option<ReturnType>),
+    ClassType(TypeName, Name),
     CallableUntyped,
 }
 

@@ -6,7 +6,6 @@ use std::{
 use crate::{
     issue::{Issue, IssueEmitter, IssuePosition},
     symbols::Name,
-    types::union::{DiscreteType, UnionType},
 };
 
 use super::{data::VarData, state::AnalysisState};
@@ -39,6 +38,13 @@ impl Scope {
     }
 
     pub fn get_or_create_var(&mut self, var_name: Name) -> Arc<RwLock<VarData>> {
+        if self.vars.contains_key(&var_name) {
+            return self
+                .vars
+                .get(&var_name)
+                .cloned()
+                .expect("We just confirmed the entry is there");
+        }
         match &self.parent {
             Some(p) => {
                 let read = p.read().unwrap();
@@ -49,6 +55,10 @@ impl Scope {
             _ => (),
         }
 
+        self.get_or_create_local_var(var_name)
+    }
+
+    pub fn get_or_create_local_var(&mut self, var_name: Name) -> Arc<RwLock<VarData>> {
         if self.vars.get(&var_name).is_none() {
             self.vars.insert(
                 var_name.clone(),
@@ -56,14 +66,16 @@ impl Scope {
             );
         }
 
-        if let Some(data) = self.vars.get(&var_name) {
-            data.clone()
-        } else {
-            panic!("Kanke");
-        }
+        self.vars
+            .get(&var_name)
+            .cloned()
+            .expect("We just ensured this entry exists")
     }
 
     pub fn get_var(&self, var_name: &Name) -> Option<Arc<RwLock<VarData>>> {
+        if self.vars.contains_key(&var_name) {
+            return self.vars.get(&var_name).cloned();
+        }
         match &self.parent {
             Some(p) => {
                 let read = p.read().unwrap();
@@ -80,9 +92,16 @@ impl Scope {
 
 pub trait BranchableScope {
     fn branch(&self) -> Arc<RwLock<Scope>>;
+
     fn join(&self, branches: Vec<Arc<RwLock<Scope>>>, emitter: &dyn IssueEmitter);
 
     fn analyze_for_unused_vars(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter);
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum BranchSide {
+    TrueBranch,
+    FalseBranch,
 }
 
 impl BranchableScope for Arc<RwLock<Scope>> {
@@ -97,6 +116,7 @@ impl BranchableScope for Arc<RwLock<Scope>> {
         let branch_count = branches.len();
 
         let mut vars = HashMap::new();
+        // Gather all variables from all branches
         for b in branches {
             let scope = b.read().unwrap();
             for (var, data) in &scope.vars {
@@ -111,24 +131,35 @@ impl BranchableScope for Arc<RwLock<Scope>> {
                 let wr_ref = write.get_or_create_var(key.clone());
                 let mut write_var = wr_ref.write().unwrap();
                 let mut written_data: Vec<_> = vec![];
+                let mut last_data: Vec<Vec<_>> = vec![];
                 for e in data {
                     let reader = e.read().unwrap();
                     write_var.read_from += reader.read_from;
                     write_var.written_to += reader.written_to;
                     write_var.is_partial |= reader.is_partial;
 
-                    written_data.push(reader.written_data.last().cloned());
+                    written_data.extend(reader.all_written_data.iter().cloned());
+                    last_data.push(reader.last_written_data.iter().cloned().collect());
                     //   eprintln!("Har data for var {:?}: {:?}", key, *reader);
                     // FIXME written_data
                 }
+                write_var.all_written_data.extend(written_data);
                 if data.len() < branch_count {
                     write_var.is_partial = true;
+                    write_var.last_written_data = vec![];
                 } else {
+                    let mut last_flattened = vec![];
+                    for last in last_data {
+                        last_flattened.extend(last);
+                    }
+                    write_var.last_written_data = last_flattened;
+                    crate::missing!("Check this joining");
+                    /*
                     let mut written_type = UnionType::new();
                     let mut has_missing_type = false;
                     let mut has_missing_data = false;
                     let mut written_values = vec![];
-                    for written in written_data {
+                    for written in last_data {
                         if let Some((dtype, data)) = written {
                             written_type.merge_into(dtype);
                             if let Some(dt) = data {
@@ -155,11 +186,11 @@ impl BranchableScope for Arc<RwLock<Scope>> {
                     if has_missing_type {
                         // Stuff something in there
                         write_var
-                            .written_data
+                            .all_written_data
                             .push((DiscreteType::Unknown.into(), None));
                     } else {
-                        write_var.written_data.push((written_type, written_value));
-                    }
+                        write_var.all_written_data.push((written_type, written_value));
+                    }*/
                 }
             }
         }
@@ -219,5 +250,14 @@ impl ScopeStack {
 
     pub fn pop(&mut self) -> Arc<RwLock<Scope>> {
         self.stack.pop().expect("Should always be a scope to pop")
+    }
+}
+
+impl BranchSide {
+    pub(crate) fn inverse(&self) -> BranchSide {
+        match self {
+            BranchSide::TrueBranch => BranchSide::FalseBranch,
+            BranchSide::FalseBranch => BranchSide::TrueBranch,
+        }
     }
 }

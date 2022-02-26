@@ -9,6 +9,8 @@ use tree_sitter::Range;
 use crate::autonodes::any::AnyNodeRef;
 use crate::issue::IssuePosition;
 use crate::symboldata::class::ClassName;
+use crate::symboldata::class::MethodData;
+use crate::symboldata::FunctionData;
 use crate::symboldata::SymbolData;
 use crate::symbols::FullyQualifiedName;
 use crate::symbols::Name;
@@ -90,20 +92,28 @@ impl ClassState {
 }
 
 #[derive(Debug)]
+
+pub enum FunctionDataPointer {
+    Method(Arc<RwLock<MethodData>>),
+    Function(Arc<RwLock<FunctionData>>),
+}
+#[derive(Debug)]
 pub struct FunctionState {
     pub name: Option<Name>,
     pub is_method: bool,
     pub scope_stack: RwLock<ScopeStack>,
     pub returns: RwLock<Vec<(Option<UnionType>, Option<PHPValue>)>>,
+    pub data: Option<FunctionDataPointer>,
 }
 
 impl FunctionState {
-    pub fn new(name: Option<Name>, is_method: bool) -> Self {
+    pub fn new(name: Option<Name>, is_method: bool, data: Option<FunctionDataPointer>) -> Self {
         Self {
             scope_stack: RwLock::new(ScopeStack::new()),
             returns: RwLock::new(Vec::new()),
             name,
             is_method,
+            data,
         }
     }
 
@@ -112,16 +122,30 @@ impl FunctionState {
         rets.push((ret_type, ret_value));
     }
 
-    pub(crate) fn new_method(method_name: Name) -> FunctionState {
-        Self::new(Some(method_name), true)
+    pub(crate) fn new_method(
+        method_name: Name,
+        method_data: Arc<RwLock<MethodData>>,
+    ) -> FunctionState {
+        Self::new(
+            Some(method_name),
+            true,
+            Some(FunctionDataPointer::Method(method_data)),
+        )
     }
 
-    pub(crate) fn new_function(name: Name) -> FunctionState {
-        Self::new(Some(name), false)
+    pub(crate) fn new_function(
+        name: Name,
+        function_data: Option<Arc<RwLock<FunctionData>>>,
+    ) -> FunctionState {
+        Self::new(
+            Some(name),
+            false,
+            function_data.map(|x| FunctionDataPointer::Function(x)),
+        )
     }
 
     pub(crate) fn new_anonymous() -> FunctionState {
-        Self::new(None, false)
+        Self::new(None, false, None)
     }
 }
 

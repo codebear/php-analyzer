@@ -120,16 +120,7 @@ impl SubscriptExpressionNode {
         match (val, idx) {
             (Some(PHPValue::Array(arr)), Some(val @ PHPValue::Int(_)))
             | (Some(PHPValue::Array(arr)), Some(val @ PHPValue::String(_)))
-            | (Some(PHPValue::Array(arr)), Some(val @ PHPValue::NULL)) => {
-                if let Some(array_key) = val.as_php_array_key() {
-                    for (key, value) in &arr {
-                        if key.equal_to(&array_key).unwrap_or(false) {
-                            return Some(value.clone());
-                        }
-                    }
-                }
-                None
-            }
+            | (Some(PHPValue::Array(arr)), Some(val @ PHPValue::NULL)) => arr.get_value_by_key(val),
             (Some(_), Some(_)) => crate::missing_none!(
                 "{}.get_php_value(..) with known both index and dereferenceable",
                 self.kind()

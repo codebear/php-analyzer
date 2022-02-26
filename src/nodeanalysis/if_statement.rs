@@ -1,4 +1,4 @@
-use crate::analysis::scope::BranchableScope;
+use crate::analysis::scope::{BranchSide, BranchableScope};
 use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::issue::Issue;
@@ -9,6 +9,7 @@ use crate::{
     value::PHPValue,
 };
 
+use super::super::analysis::hardening::BranchTypeHardening;
 use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
 
@@ -64,11 +65,17 @@ impl ThirdPassAnalyzeableNode for IfStatementNode {
         } else {
             (true, true)
         };
-        crate::missing!("Harden types in scope based on conditionals");
 
         let mut scopes = vec![];
         if true_branch {
-            let branch = scope.branch();
+            let branch = self
+                .condition
+                .branch_with_hardened_types_base_on_conditional_node(
+                    scope.clone(),
+                    BranchSide::TrueBranch,
+                    state,
+                );
+            // let branch = scope.branch_with_hardened_types_base_on_conditional_node(&*self.condition.child, BranchSide::True, state);
             state.push_scope(branch);
 
             let was_conditional = state.in_conditional_branch;
@@ -98,8 +105,15 @@ impl ThirdPassAnalyzeableNode for IfStatementNode {
                 if true_branch || alts.len() > 1 {
                     state.in_conditional_branch = true;
                 }
+                let false_scope = self
+                    .condition
+                    .branch_with_hardened_types_base_on_conditional_node(
+                        scope.clone(),
+                        BranchSide::FalseBranch,
+                        state,
+                    );
                 for a in alts {
-                    let branch = scope.branch();
+                    let branch = false_scope.branch();
                     state.push_scope(branch);
                     carry_on = a.as_any().analyze_third_pass(state, emitter, path);
                     scopes.push(state.pop_scope());
@@ -111,9 +125,18 @@ impl ThirdPassAnalyzeableNode for IfStatementNode {
             }
         } else {
             // emit the other branch as unreachable
+            let false_scope = self
+                .condition
+                .branch_with_hardened_types_base_on_conditional_node(
+                    scope.clone(),
+                    BranchSide::FalseBranch,
+                    state,
+                );
+            scopes.push(false_scope);
         }
         //  println!("Fant scopes count={}: {:?}", scopes.len(), scopes);
-
+        //eprintln!("SCOPES: {:#?}", scopes);
+        //todo!();
         scope.join(scopes, emitter);
 
         true

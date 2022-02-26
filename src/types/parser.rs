@@ -69,6 +69,16 @@ fn simple_type_name(input: &[u8]) -> IResult<&[u8], Name> {
     Ok((input, Name::from(result)))
 }
 
+pub fn union_type_with_colon(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], UnionOfTypes> {
+    move |input| {
+        let (input, _) = ourspace0(multiline)(input)?;
+        let (input, _) = tag(":")(input)?;
+        let (input, _) = ourspace0(multiline)(input)?;
+        separated_list1(union_separator(multiline), concrete_type(multiline))(input)  
+        //      union_type(multiline)
+    }
+}
+
 pub fn union_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], UnionOfTypes> {
     move |input| {
         let (input, _) = ourspace0(multiline)(input)?;
@@ -202,6 +212,7 @@ fn concrete_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ConcreteTy
 fn one_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ParsedType> {
     move |input| {
         alt((
+            class_type(multiline),
             shape_type(multiline),
             callable_type(multiline),
             normal_type(multiline),
@@ -277,5 +288,18 @@ fn callable_return_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], Ret
         let (input, _) = tag(b":")(input)?;
         let (input, _) = ourspace0(multiline)(input)?;
         union_type(multiline)(input)
+    }
+}
+
+fn class_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ParsedType> {
+    move |input| {
+        let (input, _) = ourspace0(multiline)(input)?;
+        // FIXME type-name, tillater dash i "klasse"-navn, det er uheldig
+        let (input, cname) = type_name(input)?;
+        let (input, _) = ourspace0(multiline)(input)?;
+        let (input, _) = tag(b"::")(input)?;
+        let (input, _) = ourspace0(multiline)(input)?;
+        let (input, tname) = simple_type_name(input)?;
+        Ok((input, ParsedType::ClassType(cname, tname)))
     }
 }

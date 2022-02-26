@@ -33,9 +33,10 @@ impl FunctionCallExpressionNode {
     ) -> Option<UnionType> {
         if let Some(data_handle) = self.get_func_data(state, emitter) {
             let data = data_handle.read().unwrap();
-
+            // FIXME finn ut om dette er en optimal måte å bruke typedefinisjoner på
             data.comment_return_type
                 .as_ref()
+                .map(|x| &x.0)
                 .or_else(|| data.php_return_type.as_ref())
                 .or_else(|| data.inferred_return_type.as_ref())
                 .cloned()

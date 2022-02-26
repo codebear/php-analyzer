@@ -8,7 +8,8 @@ pub struct VarData {
     pub comment_declared_type: Option<UnionType>,
     pub php_declared_type: Option<UnionType>,
     pub default_value: Option<PHPValue>,
-    pub written_data: Vec<(UnionType, Option<PHPValue>)>,
+    pub all_written_data: Vec<(UnionType, Option<PHPValue>)>,
+    pub last_written_data: Vec<(UnionType, Option<PHPValue>)>,
     pub written_to: usize,
     pub read_from: usize,
     pub referenced_ranges: Vec<Range>,
@@ -24,7 +25,8 @@ impl VarData {
             php_declared_type: None,
             comment_declared_type: None,
             default_value: None,
-            written_data: vec![],
+            all_written_data: vec![],
+            last_written_data: vec![],
             written_to: 0,
             read_from: 0,
             referenced_ranges: vec![],
@@ -44,11 +46,31 @@ impl VarData {
     }
 
     pub fn get_inferred_type(&self) -> Option<UnionType> {
-        let types: Vec<_> = self.written_data.iter().map(|x| x.0.clone()).collect();
+        let types: Vec<_> = self.all_written_data.iter().map(|x| x.0.clone()).collect();
         if types.len() > 0 {
             Some(UnionType::reduce(types))
         } else {
             None
         }
+    }
+
+    pub fn single_write_to(&mut self, utype: UnionType, value: Option<PHPValue>) {
+        let data = (utype, value);
+        self.all_written_data.push(data.clone());
+        self.last_written_data = vec![data];
+        self.written_to += 1;
+    }
+
+    /// when multiple branches, which have all written to it is joined
+    pub fn multi_write_to(
+        &mut self,
+        _last: Vec<(UnionType, Option<PHPValue>)>,
+        _all_data: Vec<(UnionType, Option<PHPValue>)>,
+    ) {
+        todo!();
+        /*         let data = (utype, value);
+        self.all_written_data.push(data.clone());
+        self.last_written_data = vec![data];
+        self.written_to += 1; */
     }
 }
