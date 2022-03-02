@@ -1,4 +1,4 @@
-use std::ffi::OsString;
+use std::{ffi::OsString, sync::{Arc, RwLock}};
 
 use crate::{
     analysis::state::{AnalysisState, ClassState},
@@ -51,6 +51,11 @@ impl ClassDeclarationNode {
         let class_name =
             ClassName::new_with_analysis_state_without_aliasing(&decl_class_name, state);
         class_name
+    }
+
+    fn get_class_data(&self,  state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
+        let class_name = self.get_class_name(state);
+        state.symbol_data.get_or_create_class(&class_name)
     }
 }
 
@@ -244,7 +249,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
             }
         }
         // eprintln!("ClassDeclarationNode.analyze_round_one(): Analyzed os fram til {:?}", class_data);
-        state.in_class = Some(ClassState::Class(class_name));
+        state.in_class = Some(ClassState::Class(class_name, symbol_data));
         state.last_doc_comment = None;
         self.analyze_first_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
@@ -254,7 +259,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
 impl SecondPassAnalyzeableNode for ClassDeclarationNode {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         let class_name = self.get_class_name(state);
-        state.in_class = Some(ClassState::Class(class_name));
+        state.in_class = Some(ClassState::Class(class_name, self.get_class_data(state)));
         self.analyze_second_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
     }
@@ -268,7 +273,7 @@ impl ThirdPassAnalyzeableNode for ClassDeclarationNode {
         path: &Vec<AnyNodeRef>,
     ) -> bool {
         let class_name = self.get_class_name(state);
-        state.in_class = Some(ClassState::Class(class_name));
+        state.in_class = Some(ClassState::Class(class_name, self.get_class_data(state)));
         state.last_doc_comment = None;
         let res = self.analyze_third_pass_children(&self.as_any(), state, emitter, path);
         state.in_class = None;

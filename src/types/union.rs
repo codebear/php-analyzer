@@ -130,6 +130,7 @@ pub enum DiscreteType {
     Generic(Box<DiscreteType>, Vec<UnionType>),
 
     ClassType(FullyQualifiedName, Name),
+    Template(Name),
 }
 /*
 impl Ord for DiscreteType {
@@ -434,6 +435,10 @@ impl DiscreteType {
                 }
             }
             DiscreteType::ClassType(_, _) => todo!(),
+            DiscreteType::Template(t) => emitter.emit(Issue::EmptyTemplate(
+                state.pos_from_range(range.clone()),
+                t.clone(),
+            )),
             _a @ DiscreteType::Generic(dtype, _utypes) => {
                 dtype.ensure_valid(state, emitter, range);
                 match &**dtype {
@@ -477,6 +482,7 @@ impl DiscreteType {
             DiscreteType::Named(_, _) => true,
             DiscreteType::Generic(_, _) => true,
             DiscreteType::ClassType(_, _) => true,
+            DiscreteType::Template(_) => true,
         }
     }
 
@@ -506,6 +512,7 @@ impl DiscreteType {
                 false
             }
             DiscreteType::ClassType(_, _) => true,
+            DiscreteType::Template(_) => true,
         }
     }
 
@@ -556,6 +563,10 @@ impl DiscreteType {
                 true
             }
             DiscreteType::ClassType(_, _) => {
+                crate::missing!();
+                true
+            }
+            DiscreteType::Template(_) => {
                 crate::missing!();
                 true
             }
@@ -739,6 +750,17 @@ fn from_type_struct(
     } else {
         None
     };
+
+    if type_struct.generics.is_none() {
+        if let TypeName::Name(x) = &type_struct.type_name {
+            let data = state.get_generic_templates();
+            if let Some(data) = data {
+                if data.contains(&x) {
+                    return Some(DiscreteType::Template(x.clone()).into());
+                }
+            }
+        }
+    }
     // ...
 
     let mut base_type = if let Some(DiscreteType::Special(SpecialType::Self_)) = dtype {
@@ -827,6 +849,9 @@ impl Display for DiscreteType {
                 DiscreteType::Named(_, t) => t.to_string(),
                 DiscreteType::False => "false".to_string(),
                 DiscreteType::Object => "object".to_string(),
+
+                DiscreteType::Template(t) => t.to_string(),
+
                 DiscreteType::Shape(shape) => {
                     let mut buf = String::new();
                     buf.push_str("array{");

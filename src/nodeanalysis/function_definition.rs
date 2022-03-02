@@ -12,7 +12,7 @@ use crate::{
     issue::VoidEmitter,
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::FileLocation,
-    symbols::FullyQualifiedName,
+    symbols::{FullyQualifiedName, Name},
 };
 use crate::{
     analysis::state::{AnalysisState, FunctionState},
@@ -81,10 +81,6 @@ impl FunctionDefinitionNode {
     ) -> Option<(UnionType, Range)> {
         let arg_range = self.parameters.range;
         let statement_range = self.body.range;
-        eprintln!(
-            "Looking between {} and {}",
-            arg_range.end_byte, statement_range.start_byte
-        );
 
         let emitter = VoidEmitter::new();
 
@@ -140,6 +136,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
         let mut comment_return_type = None;
         let mut param_map = HashMap::new();
         let mut phpdoc = None;
+        let mut function_template_params = vec![];
         if let Some((doc_comment, range)) = &state.last_doc_comment {
             match PHPDocComment::parse(doc_comment, range) {
                 Ok(doc_comment) => {
@@ -167,6 +164,10 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                                     state.pos_from_range(range.clone()),
                                     "@var can't be used on a function-declaration".into(),
                                 ));
+                            }
+                            PHPDocEntry::Template(_range, t, _desc) => {
+                                let temp_name: Name = t.into();
+                                function_template_params.push(temp_name);
                             }
                             _ => (),
                         }
@@ -209,6 +210,11 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                     deterministic: false,
                     return_value: None,
                     overload_map: HashMap::new(),
+                    generic_templates: if function_template_params.len() > 0 {
+                        Some(function_template_params)
+                    } else {
+                        None
+                    },
                 }));
                 maybe_fdata = Some(fdata.clone());
                 write.insert(fname.to_ascii_lowercase(), fdata);

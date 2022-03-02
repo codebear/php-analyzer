@@ -147,6 +147,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
         let mut phpdoc = None;
         let mut comment_return_type = None;
         let mut param_map = HashMap::new();
+        let mut method_template_params = vec![];
         if let Some((doc_comment, range)) = &state.last_doc_comment {
             match PHPDocComment::parse(doc_comment, range) {
                 Ok(doc_comment) => {
@@ -167,6 +168,22 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                                     }
                                 } else {
                                     crate::missing!("Emit phpdoc param without name");
+                                }
+                            }
+                            PHPDocEntry::Template(range, t, _) => {
+                                let generic_templates = state.get_generic_templates();
+                                let temp_name: Name = t.into();
+                                if let Some(gen) = generic_templates {
+                                    if gen.contains(&temp_name) {
+                                        emitter.emit(Issue::DuplicateTemplate(
+                                            state.pos_from_range(range.clone()),
+                                            temp_name,
+                                        ))
+                                    } else {
+                                        method_template_params.push(temp_name);
+                                    }
+                                } else {
+                                    method_template_params.push(temp_name);
                                 }
                             }
                             PHPDocEntry::Var(range, _, _, _) => {

@@ -95,6 +95,7 @@ pub struct FunctionData {
     pub pure: bool,
     pub return_value: Option<PHPValue>,
     pub overload_map: HashMap<Vec<PHPValue>, Option<UnionType>>,
+    pub generic_templates: Option<Vec<Name>>,
 }
 
 #[derive(Debug)]

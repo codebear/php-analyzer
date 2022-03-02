@@ -1,3 +1,5 @@
+use std::sync::{RwLock, Arc};
+
 use crate::{
     analysis::state::{AnalysisState, ClassState},
     autonodes::{any::AnyNodeRef, trait_declaration::TraitDeclarationNode},
@@ -42,6 +44,11 @@ impl TraitDeclarationNode {
         let decl_trait_name = self.get_declared_name();
         ClassName::new_with_analysis_state_without_aliasing(&decl_trait_name, state)
     }
+
+    fn get_trait_data(&self,  state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
+        let trait_name = self.get_trait_name(state);
+        state.symbol_data.get_or_create_class(&trait_name)
+    }
 }
 ///
 /// TRAITS
@@ -74,7 +81,7 @@ impl FirstPassAnalyzeableNode for TraitDeclarationNode {
         }
 
         state.last_doc_comment = None;
-        state.in_class = Some(ClassState::Trait(trait_name));
+        state.in_class = Some(ClassState::Trait(trait_name, symbol_data));
         self.analyze_first_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
     }
@@ -83,7 +90,7 @@ impl FirstPassAnalyzeableNode for TraitDeclarationNode {
 impl SecondPassAnalyzeableNode for TraitDeclarationNode {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         let trait_name = self.get_trait_name(state);
-        state.in_class = Some(ClassState::Trait(trait_name));
+        state.in_class = Some(ClassState::Trait(trait_name, self.get_trait_data(state)));
         self.analyze_second_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
     }
@@ -97,7 +104,7 @@ impl ThirdPassAnalyzeableNode for TraitDeclarationNode {
     ) -> bool {
         let trait_name = self.get_trait_name(state);
         state.last_doc_comment = None;
-        state.in_class = Some(ClassState::Trait(trait_name));
+        state.in_class = Some(ClassState::Trait(trait_name, self.get_trait_data(state)));
         let carry_on = self.analyze_third_pass_children(&self.as_any(), state, emitter, path);
         state.in_class = None;
 

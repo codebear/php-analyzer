@@ -11,6 +11,7 @@ pub mod traversable;
 pub mod try_catch;
 pub mod types;
 mod values;
+pub mod generics;
 
 use std::{
     ffi::OsString,

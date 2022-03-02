@@ -38,6 +38,10 @@ impl Name {
     {
         self.0.eq_ignore_ascii_case(method_name)
     }
+
+    pub(crate) fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
 }
 
 impl From<OsString> for Name {
@@ -71,6 +75,12 @@ impl From<&OsStr> for Name {
 impl From<&[u8]> for Name {
     fn from(byte_vec: &[u8]) -> Self {
         Self::from(OsStr::from_bytes(byte_vec))
+    }
+}
+
+impl From<Vec<u8>> for Name {
+    fn from(byte_vec: Vec<u8>) -> Self {
+        Self::from(OsStr::from_bytes(&byte_vec))
     }
 }
 
@@ -339,6 +349,7 @@ impl From<DiscreteType> for Symbol {
             DiscreteType::Generic(_, _) => todo!(),
             DiscreteType::Shape(_) => todo!(),
             DiscreteType::ClassType(_,_) => todo!(),
+            DiscreteType::Template(_t) => todo!(),
         }
     }
 }

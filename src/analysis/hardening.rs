@@ -362,7 +362,8 @@ where
         let mut data = var_data.write().unwrap();
 
         // FIXME for starters we do it this way
-        data.all_written_data.push((new_type, None));
+        data.all_written_data.push((new_type.clone(), None));
+        data.last_written_data = vec![(new_type, None)];
     }
 
     new_scope

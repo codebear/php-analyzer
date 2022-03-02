@@ -61,6 +61,8 @@ pub enum Issue {
     UnknownConstant(IssuePosition, FullyQualifiedName),
     UnreachableCode(IssuePosition),
 
+    EmptyTemplate(IssuePosition, Name),
+
     /// We're unable to determine the type of the target of the method call
     /// *  .0 position
     /// *  .1 type if available
@@ -118,6 +120,8 @@ pub enum Issue {
 
     /// Duplicates of other declarations, used i.e. on PHPDoc-entries
     DuplicateDeclaration(IssuePosition, OsString),
+
+    DuplicateTemplate(IssuePosition, Name),
 
     UnknownIndexType(IssuePosition),
 
@@ -185,6 +189,7 @@ impl Issue {
             | Self::DuplicateFunction(pos, _)
             | Self::DuplicateClassConstant(pos, _, _)
             | Self::DuplicateDeclaration(pos, _)
+            | Self::DuplicateTemplate(pos, _)
             | Self::UnknownIndexType(pos)
             | Self::ParseAnomaly(pos, _)
             | Self::WrongFunctionNameCasing(pos, _, _)
@@ -197,6 +202,7 @@ impl Issue {
             | Self::MisplacedPHPDocEntry(pos, _)
             | Self::InvalidPHPDocEntry(pos, _)
             | Self::RedundantPHPDocEntry(pos, _)
+            | Self::EmptyTemplate(pos, _)
             => pos.clone(),
         }
     }
@@ -220,6 +226,7 @@ impl Issue {
             Self::UnknownProperty(_, _, _) => "UnknownProperty",
             Self::DuplicateClass(_, _) => "DuplicateClass",
             Self::DuplicateSymbol(_, _) => "DuplicateSymbol",
+            Self::DuplicateTemplate(_, _) => "DuplicateTemplate",
             Self::NotAVerifiedCallableVariable(_, _) => "NotAVerifiedCallableVariable",
             Self::NotACallableVariable(_, _) => "NotACallableVariable",
             Self::DecrementIsIllegalOnType(_, _) => "DecrementIsIllegalOnType",
@@ -250,6 +257,7 @@ impl Issue {
             Self::MisplacedPHPDocEntry(_, _) => "MisplacedPHPDocEntry",
             Self::InvalidPHPDocEntry(_,_) => "InvalidPHPDocEntry",
             Self::RedundantPHPDocEntry(_,_) => "RedundantPHPDocEntry",
+            Self::EmptyTemplate(_, _) => "EmptyTemplate",
         }
     }
 
@@ -264,6 +272,8 @@ impl Issue {
             Self::UnknownProperty(_, c, p) => format!("Unknown property {} in {}", p, c),
             Self::DuplicateClass(_, c) => format!("Duplicate class {}", c),
             Self::DuplicateSymbol(_, s) => format!("Duplicate symbol {}", s),
+            Self::DuplicateTemplate(pos, t) => format!("Duplicate template {}", t),
+
             Self::NotAVerifiedCallableVariable(_, vn) => {
                 format!("Could not verify that variable {} is callable", vn)
             }
@@ -327,6 +337,7 @@ impl Issue {
             Self::MisplacedPHPDocEntry(_, reason) => format!("PHPDoc-entry used in the wrong context: {}", reason.to_string_lossy()),
             Self::InvalidPHPDocEntry(_, reason) => format!("Invalid PHPDoc-entry: {}", reason.to_string_lossy()),
             Self::RedundantPHPDocEntry(_, reason) => format!("Redundant PHPDoc-entry: {}", reason.to_string_lossy()),
+            Self::EmptyTemplate(_, name) => format!("Generic template {} is unforfilled", name),
         }
     }
 

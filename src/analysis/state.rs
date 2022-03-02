@@ -9,6 +9,7 @@ use tree_sitter::Range;
 use crate::autonodes::any::AnyNodeRef;
 use crate::issue::IssuePosition;
 use crate::symboldata::class::ClassName;
+use crate::symboldata::class::ClassType;
 use crate::symboldata::class::MethodData;
 use crate::symboldata::FunctionData;
 use crate::symboldata::SymbolData;
@@ -76,17 +77,25 @@ impl GlobalState {
 
 #[derive(Debug)]
 pub enum ClassState {
-    Interface(ClassName),
-    Class(ClassName),
-    Trait(ClassName),
+    Interface(ClassName, Arc<RwLock<ClassType>>),
+    Class(ClassName, Arc<RwLock<ClassType>>),
+    Trait(ClassName, Arc<RwLock<ClassType>>),
 }
 
 impl ClassState {
     pub fn get_name(&self) -> ClassName {
         match self {
-            Self::Class(c) => c.clone(),
-            Self::Interface(i) => i.clone(),
-            Self::Trait(t) => t.clone(),
+            Self::Class(c, _) => c.clone(),
+            Self::Interface(i, _) => i.clone(),
+            Self::Trait(t, _) => t.clone(),
+        }
+    }
+
+    pub(crate) fn get_data(&self) -> Arc<RwLock<ClassType>> {
+        match self {
+            Self::Class(_, d) => d.clone(),
+            Self::Interface(_, d) => d.clone(),
+            Self::Trait(_, d) => d.clone(),
         }
     }
 }
@@ -96,6 +105,21 @@ impl ClassState {
 pub enum FunctionDataPointer {
     Method(Arc<RwLock<MethodData>>),
     Function(Arc<RwLock<FunctionData>>),
+}
+
+impl FunctionDataPointer {
+    pub fn get_generic_templates(&self) -> Option<Vec<Name>> {
+        match self {
+            Self::Method(m) => {
+                let mdata = m.read().unwrap();
+                mdata.generic_templates.clone()
+            }
+            Self::Function(f) => {
+                let fdata = f.read().unwrap();
+                fdata.generic_templates.clone()
+            }
+        }
+    }
 }
 #[derive(Debug)]
 pub struct FunctionState {
@@ -146,6 +170,10 @@ impl FunctionState {
 
     pub(crate) fn new_anonymous() -> FunctionState {
         Self::new(None, false, None)
+    }
+
+    pub fn get_generic_templates(&self) -> Option<Vec<Name>> {
+        self.data.as_ref()?.get_generic_templates()
     }
 }
 
@@ -306,6 +334,27 @@ impl AnalysisState {
 
     pub(crate) fn in_constructor(&self) -> bool {
         self.in_method("__construct")
+    }
+
+    pub(crate) fn get_generic_templates(&self) -> Option<Vec<Name>> {
+        let class_templates = self.in_class.as_ref().map(|x| x.get_data()).and_then(|x| {
+            let read = x.read().unwrap();
+            read.get_generic_templates()
+        });
+        let func_templates = self
+            .in_function_stack
+            .last()
+            .and_then(|x| x.get_generic_templates());
+
+        match (class_templates, func_templates) {
+            (Some(mut class_templates), Some(func_templates)) => {
+                class_templates.extend(func_templates);
+                Some(class_templates)
+            }
+            (Some(class_templates), None) => Some(class_templates),
+            (None, Some(func_templates)) => Some(func_templates),
+            (None, None) => None
+        }
     }
 }
 impl LookingForNode {

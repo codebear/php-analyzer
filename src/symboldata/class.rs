@@ -191,6 +191,20 @@ impl ClassType {
             ClassType::Trait(_) => false,
         }
     }
+
+    pub fn get_generic_templates(&self) -> Option<Vec<Name>> {
+        match self {
+            ClassType::None => None,
+            ClassType::Class(cdata) => cdata.generic_templates.clone(),
+            ClassType::Interface(idata) => idata.generic_templates.clone(),
+            ClassType::Trait(_tdata) => crate::missing_none!(),
+        }
+    }
+
+    pub fn get_constructor(&self, symbol_data: Arc<SymbolData>) -> Option<MethodData> {
+        let name: Name = "__construct".into();
+        self.get_method(&name, symbol_data)
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -425,6 +439,7 @@ pub struct InterfaceData {
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
     pub is_native: bool,
     pub phpdoc: Option<PHPDocComment>,
+    pub generic_templates: Option<Vec<Name>>,
 }
 
 impl InterfaceData {
@@ -437,6 +452,7 @@ impl InterfaceData {
             methods: HashMap::new(),
             is_native: false,
             phpdoc: None,
+            generic_templates: None,
         }
     }
 
@@ -634,6 +650,7 @@ pub struct MethodData {
     pub is_static: bool,
     pub visibility: ClassMemberVisibility,
     pub phpdoc: Option<PHPDocComment>,
+    pub generic_templates: Option<Vec<Name>>,
 }
 
 impl MethodData {
@@ -656,6 +673,7 @@ impl MethodData {
             modifier: ClassModifier::None,
             visibility: ClassMemberVisibility::Public,
             phpdoc: None,
+            generic_templates: None,
         }
     }
 }

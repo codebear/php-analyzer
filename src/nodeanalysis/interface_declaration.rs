@@ -1,3 +1,5 @@
+use std::sync::{RwLock, Arc};
+
 use crate::{
     analysis::state::{AnalysisState, ClassState},
     autonodes::{any::AnyNodeRef, interface_declaration::InterfaceDeclarationNode},
@@ -42,6 +44,11 @@ impl InterfaceDeclarationNode {
         let decl_if_name = self.get_declared_name();
         ClassName::new_with_analysis_state_without_aliasing(&decl_if_name, state)
     }
+
+    fn get_interface_data(&self,  state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
+        let if_name = self.get_interface_name(state);
+        state.symbol_data.get_or_create_class(&if_name)
+    }
 }
 ///
 /// INTERFACES
@@ -79,7 +86,7 @@ impl FirstPassAnalyzeableNode for InterfaceDeclarationNode {
         }
 
         state.last_doc_comment = None;
-        state.in_class = Some(ClassState::Interface(if_name));
+        state.in_class = Some(ClassState::Interface(if_name, symbol_data));
         self.analyze_first_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
     }
@@ -88,7 +95,7 @@ impl FirstPassAnalyzeableNode for InterfaceDeclarationNode {
 impl SecondPassAnalyzeableNode for InterfaceDeclarationNode {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         let if_name = self.get_interface_name(state);
-        state.in_class = Some(ClassState::Interface(if_name));
+        state.in_class = Some(ClassState::Interface(if_name, self.get_interface_data(state)));
         self.analyze_second_pass_children(&self.as_any(), state, emitter);
         state.in_class = None;
     }
@@ -103,7 +110,7 @@ impl ThirdPassAnalyzeableNode for InterfaceDeclarationNode {
     ) -> bool {
         let if_name = self.get_interface_name(state);
         state.last_doc_comment = None;
-        state.in_class = Some(ClassState::Interface(if_name));
+        state.in_class = Some(ClassState::Interface(if_name, self.get_interface_data(state)));
         let carry_on = self.analyze_third_pass_children(&self.as_any(), state, emitter, path);
         state.in_class = None;
 

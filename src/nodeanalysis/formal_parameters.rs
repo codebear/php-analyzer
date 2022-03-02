@@ -65,9 +65,13 @@ impl FormalParametersNode {
                         let arg_type = s.get_utype(state, emitter);
                         let default_value = s.get_default_value(state, emitter);
 
+                        let mut vec = vec![b'$'];
+                        vec.extend(name.as_bytes());
+                        let vname = Name::from(vec);
+
                         let optional = false;
                         let nullable = false;
-                        let phpdoc_entry = param_map.get(&name).cloned();
+                        let phpdoc_entry = param_map.get(&vname).cloned();
 
                         let data = FunctionArgumentData {
                             name,
