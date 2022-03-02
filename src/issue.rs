@@ -272,7 +272,7 @@ impl Issue {
             Self::UnknownProperty(_, c, p) => format!("Unknown property {} in {}", p, c),
             Self::DuplicateClass(_, c) => format!("Duplicate class {}", c),
             Self::DuplicateSymbol(_, s) => format!("Duplicate symbol {}", s),
-            Self::DuplicateTemplate(pos, t) => format!("Duplicate template {}", t),
+            Self::DuplicateTemplate(_pos, t) => format!("Duplicate template {}", t),
 
             Self::NotAVerifiedCallableVariable(_, vn) => {
                 format!("Could not verify that variable {} is callable", vn)

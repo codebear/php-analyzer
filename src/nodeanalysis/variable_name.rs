@@ -31,12 +31,24 @@ impl VariableNameNode {
         };
         let data = lock.read().unwrap();
 
+        let noe: Vec<_> = data
+            .last_written_data
+            .iter()
+            .cloned()
+            .map(|x| x.0)
+            .collect();
+        if noe.len() > 0 {
+            return Some(UnionType::from(noe));
+        }
+
         if let Some(t) = &data.comment_declared_type {
             return Some(t.clone());
         }
         if let Some(t) = &data.php_declared_type {
             return Some(t.clone());
         }
+        // FIXME: this call is probably redundant due to reading from last_written_data 
+        // earlier
         if let Some(x) = self.get_inferred_type(state, emitter) {
             Some(x)
         } else {
@@ -173,8 +185,14 @@ impl AnalysisOfType for VariableNameNode {
         let var_name = self.get_variable_name();
         let var_data_handle = scope.get_var(&var_name)?;
         let var_data = var_data_handle.read().ok()?;
-        if let Some((vtype, _)) = var_data.all_written_data.last() {
-            Some(vtype.clone())
+        let noe: Vec<_> = var_data
+            .last_written_data
+            .iter()
+            .cloned()
+            .map(|x| x.0)
+            .collect();
+        if noe.len() > 0 {
+            Some(UnionType::from(noe))
         } else {
             return None;
         }

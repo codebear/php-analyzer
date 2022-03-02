@@ -1,4 +1,4 @@
-use std::sync::{RwLock, Arc};
+use std::sync::{Arc, RwLock};
 
 use crate::{
     analysis::state::{AnalysisState, ClassState},
@@ -45,7 +45,7 @@ impl TraitDeclarationNode {
         ClassName::new_with_analysis_state_without_aliasing(&decl_trait_name, state)
     }
 
-    fn get_trait_data(&self,  state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
+    fn get_trait_data(&self, state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
         let trait_name = self.get_trait_name(state);
         state.symbol_data.get_or_create_class(&trait_name)
     }

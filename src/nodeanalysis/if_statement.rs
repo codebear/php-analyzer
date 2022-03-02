@@ -128,7 +128,7 @@ impl ThirdPassAnalyzeableNode for IfStatementNode {
         }
 
         let mut no_alt = false;
-        if let Some(alt) =& self.alternative {
+        if let Some(alt) = &self.alternative {
             if alt.len() == 0 {
                 no_alt = true;
             }

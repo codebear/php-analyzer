@@ -353,7 +353,7 @@ impl AnalysisState {
             }
             (Some(class_templates), None) => Some(class_templates),
             (None, Some(func_templates)) => Some(func_templates),
-            (None, None) => None
+            (None, None) => None,
         }
     }
 }

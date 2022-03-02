@@ -1,4 +1,7 @@
-use std::{ffi::OsString, sync::{Arc, RwLock}};
+use std::{
+    ffi::OsString,
+    sync::{Arc, RwLock},
+};
 
 use crate::{
     analysis::state::{AnalysisState, ClassState},
@@ -53,7 +56,7 @@ impl ClassDeclarationNode {
         class_name
     }
 
-    fn get_class_data(&self,  state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
+    fn get_class_data(&self, state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
         let class_name = self.get_class_name(state);
         state.symbol_data.get_or_create_class(&class_name)
     }

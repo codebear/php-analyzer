@@ -1,5 +1,6 @@
 mod array;
 mod basic;
+pub mod generics;
 pub mod hardening;
 pub mod inline;
 pub mod interface;
@@ -11,7 +12,6 @@ pub mod traversable;
 pub mod try_catch;
 pub mod types;
 mod values;
-pub mod generics;
 
 use std::{
     ffi::OsString,
