@@ -125,6 +125,18 @@ impl ThirdPassAnalyzeableNode for IfStatementNode {
             }
         } else {
             // emit the other branch as unreachable
+        }
+
+        let mut no_alt = false;
+        if let Some(alt) =& self.alternative {
+            if alt.len() == 0 {
+                no_alt = true;
+            }
+        } else {
+            no_alt = true;
+        }
+
+        if no_alt {
             let false_scope = self
                 .condition
                 .branch_with_hardened_types_base_on_conditional_node(
