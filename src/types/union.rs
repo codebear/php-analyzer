@@ -574,7 +574,7 @@ impl DiscreteType {
     }
 }
 
-fn from_vec_parsed_type(
+pub(crate) fn from_vec_parsed_type(
     ptypes: Vec<ConcreteType>,
     state: &mut AnalysisState,
     maybe_emitter: Option<&dyn IssueEmitter>,

@@ -26,7 +26,7 @@ impl ArgumentsNode {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 
-    pub fn get_arguments(
+    pub fn get_argument_values(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
@@ -34,6 +34,17 @@ impl ArgumentsNode {
         self.children
             .iter()
             .map(|x| x.get_php_value(state, emitter))
+            .collect()
+    }
+
+    pub fn get_argument_types(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Vec<Option<UnionType>> {
+        self.children
+            .iter()
+            .map(|x| x.get_utype(state, emitter))
             .collect()
     }
 }

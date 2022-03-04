@@ -47,7 +47,7 @@ impl VariableNameNode {
         if let Some(t) = &data.php_declared_type {
             return Some(t.clone());
         }
-        // FIXME: this call is probably redundant due to reading from last_written_data 
+        // FIXME: this call is probably redundant due to reading from last_written_data
         // earlier
         if let Some(x) = self.get_inferred_type(state, emitter) {
             Some(x)

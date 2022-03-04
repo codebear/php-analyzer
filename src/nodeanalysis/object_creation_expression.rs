@@ -1,8 +1,8 @@
 use crate::{
     analysis::state::AnalysisState,
-    autonodes::object_creation_expression::{
+    autonodes::{object_creation_expression::{
         ObjectCreationExpressionChildren, ObjectCreationExpressionNode,
-    },
+    }, arguments::ArgumentsNode},
     issue::IssueEmitter,
     symbols::{FullyQualifiedName, Name},
     types::union::{DiscreteType, UnionType},
@@ -12,7 +12,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct ObjectCreationData {
     name: Option<ObjectCreationExpressionChildren>,
-    arguments: Option<ObjectCreationExpressionChildren>,
+    arguments: Option<Box<ArgumentsNode>>,
 }
 
 impl ObjectCreationExpressionNode {
@@ -38,8 +38,8 @@ impl ObjectCreationExpressionNode {
             let _class_data = class_data_handle.read().unwrap();
 
             let arguments =
-                if let Some(ObjectCreationExpressionChildren::Arguments(args)) = &data.arguments {
-                    Some(args.get_arguments(state, emitter))
+                if let Some(args) = &data.arguments {
+                    Some(args.get_argument_values(state, emitter))
                 } else {
                     None
                 };
@@ -59,7 +59,7 @@ impl ObjectCreationExpressionNode {
     pub fn get_creation_data(&self) -> ObjectCreationData {
         let mut state = 0;
         let mut name: Option<ObjectCreationExpressionChildren> = None;
-        let mut arguments: Option<ObjectCreationExpressionChildren> = None;
+        let mut arguments: Option<Box<ArgumentsNode>> = None;
         for child in &self.children {
             match (state, &**child) {
                 (0, ObjectCreationExpressionChildren::Name(n)) => {
@@ -83,7 +83,7 @@ impl ObjectCreationExpressionNode {
 
                 (1, ObjectCreationExpressionChildren::Arguments(a)) => {
                     state += 1;
-                    arguments = Some(ObjectCreationExpressionChildren::Arguments(a.clone()));
+                    arguments = Some(a.clone());
                 }
 
                 _ => crate::missing!(
@@ -130,17 +130,37 @@ impl ObjectCreationExpressionNode {
         };
         // println!("FQ_NAME: {:?}", maybe_fq_name);
 
-        if let Some(fq_name) = maybe_fq_name {
-            return Some(
-                DiscreteType::Named(
-                    fq_name
-                        .get_name()
-                        .unwrap_or_else(|| -> Name { Name::new() }),
-                    fq_name,
-                )
-                .into(),
-            );
+        let fq_name = if let Some(fq_name) = maybe_fq_name {
+            fq_name
+        } else {
+            return crate::missing_none!("{}.get_utype(..)", self.kind());
+        };
+        if let Some(args) = data.arguments {
+            let noe = args.get_argument_types(state, emitter);
         }
-        crate::missing_none!("{}.get_utype(..)", self.kind())
+        
+        let noe = state.symbol_data.get_class(&fq_name.clone().into());
+        if let Some(x) = noe {
+            let ctype = x.read().unwrap();
+            if let Some(_x) = ctype.get_generic_templates() {
+                if let Some(c) = ctype.get_constructor(state.symbol_data.clone()) {
+                    for func_arg in &c.arguments {
+                        eprintln!("ARG: {}: {:?}", func_arg.name, func_arg.get_type(state));
+                    }
+                    self.children;
+                    todo!("Discover generic properties");
+                }
+            }
+        }
+
+        return Some(
+            DiscreteType::Named(
+                fq_name
+                    .get_name()
+                    .unwrap_or_else(|| -> Name { Name::new() }),
+                fq_name,
+            )
+            .into(),
+        );
     }
 }

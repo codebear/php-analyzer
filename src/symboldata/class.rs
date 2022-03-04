@@ -16,6 +16,7 @@ use std::{
 };
 
 use super::{FileLocation, SymbolData};
+use crate::types::union::from_vec_parsed_type;
 
 type MethodName = Name;
 
@@ -633,6 +634,21 @@ pub struct FunctionArgumentData {
     pub optional: bool,
     pub inline_phpdoc_type: Option<(Range, UnionType)>,
     pub phpdoc_entry: Option<PHPDocEntry>,
+}
+impl FunctionArgumentData {
+    pub fn get_type(&self,  state: &mut AnalysisState) -> Option<UnionType> {
+        // FIXME somewhere there needs to be emitted 
+        // an issue if the comment-type is incompatible with the native type
+        if let Some(PHPDocEntry::Param(_range, param,_name, _desc)) = &self.phpdoc_entry {
+            // from_vec_parsed_type
+            let utype = from_vec_parsed_type(param.clone(), state, None);
+            return utype;
+        }
+        if let Some((_range, utype)) =& self.inline_phpdoc_type {
+            return Some(utype.clone());
+        }
+        self.arg_type.clone()
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
