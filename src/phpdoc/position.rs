@@ -1,7 +1,7 @@
 use std::{
     iter::{Copied, Enumerate},
     ops::{RangeFrom, RangeTo},
-    slice::Iter,
+    slice::Iter, ffi::OsString, os::unix::prelude::OsStrExt,
 };
 
 use nom::{FindSubstring, InputIter, InputLength, InputTake, Slice, UnspecializedInput};
@@ -88,6 +88,20 @@ impl LFind<u8> for &[u8] {
             pos += 1;
         }
         None
+    }
+}
+
+pub fn fake_range(buffer: &OsString) -> Range {
+    let start_point = Point { row: 0, column: 0 };
+    let mut end_point = start_point.clone();
+    let bytes = buffer.as_bytes();
+    adjust_point_based_on_buffer(&mut end_point, bytes);
+
+    Range {
+        start_byte: 0,
+        end_byte: buffer.len(),
+        start_point,
+        end_point,
     }
 }
 

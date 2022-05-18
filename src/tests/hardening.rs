@@ -142,6 +142,41 @@ fn test_hardening_instanceoof() {
     //assert!(false)
 }
 
+
+#[test]
+fn test_hardening_assignment() {
+    let buffers: &[(OsString, OsString)] = &[(
+        "foo/myinterface.php".into(),
+        r#"<?php 
+
+            class X {
+                function foo() {}
+            }   
+            function foo(X $x = null) {
+                if ($y = $x) {
+                    $y->foo();
+                }
+            }
+            "#
+        .into(),
+    )];
+    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    eprintln!("RESULT: {:#?}", &result);
+    /* if let Some(symbols) = result.symbol_data {
+        let func_data = symbols.functions.read().unwrap();
+        let func_name: OsString = r"\test_return".into();
+        if let Some(func) = func_data.get(&func_name) {
+            let data = func.read().unwrap();
+            assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
+        } else {
+            assert!(false, "data of function test_return not found");
+        }
+    }*/
+    // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
+    assert_eq!(result.issues.len(), 0);
+    //assert!(false)
+}
+
 ///
 /// This one is/was PHAN strugling with...
 #[test]

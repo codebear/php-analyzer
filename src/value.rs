@@ -51,6 +51,14 @@ impl PHPFloat {
             return Self::Real(fval);
         }
     }
+
+    fn as_f64(&self) -> f64 {
+        match self {
+            PHPFloat::Real(f) => *f,
+            PHPFloat::NaN => f64::NAN,
+            PHPFloat::Infinite => f64::INFINITY,
+        }
+    }
 }
 
 impl PartialEq for PHPFloat {
@@ -315,6 +323,18 @@ impl PHPValue {
             PHPValue::String(_) => Some(self.clone()),
             PHPValue::Array(_) => None,
             PHPValue::ObjectInstance(_) => None,
+        }
+    }
+
+    pub fn as_raw_php(&self) -> OsString {
+         match self {
+            PHPValue::NULL => OsStr::from_bytes(b"NULL").into(),
+            PHPValue::Boolean(b) => OsStr::from_bytes(if *b { b"true" } else { b"false" }).into(),
+            PHPValue::Int(i) => format!("{}", i).into(),
+            PHPValue::Float(f) => format!("{}", (*f).as_f64()).into(),
+            PHPValue::String(s) => format!(r#""{:?}""#, s).into(),
+            PHPValue::Array(_) => todo!(),
+            PHPValue::ObjectInstance(_) => todo!(),
         }
     }
 }

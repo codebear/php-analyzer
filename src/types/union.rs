@@ -292,6 +292,18 @@ impl UnionType {
         Self::handle_remainder(utype, remainder, state, emitter, range)
     }
 
+    pub fn parse_simple(type_str: OsString) -> Option<UnionType> {
+        let range = fake_range(&type_str);
+        let emitter = VoidEmitter::new();
+        let mut state = AnalysisState::new();
+
+        let (utype, remainder) =
+            Self::parse_with_remainder(type_str.clone(), range, &mut state, &emitter);
+
+        Self::handle_remainder(utype, remainder, &mut state, &emitter, range)
+
+    }
+
     pub fn parse(
         type_str: OsString,
         range: Range,

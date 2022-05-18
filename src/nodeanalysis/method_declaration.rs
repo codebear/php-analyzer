@@ -16,7 +16,7 @@ use crate::{
         FileLocation,
     },
     symbols::Name,
-    types::union::{DiscreteType, SpecialType, UnionType},
+    types::union::{DiscreteType, SpecialType, UnionType}, description::NodeDescription,
 };
 
 use super::{
@@ -130,6 +130,7 @@ impl MethodDeclarationNode {
 
 impl FirstPassAnalyzeableNode for MethodDeclarationNode {
     fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        //eprintln!("TEMPLATES: {:?}", state.get_generic_templates());
         if state.in_class.is_none() {
             self.analyze_first_pass_children(&self.as_any(), state, emitter);
             emitter.emit(Issue::ParseAnomaly(
@@ -263,7 +264,7 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
                     if let Some(utype) =
                         UnionType::from_parsed_type(concrete_types.clone(), state, emitter)
                     {
-                        utype.ensure_valid(state, emitter, range);
+                        utype.ensure_valid(state, emitter, range, true);
                     } else {
                         emitter.emit(Issue::InvalidPHPDocEntry(
                             state.pos_from_range(range.clone()),
@@ -273,7 +274,7 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
                 }
             }
             if let Some((utype, range)) = &method_data.comment_return_type {
-                utype.ensure_valid(state, emitter, range);
+                utype.ensure_valid(state, emitter, range, true);
             }
         }
         let function = FunctionState::new_method(self.get_declared_name(), locked_data);
@@ -295,10 +296,22 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
-        if let Some(ClassState::Interface(_)) = state.in_class {
-            // Drop third-pass-analyse av interfacer-metoder
-            return true;
-        }
+        let _pdata = match &state.in_class {
+            Some(ClassState::Interface(_, _)) => {
+                // Drop third-pass-analyse av interfacer-metoder
+                return true;
+            }
+            Some(ClassState::Class(_, cdata)) => cdata,
+            Some(ClassState::Trait(_, tdata)) => tdata,
+            None => {
+                emitter.emit(Issue::ParseAnomaly(
+                    self.pos(state),
+                    "Missing class/trait/interface-data".into(),
+                ));
+                return true;
+            }
+        };
+
         let locked_data = self.get_method_data(state).unwrap();
 
         let function = FunctionState::new_method(self.get_declared_name(), locked_data);
@@ -335,8 +348,9 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
             .in_function_stack
             .pop()
             .expect("There must be a state");
-        let returns = func.returns.read().unwrap().clone();
 
+        let mut returns = func.returns.read().unwrap().clone();
+        let return_count = returns.len();
         let scope_handle = func.scope_stack.read().unwrap().top();
         scope_handle.analyze_for_unused_vars(state, emitter);
 
@@ -350,7 +364,9 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
                 // t;
                 ret_type.merge_into(t);
             } else {
-                return true;
+                ret_type = UnionType::new();
+                break;
+//                 return true;
             }
             /*             if let Some(x) = val {
                 ret_value.insert(x);
@@ -369,7 +385,10 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
         };*/
         if let Some(method) = self.get_method_data(state) {
             let mut method_data = method.write().unwrap();
-            (*method_data).inferred_return_type = Some(ret_type);
+            method_data.return_count = return_count;
+            if ret_type.len() > 0 {
+                method_data.inferred_return_type = Some(ret_type);
+            } 
         }
         true
     }

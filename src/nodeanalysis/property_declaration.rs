@@ -4,6 +4,7 @@ use super::analysis::{
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::property_declaration::PropertyDeclarationProperties;
 use crate::autotree::NodeAccess;
+use crate::extra::ExtraChild;
 use crate::{
     analysis::state::AnalysisState, autonodes::property_declaration::PropertyDeclarationNode,
     issue::IssueEmitter, types::union::UnionType,
@@ -33,10 +34,54 @@ impl PropertyDeclarationNode {
 
 impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
     fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        let mut inline_doc_comment = false;
+        let mut extra_iter = self.extras.iter().peekable();
         for prop in &self.properties {
+
+            let peeked = extra_iter.peek().cloned();
+            // FIXME This algorithm is probably broken
+            let extra_comment = if let Some(extra) = peeked {
+                let start_byte = prop.range().start_byte;
+
+                // Hvis extra e før noden
+                if extra.range().start_byte < start_byte {
+                    extra_iter.next();
+                    match &**extra {
+                        ExtraChild::Comment(c) => Some(c),
+
+                        ExtraChild::TextInterpolation(_) |
+                        ExtraChild::Error(_) => None,
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            match extra_comment {
+                Some(c) =>{
+                    if let None = state.last_doc_comment {
+                        state.last_doc_comment = Some((c.get_raw(), c.range()));
+                        inline_doc_comment = true;
+                    }
+                },
+                None => (),
+            }
+
             match &**prop {
+                PropertyDeclarationProperties::Comment(c) => {
+                    if let None = state.last_doc_comment {
+                        state.last_doc_comment = Some((c.get_raw(), c.range()));
+                        inline_doc_comment = true;
+                    }
+
+                }
                 PropertyDeclarationProperties::PropertyElement(p) => {
-                    p.analyze_round_one_with_declaration(state, emitter, self)
+                    p.analyze_round_one_with_declaration(state, emitter, self);
+                    if inline_doc_comment {
+                        state.last_doc_comment = None;
+                    }
                 }
                 _ => (),
             }

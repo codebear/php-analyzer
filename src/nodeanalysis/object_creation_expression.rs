@@ -1,8 +1,13 @@
+use std::collections::HashMap;
+
 use crate::{
     analysis::state::AnalysisState,
-    autonodes::{object_creation_expression::{
-        ObjectCreationExpressionChildren, ObjectCreationExpressionNode,
-    }, arguments::ArgumentsNode},
+    autonodes::{
+        arguments::ArgumentsNode,
+        object_creation_expression::{
+            ObjectCreationExpressionChildren, ObjectCreationExpressionNode,
+        },
+    },
     issue::IssueEmitter,
     symbols::{FullyQualifiedName, Name},
     types::union::{DiscreteType, UnionType},
@@ -37,12 +42,11 @@ impl ObjectCreationExpressionNode {
             };
             let _class_data = class_data_handle.read().unwrap();
 
-            let arguments =
-                if let Some(args) = &data.arguments {
-                    Some(args.get_argument_values(state, emitter))
-                } else {
-                    None
-                };
+            let arguments = if let Some(args) = &data.arguments {
+                Some(args.get_argument_values(state, emitter))
+            } else {
+                None
+            };
             // FIXME generics-analyse her eller i ObjectInstance
             //
             Some(PHPValue::ObjectInstance(ObjectInstance::new(
@@ -162,5 +166,27 @@ impl ObjectCreationExpressionNode {
             )
             .into(),
         );
+    pub(crate) fn infer_generic_type_into_map(
+        &self,
+        generic_map: &mut HashMap<Name, UnionType>,
+        templated_type: UnionType,
+        in_type: UnionType,
+    ) -> Option<()> {
+        if templated_type.len() != 1 {
+            crate::missing!("Handled of templated union types with multiple types");
+            return None;
+        }
+        let template_type = templated_type.types.iter().next()?;
+
+        match template_type {
+            DiscreteType::Template(tname) => {
+                generic_map.insert(tname.clone(), in_type);
+            }
+            DiscreteType::Generic(_base, _generics) => {
+                crate::missing!("Handle templated generics");
+            }
+            _ => (),
+        }
+        return None;
     }
 }

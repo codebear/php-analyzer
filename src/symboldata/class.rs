@@ -4,12 +4,12 @@ use crate::{
     analysis::state::AnalysisState,
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symbols::{FullyQualifiedName, Name},
-    types::union::UnionType,
+    types::union::{DiscreteType, UnionType},
     value::PHPValue,
 };
 
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     ffi::OsString,
     fmt::Display,
     sync::{Arc, RwLock},
@@ -60,6 +60,10 @@ impl ClassName {
 
     pub fn get_name(&self) -> &Name {
         &self.name
+    }
+
+    pub fn to_os_string(&self) -> OsString {
+        self.name.to_os_string()
     }
 
     pub(crate) fn get_namespace(&self) -> FullyQualifiedName {
@@ -114,6 +118,10 @@ impl ClassType {
         }
     }
 
+    pub fn get_class_name(&self) -> ClassName {
+        self.get_fq_name().into()
+    }
+
     pub fn get_method(
         &self,
         method_name: &Name,
@@ -162,6 +170,18 @@ impl ClassType {
         }
     }
 
+    pub fn get_property(
+        &self,
+        property_name: &Name,
+        state: &AnalysisState,
+    ) -> Option<PropertyData> {
+        match self {
+            ClassType::None => panic!(),
+            ClassType::Class(c) => c.get_property(property_name, state),
+            ClassType::Interface(_) => None,
+            ClassType::Trait(_) => None,
+        }
+    }
     pub fn with_generic_args(&self, generic_args: &Vec<UnionType>) -> Self {
         if generic_args.len() > 0 {
             crate::missing!("Gi ut en type som er typesatt med generiske argumenter");
@@ -634,17 +654,21 @@ pub struct FunctionArgumentData {
     pub optional: bool,
     pub inline_phpdoc_type: Option<(Range, UnionType)>,
     pub phpdoc_entry: Option<PHPDocEntry>,
+    pub phpdoc_type: Option<UnionType>,
 }
 impl FunctionArgumentData {
-    pub fn get_type(&self,  state: &mut AnalysisState) -> Option<UnionType> {
-        // FIXME somewhere there needs to be emitted 
+    pub fn get_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+        // FIXME somewhere there needs to be emitted
         // an issue if the comment-type is incompatible with the native type
-        if let Some(PHPDocEntry::Param(_range, param,_name, _desc)) = &self.phpdoc_entry {
+        if let Some(utype) = &self.phpdoc_type {
+            return Some(utype.clone());
+        }
+        if let Some(PHPDocEntry::Param(_range, param, _name, _desc)) = &self.phpdoc_entry {
             // from_vec_parsed_type
             let utype = from_vec_parsed_type(param.clone(), state, None);
             return utype;
         }
-        if let Some((_range, utype)) =& self.inline_phpdoc_type {
+        if let Some((_range, utype)) = &self.inline_phpdoc_type {
             return Some(utype.clone());
         }
         self.arg_type.clone()
@@ -657,6 +681,7 @@ pub struct MethodData {
     pub description: String,
     pub declared_in: ClassName,
     pub position: FileLocation,
+    pub return_count: usize,
     pub php_return_type: Option<UnionType>,
     pub comment_return_type: Option<(UnionType, Range)>,
     pub inferred_return_type: Option<UnionType>,
@@ -680,6 +705,7 @@ impl MethodData {
             description: "".into(),
             declared_in: class_name,
             position,
+            return_count: 0,
             php_return_type: None,
             comment_return_type: None,
             inferred_return_type: None,
@@ -690,6 +716,34 @@ impl MethodData {
             visibility: ClassMemberVisibility::Public,
             phpdoc: None,
             generic_templates: None,
+    pub(crate) fn get_return_type(&self) -> Option<UnionType> {
+        let call_return_type = self
+            .comment_return_type
+            .as_ref()
+            .map(|x| x.0.clone())
+            .or(self.php_return_type.clone())
+            .or(self.inferred_return_type.clone())?;
+
+        if let Some(concrete) = &self.generic_concretes {
+            let mut result = UnionType::new();
+            for x in call_return_type.types {
+                match x {
+                    DiscreteType::Template(name) => {
+                        let noe = concrete.get(&name);
+
+                        if let Some(u) = noe {
+                            result.merge_into(u.clone());
+                        } else {
+                            result.push(DiscreteType::Template(name));
+                        }
+                    }
+                    t @ _ => result.push(t),
+                }
+            }
+
+            Some(result)
+        } else {
+            Some(call_return_type)
         }
     }
 }

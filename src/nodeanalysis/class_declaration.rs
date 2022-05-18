@@ -115,9 +115,13 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
 
         let mut generic_templates = vec![];
 
+        let mut phpdoc = None;
+
         if let Some((raw_doc_comment, php_doc_range)) = &state.last_doc_comment {
             match PHPDocComment::parse(&raw_doc_comment, &php_doc_range) {
                 Ok(doc) => {
+                    phpdoc = Some(doc.clone());
+
                     for entry in &doc.entries {
                         match entry {
                             PHPDocEntry::EmptyLine(_) => continue,
@@ -233,6 +237,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                 })
                 .collect();
         }
+        class_data.phpdoc = phpdoc;
 
         let symbol_data = state.symbol_data.get_or_create_class(&class_name);
         {

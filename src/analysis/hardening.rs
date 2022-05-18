@@ -4,6 +4,7 @@ use crate::{
     autonodes::{
         _expression::_ExpressionNode,
         _primary_expression::_PrimaryExpressionNode,
+        assignment_expression::{AssignmentExpressionLeft, AssignmentExpressionNode},
         binary_expression::{
             BinaryExpressionNode, BinaryExpressionOperator, BinaryExpressionRight,
         },
@@ -61,7 +62,13 @@ impl BranchTypeHardening for _ExpressionNode {
                     state,
                 );
             }
-            _ExpressionNode::AssignmentExpression(_) => crate::missing!(),
+            _ExpressionNode::AssignmentExpression(a) => {
+                return a.branch_with_hardened_types_base_on_conditional_node(
+                    scope,
+                    branch_side,
+                    state,
+                );
+            }
             _ExpressionNode::AugmentedAssignmentExpression(_) => crate::missing!(),
             _ExpressionNode::BinaryExpression(b) => {
                 return b.branch_with_hardened_types_base_on_conditional_node(
@@ -397,5 +404,35 @@ impl BranchTypeHardening for MemberAccessExpressionNode {
             BranchSide::FalseBranch => |dtype: &&DiscreteType| dtype.can_evaluate_to_false(),
         };
         new_scope_with_harden_variable_type_based_on_filter(scope, self, state, predicate, None)*/
+    }
+}
+
+impl BranchTypeHardening for AssignmentExpressionNode {
+    fn branch_with_hardened_types_base_on_conditional_node(
+        &self,
+        scope: Arc<RwLock<Scope>>,
+        branch_side: BranchSide,
+        state: &mut AnalysisState,
+    ) -> Arc<RwLock<Scope>> {
+        match &*self.left {
+            AssignmentExpressionLeft::CastExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::DynamicVariableName(_) => crate::missing!(),
+            AssignmentExpressionLeft::FunctionCallExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::ListLiteral(_) => crate::missing!(),
+            AssignmentExpressionLeft::MemberAccessExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::MemberCallExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::NullsafeMemberAccessExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::NullsafeMemberCallExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::ScopedCallExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::ScopedPropertyAccessExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::SubscriptExpression(_) => crate::missing!(),
+            AssignmentExpressionLeft::VariableName(v) => {
+                return v.branch_with_hardened_types_base_on_conditional_node(scope, branch_side, state)
+            }
+            AssignmentExpressionLeft::Comment(_) => crate::missing!(),
+            AssignmentExpressionLeft::TextInterpolation(_) => crate::missing!(),
+            AssignmentExpressionLeft::Error(_) => crate::missing!(),
+        }
+        return scope.branch();
     }
 }

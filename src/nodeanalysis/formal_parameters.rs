@@ -10,7 +10,7 @@ use crate::{
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::class::FunctionArgumentData,
     symbols::Name,
-    types::union::UnionType,
+    types::union::{from_vec_parsed_type, UnionType},
 };
 
 use crate::autotree::NodeAccess;
@@ -72,6 +72,14 @@ impl FormalParametersNode {
                         let optional = false;
                         let nullable = false;
                         let phpdoc_entry = param_map.get(&vname).cloned();
+                        let phpdoc_type =
+                            if let Some(PHPDocEntry::Param(_range, types, _name, _desc)) =
+                                &phpdoc_entry
+                            {
+                                from_vec_parsed_type(types.clone(), state, None)
+                            } else {
+                                None
+                            };
 
                         let data = FunctionArgumentData {
                             name,
@@ -81,6 +89,7 @@ impl FormalParametersNode {
                             optional,
                             inline_phpdoc_type: inline_phpdoc_type.clone(),
                             phpdoc_entry,
+                            phpdoc_type,
                         };
 
                         params.push(data);

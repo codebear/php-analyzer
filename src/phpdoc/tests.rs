@@ -3,9 +3,9 @@ use std::{
     os::unix::prelude::OsStrExt,
 };
 
-use crate::tests::phpdocs::fake_range;
 
-use super::{phpdoc::parse_phpdoc, position::PHPDocInput};
+
+use super::{phpdoc::parse_phpdoc, position::{PHPDocInput, fake_range}};
 
 #[test]
 pub fn parse_test1() {

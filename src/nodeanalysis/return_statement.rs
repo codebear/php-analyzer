@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, return_statement::ReturnStatementNode},
     issue::{Issue, IssueEmitter},
-    types::union::UnionType,
+    types::union::{UnionType, DiscreteType},
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -15,18 +15,22 @@ impl ReturnStatementNode {
 
     pub fn get_php_value(
         &self,
-        _state: &mut AnalysisState,
-        _emitter: &dyn IssueEmitter,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
-        crate::missing_none!("{}.get_php_value(..)", self.kind())
+        self.child.as_ref()?.get_php_value(state, emitter)
     }
 
     pub fn get_utype(
         &self,
-        _state: &mut AnalysisState,
-        _emitter: &dyn IssueEmitter,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
-        crate::missing_none!("{}.get_utype(..)", self.kind())
+        if let Some(child) = &self.child {
+            child.get_utype(state, emitter)
+        } else {
+            Some(DiscreteType::Void.into())
+        }
     }
 }
 
@@ -37,20 +41,22 @@ impl ThirdPassAnalyzeableNode for ReturnStatementNode {
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
-        if let Some(child) = &self.child {
+        let (ret_type, ret_value) = if let Some(child) = &self.child {
             child.read_from(state, emitter);
 
             let ret_type = child.get_utype(state, emitter);
             let ret_value = child.get_php_value(state, emitter);
-
-            if let Some(func_state) = state.in_function_stack.last() {
-                func_state.add_return(ret_type, ret_value);
-            } else {
-                emitter.emit(Issue::ParseAnomaly(
-                    self.pos(state),
-                    "return statement not in function".into(),
-                ));
-            }
+            (ret_type, ret_value)
+        } else {
+            (Some(DiscreteType::Void.into()), None)
+        };
+        if let Some(func_state) = state.in_function_stack.last() {
+            func_state.add_return(ret_type, ret_value);
+        } else {
+            emitter.emit(Issue::ParseAnomaly(
+                self.pos(state),
+                "return statement not in function".into(),
+            ));
         }
 
         self.analyze_third_pass_children(&self.as_any(), state, emitter, path)

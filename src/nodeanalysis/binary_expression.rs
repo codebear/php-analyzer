@@ -402,6 +402,14 @@ impl BinaryExpressionNode {
                 (DiscreteType::Int, DiscreteType::Float) => Some(DiscreteType::Float.into()),
                 (DiscreteType::Float, DiscreteType::Float) => Some(DiscreteType::Float.into()),
                 (DiscreteType::Unknown, _) | (_, DiscreteType::Unknown) => None,
+
+                // These are failures in PHP8
+                (DiscreteType::String, DiscreteType::Int) |
+                (DiscreteType::Int, DiscreteType::String) => Some(UnionType::from(vec![DiscreteType::Int, DiscreteType::Float])),
+                (DiscreteType::String, DiscreteType::Float) |
+                (DiscreteType::Float, DiscreteType::String) => Some(DiscreteType::Float.into()),
+
+
                 _ => crate::missing_none!("{:?} {} {:?}", ltype, op, rtype),
             },
             BinaryExpressionOperator::Div(op, _) => match (&ltype, &rtype) {
