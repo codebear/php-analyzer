@@ -16,7 +16,7 @@ use crate::{
         FileLocation,
     },
     symbols::Name,
-    types::union::{DiscreteType, SpecialType, UnionType}, description::NodeDescription,
+    types::union::{DiscreteType, SpecialType, UnionType},
 };
 
 use super::{
@@ -349,7 +349,7 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
             .pop()
             .expect("There must be a state");
 
-        let mut returns = func.returns.read().unwrap().clone();
+        let returns = func.returns.read().unwrap().clone();
         let return_count = returns.len();
         let scope_handle = func.scope_stack.read().unwrap().top();
         scope_handle.analyze_for_unused_vars(state, emitter);
@@ -366,7 +366,7 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
             } else {
                 ret_type = UnionType::new();
                 break;
-//                 return true;
+                //                 return true;
             }
             /*             if let Some(x) = val {
                 ret_value.insert(x);
@@ -388,7 +388,7 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
             method_data.return_count = return_count;
             if ret_type.len() > 0 {
                 method_data.inferred_return_type = Some(ret_type);
-            } 
+            }
         }
         true
     }

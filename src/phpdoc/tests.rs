@@ -3,9 +3,10 @@ use std::{
     os::unix::prelude::OsStrExt,
 };
 
-
-
-use super::{phpdoc::parse_phpdoc, position::{PHPDocInput, fake_range}};
+use super::{
+    phpdoc::parse_phpdoc,
+    position::{fake_range, PHPDocInput},
+};
 
 #[test]
 pub fn parse_test1() {

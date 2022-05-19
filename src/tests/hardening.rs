@@ -142,7 +142,6 @@ fn test_hardening_instanceoof() {
     //assert!(false)
 }
 
-
 #[test]
 fn test_hardening_assignment() {
     let buffers: &[(OsString, OsString)] = &[(

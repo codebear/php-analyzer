@@ -1,7 +1,9 @@
 use std::{
+    ffi::OsString,
     iter::{Copied, Enumerate},
     ops::{RangeFrom, RangeTo},
-    slice::Iter, ffi::OsString, os::unix::prelude::OsStrExt,
+    os::unix::prelude::OsStrExt,
+    slice::Iter,
 };
 
 use nom::{FindSubstring, InputIter, InputLength, InputTake, Slice, UnspecializedInput};

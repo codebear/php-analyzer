@@ -427,7 +427,11 @@ impl BranchTypeHardening for AssignmentExpressionNode {
             AssignmentExpressionLeft::ScopedPropertyAccessExpression(_) => crate::missing!(),
             AssignmentExpressionLeft::SubscriptExpression(_) => crate::missing!(),
             AssignmentExpressionLeft::VariableName(v) => {
-                return v.branch_with_hardened_types_base_on_conditional_node(scope, branch_side, state)
+                return v.branch_with_hardened_types_base_on_conditional_node(
+                    scope,
+                    branch_side,
+                    state,
+                )
             }
             AssignmentExpressionLeft::Comment(_) => crate::missing!(),
             AssignmentExpressionLeft::TextInterpolation(_) => crate::missing!(),

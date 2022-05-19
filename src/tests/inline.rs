@@ -1,6 +1,9 @@
 use std::ffi::OsString;
 
-use crate::{symbols::FullyQualifiedName, tests::evaluate_php_buffers, types::union::DiscreteType, symboldata::class::ClassName, analysis::state::AnalysisState};
+use crate::{
+    analysis::state::AnalysisState, symboldata::class::ClassName, symbols::FullyQualifiedName,
+    tests::evaluate_php_buffers, types::union::DiscreteType,
+};
 
 #[test]
 fn test_inline_doccomment() {
@@ -70,7 +73,7 @@ fn test_inline_returntype() {
 pub fn test_noe() {
     let buffers: &[(OsString, OsString)] = &[(
         "test.php".into(),
-   r#"<?php
+        r#"<?php
     /**
     * Something
     */
@@ -78,17 +81,17 @@ pub fn test_noe() {
         public /** ?int */ $balle;
         public /** ?string */ $klorin; // Something
     }
-    "#.into())];
+    "#
+        .into(),
+    )];
 
-    
     let result = evaluate_php_buffers(buffers.to_vec(), false);
     if let Some(data) = &result.symbol_data {
         let state = AnalysisState::new_with_symbols(data.clone());
-        if let Some(noe) = data.get_class(
-            &ClassName::new_with_fq_name("\\Foo".into())) {
+        if let Some(noe) = data.get_class(&ClassName::new_with_fq_name("\\Foo".into())) {
             let class = noe.read().unwrap();
             eprintln!("Class: {:#?}", &class);
-            let property = class.get_property(&"balle".into(), &state);
+            let _property = class.get_property(&"balle".into(), &state);
         } else {
             assert!(false);
         }

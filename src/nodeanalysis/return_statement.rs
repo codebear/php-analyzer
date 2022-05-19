@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, return_statement::ReturnStatementNode},
     issue::{Issue, IssueEmitter},
-    types::union::{UnionType, DiscreteType},
+    types::union::{DiscreteType, UnionType},
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;

@@ -37,7 +37,6 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
         let mut inline_doc_comment = false;
         let mut extra_iter = self.extras.iter().peekable();
         for prop in &self.properties {
-
             let peeked = extra_iter.peek().cloned();
             // FIXME This algorithm is probably broken
             let extra_comment = if let Some(extra) = peeked {
@@ -49,8 +48,7 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
                     match &**extra {
                         ExtraChild::Comment(c) => Some(c),
 
-                        ExtraChild::TextInterpolation(_) |
-                        ExtraChild::Error(_) => None,
+                        ExtraChild::TextInterpolation(_) | ExtraChild::Error(_) => None,
                     }
                 } else {
                     None
@@ -60,12 +58,12 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
             };
 
             match extra_comment {
-                Some(c) =>{
+                Some(c) => {
                     if let None = state.last_doc_comment {
                         state.last_doc_comment = Some((c.get_raw(), c.range()));
                         inline_doc_comment = true;
                     }
-                },
+                }
                 None => (),
             }
 
@@ -75,7 +73,6 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
                         state.last_doc_comment = Some((c.get_raw(), c.range()));
                         inline_doc_comment = true;
                     }
-
                 }
                 PropertyDeclarationProperties::PropertyElement(p) => {
                     p.analyze_round_one_with_declaration(state, emitter, self);

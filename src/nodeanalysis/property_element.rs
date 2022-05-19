@@ -120,8 +120,8 @@ impl PropertyElementNode {
             .type_
             .as_ref()
             .and_then(|x| x.get_utype(state, emitter));
-        
-        let doc_comment = 
+
+        let doc_comment =
             if let Some((raw_doc_comment, doc_comment_range)) = state.last_doc_comment.clone() {
                 match PHPDocComment::parse(&raw_doc_comment, &doc_comment_range) {
                     Ok(doc_comment) => Some(doc_comment),
@@ -148,8 +148,9 @@ impl PropertyElementNode {
                                 .map(|x| (x, range.clone()))
                     }
                     PHPDocEntry::Anything(range, comment) if doc_comment.entries.len() == 1 => {
-                        comment_type = UnionType::parse(comment.clone(), range.clone(), state, emitter)
-                            .map(|x| (x, range.clone()));
+                        comment_type =
+                            UnionType::parse(comment.clone(), range.clone(), state, emitter)
+                                .map(|x| (x, range.clone()));
                     }
                     _ => (),
                 }

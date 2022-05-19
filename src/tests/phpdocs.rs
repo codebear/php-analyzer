@@ -1,28 +1,14 @@
-use std::{ffi::OsString, os::unix::prelude::OsStrExt};
+use std::ffi::OsString;
 
 use tree_sitter::{Point, Range};
 
 use crate::{
     phpdoc::{
-        position::adjust_point_based_on_buffer,
+        position::fake_range,
         types::{PHPDocComment, PHPDocEntry},
     },
     types::parser::union_type,
 };
-
-pub fn fake_range(buffer: &OsString) -> Range {
-    let start_point = Point { row: 0, column: 0 };
-    let mut end_point = start_point.clone();
-    let bytes = buffer.as_bytes();
-    adjust_point_based_on_buffer(&mut end_point, bytes);
-
-    Range {
-        start_byte: 0,
-        end_byte: buffer.len(),
-        start_point,
-        end_point,
-    }
-}
 
 fn test_parse(buffer: OsString) -> Result<PHPDocComment, OsString> {
     let range = fake_range(&buffer);
