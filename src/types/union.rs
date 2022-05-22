@@ -12,12 +12,13 @@ use tree_sitter::Range;
 
 use crate::{
     analysis::state::AnalysisState,
-    issue::{Issue, IssueEmitter},
+    issue::{Issue, IssueEmitter, VoidEmitter},
+    phpdoc::position::fake_range,
     symboldata::{class::ClassName, SymbolData},
     symbols::{FullyQualifiedName, Name},
 };
 
-use super::parser::union_type;
+use super::parser::{union_type, only_generic_args};
 use super::{
     parse_types::{ConcreteType, ParsedType, ShapeKey, TypeName, TypeStruct, UnionOfTypes},
     parser::union_type_with_colon,
@@ -87,9 +88,15 @@ impl ShapeType {
         Self { map }
     }
 
-    fn ensure_valid(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter, range: &Range) {
+    fn ensure_valid(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+        range: &Range,
+        allow_unforfilled_templates: bool,
+    ) {
         for vtype in self.map.values() {
-            vtype.ensure_valid(state, emitter, range);
+            vtype.ensure_valid(state, emitter, range, allow_unforfilled_templates);
         }
         crate::missing!("Determine if we need to validate shape keys in some way?");
     }
@@ -248,6 +255,45 @@ impl UnionType {
         Self::handle_parse_result(type_str.clone(), parse_result, state, emitter)
     }
 
+    fn handle_parse_vec_result(
+        type_str: OsString,
+        parse_result: Result<(&[u8], Vec<Vec<ConcreteType>>), nom::Err<Error<&[u8]>>>,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> (Option<Vec<Option<UnionType>>>, Option<OsString>) {
+        let (rest, parsed_types) = if let Some((rest, parsed_type)) = parse_result.ok() {
+            (rest, parsed_type)
+        } else {
+            return (None, Some(type_str.clone()));
+        };
+
+        let remainder = if rest.len() > 0 {
+            let rest_str: OsString = OsStr::from_bytes(rest).into();
+            Some(rest_str)
+        } else {
+            None
+        };
+
+        let mut generics = vec![];
+
+        for parsed_type in &parsed_types {
+
+            let found_types =
+            if let Some(utype) = from_vec_parsed_type(parsed_type.clone(), state, Some(emitter)) {
+                Some(utype)
+            } else {
+                eprintln!(
+                    "Parsing of type: {:?} failed, parsed into: {:?}",
+                    type_str, parsed_type
+                );
+                None
+            };
+            generics.push(found_types);
+        }
+
+        (Some(generics), remainder)    
+    }
+
     fn handle_parse_result(
         type_str: OsString,
         parse_result: Result<(&[u8], Vec<ConcreteType>), nom::Err<Error<&[u8]>>>,
@@ -292,6 +338,19 @@ impl UnionType {
         Self::handle_remainder(utype, remainder, state, emitter, range)
     }
 
+    pub fn parse_generics(     
+        type_str: OsString,
+        range: Range,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<Vec<Option<UnionType>>> {
+        let parse_result = only_generic_args(true)(type_str.as_bytes());
+        let (utype, remainder) =
+            Self::handle_parse_vec_result(type_str.clone(), parse_result, state, emitter);
+        Self::handle_remainder(utype, remainder, state, emitter, range)
+    }
+
+
     pub fn parse_simple(type_str: OsString) -> Option<UnionType> {
         let range = fake_range(&type_str);
         let emitter = VoidEmitter::new();
@@ -301,7 +360,6 @@ impl UnionType {
             Self::parse_with_remainder(type_str.clone(), range, &mut state, &emitter);
 
         Self::handle_remainder(utype, remainder, &mut state, &emitter, range)
-
     }
 
     pub fn parse(
@@ -316,13 +374,13 @@ impl UnionType {
         Self::handle_remainder(utype, remainder, state, emitter, range)
     }
 
-    fn handle_remainder(
-        utype: Option<UnionType>,
+    fn handle_remainder<T>(
+        utype: Option<T>,
         remainder: Option<OsString>,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         range: Range,
-    ) -> Option<UnionType> {
+    ) -> Option<T> {
         if let Some(rest) = remainder {
             if rest.len() > 0 {
                 for ch in rest.as_bytes() {
@@ -386,9 +444,10 @@ impl UnionType {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         range: &Range,
+        allow_unforfilled_templates: bool,
     ) {
         for dtype in &self.types {
-            dtype.ensure_valid(state, emitter, range);
+            dtype.ensure_valid(state, emitter, range, allow_unforfilled_templates);
         }
     }
 
@@ -399,6 +458,24 @@ impl UnionType {
         let types: Vec<DiscreteType> = self.types.iter().filter(predicate).cloned().collect();
         UnionType::from(types)
     }
+
+    pub(crate) fn contains_template(&self) -> bool {
+        for t in &self.types {
+            match t {
+                DiscreteType::Template(_) => return true,
+                DiscreteType::Generic(_gtype, utypes) => {
+                    // gtype is not allowed to be generic
+                    for u in utypes {
+                        if u.contains_template() {
+                            return true;
+                        }
+                    }
+                }
+                _ => (),
+            }
+        }
+        false
+    }
 }
 
 impl DiscreteType {
@@ -406,7 +483,13 @@ impl DiscreteType {
         self.to_string()
     }
 
-    fn ensure_valid(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter, range: &Range) {
+    fn ensure_valid(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+        range: &Range,
+        allow_unforfilled_templates: bool,
+    ) {
         match self {
             DiscreteType::NULL => (),
             DiscreteType::Void => (),
@@ -422,19 +505,25 @@ impl DiscreteType {
             DiscreteType::Callable => (),
             DiscreteType::TypedCallable(a, b) => {
                 for u in a {
-                    u.ensure_valid(state, emitter, range);
+                    u.ensure_valid(state, emitter, range, allow_unforfilled_templates);
                 }
-                b.ensure_valid(state, emitter, range);
+                b.ensure_valid(state, emitter, range, allow_unforfilled_templates);
             }
-            DiscreteType::Special(s) => s.ensure_valid(state, emitter, range),
-            DiscreteType::Vector(v) => v.ensure_valid(state, emitter, range),
+            DiscreteType::Special(s) => {
+                s.ensure_valid(state, emitter, range, allow_unforfilled_templates)
+            }
+            DiscreteType::Vector(v) => {
+                v.ensure_valid(state, emitter, range, allow_unforfilled_templates)
+            }
             DiscreteType::HashMap(k, v) => {
                 // FIXME k needs to be constrained to string or int, but where is that validated?
                 // Should we have a separate type/enum for hash-key?
-                k.ensure_valid(state, emitter, range);
-                v.ensure_valid(state, emitter, range);
+                k.ensure_valid(state, emitter, range, allow_unforfilled_templates);
+                v.ensure_valid(state, emitter, range, allow_unforfilled_templates);
             }
-            DiscreteType::Shape(s) => s.ensure_valid(state, emitter, range),
+            DiscreteType::Shape(s) => {
+                s.ensure_valid(state, emitter, range, allow_unforfilled_templates)
+            }
             DiscreteType::Unknown => (),
             DiscreteType::Named(_, fqname) => {
                 if let Some(_cdata_handle) = state.symbol_data.get_class(&fqname.into()) {
@@ -447,12 +536,18 @@ impl DiscreteType {
                 }
             }
             DiscreteType::ClassType(_, _) => todo!(),
-            DiscreteType::Template(t) => emitter.emit(Issue::EmptyTemplate(
-                state.pos_from_range(range.clone()),
-                t.clone(),
-            )),
+            DiscreteType::Template(t) => {
+                // FIXME this should be done in a separate method
+                // As calling this from two different points would result in all other bad types to be emitted twice
+                if !allow_unforfilled_templates {
+                    emitter.emit(Issue::EmptyTemplate(
+                        state.pos_from_range(range.clone()),
+                        t.clone(),
+                    ))
+                }
+            }
             _a @ DiscreteType::Generic(dtype, _utypes) => {
-                dtype.ensure_valid(state, emitter, range);
+                dtype.ensure_valid(state, emitter, range, allow_unforfilled_templates);
                 match &**dtype {
                     DiscreteType::Named(_, fqname) => {
                         if let Some(_cdata_handle) = state.symbol_data.get_class(&fqname.into()) {
@@ -966,6 +1061,7 @@ impl SpecialType {
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
         _range: &Range,
+        _allow_unforfilled_templates: bool,
     ) {
         crate::missing!("Ensure that self and static only are used in usable contexts");
     }
@@ -976,7 +1072,9 @@ impl ShapeTypeValue {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         range: &Range,
+        allow_unforfilled_templates: bool,
     ) {
-        self.utype.ensure_valid(state, emitter, range);
+        self.utype
+            .ensure_valid(state, emitter, range, allow_unforfilled_templates);
     }
 }

@@ -82,8 +82,6 @@ impl FunctionDefinitionNode {
         let arg_range = self.parameters.range;
         let statement_range = self.body.range;
 
-        let emitter = VoidEmitter::new();
-
         let comments: Vec<_> = self
             .extras
             .iter()
@@ -104,19 +102,11 @@ impl FunctionDefinitionNode {
         if comment.range.end_byte >= statement_range.start_byte {
             return None;
         }
-        let phpdoc = PHPDocComment::parse(&comment.get_raw(), &comment.range).ok()?;
 
-        if phpdoc.entries.len() != 1 {
-            return None;
-        }
+        let emitter = VoidEmitter::new();
 
-        let entry = phpdoc.entries.first().cloned()?;
-        let (range, raw_utype) = if let PHPDocEntry::Anything(range, raw_utype) = entry {
-            (range, raw_utype)
-        } else {
-            return None;
-        };
-        UnionType::parse_with_colon(raw_utype, range, state, &emitter).map(|utype| (utype, range))
+        PHPDocComment::parse_inline_return_type(&comment.get_raw(), &comment.range, state, &emitter)
+        
     }
 }
 

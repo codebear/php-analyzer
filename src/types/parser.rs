@@ -86,6 +86,13 @@ pub fn union_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], UnionOfTy
     }
 }
 
+pub fn only_generic_args(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], Vec<UnionOfTypes>> {
+    move |input| {
+        let (input, _) = ourspace0(multiline)(input)?;
+        generic_args(multiline)(input)
+    }
+}
+
 fn union_separator(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ()> {
     move |input| {
         let (input, _) = ourspace0(multiline)(input)?;

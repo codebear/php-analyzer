@@ -99,3 +99,48 @@ pub fn test_noe() {
         assert!(false);
     }
 }
+
+#[test]
+pub fn test_inline_generics() -> Result<(), &'static str> {
+    let buffers: &[(OsString, OsString)] = &[(
+        "test.php".into(),
+        r#"<?php
+    /**
+    * Something
+    */
+    class Foo /** <T> */ {
+        /**
+         * @param T $noe
+         */
+        function __construct($noe) {
+            $this->klorin = $noe;
+        }
+        public /** ?T */ $klorin;
+    }
+    "#
+        .into(),
+    )];
+
+    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let symbols = result.symbol_data.ok_or("symbol data missing")?;
+    {
+        let state = AnalysisState::new_with_symbols(symbols.clone());
+        let foo_class_data = symbols
+            .get_class(&ClassName::new_with_fq_name("\\Foo".into()))
+            .ok_or("Missing Foo class data")?;
+        {
+            let class = foo_class_data.read().unwrap();
+            // eprintln!("Class: {:#?}", &class);
+            let property = class
+                .get_property(&"klorin".into(), &state)
+                .ok_or("Missing klorin property")?;
+
+            eprintln!("");
+            eprintln!("Comment: {:?}", property.comment_type);
+            eprintln!("Declared: {:?}", property.declared_type);
+            eprintln!("Constructor: {:?}", property.constructor_type);
+            todo!();
+        }
+    }
+    Ok(())
+}

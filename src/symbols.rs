@@ -158,14 +158,14 @@ impl FullyQualifiedName {
         str.into()
     }
 
-    pub(crate) fn level(&self) -> usize {
+   /*  pub(crate) fn level(&self) -> usize {
         let len = self.path.len();
         if len > 0 {
             len - 1
         } else {
             0
         }
-    }
+    }*/
 }
 
 impl Display for FullyQualifiedName {
