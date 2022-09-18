@@ -66,16 +66,11 @@ pub trait AnalysisOfClassBaseLikeNode: NodeAccess {
                     }
                     BaseClauseChildren::Comment(c) => {
                         todo!("{:?}", c);
-
                     }
                     _ => continue,
                 }
             }
-            return if res.len() > 0 { 
-                    Some(res) 
-                } else { 
-                    None 
-                };
+            return if res.len() > 0 { Some(res) } else { None };
         }
         None
     }

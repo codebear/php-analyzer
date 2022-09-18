@@ -1,9 +1,10 @@
 use std::ffi::OsString;
 
 use crate::{
+    issue::Issue,
     symbols::{FullyQualifiedName, Name},
     tests::evaluate_php_buffers,
-    types::union::DiscreteType, issue::Issue,
+    types::union::DiscreteType,
 };
 
 #[test]
@@ -268,7 +269,7 @@ fn test_namespace_and_root_class_ref() -> Result<(), &'static str> {
     assert_eq!(result.issues.len(), 1);
     for issue in result.issues {
         match issue {
-            Issue::WrongClassNameCasing(_,_,_) => assert!(true),
+            Issue::WrongClassNameCasing(_, _, _) => assert!(true),
             _ => assert!(false, "Should only be a WrongClassNameCasing issue here"),
         }
     }

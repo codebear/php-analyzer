@@ -145,13 +145,9 @@ impl ObjectCreationExpressionNode {
             .get_name()
             .unwrap_or_else(|| -> Name { Name::new() });
 
-        if let Some(generic_type) = self.infer_generic_template_types_from_constructor(
-            state,
-            emitter,
-            &name,
-            &fq_name,
-            &data,
-        ) {
+        if let Some(generic_type) = self
+            .infer_generic_template_types_from_constructor(state, emitter, &name, &fq_name, &data)
+        {
             return Some(generic_type);
         };
 

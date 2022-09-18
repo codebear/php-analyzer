@@ -101,7 +101,7 @@ fn get_value_type_from_discrete_type(
             // crate::missing_none!("Extracting value_type from traversable-type of {:?}", arr)
             // We have an array of unknown type
             None
-        },
+        }
 
         d => {
             crate::missing_none!("Extracting value_type from traversable-type of {:?}", d)

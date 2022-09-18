@@ -6,7 +6,11 @@ use std::{
 use nom::Finish;
 use tree_sitter::Range;
 
-use crate::{types::{parse_types::UnionOfTypes, union::UnionType}, analysis::state::AnalysisState, issue::IssueEmitter};
+use crate::{
+    analysis::state::AnalysisState,
+    issue::IssueEmitter,
+    types::{parse_types::UnionOfTypes, union::UnionType},
+};
 
 use super::phpdoc::parse_phpdoc;
 use super::position::PHPDocInput;
@@ -93,7 +97,10 @@ impl PHPDocComment {
         }
     }
 
-    pub fn parse_inline_phpdoc_entry(buffer: &OsString, range: &Range) -> Option<(OsString, Range)> {
+    pub fn parse_inline_phpdoc_entry(
+        buffer: &OsString,
+        range: &Range,
+    ) -> Option<(OsString, Range)> {
         let mut phpdoc_entries = Self::parse(buffer, range).ok()?;
         if phpdoc_entries.entries.len() != 1 {
             return None;
@@ -108,8 +115,12 @@ impl PHPDocComment {
         }
     }
 
-    pub fn parse_inline_generic(buffer: &OsString, range: &Range, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<(Vec<Option<UnionType>>, Range)> {
-        
+    pub fn parse_inline_generic(
+        buffer: &OsString,
+        range: &Range,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<(Vec<Option<UnionType>>, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
         let utype = UnionType::parse_generics(content.clone(), range.clone(), state, emitter)?;
@@ -117,8 +128,12 @@ impl PHPDocComment {
         Some((utype, range.clone()))
     }
 
-    pub fn parse_inline_type(buffer: &OsString, range: &Range, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<(UnionType, Range)> {
-        
+    pub fn parse_inline_type(
+        buffer: &OsString,
+        range: &Range,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<(UnionType, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
         let utype = UnionType::parse(content.clone(), range.clone(), state, emitter)?;
@@ -126,8 +141,12 @@ impl PHPDocComment {
         Some((utype, range.clone()))
     }
 
-    pub fn parse_inline_return_type(buffer: &OsString, range: &Range, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<(UnionType, Range)> {
-        
+    pub fn parse_inline_return_type(
+        buffer: &OsString,
+        range: &Range,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<(UnionType, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
         let utype = UnionType::parse_with_colon(content.clone(), range.clone(), state, emitter)?;

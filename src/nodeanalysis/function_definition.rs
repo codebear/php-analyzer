@@ -106,7 +106,6 @@ impl FunctionDefinitionNode {
         let emitter = VoidEmitter::new();
 
         PHPDocComment::parse_inline_return_type(&comment.get_raw(), &comment.range, state, &emitter)
-        
     }
 }
 
