@@ -8,5 +8,5 @@ native:
 	rustfmt src/native/**/*.rs
 
 autofix:
-	cargo fix --allow-dirty	
+	cargo fix --allow-dirty --allow-staged
 	rustfmt src/**/*.rs
