@@ -210,7 +210,7 @@ pub struct AnalysisState {
     pub global: Arc<GlobalState>,
     pub in_class: Option<ClassState>,
     pub in_function_stack: Vec<FunctionState>,
-    pub use_map: HashMap<Name, FullyQualifiedName>,
+    pub use_map: HashMap<Name, (Name, FullyQualifiedName)>,
     pub namespace: Option<FullyQualifiedName>,
     pub symbol_data: Arc<SymbolData>,
     pub last_doc_comment: Option<(OsString, Range)>,
@@ -271,7 +271,8 @@ impl AnalysisState {
     ///
     pub fn get_fq_symbol_name_from_local_name(&self, symbol_name: &Name) -> FullyQualifiedName {
         // eprintln!("AnalysisState.get_fq_symbol_name({:?}). use_map: {:?}", symbol_name, &self.use_map);
-        if let Some(fq_name) = self.use_map.get(symbol_name) {
+        let lc_symbol_name = symbol_name.to_ascii_lowercase();
+        if let Some((_correct_cased_name, fq_name)) = self.use_map.get(&lc_symbol_name) {
             // eprintln!("USEMAP: {:?}", &self.use_map);
             //   eprintln!("fra use_map: {:?}", &fq_name);
             return fq_name.clone();

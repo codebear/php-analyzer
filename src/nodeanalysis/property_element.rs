@@ -174,7 +174,7 @@ impl PropertyElementNode {
         emitter: &dyn IssueEmitter,
         _declaration: &PropertyDeclarationNode,
     ) {
-        // eprintln!("round two property declaration");
+        // eprintln!("round three property element");
         let data_handle = if let Some(handle) = self.get_property_data(state) {
             handle
         } else {
@@ -191,5 +191,11 @@ impl PropertyElementNode {
         } else {
             None
         };
+        data.comment_type
+            .as_ref()
+            .map(|x| x.0.check_type_casing(x.1, state, emitter));
+        data.declared_type
+            .as_ref()
+            .map(|x| x.check_type_casing(self.range(), state, emitter));
     }
 }

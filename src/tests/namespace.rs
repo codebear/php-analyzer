@@ -3,7 +3,7 @@ use std::ffi::OsString;
 use crate::{
     symbols::{FullyQualifiedName, Name},
     tests::evaluate_php_buffers,
-    types::union::DiscreteType,
+    types::union::DiscreteType, issue::Issue,
 };
 
 #[test]
@@ -208,4 +208,129 @@ fn test_new_class_type_in_ns() {
     } else {
         assert!(false, "funksjonen mangler");
     }
+}
+
+#[test]
+fn test_namespace_and_root_class_ref() -> Result<(), &'static str> {
+    let buffers: &[(OsString, OsString)] = &[
+        (
+            r"RootClass.php".into(),
+            r#"<?php
+
+        class RootClass {
+
+        }
+       
+
+    "#
+            .into(),
+        ),
+        (
+            r"bar/baz.php".into(),
+            r#"<?php
+        namespace bar;
+
+        use RootClass;
+
+        class X {
+            /**
+             * @desc Intentionally cased wrong
+             * @var Rootclass
+             */
+            private $rootClass;
+            function getRootSomething() {
+                return $this->rootClass;
+            }
+        }
+        function test_new_x(){
+            return new X();
+        }
+        function test_new_root_class(){
+            return new RootClass();
+        }
+
+        function test_return_root_class(RootClass $noe) {
+            return $noe;
+        }
+
+        function get_root_class() {
+            $X = new X();
+            return $X->getRootSomething();
+        }
+
+    "#
+            .into(),
+        ),
+    ];
+
+    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    // should have one issue on bad casing
+    assert_eq!(result.issues.len(), 1);
+    for issue in result.issues {
+        match issue {
+            Issue::WrongClassNameCasing(_,_,_) => assert!(true),
+            _ => assert!(false, "Should only be a WrongClassNameCasing issue here"),
+        }
+    }
+    let fname = FullyQualifiedName::from(r"\bar\test_new_x");
+
+    let symbol_data = result.symbol_data.ok_or("Symbol data missing")?;
+    let func_data = symbol_data
+        .get_function(&fname)
+        .ok_or("function \\bar\\test_new_x missing")?;
+
+    assert_eq!(
+        func_data.inferred_return_type,
+        Some(DiscreteType::Named(Name::from("X"), FullyQualifiedName::from(r"\bar\X")).into())
+    );
+
+    let fname = FullyQualifiedName::from(r"\bar\test_return_root_class");
+    let func_data = symbol_data
+        .get_function(&fname)
+        .ok_or("function \\bar\\test_return_root_class is missing")?;
+
+    assert_eq!(
+        func_data.inferred_return_type,
+        Some(
+            DiscreteType::Named(
+                Name::from("RootClass"),
+                FullyQualifiedName::from(r"\RootClass")
+            )
+            .into()
+        )
+    );
+
+    let fname = FullyQualifiedName::from(r"\bar\test_new_root_class");
+    let func_data = symbol_data
+        .get_function(&fname)
+        .ok_or("function \\bar\\test_new_root_class is missing")?;
+
+    assert_eq!(
+        func_data.inferred_return_type,
+        Some(
+            DiscreteType::Named(
+                Name::from("RootClass"),
+                FullyQualifiedName::from(r"\RootClass")
+            )
+            .into()
+        )
+    );
+
+    let fname = FullyQualifiedName::from(r"\bar\get_root_class");
+    let func_data = symbol_data
+        .get_function(&fname)
+        .ok_or("function \\bar\\get_root_class is missing")?;
+
+    assert_eq!(
+        func_data.inferred_return_type,
+        Some(
+            DiscreteType::Named(
+                Name::from("RootClass"),
+                FullyQualifiedName::from(r"\RootClass")
+            )
+            .into()
+        )
+    );
+
+    Ok(())
 }

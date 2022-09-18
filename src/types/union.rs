@@ -18,7 +18,7 @@ use crate::{
     symbols::{FullyQualifiedName, Name},
 };
 
-use super::parser::{union_type, only_generic_args};
+use super::parser::{only_generic_args, union_type};
 use super::{
     parse_types::{ConcreteType, ParsedType, ShapeKey, TypeName, TypeStruct, UnionOfTypes},
     parser::union_type_with_colon,
@@ -277,9 +277,9 @@ impl UnionType {
         let mut generics = vec![];
 
         for parsed_type in &parsed_types {
-
-            let found_types =
-            if let Some(utype) = from_vec_parsed_type(parsed_type.clone(), state, Some(emitter)) {
+            let found_types = if let Some(utype) =
+                from_vec_parsed_type(parsed_type.clone(), state, Some(emitter))
+            {
                 Some(utype)
             } else {
                 eprintln!(
@@ -291,7 +291,7 @@ impl UnionType {
             generics.push(found_types);
         }
 
-        (Some(generics), remainder)    
+        (Some(generics), remainder)
     }
 
     fn handle_parse_result(
@@ -338,7 +338,7 @@ impl UnionType {
         Self::handle_remainder(utype, remainder, state, emitter, range)
     }
 
-    pub fn parse_generics(     
+    pub fn parse_generics(
         type_str: OsString,
         range: Range,
         state: &mut AnalysisState,
@@ -349,7 +349,6 @@ impl UnionType {
             Self::handle_parse_vec_result(type_str.clone(), parse_result, state, emitter);
         Self::handle_remainder(utype, remainder, state, emitter, range)
     }
-
 
     pub fn parse_simple(type_str: OsString) -> Option<UnionType> {
         let range = fake_range(&type_str);
@@ -475,6 +474,17 @@ impl UnionType {
             }
         }
         false
+    }
+
+    pub(crate) fn check_type_casing(
+        &self,
+        range: Range,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) {
+        for t in &self.types {
+            t.check_type_casing(range, state, emitter)
+        }
     }
 }
 
@@ -677,6 +687,56 @@ impl DiscreteType {
                 crate::missing!();
                 true
             }
+        }
+    }
+
+    fn check_type_casing(
+        &self,
+        range: Range,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) {
+        match self {
+            DiscreteType::NULL => (),
+            DiscreteType::Void => (),
+            DiscreteType::Int => (),
+            DiscreteType::Float => (),
+            DiscreteType::Resource => (),
+            DiscreteType::String => (),
+            DiscreteType::Bool => (),
+            DiscreteType::Mixed => (),
+            DiscreteType::False => (),
+            DiscreteType::Array => (),
+            DiscreteType::Object => (),
+            DiscreteType::Callable => (),
+            DiscreteType::TypedCallable(_, _) => (),
+            DiscreteType::Special(_) => (),
+            DiscreteType::Vector(_) => (),
+            DiscreteType::HashMap(_, _) => (),
+            DiscreteType::Shape(_) => (),
+            DiscreteType::Unknown => (),
+            DiscreteType::Named(name, fqname) => {
+                if let Some(fq_last_name) = fqname.get_name() {
+                    if fq_last_name.eq_ignore_ascii_case(name.to_os_string()) {
+                        if *name != fq_last_name {
+                            emitter.emit(Issue::WrongClassNameCasing(
+                                state.pos_from_range(range),
+                                name.clone(),
+                                fqname.clone(),
+                            ));
+                        }
+                    }
+                }
+            }
+            DiscreteType::Generic(base, generic_args) => {
+                base.check_type_casing(range, state, emitter);
+                for t in generic_args {
+                    t.check_type_casing(range, state, emitter);
+                }
+            }
+            DiscreteType::ClassType(_, _) => (),
+
+            DiscreteType::Template(_) => (),
         }
     }
 }

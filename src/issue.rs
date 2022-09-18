@@ -1,4 +1,8 @@
-use std::{ffi::OsString, path::PathBuf, sync::atomic::{AtomicUsize, Ordering}};
+use std::{
+    ffi::OsString,
+    path::PathBuf,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use tree_sitter::Range;
 
@@ -125,6 +129,8 @@ pub enum Issue {
 
     UnknownIndexType(IssuePosition),
 
+    WrongClassNameCasing(IssuePosition, Name, FullyQualifiedName),
+
     /// The analyzer arrived at a parse-state it considers impossible
     ParseAnomaly(IssuePosition, OsString),
     VariableNotInitializedInAllBranhces(IssuePosition, Name),
@@ -196,14 +202,14 @@ impl Issue {
             | Self::PropertyAccessOnUnknownType(pos, _)
             | Self::PropertyAccessOnInterfaceType(pos, _, _)
             | Self::IndeterminablePropertyName(pos, _)
-            | Self::VariableNotInitializedInAllBranhces(pos, _) 
-            | Self::PHPDocParseError(pos) 
+            | Self::VariableNotInitializedInAllBranhces(pos, _)
+            | Self::WrongClassNameCasing(pos, _, _)
+            | Self::PHPDocParseError(pos)
             | Self::PHPDocTypeError(pos, _)
             | Self::MisplacedPHPDocEntry(pos, _)
             | Self::InvalidPHPDocEntry(pos, _)
             | Self::RedundantPHPDocEntry(pos, _)
-            | Self::EmptyTemplate(pos, _)
-            => pos.clone(),
+            | Self::EmptyTemplate(pos, _) => pos.clone(),
         }
     }
 
@@ -246,26 +252,27 @@ impl Issue {
             Self::DuplicateConstant(_, _) => "DuplicateConstant",
             Self::DuplicateFunction(_, _) => "DuplicateFunction",
             Self::DuplicateClassConstant(_, _, _) => "DuplicateClassConstant",
-            Self::DuplicateDeclaration(_,_) => "DuplicateDeclaration",
+            Self::DuplicateDeclaration(_, _) => "DuplicateDeclaration",
             Self::UnknownIndexType(_) => "UnknownIndexType",
             Self::ParseAnomaly(_, _) => "ParseAnomaly",
             Self::VariableNotInitializedInAllBranhces(_, _) => {
                 "VariableNotInitializedInAllBranhces"
             }
+            Self::WrongClassNameCasing(_, _, _) => "WrongCasingOfSymbolName",
             Self::PHPDocParseError(_) => "PHPDocParseError",
-            Self::PHPDocTypeError(_,_) => "PHPDocTypeError",
+            Self::PHPDocTypeError(_, _) => "PHPDocTypeError",
             Self::MisplacedPHPDocEntry(_, _) => "MisplacedPHPDocEntry",
-            Self::InvalidPHPDocEntry(_,_) => "InvalidPHPDocEntry",
-            Self::RedundantPHPDocEntry(_,_) => "RedundantPHPDocEntry",
+            Self::InvalidPHPDocEntry(_, _) => "InvalidPHPDocEntry",
+            Self::RedundantPHPDocEntry(_, _) => "RedundantPHPDocEntry",
             Self::EmptyTemplate(_, _) => "EmptyTemplate",
         }
     }
 
     pub fn as_string(&self) -> String {
         match self {
-            Self::UnusedVariable(_, vn) => format!("Unused variable {}", vn),
-            Self::UnusedArgument(_, vn) => format!("Unused argument {}", vn),
-            Self::UnknownVariable(_, vn) => format!("Unknown variable {}", vn),
+            Self::UnusedVariable(_, vn) => format!("Unused variable ${}", vn),
+            Self::UnusedArgument(_, vn) => format!("Unused argument ${}", vn),
+            Self::UnknownVariable(_, vn) => format!("Unknown variable ${}", vn),
             Self::UnknownFunction(_, fun) => format!("Unknown function {}", fun),
             Self::UnknownClass(_, c) => format!("Unknown class {}", c),
             Self::UnknownType(_, c) => format!("Unknown type {:?}", c),
@@ -275,9 +282,9 @@ impl Issue {
             Self::DuplicateTemplate(_pos, t) => format!("Duplicate template {}", t),
 
             Self::NotAVerifiedCallableVariable(_, vn) => {
-                format!("Could not verify that variable {} is callable", vn)
+                format!("Could not verify that variable ${} is callable", vn)
             }
-            Self::NotACallableVariable(_, vn) => format!("Variable {} is not callable", vn),
+            Self::NotACallableVariable(_, vn) => format!("Variable ${} is not callable", vn),
             Self::DecrementIsIllegalOnType(_, n) => format!("<expr>-- is illegal on {}", n),
             Self::IncrementIsIllegalOnType(_, n) => format!("<expr>++ is illegal on {}", n),
             Self::UnknownConstant(_, c) => format!("Unknown constant {}", c),
@@ -286,14 +293,13 @@ impl Issue {
                 let mname = mname.clone().unwrap_or_else(|| Name::new());
                 let cname = cname.clone().unwrap_or_else(|| FullyQualifiedName::new());
                 format!(
-                "Method call {} on a target with unidentifiyable type {}",
-                mname,
-                cname
-            )},
-            Self::MethodCallOnNullableType(_, mname) => format!(
-                "Method call {:?} on a target which can be null",
-                mname
-            ),
+                    "Method call {} on a target with unidentifiyable type {}",
+                    mname, cname
+                )
+            }
+            Self::MethodCallOnNullableType(_, mname) => {
+                format!("Method call {:?} on a target which can be null", mname)
+            }
             Self::UnknownMethod(_, c, m) => format!("Unknown method {} on {}", m, c),
             Self::TraversalOfUnknownType(_) => format!("Traversal of unknown type"),
             Self::ConditionalConstantDeclaration(_) => {
@@ -308,15 +314,21 @@ impl Issue {
             Self::DuplicateClassConstant(_, class, cons) => {
                 format!("Duplicate class constant {}::{}", class, cons)
             }
-            Self::DuplicateDeclaration(_, desc) => format!("Duplicate declaration: {}", desc.to_string_lossy()),
+            Self::DuplicateDeclaration(_, desc) => {
+                format!("Duplicate declaration: {}", desc.to_string_lossy())
+            }
             Self::UnknownIndexType(_) => format!("Unknown index type"),
             Self::ParseAnomaly(_, pa) => format!("Arrived at an unexpected parse state: {:?}", pa),
             Self::VariableNotInitializedInAllBranhces(_, vname) => {
-                format!("Variable {} is not initialized in all branches", vname)
+                format!("Variable ${} is not initialized in all branches", vname)
             }
 
             Self::WrongFunctionNameCasing(_, expected, provided) => format!(
                 "Function name is cased differently [{}] than in the declaration [{}]",
+                provided, expected
+            ),
+            Self::WrongClassNameCasing(_, provided, expected) => format!(
+                "Class name is cased differently [{}] than in the declaration [{}]",
                 provided, expected
             ),
             Self::PropertyAccessOnUnknownType(_, property_name) => {
@@ -333,10 +345,19 @@ impl Issue {
                 cname
             ),
             Self::PHPDocParseError(_) => format!("Unable to parse PHP Doc-comment"),
-            Self::PHPDocTypeError(_, err) => format!("Parse error while parsing type in phpdoc-comment: {}", err),
-            Self::MisplacedPHPDocEntry(_, reason) => format!("PHPDoc-entry used in the wrong context: {}", reason.to_string_lossy()),
-            Self::InvalidPHPDocEntry(_, reason) => format!("Invalid PHPDoc-entry: {}", reason.to_string_lossy()),
-            Self::RedundantPHPDocEntry(_, reason) => format!("Redundant PHPDoc-entry: {}", reason.to_string_lossy()),
+            Self::PHPDocTypeError(_, err) => {
+                format!("Parse error while parsing type in phpdoc-comment: {}", err)
+            }
+            Self::MisplacedPHPDocEntry(_, reason) => format!(
+                "PHPDoc-entry used in the wrong context: {}",
+                reason.to_string_lossy()
+            ),
+            Self::InvalidPHPDocEntry(_, reason) => {
+                format!("Invalid PHPDoc-entry: {}", reason.to_string_lossy())
+            }
+            Self::RedundantPHPDocEntry(_, reason) => {
+                format!("Redundant PHPDoc-entry: {}", reason.to_string_lossy())
+            }
             Self::EmptyTemplate(_, name) => format!("Generic template {} is unforfilled", name),
         }
     }

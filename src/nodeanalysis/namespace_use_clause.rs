@@ -116,13 +116,14 @@ impl FirstPassAnalyzeableNode for NamespaceUseClauseNode {
 
         match (use_fq_name, use_name) {
             (Some(fq_name), Some(name)) => {
-                if let Some(_) = state.use_map.get(&name) {
+                let lc_name = name.to_ascii_lowercase();
+                if let Some(_) = state.use_map.get(&lc_name) {
                     if state.pass == 1 {
                         emitter.emit(Issue::DuplicateSymbol(self.pos(state), name));
                     }
                 } else {
                     // eprintln!("INSERT INTO USE_MAP: {:?}", &fq_name);
-                    state.use_map.insert(name, fq_name);
+                    state.use_map.insert(lc_name, (name, fq_name));
                 }
             }
             _ => eprintln!("Someting strange, in the neighbourhood"),
