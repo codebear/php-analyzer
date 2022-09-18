@@ -226,6 +226,15 @@ impl ClassType {
         let name: Name = "__construct".into();
         self.get_method(&name, symbol_data)
     }
+
+    pub(crate) fn set_generic_concretes(&mut self, noe: BTreeMap<Name, UnionType>) {
+        match self {
+            ClassType::None => (),
+            ClassType::Class(c) => c.generic_concretes = Some(noe),
+            ClassType::Interface(_) => todo!(),
+            ClassType::Trait(_) => todo!(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -262,6 +271,7 @@ pub struct ClassData {
     pub phpdoc: Option<PHPDocComment>,
     pub deprecated: Option<OsString>,
     pub generic_templates: Option<Vec<Name>>,
+    pub generic_concretes: Option<BTreeMap<Name, UnionType>>,
 }
 
 impl ClassData {
@@ -280,6 +290,7 @@ impl ClassData {
             phpdoc: None,
             deprecated: None,
             generic_templates: None,
+            generic_concretes: None,
         }
     }
 
@@ -293,7 +304,9 @@ impl ClassData {
         symbol_data: Arc<SymbolData>,
     ) -> Option<MethodData> {
         if let Some(m) = self.methods.get(&method_name.to_ascii_lowercase()) {
-            return Some(m.read().unwrap().clone());
+            let mut mdata = m.read().unwrap().clone();
+            mdata.generic_concretes = self.generic_concretes.clone();
+            return Some(mdata);
         }
 
         if let Some(base) = &self.base_class_name {
@@ -692,6 +705,7 @@ pub struct MethodData {
     pub visibility: ClassMemberVisibility,
     pub phpdoc: Option<PHPDocComment>,
     pub generic_templates: Option<Vec<Name>>,
+    pub generic_concretes: Option<BTreeMap<Name, UnionType>>,
 }
 
 impl MethodData {
@@ -716,6 +730,10 @@ impl MethodData {
             visibility: ClassMemberVisibility::Public,
             phpdoc: None,
             generic_templates: None,
+            generic_concretes: None,
+        }
+    }
+
     pub(crate) fn get_return_type(&self) -> Option<UnionType> {
         let call_return_type = self
             .comment_return_type

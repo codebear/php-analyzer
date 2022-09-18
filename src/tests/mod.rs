@@ -45,10 +45,10 @@ impl TestEmitter {
 
 impl IssueEmitter for TestEmitter {
     fn emit(&self, issue: Issue) {
-        match issue {
+        /*match issue {
             Issue::UnknownClass(_, _) => todo!(),
             _ => (),
-        }
+        }*/
         let start = issue.range().start_point;
         let err = issue.as_string();
         if let Some(f) = issue.filename() {

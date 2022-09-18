@@ -7,10 +7,13 @@ use crate::{
     analysis::state::{AnalysisState, ClassState},
     autonodes::{
         any::AnyNodeRef,
-        class_declaration::{ClassDeclarationModifier, ClassDeclarationNode},
+        class_declaration::{
+            ClassDeclarationChildren, ClassDeclarationModifier, ClassDeclarationNode,
+        },
         class_interface_clause::ClassInterfaceClauseChildren,
     },
     autotree::NodeAccess,
+    extra::ExtraChild,
     issue::{Issue, IssueEmitter},
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::{
@@ -26,6 +29,13 @@ use super::{
     class::{AnalysisOfClassBaseLikeNode, AnalysisOfDeclaredNameNode},
 };
 use crate::nodeanalysis::class::AnalysisOfClassLikeNode;
+
+#[derive(Clone, Copy)]
+pub enum InlineGenericSearchMode {
+    Class,
+    Extends,
+    Implements,
+}
 
 impl ClassDeclarationNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -59,6 +69,82 @@ impl ClassDeclarationNode {
     fn get_class_data(&self, state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
         let class_name = self.get_class_name(state);
         state.symbol_data.get_or_create_class(&class_name)
+    }
+
+    pub(crate) fn get_inline_generic_doc_comment(
+        &self,
+        mode: InlineGenericSearchMode,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<Vec<UnionType>> {
+        //
+        // This is a very suboptimal solution, but it will suffice
+        //
+        let mut start_search_pos = self.name.range.end_byte;
+
+        let mut end_search_pos = self.body.range.start_byte;
+
+        for child in &self.children {
+            if child.range().start_byte < start_search_pos {
+                continue;
+            }
+
+            match (mode, &**child) {
+                (InlineGenericSearchMode::Class, ClassDeclarationChildren::BaseClause(b)) => {
+                    end_search_pos = b.range().start_byte;
+                    break;
+                }
+                (InlineGenericSearchMode::Extends, ClassDeclarationChildren::BaseClause(b)) => {
+                    start_search_pos = b.range().end_byte;
+                }
+                (
+                    InlineGenericSearchMode::Class,
+                    ClassDeclarationChildren::ClassInterfaceClause(i),
+                ) => {
+                    // we'll never get here if there is an extends-clause
+                    end_search_pos = i.range().start_byte;
+                    break;
+                }
+                (
+                    InlineGenericSearchMode::Extends,
+                    ClassDeclarationChildren::ClassInterfaceClause(i),
+                ) => {
+                    end_search_pos = i.range().start_byte;
+                    break;
+                }
+
+                (InlineGenericSearchMode::Implements, ClassDeclarationChildren::BaseClause(b)) => {
+                    start_search_pos = b.range().end_byte;
+                }
+                (
+                    InlineGenericSearchMode::Implements,
+                    ClassDeclarationChildren::ClassInterfaceClause(i),
+                ) => {
+                    start_search_pos = i.range().end_byte;
+                }
+
+                (_, ClassDeclarationChildren::Comment(_)) => todo!(),
+
+                (_, ClassDeclarationChildren::TextInterpolation(_))
+                | (_, ClassDeclarationChildren::Error(_)) => (),
+            }
+        }
+
+        for ex in &self.extras {
+            if ex.range().start_byte <= start_search_pos {
+                continue;
+            }
+            if ex.range().end_byte >= end_search_pos {
+                continue;
+            }
+            if let ExtraChild::Comment(c) = &**ex {
+                let (_utype_list, _range) =
+                    PHPDocComment::parse_inline_generic(&c.get_raw(), &c.range(), state, emitter)?;
+            }
+        }
+
+        // self.children
+        None
     }
 }
 
@@ -212,6 +298,12 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                     state.pos_from_range(php_doc_range.clone()),
                 )),
             }
+        }
+
+        if let Some(inline_class_name_generic) =
+            self.get_inline_generic_doc_comment(InlineGenericSearchMode::Class, state, emitter)
+        {
+            todo!("NOE: {:#?}", inline_class_name_generic);
         }
 
         let interfaces = self.get_interfaces(state);

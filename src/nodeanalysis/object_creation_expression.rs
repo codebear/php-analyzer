@@ -9,6 +9,7 @@ use crate::{
         },
     },
     issue::IssueEmitter,
+    symboldata::class::ClassName,
     symbols::{FullyQualifiedName, Name},
     types::union::{DiscreteType, UnionType},
     value::{ObjectInstance, PHPValue},
@@ -139,33 +140,82 @@ impl ObjectCreationExpressionNode {
         } else {
             return crate::missing_none!("{}.get_utype(..)", self.kind());
         };
-        if let Some(args) = data.arguments {
-            let noe = args.get_argument_types(state, emitter);
-        }
-        
-        let noe = state.symbol_data.get_class(&fq_name.clone().into());
-        if let Some(x) = noe {
-            let ctype = x.read().unwrap();
-            if let Some(_x) = ctype.get_generic_templates() {
-                if let Some(c) = ctype.get_constructor(state.symbol_data.clone()) {
-                    for func_arg in &c.arguments {
-                        eprintln!("ARG: {}: {:?}", func_arg.name, func_arg.get_type(state));
+
+        let name = fq_name
+            .get_name()
+            .unwrap_or_else(|| -> Name { Name::new() });
+
+        if let Some(generic_type) = self.infer_generic_template_types_from_constructor(
+            state,
+            emitter,
+            &name,
+            &fq_name,
+            &data,
+        ) {
+            return Some(generic_type);
+        };
+
+        let class_type = DiscreteType::Named(name, fq_name.clone());
+
+        Some(class_type.into())
+    }
+
+    fn infer_generic_template_types_from_constructor(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+        name: &Name,
+        fq_name: &FullyQualifiedName,
+        object_creation_data: &ObjectCreationData,
+    ) -> Option<UnionType> {
+        let fq_class_name: ClassName = fq_name.into();
+        let shared_class_data = state.symbol_data.get_class(&fq_class_name)?;
+        // FIXME improve structure here
+
+        let ctype = shared_class_data.read().unwrap();
+        let template_types = ctype.get_generic_templates()?;
+
+        let mut inner_generic_map = HashMap::new();
+        let constructor_data = ctype.get_constructor(state.symbol_data.clone())?;
+
+        if let Some(args) = &object_creation_data.arguments {
+            let in_arguments = args.get_argument_types(state, emitter);
+            let mut in_argument_iter = in_arguments.iter();
+            for func_arg in &constructor_data.arguments {
+                let in_type = in_argument_iter.next().cloned();
+                let arg_type = func_arg.get_type(state);
+                match (in_type, arg_type) {
+                    (Some(Some(in_type)), Some(arg_type)) => {
+                        // void
+                        if arg_type.contains_template() {
+                            self.infer_generic_type_into_map(
+                                &mut inner_generic_map,
+                                arg_type,
+                                in_type,
+                            );
+                        }
                     }
-                    self.children;
-                    todo!("Discover generic properties");
+                    _ => (),
                 }
+                //eprintln!("ARG: {}: {:?}", func_arg.name, func_arg.get_type(state));
             }
         }
 
-        return Some(
-            DiscreteType::Named(
-                fq_name
-                    .get_name()
-                    .unwrap_or_else(|| -> Name { Name::new() }),
-                fq_name,
-            )
-            .into(),
-        );
+        let mut concrete_generic_args = vec![];
+        for temp in template_types {
+            if let Some(mapped_to) = inner_generic_map.get(&temp) {
+                concrete_generic_args.push(mapped_to.clone());
+            } else {
+                concrete_generic_args.push(DiscreteType::Template(temp).into());
+            }
+        }
+        let class_type = DiscreteType::Named(name.clone(), fq_name.clone());
+
+        //eprintln!("{}<{:?}>", class_type, concrete_generic_args);
+
+        Some(DiscreteType::Generic(Box::new(class_type), concrete_generic_args).into())
+    }
+
     pub(crate) fn infer_generic_type_into_map(
         &self,
         generic_map: &mut HashMap<Name, UnionType>,

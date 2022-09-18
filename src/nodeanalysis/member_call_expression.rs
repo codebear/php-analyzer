@@ -1,8 +1,10 @@
+use std::collections::BTreeMap;
+
 use crate::{
     autonodes::any::AnyNodeRef,
     autotree::NodeAccess,
     issue::{Issue, VoidEmitter},
-    symboldata::class::MethodData,
+    symboldata::class::{ClassType, MethodData},
     symbols::{Name, Symbol, SymbolClass, SymbolMethod},
 };
 
@@ -29,13 +31,27 @@ impl MemberCallExpressionNode {
     pub fn get_utype(
         &self,
         state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
+        _emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         // FIXME
         // Find out what the return-type of the method is
         // If the method is marked for overload-analysis, and we
         // have concrete argument values, register them with method-data for analysis in next pass
 
+        let methods = self.get_methods_data(state);
+        let mut return_type = UnionType::new();
+        for maybe_method in methods {
+            if let Some((_class, method_data)) = maybe_method {
+                let call_return_type = method_data.get_return_type()?;
+                return_type.merge_into(call_return_type);
+            }
+        }
+        if return_type.len() > 0 {
+            Some(return_type)
+        } else {
+            None
+        }
+        /*
         let method_name = self.name.get_method_name(state)?;
 
         let class_names = self.get_object_class_names(state, emitter)?;
@@ -58,11 +74,7 @@ impl MemberCallExpressionNode {
 
                 return None;
             };
-            let call_return_type = method_data
-                .comment_return_type
-                .map(|x| x.0)
-                .or(method_data.php_return_type)
-                .or(method_data.inferred_return_type)?;
+            let call_return_type = method_data.get_return_type()?;
 
             types.merge_into(call_return_type);
         }
@@ -70,7 +82,7 @@ impl MemberCallExpressionNode {
             Some(types)
         } else {
             None
-        }
+        }*/
     }
 
     pub fn get_methods_data(
@@ -85,43 +97,137 @@ impl MemberCallExpressionNode {
             return methods;
         };
 
-        let class_names =
-            if let Some(cnames) = self.get_object_class_names(state, &VoidEmitter::new()) {
-                cnames
-            } else {
-                return methods;
-            };
+        if let Some(utypes) = self.get_class_datas_for_union_types(state) {
+            for maybe_class_data in utypes {
+                if let Some(class_data) = maybe_class_data {
+                    let method_data = if let Some(md) = {
+                        //let unlocked = cdata_handle.read().unwrap();
+                        class_data.get_method(&method_name, state.symbol_data.clone())
+                    } {
+                        md
+                    } else {
+                        methods.push(None);
+                        continue;
+                    };
 
-        for class_name in class_names {
-            // If we have one missing class-type, abandon generating a result
-            let class_name = if let Some(cname) = class_name {
-                cname
-            } else {
-                methods.push(None);
-                continue;
-            };
-
-            let cdata_handle = if let Some(ch) = state.symbol_data.get_class(&class_name) {
-                ch
-            } else {
-                methods.push(None);
-                continue;
-            };
-
-            let method_data = if let Some(md) = {
-                let unlocked = cdata_handle.read().unwrap();
-                unlocked.get_method(&method_name, state.symbol_data.clone())
-            } {
-                md
-            } else {
-                methods.push(None);
-                continue;
-            };
-
-            methods.push(Some((class_name, method_data)));
+                    methods.push(Some((class_data.get_class_name(), method_data)));
+                } else {
+                    methods.push(None);
+                }
+            }
         }
+        /*
+                let class_names =
+                    if let Some(cnames) = self.get_object_class_names(state, &VoidEmitter::new()) {
+                        cnames
+                    } else {
+                        return methods;
+                    };
 
+                for class_name in class_names {
+                    // If we have one missing class-type, abandon generating a result
+                    let class_name = if let Some(cname) = class_name {
+                        cname
+                    } else {
+                        methods.push(None);
+                        continue;
+                    };
+
+                    let cdata_handle = if let Some(ch) = state.symbol_data.get_class(&class_name) {
+                        ch
+                    } else {
+                        methods.push(None);
+                        continue;
+                    };
+
+                    let method_data = if let Some(md) = {
+                        let unlocked = cdata_handle.read().unwrap();
+                        unlocked.get_method(&method_name, state.symbol_data.clone())
+                    } {
+                        md
+                    } else {
+                        methods.push(None);
+                        continue;
+                    };
+
+                    methods.push(Some((class_name, method_data)));
+                }
+        */
         methods
+    }
+
+    pub fn get_class_datas_for_union_types(
+        &self,
+        state: &mut AnalysisState,
+    ) -> Option<Vec<Option<ClassType>>> {
+        self.name.get_method_name(state)?;
+        let emitter = VoidEmitter::new();
+        let object_utype = self.object.get_utype(state, &emitter)?;
+
+        let mut cnames = vec![];
+        for dtype in object_utype.types {
+            if let DiscreteType::NULL = dtype {
+                continue;
+            }
+            let class_name = self.get_class_data_for_discrete_type(state, dtype);
+            cnames.push(class_name);
+        }
+        Some(cnames)
+    }
+
+    fn get_class_data_for_discrete_type(
+        &self,
+        state: &mut AnalysisState,
+        dtype: DiscreteType,
+    ) -> Option<ClassType> {
+        match dtype {
+            DiscreteType::NULL => None,
+            DiscreteType::Void => None,
+            DiscreteType::Int => None,
+            DiscreteType::Float => None,
+            DiscreteType::Resource => None,
+            DiscreteType::String => None,
+            DiscreteType::Bool => None,
+            DiscreteType::Mixed => crate::missing_none!("Find class data from..."),
+            DiscreteType::False => None,
+            DiscreteType::Array => crate::missing_none!("Find class data from..."),
+            DiscreteType::Object => crate::missing_none!("Find class data from..."),
+            DiscreteType::Callable => crate::missing_none!("Find class data from..."),
+            DiscreteType::TypedCallable(_, _) => crate::missing_none!("Find class data from..."),
+            DiscreteType::Special(_) => crate::missing_none!("Find class data from..."),
+            DiscreteType::Vector(_) => crate::missing_none!("Find class data from..."),
+            DiscreteType::HashMap(_, _) => crate::missing_none!("Find class data from..."),
+            DiscreteType::Shape(_) => crate::missing_none!("Find class data from..."),
+            DiscreteType::Unknown => None, // crate::missing_none!("Find class data from..."),
+            DiscreteType::Named(_, fqname) => {
+                let class_name: ClassName = fqname.into();
+                let cdata = state.symbol_data.get_class(&class_name)?;
+                let class_data = {
+                    let unlocked = cdata.read().unwrap();
+                    unlocked.clone()
+                };
+                Some(class_data)
+            }
+            DiscreteType::Generic(dtype, concrete_template_types) => {
+                let class_name = self.get_class_name_from_discrete_type(&*dtype)?;
+                let cdata = state.symbol_data.get_class(&class_name)?;
+                let mut class_data = {
+                    let unlocked = cdata.read().unwrap();
+                    unlocked.clone()
+                };
+                let mut concrete = BTreeMap::new();
+                let class_templates = class_data.get_generic_templates()?;
+                for (template_name, template_type) in
+                    class_templates.iter().zip(concrete_template_types.iter())
+                {
+                    concrete.insert(template_name.clone(), template_type.clone());
+                }
+                class_data.set_generic_concretes(concrete);
+                Some(class_data)
+            }
+            DiscreteType::ClassType(_, _) => crate::missing_none!("Find class data from..."),
+            DiscreteType::Template(_) => crate::missing_none!("Find class data from..."),
+        }
     }
 
     pub fn get_php_value(

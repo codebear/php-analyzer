@@ -97,6 +97,12 @@ fn get_value_type_from_discrete_type(
         // FIXME determine if we are certain that this is correct for String
         DiscreteType::String => None,
 
+        DiscreteType::Array => {
+            // crate::missing_none!("Extracting value_type from traversable-type of {:?}", arr)
+            // We have an array of unknown type
+            None
+        },
+
         d => {
             crate::missing_none!("Extracting value_type from traversable-type of {:?}", d)
         }

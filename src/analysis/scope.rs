@@ -89,6 +89,45 @@ impl Scope {
         self.vars.get(var_name).map(|x| x.clone())
     }
 }
+/*
+impl std::fmt::Debug for Scope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (name, data) in &self.vars {
+            write!(f, "${}: ", name);
+            let var_data = data.read().unwrap();
+            write!(
+                f,
+                "comment_declared_type={:?},",
+                var_data
+                    .comment_declared_type
+                    .as_ref()
+                    .map(|x| x.to_string())
+            );
+            write!(
+                f,
+                "php_declared_type={:?},",
+                var_data.php_declared_type.as_ref().map(|x| x.to_string())
+            );
+            let last_types: Vec<_> = var_data
+                .last_written_data
+                .iter()
+                .cloned()
+                .map(|x| x.0)
+                .collect();
+            write!(f, "last_types={:?}", last_types.iter().map(|x|x.to_string()).collect::<Vec<_>>());
+            write!(f, "\n");
+        }
+        if let Some(p) = &self.parent {
+            let read = p.read().unwrap();
+            write!(f, "UP\n{:?}", *read);
+        }
+        Ok(())
+        /*        f.debug_struct("Scope")
+        .field("vars", &self.vars)
+        .field("parent", &self.parent)
+        .finish()*/
+    }
+}*/
 
 pub trait BranchableScope {
     fn branch(&self) -> Arc<RwLock<Scope>>;
