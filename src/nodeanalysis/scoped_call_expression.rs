@@ -90,6 +90,7 @@ impl ScopedCallExpressionNode {
                 crate::missing_none!("{}", self.kind())
             }
             ScopedCallExpressionScope::VariableName(_) => crate::missing_none!("{}", self.kind()),
+            ScopedCallExpressionScope::Nowdoc(_) => crate::missing_none!("{}", self.kind()),
 
             ScopedCallExpressionScope::Comment(_)
             | ScopedCallExpressionScope::TextInterpolation(_)

@@ -81,6 +81,7 @@ impl PropertyElementNode {
         let mut modifier = ClassModifier::None;
         let mut visibility = ClassMemberVisibility::Public;
         let mut is_static = false;
+        let mut readonly = false;
         for mods in &declaration.modifiers {
             match &**mods {
                 PropertyDeclarationModifiers::AbstractModifier(_) => {
@@ -95,6 +96,9 @@ impl PropertyElementNode {
                 }
                 PropertyDeclarationModifiers::VisibilityModifier(v) => {
                     visibility = v.get_visibility()
+                }
+                PropertyDeclarationModifiers::ReadonlyModifier(_) => {
+                    readonly = true;
                 }
 
                 PropertyDeclarationModifiers::Comment(_)
@@ -162,6 +166,7 @@ impl PropertyElementNode {
             data.declared_type = declared_type;
             data.comment_type = comment_type;
             data.is_static = is_static;
+            data.readonly = readonly;
             data.modifier = modifier;
             data.visibility = visibility;
             data.phpdoc = doc_comment;

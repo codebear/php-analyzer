@@ -44,6 +44,7 @@ pub enum BinaryExpressionOperator {
     GreaterThan(&'static str, Range),
     GreaterThanOrEqual(&'static str, Range),
     RightShift(&'static str, Range),
+    NullCoalescing(&'static str, Range),
     BinaryXor(&'static str, Range),
     And(&'static str, Range),
     Instanceof(&'static str, Range),
@@ -86,6 +87,7 @@ impl BinaryExpressionOperator {
             ">" => BinaryExpressionOperator::GreaterThan(">", node.range()),
             ">=" => BinaryExpressionOperator::GreaterThanOrEqual(">=", node.range()),
             ">>" => BinaryExpressionOperator::RightShift(">>", node.range()),
+            "??" => BinaryExpressionOperator::NullCoalescing("??", node.range()),
             "^" => BinaryExpressionOperator::BinaryXor("^", node.range()),
             "and" => BinaryExpressionOperator::And("and", node.range()),
             "instanceof" => BinaryExpressionOperator::Instanceof("instanceof", node.range()),
@@ -132,6 +134,7 @@ impl BinaryExpressionOperator {
             ">" => BinaryExpressionOperator::GreaterThan(">", node.range()),
             ">=" => BinaryExpressionOperator::GreaterThanOrEqual(">=", node.range()),
             ">>" => BinaryExpressionOperator::RightShift(">>", node.range()),
+            "??" => BinaryExpressionOperator::NullCoalescing("??", node.range()),
             "^" => BinaryExpressionOperator::BinaryXor("^", node.range()),
             "and" => BinaryExpressionOperator::And("and", node.range()),
             "instanceof" => BinaryExpressionOperator::Instanceof("instanceof", node.range()),
@@ -187,6 +190,7 @@ impl BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::GreaterThanOrEqual(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::RightShift(_, _) => Some(DiscreteType::String.into()),
+            BinaryExpressionOperator::NullCoalescing(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::BinaryXor(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::And(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::Instanceof(_, _) => Some(DiscreteType::String.into()),
@@ -263,6 +267,9 @@ impl BinaryExpressionOperator {
             BinaryExpressionOperator::RightShift(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
+            BinaryExpressionOperator::NullCoalescing(a, _) => {
+                Some(PHPValue::String(OsStr::new(a).to_os_string()))
+            }
             BinaryExpressionOperator::BinaryXor(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
@@ -311,6 +318,7 @@ impl BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(_, _) => (),
             BinaryExpressionOperator::GreaterThanOrEqual(_, _) => (),
             BinaryExpressionOperator::RightShift(_, _) => (),
+            BinaryExpressionOperator::NullCoalescing(_, _) => (),
             BinaryExpressionOperator::BinaryXor(_, _) => (),
             BinaryExpressionOperator::And(_, _) => (),
             BinaryExpressionOperator::Instanceof(_, _) => (),
@@ -354,6 +362,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(a, _) => a.to_string(),
             BinaryExpressionOperator::GreaterThanOrEqual(a, _) => a.to_string(),
             BinaryExpressionOperator::RightShift(a, _) => a.to_string(),
+            BinaryExpressionOperator::NullCoalescing(a, _) => a.to_string(),
             BinaryExpressionOperator::BinaryXor(a, _) => a.to_string(),
             BinaryExpressionOperator::And(a, _) => a.to_string(),
             BinaryExpressionOperator::Instanceof(a, _) => a.to_string(),
@@ -388,6 +397,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::GreaterThanOrEqual(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::RightShift(a, b) => AnyNodeRef::StaticExpr(a, *b),
+            BinaryExpressionOperator::NullCoalescing(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::BinaryXor(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::And(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::Instanceof(a, b) => AnyNodeRef::StaticExpr(a, *b),
@@ -422,6 +432,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(_, _) => todo!("Crap"),
             BinaryExpressionOperator::GreaterThanOrEqual(_, _) => todo!("Crap"),
             BinaryExpressionOperator::RightShift(_, _) => todo!("Crap"),
+            BinaryExpressionOperator::NullCoalescing(_, _) => todo!("Crap"),
             BinaryExpressionOperator::BinaryXor(_, _) => todo!("Crap"),
             BinaryExpressionOperator::And(_, _) => todo!("Crap"),
             BinaryExpressionOperator::Instanceof(_, _) => todo!("Crap"),
@@ -456,6 +467,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(_, r) => *r,
             BinaryExpressionOperator::GreaterThanOrEqual(_, r) => *r,
             BinaryExpressionOperator::RightShift(_, r) => *r,
+            BinaryExpressionOperator::NullCoalescing(_, r) => *r,
             BinaryExpressionOperator::BinaryXor(_, r) => *r,
             BinaryExpressionOperator::And(_, r) => *r,
             BinaryExpressionOperator::Instanceof(_, r) => *r,
@@ -767,10 +779,9 @@ impl NodeAccess for BinaryExpressionRight {
 #[derive(Debug, Clone)]
 pub struct BinaryExpressionNode {
     pub range: Range,
-    pub left: Option<_ExpressionNode>,
-    pub operator: Option<Box<BinaryExpressionOperator>>,
-    pub right: Option<Box<BinaryExpressionRight>>,
-    pub children: Vec<Box<_ExpressionNode>>,
+    pub left: _ExpressionNode,
+    pub operator: Box<BinaryExpressionOperator>,
+    pub right: Box<BinaryExpressionRight>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
@@ -788,58 +799,42 @@ impl BinaryExpressionNode {
                 ),
             ));
         }
-        let mut skip_nodes: Vec<usize> = vec![];
-        let left: Option<_ExpressionNode> = node
+        let left: _ExpressionNode = node
             .children_by_field_name("left", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
             .map(|chnode1| _ExpressionNode::parse(chnode1, source))
             .collect::<Result<Vec<_>, ParseError>>()?
             .drain(..)
-            .next();
-        let operator: Option<Box<BinaryExpressionOperator>> = node
+            .next()
+            .expect("Field left should exist");
+        let operator: Box<BinaryExpressionOperator> = node
             .children_by_field_name("operator", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
             .map(|chnode2| BinaryExpressionOperator::parse(chnode2, source))
             .collect::<Result<Vec<_>, ParseError>>()?
             .drain(..)
             .map(|z| Box::new(z))
             .next()
+            .expect("Field operator should exist")
             .into();
-        let right: Option<Box<BinaryExpressionRight>> = node
+        let right: Box<BinaryExpressionRight> = node
             .children_by_field_name("right", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
             .map(|chnode2| BinaryExpressionRight::parse(chnode2, source))
             .collect::<Result<Vec<_>, ParseError>>()?
             .drain(..)
             .map(|z| Box::new(z))
             .next()
+            .expect("Field right should exist")
             .into();
         Ok(Self {
             range,
             left,
             operator,
             right,
-            children: _ExpressionNode::parse_vec(
-                node.named_children(&mut node.walk())
-                    .filter(|node| !skip_nodes.contains(&node.id()))
-                    .filter(|node| node.kind() != "comment"),
-                source,
-            )?,
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
-                    .filter(|node| node.kind() == "comment")
-                    .filter(|node| !skip_nodes.contains(&node.id())),
+                    .filter(|node| node.kind() == "comment"),
                 source,
-            )?,
+            )
+            .unwrap(),
         })
     }
 
@@ -875,17 +870,9 @@ impl NodeAccess for BinaryExpressionNode {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
         // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
-        if let Some(x) = &self.left {
-            child_vec.push(x.as_any());
-        }
-        if let Some(x) = &self.operator {
-            child_vec.push(x.as_any());
-        }
-        if let Some(x) = &self.right {
-            child_vec.push(x.as_any());
-        }
-        child_vec.extend(self.children.iter().map(|n| n.as_any()));
-        child_vec.extend(self.extras.iter().map(|n| n.as_any()));
+        child_vec.push(self.left.as_any());
+        child_vec.push(self.operator.as_any());
+        child_vec.push(self.right.as_any());
 
         child_vec.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
         child_vec

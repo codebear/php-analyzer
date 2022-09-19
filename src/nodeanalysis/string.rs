@@ -18,11 +18,12 @@ impl StringNode {
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
-        let len = self.raw.len();
+        let raw = &self.child.raw;
+        let len = raw.len();
         if len < 2 {
             return None;
         }
-        let raw = &self.raw[1..len - 1];
+        let raw = &raw[1..len - 1];
         let str = OsStr::from_bytes(raw).to_os_string();
         Some(PHPValue::String(str))
     }

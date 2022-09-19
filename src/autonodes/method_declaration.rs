@@ -3,11 +3,13 @@ use crate::autonodes::_type::_TypeNode;
 use crate::autonodes::abstract_modifier::AbstractModifierNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::attribute_list::AttributeListNode;
+use crate::autonodes::bottom_type::BottomTypeNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::compound_statement::CompoundStatementNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
 use crate::autonodes::formal_parameters::FormalParametersNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
@@ -24,9 +26,188 @@ use tree_sitter::Node;
 use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
+pub enum MethodDeclarationReturnType {
+    _Type(Box<_TypeNode>),
+    BottomType(Box<BottomTypeNode>),
+    Comment(Box<CommentNode>),
+    TextInterpolation(Box<TextInterpolationNode>),
+    Error(Box<ErrorNode>),
+}
+
+impl MethodDeclarationReturnType {
+    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+        Ok(match node.kind() {
+            "comment" => {
+                MethodDeclarationReturnType::Comment(Box::new(CommentNode::parse(node, source)?))
+            }
+            "text_interpolation" => MethodDeclarationReturnType::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            )),
+            "ERROR" => {
+                MethodDeclarationReturnType::Error(Box::new(ErrorNode::parse(node, source)?))
+            }
+            "bottom_type" => MethodDeclarationReturnType::BottomType(Box::new(
+                BottomTypeNode::parse(node, source)?,
+            )),
+
+            _ => {
+                if let Some(x) = _TypeNode::parse_opt(node, source)?
+                    .map(|x| Box::new(x))
+                    .map(|y| MethodDeclarationReturnType::_Type(y))
+                {
+                    x
+                } else {
+                    return Err(ParseError::new(
+                        node.range(),
+                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                    ));
+                }
+            }
+        })
+    }
+
+    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+        Ok(Some(match node.kind() {
+            "comment" => {
+                MethodDeclarationReturnType::Comment(Box::new(CommentNode::parse(node, source)?))
+            }
+            "text_interpolation" => MethodDeclarationReturnType::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            )),
+            "ERROR" => {
+                MethodDeclarationReturnType::Error(Box::new(ErrorNode::parse(node, source)?))
+            }
+            "bottom_type" => MethodDeclarationReturnType::BottomType(Box::new(
+                BottomTypeNode::parse(node, source)?,
+            )),
+
+            _ => {
+                return Ok(
+                    if let Some(x) = _TypeNode::parse_opt(node, source)?
+                        .map(|x| Box::new(x))
+                        .map(|y| MethodDeclarationReturnType::_Type(y))
+                    {
+                        Some(x)
+                    } else {
+                        None
+                    },
+                )
+            }
+        }))
+    }
+
+    pub fn kind(&self) -> &'static str {
+        self.as_any().kind()
+    }
+
+    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    where
+        I: Iterator<Item = Node<'a>>,
+    {
+        let mut res: Vec<Box<Self>> = vec![];
+        for child in children {
+            res.push(Box::new(Self::parse(child, source)?));
+        }
+        Ok(res)
+    }
+
+    pub fn get_utype(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        match self {
+            MethodDeclarationReturnType::Comment(x) => x.get_utype(state, emitter),
+            MethodDeclarationReturnType::TextInterpolation(x) => x.get_utype(state, emitter),
+            MethodDeclarationReturnType::Error(x) => x.get_utype(state, emitter),
+            MethodDeclarationReturnType::_Type(x) => x.get_utype(state, emitter),
+            MethodDeclarationReturnType::BottomType(x) => x.get_utype(state, emitter),
+        }
+    }
+
+    pub fn get_php_value(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<PHPValue> {
+        match self {
+            MethodDeclarationReturnType::Comment(x) => x.get_php_value(state, emitter),
+            MethodDeclarationReturnType::TextInterpolation(x) => x.get_php_value(state, emitter),
+            MethodDeclarationReturnType::Error(x) => x.get_php_value(state, emitter),
+            MethodDeclarationReturnType::_Type(x) => x.get_php_value(state, emitter),
+            MethodDeclarationReturnType::BottomType(x) => x.get_php_value(state, emitter),
+        }
+    }
+
+    pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        match self {
+            MethodDeclarationReturnType::Comment(x) => x.read_from(state, emitter),
+            MethodDeclarationReturnType::TextInterpolation(x) => x.read_from(state, emitter),
+            MethodDeclarationReturnType::Error(x) => x.read_from(state, emitter),
+            MethodDeclarationReturnType::_Type(x) => x.read_from(state, emitter),
+            MethodDeclarationReturnType::BottomType(x) => x.read_from(state, emitter),
+        }
+    }
+}
+
+impl NodeAccess for MethodDeclarationReturnType {
+    fn brief_desc(&self) -> String {
+        match self {
+            MethodDeclarationReturnType::Comment(x) => {
+                format!("MethodDeclarationReturnType::comment({})", x.brief_desc())
+            }
+            MethodDeclarationReturnType::TextInterpolation(x) => format!(
+                "MethodDeclarationReturnType::text_interpolation({})",
+                x.brief_desc()
+            ),
+            MethodDeclarationReturnType::Error(x) => {
+                format!("MethodDeclarationReturnType::ERROR({})", x.brief_desc())
+            }
+            MethodDeclarationReturnType::_Type(x) => {
+                format!("MethodDeclarationReturnType::_type({})", x.brief_desc())
+            }
+            MethodDeclarationReturnType::BottomType(x) => format!(
+                "MethodDeclarationReturnType::bottom_type({})",
+                x.brief_desc()
+            ),
+        }
+    }
+
+    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+        match self {
+            MethodDeclarationReturnType::Comment(x) => x.as_any(),
+            MethodDeclarationReturnType::TextInterpolation(x) => x.as_any(),
+            MethodDeclarationReturnType::Error(x) => x.as_any(),
+            MethodDeclarationReturnType::_Type(x) => x.as_any(),
+            MethodDeclarationReturnType::BottomType(x) => x.as_any(),
+        }
+    }
+
+    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+        match self {
+            MethodDeclarationReturnType::Comment(x) => x.children_any(),
+            MethodDeclarationReturnType::TextInterpolation(x) => x.children_any(),
+            MethodDeclarationReturnType::Error(x) => x.children_any(),
+            MethodDeclarationReturnType::_Type(x) => x.children_any(),
+            MethodDeclarationReturnType::BottomType(x) => x.children_any(),
+        }
+    }
+
+    fn range(&self) -> Range {
+        match self {
+            MethodDeclarationReturnType::Comment(x) => x.range(),
+            MethodDeclarationReturnType::TextInterpolation(x) => x.range(),
+            MethodDeclarationReturnType::Error(x) => x.range(),
+            MethodDeclarationReturnType::_Type(x) => x.range(),
+            MethodDeclarationReturnType::BottomType(x) => x.range(),
+        }
+    }
+}
+#[derive(Debug, Clone)]
 pub enum MethodDeclarationChildren {
     AbstractModifier(Box<AbstractModifierNode>),
     FinalModifier(Box<FinalModifierNode>),
+    ReadonlyModifier(Box<ReadonlyModifierNode>),
     StaticModifier(Box<StaticModifierNode>),
     VarModifier(Box<VarModifierNode>),
     VisibilityModifier(Box<VisibilityModifierNode>),
@@ -50,6 +231,9 @@ impl MethodDeclarationChildren {
             )),
             "final_modifier" => MethodDeclarationChildren::FinalModifier(Box::new(
                 FinalModifierNode::parse(node, source)?,
+            )),
+            "readonly_modifier" => MethodDeclarationChildren::ReadonlyModifier(Box::new(
+                ReadonlyModifierNode::parse(node, source)?,
             )),
             "static_modifier" => MethodDeclarationChildren::StaticModifier(Box::new(
                 StaticModifierNode::parse(node, source)?,
@@ -84,6 +268,9 @@ impl MethodDeclarationChildren {
             )),
             "final_modifier" => MethodDeclarationChildren::FinalModifier(Box::new(
                 FinalModifierNode::parse(node, source)?,
+            )),
+            "readonly_modifier" => MethodDeclarationChildren::ReadonlyModifier(Box::new(
+                ReadonlyModifierNode::parse(node, source)?,
             )),
             "static_modifier" => MethodDeclarationChildren::StaticModifier(Box::new(
                 StaticModifierNode::parse(node, source)?,
@@ -125,6 +312,7 @@ impl MethodDeclarationChildren {
             MethodDeclarationChildren::Error(x) => x.get_utype(state, emitter),
             MethodDeclarationChildren::AbstractModifier(x) => x.get_utype(state, emitter),
             MethodDeclarationChildren::FinalModifier(x) => x.get_utype(state, emitter),
+            MethodDeclarationChildren::ReadonlyModifier(x) => x.get_utype(state, emitter),
             MethodDeclarationChildren::StaticModifier(x) => x.get_utype(state, emitter),
             MethodDeclarationChildren::VarModifier(x) => x.get_utype(state, emitter),
             MethodDeclarationChildren::VisibilityModifier(x) => x.get_utype(state, emitter),
@@ -142,6 +330,7 @@ impl MethodDeclarationChildren {
             MethodDeclarationChildren::Error(x) => x.get_php_value(state, emitter),
             MethodDeclarationChildren::AbstractModifier(x) => x.get_php_value(state, emitter),
             MethodDeclarationChildren::FinalModifier(x) => x.get_php_value(state, emitter),
+            MethodDeclarationChildren::ReadonlyModifier(x) => x.get_php_value(state, emitter),
             MethodDeclarationChildren::StaticModifier(x) => x.get_php_value(state, emitter),
             MethodDeclarationChildren::VarModifier(x) => x.get_php_value(state, emitter),
             MethodDeclarationChildren::VisibilityModifier(x) => x.get_php_value(state, emitter),
@@ -155,6 +344,7 @@ impl MethodDeclarationChildren {
             MethodDeclarationChildren::Error(x) => x.read_from(state, emitter),
             MethodDeclarationChildren::AbstractModifier(x) => x.read_from(state, emitter),
             MethodDeclarationChildren::FinalModifier(x) => x.read_from(state, emitter),
+            MethodDeclarationChildren::ReadonlyModifier(x) => x.read_from(state, emitter),
             MethodDeclarationChildren::StaticModifier(x) => x.read_from(state, emitter),
             MethodDeclarationChildren::VarModifier(x) => x.read_from(state, emitter),
             MethodDeclarationChildren::VisibilityModifier(x) => x.read_from(state, emitter),
@@ -183,6 +373,10 @@ impl NodeAccess for MethodDeclarationChildren {
                 "MethodDeclarationChildren::final_modifier({})",
                 x.brief_desc()
             ),
+            MethodDeclarationChildren::ReadonlyModifier(x) => format!(
+                "MethodDeclarationChildren::readonly_modifier({})",
+                x.brief_desc()
+            ),
             MethodDeclarationChildren::StaticModifier(x) => format!(
                 "MethodDeclarationChildren::static_modifier({})",
                 x.brief_desc()
@@ -205,6 +399,7 @@ impl NodeAccess for MethodDeclarationChildren {
             MethodDeclarationChildren::Error(x) => x.as_any(),
             MethodDeclarationChildren::AbstractModifier(x) => x.as_any(),
             MethodDeclarationChildren::FinalModifier(x) => x.as_any(),
+            MethodDeclarationChildren::ReadonlyModifier(x) => x.as_any(),
             MethodDeclarationChildren::StaticModifier(x) => x.as_any(),
             MethodDeclarationChildren::VarModifier(x) => x.as_any(),
             MethodDeclarationChildren::VisibilityModifier(x) => x.as_any(),
@@ -218,6 +413,7 @@ impl NodeAccess for MethodDeclarationChildren {
             MethodDeclarationChildren::Error(x) => x.children_any(),
             MethodDeclarationChildren::AbstractModifier(x) => x.children_any(),
             MethodDeclarationChildren::FinalModifier(x) => x.children_any(),
+            MethodDeclarationChildren::ReadonlyModifier(x) => x.children_any(),
             MethodDeclarationChildren::StaticModifier(x) => x.children_any(),
             MethodDeclarationChildren::VarModifier(x) => x.children_any(),
             MethodDeclarationChildren::VisibilityModifier(x) => x.children_any(),
@@ -231,6 +427,7 @@ impl NodeAccess for MethodDeclarationChildren {
             MethodDeclarationChildren::Error(x) => x.range(),
             MethodDeclarationChildren::AbstractModifier(x) => x.range(),
             MethodDeclarationChildren::FinalModifier(x) => x.range(),
+            MethodDeclarationChildren::ReadonlyModifier(x) => x.range(),
             MethodDeclarationChildren::StaticModifier(x) => x.range(),
             MethodDeclarationChildren::VarModifier(x) => x.range(),
             MethodDeclarationChildren::VisibilityModifier(x) => x.range(),
@@ -245,7 +442,7 @@ pub struct MethodDeclarationNode {
     pub name: NameNode,
     pub parameters: FormalParametersNode,
     pub reference_modifier: Option<ReferenceModifierNode>,
-    pub return_type: Option<_TypeNode>,
+    pub return_type: Option<Box<MethodDeclarationReturnType>>,
     pub children: Vec<Box<MethodDeclarationChildren>>,
     pub extras: Vec<Box<ExtraChild>>,
 }
@@ -317,16 +514,18 @@ impl MethodDeclarationNode {
             .collect::<Result<Vec<_>, ParseError>>()?
             .drain(..)
             .next();
-        let return_type: Option<_TypeNode> = node
+        let return_type: Option<Box<MethodDeclarationReturnType>> = node
             .children_by_field_name("return_type", &mut node.walk())
             .map(|chnode| {
                 skip_nodes.push(chnode.id());
                 chnode
             })
-            .map(|chnode1| _TypeNode::parse(chnode1, source))
+            .map(|chnode2| MethodDeclarationReturnType::parse(chnode2, source))
             .collect::<Result<Vec<_>, ParseError>>()?
             .drain(..)
-            .next();
+            .map(|z| Box::new(z))
+            .next()
+            .into();
         Ok(Self {
             range,
             attributes,

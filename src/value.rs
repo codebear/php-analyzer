@@ -337,6 +337,13 @@ impl PHPValue {
             PHPValue::ObjectInstance(_) => todo!(),
         }
     }
+
+    pub fn is_null(&self) -> bool {
+        match self {
+            PHPValue::NULL => true,
+            _ => false
+        }
+    }
 }
 
 

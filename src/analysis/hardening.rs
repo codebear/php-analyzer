@@ -172,125 +172,123 @@ impl BranchTypeHardening for BinaryExpressionNode {
         branch_side: BranchSide,
         state: &mut AnalysisState,
     ) -> Arc<RwLock<Scope>> {
-        if let Some(op) = &self.operator {
-            match &**op {
-                BinaryExpressionOperator::NotEqual(_, _) => crate::missing!(),
-                BinaryExpressionOperator::NotIdentical(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Mod(_, _) => crate::missing!(),
-                BinaryExpressionOperator::BinaryAnd(_, _) => crate::missing!(),
-                BinaryExpressionOperator::BooleanAnd(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Mult(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Add(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Sub(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Concat(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Div(_, _) => crate::missing!(),
-                BinaryExpressionOperator::LessThan(_, _) => crate::missing!(),
-                BinaryExpressionOperator::LeftShift(_, _) => crate::missing!(),
-                BinaryExpressionOperator::LessThanOrEqual(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Spaceship(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Equal(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Identical(_, _) => crate::missing!(),
-                BinaryExpressionOperator::GreaterThan(_, _) => crate::missing!(),
-                BinaryExpressionOperator::GreaterThanOrEqual(_, _) => crate::missing!(),
-                BinaryExpressionOperator::RightShift(_, _) => crate::missing!(),
-                BinaryExpressionOperator::BinaryXor(_, _) => crate::missing!(),
-                BinaryExpressionOperator::And(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Instanceof(_, _) => {
-                    // void
-                    match (&self.left, &self.right) {
-                        (Some(_ExpressionNode::_PrimaryExpression(left)), Some(right)) => {
-                            // Attempt to find a class-name to check against
-                            let cname = match &**right {
-                                BinaryExpressionRight::_Expression(_) => crate::missing_none!(),
-                                BinaryExpressionRight::DynamicVariableName(_) => {
-                                    crate::missing_none!()
-                                }
-                                BinaryExpressionRight::MemberAccessExpression(_) => {
-                                    crate::missing_none!()
-                                }
-                                BinaryExpressionRight::Name(n) => {
-                                    Some(state.get_fq_symbol_name_from_local_name(&n.get_name()))
-                                }
-                                BinaryExpressionRight::NullsafeMemberAccessExpression(_) => {
-                                    crate::missing_none!()
-                                }
-                                BinaryExpressionRight::QualifiedName(q) => Some(q.get_fq_name()),
-                                BinaryExpressionRight::ScopedPropertyAccessExpression(_) => {
-                                    crate::missing_none!()
-                                }
-                                BinaryExpressionRight::SubscriptExpression(_) => {
-                                    crate::missing_none!()
-                                }
-                                BinaryExpressionRight::VariableName(_) => crate::missing_none!(),
-                                BinaryExpressionRight::Comment(_) => crate::missing_none!(),
-                                BinaryExpressionRight::TextInterpolation(_) => {
-                                    crate::missing_none!()
-                                }
-                                BinaryExpressionRight::Error(_) => crate::missing_none!(),
-                            };
-                            match (&**left, cname) {
-                                (_PrimaryExpressionNode::VariableName(var_name), Some(cname)) => {
-                                    let symbol_data = state.symbol_data.clone();
-                                    return match branch_side {
-                                        BranchSide::TrueBranch => {
-                                            let class_name: ClassName = cname.clone().into();
-                                            let _emitter = VoidEmitter::new();
-                                            new_scope_with_harden_variable_type_based_on_filter(
-                                                scope,
-                                                &**var_name,
-                                                state,
-                                                move |dtype: &&DiscreteType| {
-                                                    let res = dtype.can_be_instance_of(
-                                                        cname.clone(),
-                                                        &symbol_data,
-                                                    );
-                                                    res
-                                                },
-                                                Some(Box::new(move |mut utype: UnionType| {
-                                                    if utype.len() == 0 {
-                                                        // In the case of no valid types left,
-                                                        // for best DX we inject the type we checked against, because it
-                                                        // is the only thing that will make sense
-                                                        // inside the branch, however,
-                                                        // the conditional should have detected this as an always-false
-                                                        // statement, and emitted accordingly
-                                                        utype.push(class_name.into());
-                                                    }
-                                                    utype
-                                                })),
-                                            )
-                                        }
-                                        BranchSide::FalseBranch => {
-                                            new_scope_with_harden_variable_type_based_on_filter(
-                                                scope,
-                                                &**var_name,
-                                                state,
-                                                move |dtype: &&DiscreteType| {
-                                                    !dtype.can_be_instance_of(
-                                                        cname.clone(),
-                                                        &symbol_data,
-                                                    )
-                                                },
-                                                None,
-                                            )
-                                        }
-                                    };
-                                }
-                                _ => (),
+        match &*self.operator {
+            BinaryExpressionOperator::NotEqual(_, _) => crate::missing!(),
+            BinaryExpressionOperator::NotIdentical(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Mod(_, _) => crate::missing!(),
+            BinaryExpressionOperator::BinaryAnd(_, _) => crate::missing!(),
+            BinaryExpressionOperator::BooleanAnd(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Mult(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Add(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Sub(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Concat(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Div(_, _) => crate::missing!(),
+            BinaryExpressionOperator::LessThan(_, _) => crate::missing!(),
+            BinaryExpressionOperator::LeftShift(_, _) => crate::missing!(),
+            BinaryExpressionOperator::LessThanOrEqual(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Spaceship(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Equal(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Identical(_, _) => crate::missing!(),
+            BinaryExpressionOperator::GreaterThan(_, _) => crate::missing!(),
+            BinaryExpressionOperator::GreaterThanOrEqual(_, _) => crate::missing!(),
+            BinaryExpressionOperator::RightShift(_, _) => crate::missing!(),
+            BinaryExpressionOperator::BinaryXor(_, _) => crate::missing!(),
+            BinaryExpressionOperator::And(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Instanceof(_, _) => {
+                // void
+                match (&self.left, &self.right) {
+                    (_ExpressionNode::_PrimaryExpression(left), right) => {
+                        // Attempt to find a class-name to check against
+                        let cname = match &**right {
+                            BinaryExpressionRight::_Expression(_) => crate::missing_none!(),
+                            BinaryExpressionRight::DynamicVariableName(_) => {
+                                crate::missing_none!()
                             }
+                            BinaryExpressionRight::MemberAccessExpression(_) => {
+                                crate::missing_none!()
+                            }
+                            BinaryExpressionRight::Name(n) => {
+                                Some(state.get_fq_symbol_name_from_local_name(&n.get_name()))
+                            }
+                            BinaryExpressionRight::NullsafeMemberAccessExpression(_) => {
+                                crate::missing_none!()
+                            }
+                            BinaryExpressionRight::QualifiedName(q) => Some(q.get_fq_name()),
+                            BinaryExpressionRight::ScopedPropertyAccessExpression(_) => {
+                                crate::missing_none!()
+                            }
+                            BinaryExpressionRight::SubscriptExpression(_) => {
+                                crate::missing_none!()
+                            }
+                            BinaryExpressionRight::VariableName(_) => crate::missing_none!(),
+                            BinaryExpressionRight::Comment(_) => crate::missing_none!(),
+                            BinaryExpressionRight::TextInterpolation(_) => {
+                                crate::missing_none!()
+                            }
+                            BinaryExpressionRight::Error(_) => crate::missing_none!(),
+                        };
+                        match (&**left, cname) {
+                            (_PrimaryExpressionNode::VariableName(var_name), Some(cname)) => {
+                                let symbol_data = state.symbol_data.clone();
+                                return match branch_side {
+                                    BranchSide::TrueBranch => {
+                                        let class_name: ClassName = cname.clone().into();
+                                        let _emitter = VoidEmitter::new();
+                                        new_scope_with_harden_variable_type_based_on_filter(
+                                            scope,
+                                            &**var_name,
+                                            state,
+                                            move |dtype: &&DiscreteType| {
+                                                let res = dtype.can_be_instance_of(
+                                                    cname.clone(),
+                                                    &symbol_data,
+                                                );
+                                                res
+                                            },
+                                            Some(Box::new(move |mut utype: UnionType| {
+                                                if utype.len() == 0 {
+                                                    // In the case of no valid types left,
+                                                    // for best DX we inject the type we checked against, because it
+                                                    // is the only thing that will make sense
+                                                    // inside the branch, however,
+                                                    // the conditional should have detected this as an always-false
+                                                    // statement, and emitted accordingly
+                                                    utype.push(class_name.into());
+                                                }
+                                                utype
+                                            })),
+                                        )
+                                    }
+                                    BranchSide::FalseBranch => {
+                                        new_scope_with_harden_variable_type_based_on_filter(
+                                            scope,
+                                            &**var_name,
+                                            state,
+                                            move |dtype: &&DiscreteType| {
+                                                !dtype
+                                                    .can_be_instance_of(cname.clone(), &symbol_data)
+                                            },
+                                            None,
+                                        )
+                                    }
+                                };
+                            }
+                            _ => (),
                         }
-                        _ => (),
                     }
+                    _ => (),
                 }
-                BinaryExpressionOperator::Or(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Xor(_, _) => crate::missing!(),
-                BinaryExpressionOperator::BinaryOr(_, _) => crate::missing!(),
-                BinaryExpressionOperator::BooleanOr(_, _) => crate::missing!(),
-                BinaryExpressionOperator::Comment(_) => crate::missing!(),
-                BinaryExpressionOperator::TextInterpolation(_) => crate::missing!(),
-                BinaryExpressionOperator::Error(_) => crate::missing!(),
             }
+            BinaryExpressionOperator::Or(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Xor(_, _) => crate::missing!(),
+            BinaryExpressionOperator::BinaryOr(_, _) => crate::missing!(),
+            BinaryExpressionOperator::BooleanOr(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Comment(_) => crate::missing!(),
+            BinaryExpressionOperator::TextInterpolation(_) => crate::missing!(),
+            BinaryExpressionOperator::Error(_) => crate::missing!(),
+            BinaryExpressionOperator::NullCoalescing(_, _) => crate::missing!(),
         }
+
         scope.branch()
     }
 }

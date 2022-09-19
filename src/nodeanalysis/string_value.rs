@@ -1,9 +1,9 @@
-use crate::autonodes::string_part::StringPartNode;
+use crate::autonodes::string_value::StringValueNode;
 use crate::types::union::DiscreteType;
 use crate::types::union::UnionType;
 use crate::{analysis::state::AnalysisState, issue::IssueEmitter, value::PHPValue};
 
-impl StringPartNode {
+impl StringValueNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         ()
     }

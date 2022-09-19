@@ -5,7 +5,7 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::dynamic_variable_name::DynamicVariableNameNode;
 use crate::autonodes::escape_sequence::EscapeSequenceNode;
 use crate::autonodes::member_access_expression::MemberAccessExpressionNode;
-use crate::autonodes::string_part::StringPartNode;
+use crate::autonodes::string_value::StringValueNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
@@ -25,7 +25,7 @@ pub enum EncapsedStringChildren {
     DynamicVariableName(Box<DynamicVariableNameNode>),
     EscapeSequence(Box<EscapeSequenceNode>),
     MemberAccessExpression(Box<MemberAccessExpressionNode>),
-    StringPart(Box<StringPartNode>),
+    StringValue(Box<StringValueNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
     Comment(Box<CommentNode>),
@@ -52,8 +52,8 @@ impl EncapsedStringChildren {
             "member_access_expression" => EncapsedStringChildren::MemberAccessExpression(Box::new(
                 MemberAccessExpressionNode::parse(node, source)?,
             )),
-            "string_part" => {
-                EncapsedStringChildren::StringPart(Box::new(StringPartNode::parse(node, source)?))
+            "string_value" => {
+                EncapsedStringChildren::StringValue(Box::new(StringValueNode::parse(node, source)?))
             }
             "subscript_expression" => EncapsedStringChildren::SubscriptExpression(Box::new(
                 SubscriptExpressionNode::parse(node, source)?,
@@ -96,8 +96,8 @@ impl EncapsedStringChildren {
             "member_access_expression" => EncapsedStringChildren::MemberAccessExpression(Box::new(
                 MemberAccessExpressionNode::parse(node, source)?,
             )),
-            "string_part" => {
-                EncapsedStringChildren::StringPart(Box::new(StringPartNode::parse(node, source)?))
+            "string_value" => {
+                EncapsedStringChildren::StringValue(Box::new(StringValueNode::parse(node, source)?))
             }
             "subscript_expression" => EncapsedStringChildren::SubscriptExpression(Box::new(
                 SubscriptExpressionNode::parse(node, source)?,
@@ -149,7 +149,7 @@ impl EncapsedStringChildren {
             EncapsedStringChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::MemberAccessExpression(x) => x.get_utype(state, emitter),
-            EncapsedStringChildren::StringPart(x) => x.get_utype(state, emitter),
+            EncapsedStringChildren::StringValue(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::SubscriptExpression(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::VariableName(x) => x.get_utype(state, emitter),
         }
@@ -168,7 +168,7 @@ impl EncapsedStringChildren {
             EncapsedStringChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::MemberAccessExpression(x) => x.get_php_value(state, emitter),
-            EncapsedStringChildren::StringPart(x) => x.get_php_value(state, emitter),
+            EncapsedStringChildren::StringValue(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::SubscriptExpression(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::VariableName(x) => x.get_php_value(state, emitter),
         }
@@ -183,7 +183,7 @@ impl EncapsedStringChildren {
             EncapsedStringChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.read_from(state, emitter),
             EncapsedStringChildren::MemberAccessExpression(x) => x.read_from(state, emitter),
-            EncapsedStringChildren::StringPart(x) => x.read_from(state, emitter),
+            EncapsedStringChildren::StringValue(x) => x.read_from(state, emitter),
             EncapsedStringChildren::SubscriptExpression(x) => x.read_from(state, emitter),
             EncapsedStringChildren::VariableName(x) => x.read_from(state, emitter),
         }
@@ -218,8 +218,8 @@ impl NodeAccess for EncapsedStringChildren {
                 "EncapsedStringChildren::member_access_expression({})",
                 x.brief_desc()
             ),
-            EncapsedStringChildren::StringPart(x) => {
-                format!("EncapsedStringChildren::string_part({})", x.brief_desc())
+            EncapsedStringChildren::StringValue(x) => {
+                format!("EncapsedStringChildren::string_value({})", x.brief_desc())
             }
             EncapsedStringChildren::SubscriptExpression(x) => format!(
                 "EncapsedStringChildren::subscript_expression({})",
@@ -240,7 +240,7 @@ impl NodeAccess for EncapsedStringChildren {
             EncapsedStringChildren::DynamicVariableName(x) => x.as_any(),
             EncapsedStringChildren::EscapeSequence(x) => x.as_any(),
             EncapsedStringChildren::MemberAccessExpression(x) => x.as_any(),
-            EncapsedStringChildren::StringPart(x) => x.as_any(),
+            EncapsedStringChildren::StringValue(x) => x.as_any(),
             EncapsedStringChildren::SubscriptExpression(x) => x.as_any(),
             EncapsedStringChildren::VariableName(x) => x.as_any(),
         }
@@ -255,7 +255,7 @@ impl NodeAccess for EncapsedStringChildren {
             EncapsedStringChildren::DynamicVariableName(x) => x.children_any(),
             EncapsedStringChildren::EscapeSequence(x) => x.children_any(),
             EncapsedStringChildren::MemberAccessExpression(x) => x.children_any(),
-            EncapsedStringChildren::StringPart(x) => x.children_any(),
+            EncapsedStringChildren::StringValue(x) => x.children_any(),
             EncapsedStringChildren::SubscriptExpression(x) => x.children_any(),
             EncapsedStringChildren::VariableName(x) => x.children_any(),
         }
@@ -270,7 +270,7 @@ impl NodeAccess for EncapsedStringChildren {
             EncapsedStringChildren::DynamicVariableName(x) => x.range(),
             EncapsedStringChildren::EscapeSequence(x) => x.range(),
             EncapsedStringChildren::MemberAccessExpression(x) => x.range(),
-            EncapsedStringChildren::StringPart(x) => x.range(),
+            EncapsedStringChildren::StringValue(x) => x.range(),
             EncapsedStringChildren::SubscriptExpression(x) => x.range(),
             EncapsedStringChildren::VariableName(x) => x.range(),
         }

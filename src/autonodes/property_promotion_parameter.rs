@@ -1,6 +1,7 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::_type::_TypeNode;
 use crate::autonodes::any::AnyNodeRef;
+use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autotree::NodeAccess;
@@ -14,6 +15,7 @@ pub struct PropertyPromotionParameterNode {
     pub range: Range,
     pub default_value: Option<_ExpressionNode>,
     pub name: VariableNameNode,
+    pub readonly: Option<ReadonlyModifierNode>,
     pub type_: Option<_TypeNode>,
     pub visibility: VisibilityModifierNode,
     pub extras: Vec<Box<ExtraChild>>,
@@ -38,6 +40,12 @@ impl PropertyPromotionParameterNode {
             .drain(..)
             .next()
             .expect("Field name should exist");
+        let readonly: Option<ReadonlyModifierNode> = node
+            .children_by_field_name("readonly", &mut node.walk())
+            .map(|chnode1| ReadonlyModifierNode::parse(chnode1, source))
+            .collect::<Result<Vec<_>, ParseError>>()?
+            .drain(..)
+            .next();
         let type_: Option<_TypeNode> = node
             .children_by_field_name("type", &mut node.walk())
             .map(|chnode1| _TypeNode::parse(chnode1, source))
@@ -55,6 +63,7 @@ impl PropertyPromotionParameterNode {
             range,
             default_value,
             name,
+            readonly,
             type_,
             visibility,
             extras: ExtraChild::parse_vec(
@@ -102,6 +111,9 @@ impl NodeAccess for PropertyPromotionParameterNode {
             child_vec.push(x.as_any());
         }
         child_vec.push(self.name.as_any());
+        if let Some(x) = &self.readonly {
+            child_vec.push(x.as_any());
+        }
         if let Some(x) = &self.type_ {
             child_vec.push(x.as_any());
         }

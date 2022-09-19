@@ -1,8 +1,9 @@
 use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
+use crate::autonodes::intersection_type::IntersectionTypeNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
-use crate::autonodes::type_list::TypeListNode;
+use crate::autonodes::union_type::UnionTypeNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
@@ -14,7 +15,8 @@ use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum _TypeNode {
-    TypeList(Box<TypeListNode>),
+    IntersectionType(Box<IntersectionTypeNode>),
+    UnionType(Box<UnionTypeNode>),
     Comment(Box<CommentNode>),
     TextInterpolation(Box<TextInterpolationNode>),
     Error(Box<ErrorNode>),
@@ -28,7 +30,10 @@ impl _TypeNode {
                 _TypeNode::TextInterpolation(Box::new(TextInterpolationNode::parse(node, source)?))
             }
             "ERROR" => _TypeNode::Error(Box::new(ErrorNode::parse(node, source)?)),
-            "type_list" => _TypeNode::TypeList(Box::new(TypeListNode::parse(node, source)?)),
+            "intersection_type" => {
+                _TypeNode::IntersectionType(Box::new(IntersectionTypeNode::parse(node, source)?))
+            }
+            "union_type" => _TypeNode::UnionType(Box::new(UnionTypeNode::parse(node, source)?)),
 
             _ => {
                 return Err(ParseError::new(
@@ -46,7 +51,10 @@ impl _TypeNode {
                 _TypeNode::TextInterpolation(Box::new(TextInterpolationNode::parse(node, source)?))
             }
             "ERROR" => _TypeNode::Error(Box::new(ErrorNode::parse(node, source)?)),
-            "type_list" => _TypeNode::TypeList(Box::new(TypeListNode::parse(node, source)?)),
+            "intersection_type" => {
+                _TypeNode::IntersectionType(Box::new(IntersectionTypeNode::parse(node, source)?))
+            }
+            "union_type" => _TypeNode::UnionType(Box::new(UnionTypeNode::parse(node, source)?)),
 
             _ => return Ok(None),
         }))
@@ -76,7 +84,8 @@ impl _TypeNode {
             _TypeNode::Comment(x) => x.get_utype(state, emitter),
             _TypeNode::TextInterpolation(x) => x.get_utype(state, emitter),
             _TypeNode::Error(x) => x.get_utype(state, emitter),
-            _TypeNode::TypeList(x) => x.get_utype(state, emitter),
+            _TypeNode::IntersectionType(x) => x.get_utype(state, emitter),
+            _TypeNode::UnionType(x) => x.get_utype(state, emitter),
         }
     }
 
@@ -89,7 +98,8 @@ impl _TypeNode {
             _TypeNode::Comment(x) => x.get_php_value(state, emitter),
             _TypeNode::TextInterpolation(x) => x.get_php_value(state, emitter),
             _TypeNode::Error(x) => x.get_php_value(state, emitter),
-            _TypeNode::TypeList(x) => x.get_php_value(state, emitter),
+            _TypeNode::IntersectionType(x) => x.get_php_value(state, emitter),
+            _TypeNode::UnionType(x) => x.get_php_value(state, emitter),
         }
     }
 
@@ -98,7 +108,8 @@ impl _TypeNode {
             _TypeNode::Comment(x) => x.read_from(state, emitter),
             _TypeNode::TextInterpolation(x) => x.read_from(state, emitter),
             _TypeNode::Error(x) => x.read_from(state, emitter),
-            _TypeNode::TypeList(x) => x.read_from(state, emitter),
+            _TypeNode::IntersectionType(x) => x.read_from(state, emitter),
+            _TypeNode::UnionType(x) => x.read_from(state, emitter),
         }
     }
 }
@@ -111,7 +122,10 @@ impl NodeAccess for _TypeNode {
                 format!("_TypeNode::text_interpolation({})", x.brief_desc())
             }
             _TypeNode::Error(x) => format!("_TypeNode::ERROR({})", x.brief_desc()),
-            _TypeNode::TypeList(x) => format!("_TypeNode::type_list({})", x.brief_desc()),
+            _TypeNode::IntersectionType(x) => {
+                format!("_TypeNode::intersection_type({})", x.brief_desc())
+            }
+            _TypeNode::UnionType(x) => format!("_TypeNode::union_type({})", x.brief_desc()),
         }
     }
 
@@ -120,7 +134,8 @@ impl NodeAccess for _TypeNode {
             _TypeNode::Comment(x) => x.as_any(),
             _TypeNode::TextInterpolation(x) => x.as_any(),
             _TypeNode::Error(x) => x.as_any(),
-            _TypeNode::TypeList(x) => x.as_any(),
+            _TypeNode::IntersectionType(x) => x.as_any(),
+            _TypeNode::UnionType(x) => x.as_any(),
         }
     }
 
@@ -129,7 +144,8 @@ impl NodeAccess for _TypeNode {
             _TypeNode::Comment(x) => x.children_any(),
             _TypeNode::TextInterpolation(x) => x.children_any(),
             _TypeNode::Error(x) => x.children_any(),
-            _TypeNode::TypeList(x) => x.children_any(),
+            _TypeNode::IntersectionType(x) => x.children_any(),
+            _TypeNode::UnionType(x) => x.children_any(),
         }
     }
 
@@ -138,7 +154,8 @@ impl NodeAccess for _TypeNode {
             _TypeNode::Comment(x) => x.range(),
             _TypeNode::TextInterpolation(x) => x.range(),
             _TypeNode::Error(x) => x.range(),
-            _TypeNode::TypeList(x) => x.range(),
+            _TypeNode::IntersectionType(x) => x.range(),
+            _TypeNode::UnionType(x) => x.range(),
         }
     }
 }

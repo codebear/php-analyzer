@@ -11,6 +11,7 @@ use crate::autonodes::function_call_expression::FunctionCallExpressionNode;
 use crate::autonodes::heredoc::HeredocNode;
 use crate::autonodes::member_call_expression::MemberCallExpressionNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExpressionNode;
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
@@ -247,6 +248,7 @@ pub enum MemberAccessExpressionObject {
     MemberAccessExpression(Box<MemberAccessExpressionNode>),
     MemberCallExpression(Box<MemberCallExpressionNode>),
     Name(Box<NameNode>),
+    Nowdoc(Box<NowdocNode>),
     NullsafeMemberAccessExpression(Box<NullsafeMemberAccessExpressionNode>),
     NullsafeMemberCallExpression(Box<NullsafeMemberCallExpressionNode>),
     ParenthesizedExpression(Box<ParenthesizedExpressionNode>),
@@ -303,6 +305,9 @@ impl MemberAccessExpressionObject {
                 Box::new(MemberCallExpressionNode::parse(node, source)?),
             ),
             "name" => MemberAccessExpressionObject::Name(Box::new(NameNode::parse(node, source)?)),
+            "nowdoc" => {
+                MemberAccessExpressionObject::Nowdoc(Box::new(NowdocNode::parse(node, source)?))
+            }
             "nullsafe_member_access_expression" => {
                 MemberAccessExpressionObject::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
@@ -387,6 +392,9 @@ impl MemberAccessExpressionObject {
                 Box::new(MemberCallExpressionNode::parse(node, source)?),
             ),
             "name" => MemberAccessExpressionObject::Name(Box::new(NameNode::parse(node, source)?)),
+            "nowdoc" => {
+                MemberAccessExpressionObject::Nowdoc(Box::new(NowdocNode::parse(node, source)?))
+            }
             "nullsafe_member_access_expression" => {
                 MemberAccessExpressionObject::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
@@ -461,6 +469,7 @@ impl MemberAccessExpressionObject {
             MemberAccessExpressionObject::MemberAccessExpression(x) => x.get_utype(state, emitter),
             MemberAccessExpressionObject::MemberCallExpression(x) => x.get_utype(state, emitter),
             MemberAccessExpressionObject::Name(x) => x.get_utype(state, emitter),
+            MemberAccessExpressionObject::Nowdoc(x) => x.get_utype(state, emitter),
             MemberAccessExpressionObject::NullsafeMemberAccessExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -508,6 +517,7 @@ impl MemberAccessExpressionObject {
                 x.get_php_value(state, emitter)
             }
             MemberAccessExpressionObject::Name(x) => x.get_php_value(state, emitter),
+            MemberAccessExpressionObject::Nowdoc(x) => x.get_php_value(state, emitter),
             MemberAccessExpressionObject::NullsafeMemberAccessExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -547,6 +557,7 @@ impl MemberAccessExpressionObject {
             MemberAccessExpressionObject::MemberAccessExpression(x) => x.read_from(state, emitter),
             MemberAccessExpressionObject::MemberCallExpression(x) => x.read_from(state, emitter),
             MemberAccessExpressionObject::Name(x) => x.read_from(state, emitter),
+            MemberAccessExpressionObject::Nowdoc(x) => x.read_from(state, emitter),
             MemberAccessExpressionObject::NullsafeMemberAccessExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -617,6 +628,9 @@ impl NodeAccess for MemberAccessExpressionObject {
             MemberAccessExpressionObject::Name(x) => {
                 format!("MemberAccessExpressionObject::name({})", x.brief_desc())
             }
+            MemberAccessExpressionObject::Nowdoc(x) => {
+                format!("MemberAccessExpressionObject::nowdoc({})", x.brief_desc())
+            }
             MemberAccessExpressionObject::NullsafeMemberAccessExpression(x) => format!(
                 "MemberAccessExpressionObject::nullsafe_member_access_expression({})",
                 x.brief_desc()
@@ -670,6 +684,7 @@ impl NodeAccess for MemberAccessExpressionObject {
             MemberAccessExpressionObject::MemberAccessExpression(x) => x.as_any(),
             MemberAccessExpressionObject::MemberCallExpression(x) => x.as_any(),
             MemberAccessExpressionObject::Name(x) => x.as_any(),
+            MemberAccessExpressionObject::Nowdoc(x) => x.as_any(),
             MemberAccessExpressionObject::NullsafeMemberAccessExpression(x) => x.as_any(),
             MemberAccessExpressionObject::NullsafeMemberCallExpression(x) => x.as_any(),
             MemberAccessExpressionObject::ParenthesizedExpression(x) => x.as_any(),
@@ -697,6 +712,7 @@ impl NodeAccess for MemberAccessExpressionObject {
             MemberAccessExpressionObject::MemberAccessExpression(x) => x.children_any(),
             MemberAccessExpressionObject::MemberCallExpression(x) => x.children_any(),
             MemberAccessExpressionObject::Name(x) => x.children_any(),
+            MemberAccessExpressionObject::Nowdoc(x) => x.children_any(),
             MemberAccessExpressionObject::NullsafeMemberAccessExpression(x) => x.children_any(),
             MemberAccessExpressionObject::NullsafeMemberCallExpression(x) => x.children_any(),
             MemberAccessExpressionObject::ParenthesizedExpression(x) => x.children_any(),
@@ -724,6 +740,7 @@ impl NodeAccess for MemberAccessExpressionObject {
             MemberAccessExpressionObject::MemberAccessExpression(x) => x.range(),
             MemberAccessExpressionObject::MemberCallExpression(x) => x.range(),
             MemberAccessExpressionObject::Name(x) => x.range(),
+            MemberAccessExpressionObject::Nowdoc(x) => x.range(),
             MemberAccessExpressionObject::NullsafeMemberAccessExpression(x) => x.range(),
             MemberAccessExpressionObject::NullsafeMemberCallExpression(x) => x.range(),
             MemberAccessExpressionObject::ParenthesizedExpression(x) => x.range(),

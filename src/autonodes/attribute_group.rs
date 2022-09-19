@@ -1,5 +1,5 @@
 use crate::autonodes::any::AnyNodeRef;
-use crate::autonodes::attribute_group::AttributeGroupNode;
+use crate::autonodes::attribute::AttributeNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
@@ -7,20 +7,20 @@ use tree_sitter::Node;
 use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
-pub struct AttributeListNode {
+pub struct AttributeGroupNode {
     pub range: Range,
-    pub children: Vec<Box<AttributeGroupNode>>,
+    pub children: Vec<Box<AttributeNode>>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl AttributeListNode {
+impl AttributeGroupNode {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
-        if node.kind() != "attribute_list" {
+        if node.kind() != "attribute_group" {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [attribute_list] on pos {}:{}",
+                    "Node is of the wrong kind [{}] vs expected [attribute_group] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column
@@ -30,7 +30,7 @@ impl AttributeListNode {
 
         Ok(Self {
             range,
-            children: AttributeGroupNode::parse_vec(
+            children: AttributeNode::parse_vec(
                 node.named_children(&mut node.walk())
                     .filter(|node| node.kind() != "comment"),
                 source,
@@ -58,17 +58,17 @@ impl AttributeListNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        "attribute_list"
+        "attribute_group"
     }
 }
 
-impl NodeAccess for AttributeListNode {
+impl NodeAccess for AttributeGroupNode {
     fn brief_desc(&self) -> String {
-        "AttributeListNode".into()
+        "AttributeGroupNode".into()
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        AnyNodeRef::AttributeList(self)
+        AnyNodeRef::AttributeGroup(self)
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {

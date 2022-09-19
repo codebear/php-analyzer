@@ -9,19 +9,19 @@ use tree_sitter::Node;
 use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
-pub struct StringPartNode {
+pub struct ReadonlyModifierNode {
     pub range: Range,
     pub raw: Vec<u8>,
 }
 
-impl StringPartNode {
+impl ReadonlyModifierNode {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
-        if node.kind() != "string_part" {
+        if node.kind() != "readonly_modifier" {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [string_part] on pos {}:{}",
+                    "Node is of the wrong kind [{}] vs expected [readonly_modifier] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column
@@ -50,7 +50,7 @@ impl StringPartNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        "string_part"
+        "readonly_modifier"
     }
 
     pub fn get_raw(&self) -> OsString {
@@ -58,13 +58,13 @@ impl StringPartNode {
     }
 }
 
-impl NodeAccess for StringPartNode {
+impl NodeAccess for ReadonlyModifierNode {
     fn brief_desc(&self) -> String {
-        "StringPartNode".into()
+        "ReadonlyModifierNode".into()
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        AnyNodeRef::StringPart(self)
+        AnyNodeRef::ReadonlyModifier(self)
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {

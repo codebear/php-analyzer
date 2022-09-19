@@ -24,8 +24,8 @@ impl BinaryExpressionNode {
         // FIXME might be able to determine more precisely if both left and right are viabla paths
         // i.e.: `false && $a` should probably not mark $a as read from...
 
-        self.left.as_ref().map(|x| x.read_from(state, emitter));
-        self.right.as_ref().map(|y| y.read_from(state, emitter));
+        self.left.read_from(state, emitter);
+        self.right.read_from(state, emitter);
     }
 
     pub fn get_php_value(
@@ -33,20 +33,13 @@ impl BinaryExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
-        let lval = self
-            .left
-            .as_ref()
-            .and_then(|x| x.get_php_value(state, emitter))?;
-        let rval = self
-            .right
-            .as_ref()
-            .and_then(|x| x.get_php_value(state, emitter))?;
+        let lval = self.left.get_php_value(state, emitter)?;
+        let rval = self.right.get_php_value(state, emitter)?;
 
         let ltype = lval.get_utype();
         let rtype = rval.get_utype();
 
-        let op = self.operator.as_ref()?;
-        match &**op {
+        match &*self.operator {
             // comparison
             BinaryExpressionOperator::NotEqual(_, _) => {
                 Some(PHPValue::Boolean(!lval.equal_to(&rval)?))
@@ -311,6 +304,13 @@ impl BinaryExpressionNode {
                 left.push(right);
                 Some(PHPValue::String(left))
             }
+            BinaryExpressionOperator::NullCoalescing(_, _) => {
+                if lval.is_null() {
+                    Some(rval)
+                } else {
+                    Some(lval)
+                }
+            }
 
             // void
             BinaryExpressionOperator::Comment(_)
@@ -333,7 +333,7 @@ impl BinaryExpressionNode {
          * Therefor the strategy here is to only make promises we can keep. Only return the correct type if we can
          * be certain of the type of the arguments
          */
-        let operator = self.operator.as_ref()?;
+        let operator = &self.operator;
         if let BinaryExpressionOperator::Instanceof(_, _) = &**operator {
             // FIXME verify that instanceof is valid for all types
             return Some(DiscreteType::Bool.into());
@@ -342,13 +342,12 @@ impl BinaryExpressionNode {
         // For all other operators, ensure that we have known types on both sides
         let ltype = self
             .left
-            .as_ref()
-            .and_then(|x| x.get_utype(state, emitter))
+            .get_utype(state, emitter)
             .and_then(|x| x.single_type())?;
         let rtype = self
             .right
             .as_ref()
-            .and_then(|x| x.get_utype(state, emitter))
+            .get_utype(state, emitter)
             .and_then(|x| x.single_type())?;
         match &**operator {
             BinaryExpressionOperator::NotEqual(_, _)
@@ -416,14 +415,8 @@ impl BinaryExpressionNode {
             },
             BinaryExpressionOperator::Div(op, _) => match (&ltype, &rtype) {
                 (DiscreteType::Int, DiscreteType::Int) => {
-                    let lval = self
-                        .left
-                        .as_ref()
-                        .and_then(|x| x.get_php_value(state, emitter));
-                    let rval = self
-                        .right
-                        .as_ref()
-                        .and_then(|x| x.get_php_value(state, emitter));
+                    let lval = self.left.get_php_value(state, emitter);
+                    let rval = self.right.get_php_value(state, emitter);
                     if let (Some(PHPValue::Int(lint)), Some(PHPValue::Int(rint))) = (lval, rval) {
                         if (lint % rint) == 0 {
                             return Some(DiscreteType::Int.into());
@@ -440,6 +433,7 @@ impl BinaryExpressionNode {
 
             // String
             BinaryExpressionOperator::Concat(_, _) => Some(DiscreteType::String.into()),
+            BinaryExpressionOperator::NullCoalescing(_, _) => todo!(),
 
             BinaryExpressionOperator::Comment(_)
             | BinaryExpressionOperator::TextInterpolation(_)

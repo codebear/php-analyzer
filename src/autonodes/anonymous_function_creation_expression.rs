@@ -1,16 +1,231 @@
+use crate::analysis::state::AnalysisState;
 use crate::autonodes::_type::_TypeNode;
 use crate::autonodes::anonymous_function_use_clause::AnonymousFunctionUseClauseNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::attribute_list::AttributeListNode;
+use crate::autonodes::bottom_type::BottomTypeNode;
+use crate::autonodes::comment::CommentNode;
 use crate::autonodes::compound_statement::CompoundStatementNode;
 use crate::autonodes::formal_parameters::FormalParametersNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
+use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
+use crate::issue::IssueEmitter;
+use crate::types::union::UnionType;
+use crate::value::PHPValue;
 use tree_sitter::Node;
 use tree_sitter::Range;
 
+#[derive(Debug, Clone)]
+pub enum AnonymousFunctionCreationExpressionReturnType {
+    _Type(Box<_TypeNode>),
+    BottomType(Box<BottomTypeNode>),
+    Comment(Box<CommentNode>),
+    TextInterpolation(Box<TextInterpolationNode>),
+    Error(Box<ErrorNode>),
+}
+
+impl AnonymousFunctionCreationExpressionReturnType {
+    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+        Ok(match node.kind() {
+            "comment" => AnonymousFunctionCreationExpressionReturnType::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            )),
+            "text_interpolation" => {
+                AnonymousFunctionCreationExpressionReturnType::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                ))
+            }
+            "ERROR" => AnonymousFunctionCreationExpressionReturnType::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            )),
+            "bottom_type" => AnonymousFunctionCreationExpressionReturnType::BottomType(Box::new(
+                BottomTypeNode::parse(node, source)?,
+            )),
+
+            _ => {
+                if let Some(x) = _TypeNode::parse_opt(node, source)?
+                    .map(|x| Box::new(x))
+                    .map(|y| AnonymousFunctionCreationExpressionReturnType::_Type(y))
+                {
+                    x
+                } else {
+                    return Err(ParseError::new(
+                        node.range(),
+                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                    ));
+                }
+            }
+        })
+    }
+
+    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+        Ok(Some(match node.kind() {
+            "comment" => AnonymousFunctionCreationExpressionReturnType::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            )),
+            "text_interpolation" => {
+                AnonymousFunctionCreationExpressionReturnType::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                ))
+            }
+            "ERROR" => AnonymousFunctionCreationExpressionReturnType::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            )),
+            "bottom_type" => AnonymousFunctionCreationExpressionReturnType::BottomType(Box::new(
+                BottomTypeNode::parse(node, source)?,
+            )),
+
+            _ => {
+                return Ok(
+                    if let Some(x) = _TypeNode::parse_opt(node, source)?
+                        .map(|x| Box::new(x))
+                        .map(|y| AnonymousFunctionCreationExpressionReturnType::_Type(y))
+                    {
+                        Some(x)
+                    } else {
+                        None
+                    },
+                )
+            }
+        }))
+    }
+
+    pub fn kind(&self) -> &'static str {
+        self.as_any().kind()
+    }
+
+    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    where
+        I: Iterator<Item = Node<'a>>,
+    {
+        let mut res: Vec<Box<Self>> = vec![];
+        for child in children {
+            res.push(Box::new(Self::parse(child, source)?));
+        }
+        Ok(res)
+    }
+
+    pub fn get_utype(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        match self {
+            AnonymousFunctionCreationExpressionReturnType::Comment(x) => {
+                x.get_utype(state, emitter)
+            }
+            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => {
+                x.get_utype(state, emitter)
+            }
+            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.get_utype(state, emitter),
+            AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.get_utype(state, emitter),
+            AnonymousFunctionCreationExpressionReturnType::BottomType(x) => {
+                x.get_utype(state, emitter)
+            }
+        }
+    }
+
+    pub fn get_php_value(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<PHPValue> {
+        match self {
+            AnonymousFunctionCreationExpressionReturnType::Comment(x) => {
+                x.get_php_value(state, emitter)
+            }
+            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => {
+                x.get_php_value(state, emitter)
+            }
+            AnonymousFunctionCreationExpressionReturnType::Error(x) => {
+                x.get_php_value(state, emitter)
+            }
+            AnonymousFunctionCreationExpressionReturnType::_Type(x) => {
+                x.get_php_value(state, emitter)
+            }
+            AnonymousFunctionCreationExpressionReturnType::BottomType(x) => {
+                x.get_php_value(state, emitter)
+            }
+        }
+    }
+
+    pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        match self {
+            AnonymousFunctionCreationExpressionReturnType::Comment(x) => {
+                x.read_from(state, emitter)
+            }
+            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => {
+                x.read_from(state, emitter)
+            }
+            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.read_from(state, emitter),
+            AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.read_from(state, emitter),
+            AnonymousFunctionCreationExpressionReturnType::BottomType(x) => {
+                x.read_from(state, emitter)
+            }
+        }
+    }
+}
+
+impl NodeAccess for AnonymousFunctionCreationExpressionReturnType {
+    fn brief_desc(&self) -> String {
+        match self {
+            AnonymousFunctionCreationExpressionReturnType::Comment(x) => format!(
+                "AnonymousFunctionCreationExpressionReturnType::comment({})",
+                x.brief_desc()
+            ),
+            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => format!(
+                "AnonymousFunctionCreationExpressionReturnType::text_interpolation({})",
+                x.brief_desc()
+            ),
+            AnonymousFunctionCreationExpressionReturnType::Error(x) => format!(
+                "AnonymousFunctionCreationExpressionReturnType::ERROR({})",
+                x.brief_desc()
+            ),
+            AnonymousFunctionCreationExpressionReturnType::_Type(x) => format!(
+                "AnonymousFunctionCreationExpressionReturnType::_type({})",
+                x.brief_desc()
+            ),
+            AnonymousFunctionCreationExpressionReturnType::BottomType(x) => format!(
+                "AnonymousFunctionCreationExpressionReturnType::bottom_type({})",
+                x.brief_desc()
+            ),
+        }
+    }
+
+    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+        match self {
+            AnonymousFunctionCreationExpressionReturnType::Comment(x) => x.as_any(),
+            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => x.as_any(),
+            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.as_any(),
+            AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.as_any(),
+            AnonymousFunctionCreationExpressionReturnType::BottomType(x) => x.as_any(),
+        }
+    }
+
+    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+        match self {
+            AnonymousFunctionCreationExpressionReturnType::Comment(x) => x.children_any(),
+            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => x.children_any(),
+            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.children_any(),
+            AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.children_any(),
+            AnonymousFunctionCreationExpressionReturnType::BottomType(x) => x.children_any(),
+        }
+    }
+
+    fn range(&self) -> Range {
+        match self {
+            AnonymousFunctionCreationExpressionReturnType::Comment(x) => x.range(),
+            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => x.range(),
+            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.range(),
+            AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.range(),
+            AnonymousFunctionCreationExpressionReturnType::BottomType(x) => x.range(),
+        }
+    }
+}
 #[derive(Debug, Clone)]
 pub struct AnonymousFunctionCreationExpressionNode {
     pub range: Range,
@@ -18,7 +233,7 @@ pub struct AnonymousFunctionCreationExpressionNode {
     pub body: CompoundStatementNode,
     pub parameters: FormalParametersNode,
     pub reference_modifier: Option<ReferenceModifierNode>,
-    pub return_type: Option<_TypeNode>,
+    pub return_type: Option<Box<AnonymousFunctionCreationExpressionReturnType>>,
     pub child: Option<Box<AnonymousFunctionUseClauseNode>>,
     pub extras: Vec<Box<ExtraChild>>,
 }
@@ -72,16 +287,18 @@ impl AnonymousFunctionCreationExpressionNode {
             .collect::<Result<Vec<_>, ParseError>>()?
             .drain(..)
             .next();
-        let return_type: Option<_TypeNode> = node
+        let return_type: Option<Box<AnonymousFunctionCreationExpressionReturnType>> = node
             .children_by_field_name("return_type", &mut node.walk())
             .map(|chnode| {
                 skip_nodes.push(chnode.id());
                 chnode
             })
-            .map(|chnode1| _TypeNode::parse(chnode1, source))
+            .map(|chnode2| AnonymousFunctionCreationExpressionReturnType::parse(chnode2, source))
             .collect::<Result<Vec<_>, ParseError>>()?
             .drain(..)
-            .next();
+            .map(|z| Box::new(z))
+            .next()
+            .into();
         Ok(Self {
             range,
             attributes,

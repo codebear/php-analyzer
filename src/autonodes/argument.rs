@@ -19,6 +19,7 @@ use tree_sitter::Range;
 #[derive(Debug, Clone)]
 pub enum ArgumentChildren {
     _Expression(Box<_ExpressionNode>),
+    Name(Box<NameNode>),
     VariadicUnpacking(Box<VariadicUnpackingNode>),
     Comment(Box<CommentNode>),
     TextInterpolation(Box<TextInterpolationNode>),
@@ -33,6 +34,7 @@ impl ArgumentChildren {
                 TextInterpolationNode::parse(node, source)?,
             )),
             "ERROR" => ArgumentChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "name" => ArgumentChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "variadic_unpacking" => ArgumentChildren::VariadicUnpacking(Box::new(
                 VariadicUnpackingNode::parse(node, source)?,
             )),
@@ -60,6 +62,7 @@ impl ArgumentChildren {
                 TextInterpolationNode::parse(node, source)?,
             )),
             "ERROR" => ArgumentChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "name" => ArgumentChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "variadic_unpacking" => ArgumentChildren::VariadicUnpacking(Box::new(
                 VariadicUnpackingNode::parse(node, source)?,
             )),
@@ -104,6 +107,7 @@ impl ArgumentChildren {
             ArgumentChildren::TextInterpolation(x) => x.get_utype(state, emitter),
             ArgumentChildren::Error(x) => x.get_utype(state, emitter),
             ArgumentChildren::_Expression(x) => x.get_utype(state, emitter),
+            ArgumentChildren::Name(x) => x.get_utype(state, emitter),
             ArgumentChildren::VariadicUnpacking(x) => x.get_utype(state, emitter),
         }
     }
@@ -118,6 +122,7 @@ impl ArgumentChildren {
             ArgumentChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
             ArgumentChildren::Error(x) => x.get_php_value(state, emitter),
             ArgumentChildren::_Expression(x) => x.get_php_value(state, emitter),
+            ArgumentChildren::Name(x) => x.get_php_value(state, emitter),
             ArgumentChildren::VariadicUnpacking(x) => x.get_php_value(state, emitter),
         }
     }
@@ -128,6 +133,7 @@ impl ArgumentChildren {
             ArgumentChildren::TextInterpolation(x) => x.read_from(state, emitter),
             ArgumentChildren::Error(x) => x.read_from(state, emitter),
             ArgumentChildren::_Expression(x) => x.read_from(state, emitter),
+            ArgumentChildren::Name(x) => x.read_from(state, emitter),
             ArgumentChildren::VariadicUnpacking(x) => x.read_from(state, emitter),
         }
     }
@@ -146,6 +152,7 @@ impl NodeAccess for ArgumentChildren {
             ArgumentChildren::_Expression(x) => {
                 format!("ArgumentChildren::_expression({})", x.brief_desc())
             }
+            ArgumentChildren::Name(x) => format!("ArgumentChildren::name({})", x.brief_desc()),
             ArgumentChildren::VariadicUnpacking(x) => {
                 format!("ArgumentChildren::variadic_unpacking({})", x.brief_desc())
             }
@@ -158,6 +165,7 @@ impl NodeAccess for ArgumentChildren {
             ArgumentChildren::TextInterpolation(x) => x.as_any(),
             ArgumentChildren::Error(x) => x.as_any(),
             ArgumentChildren::_Expression(x) => x.as_any(),
+            ArgumentChildren::Name(x) => x.as_any(),
             ArgumentChildren::VariadicUnpacking(x) => x.as_any(),
         }
     }
@@ -168,6 +176,7 @@ impl NodeAccess for ArgumentChildren {
             ArgumentChildren::TextInterpolation(x) => x.children_any(),
             ArgumentChildren::Error(x) => x.children_any(),
             ArgumentChildren::_Expression(x) => x.children_any(),
+            ArgumentChildren::Name(x) => x.children_any(),
             ArgumentChildren::VariadicUnpacking(x) => x.children_any(),
         }
     }
@@ -178,6 +187,7 @@ impl NodeAccess for ArgumentChildren {
             ArgumentChildren::TextInterpolation(x) => x.range(),
             ArgumentChildren::Error(x) => x.range(),
             ArgumentChildren::_Expression(x) => x.range(),
+            ArgumentChildren::Name(x) => x.range(),
             ArgumentChildren::VariadicUnpacking(x) => x.range(),
         }
     }

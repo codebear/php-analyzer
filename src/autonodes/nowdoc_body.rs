@@ -1,5 +1,5 @@
 use crate::autonodes::any::AnyNodeRef;
-use crate::autonodes::attribute_group::AttributeGroupNode;
+use crate::autonodes::nowdoc_string::NowdocStringNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
@@ -7,20 +7,20 @@ use tree_sitter::Node;
 use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
-pub struct AttributeListNode {
+pub struct NowdocBodyNode {
     pub range: Range,
-    pub children: Vec<Box<AttributeGroupNode>>,
+    pub children: Vec<Box<NowdocStringNode>>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl AttributeListNode {
+impl NowdocBodyNode {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
-        if node.kind() != "attribute_list" {
+        if node.kind() != "nowdoc_body" {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [attribute_list] on pos {}:{}",
+                    "Node is of the wrong kind [{}] vs expected [nowdoc_body] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column
@@ -30,7 +30,7 @@ impl AttributeListNode {
 
         Ok(Self {
             range,
-            children: AttributeGroupNode::parse_vec(
+            children: NowdocStringNode::parse_vec(
                 node.named_children(&mut node.walk())
                     .filter(|node| node.kind() != "comment"),
                 source,
@@ -58,17 +58,17 @@ impl AttributeListNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        "attribute_list"
+        "nowdoc_body"
     }
 }
 
-impl NodeAccess for AttributeListNode {
+impl NodeAccess for NowdocBodyNode {
     fn brief_desc(&self) -> String {
-        "AttributeListNode".into()
+        "NowdocBodyNode".into()
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        AnyNodeRef::AttributeList(self)
+        AnyNodeRef::NowdocBody(self)
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {

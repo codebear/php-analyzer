@@ -160,6 +160,11 @@ impl ClassConstantAccessExpressionNode {
                 n,
                 state.pos_as_string(self.range())
             ),
+            ClassConstantAccessExpressionClass::Nowdoc(n) => crate::missing_none!(
+                "Hvordan hente en verdi ut av {:?} at {}",
+                n,
+                state.pos_as_string(self.range())
+            ),
 
             ClassConstantAccessExpressionClass::Comment(_)
             | ClassConstantAccessExpressionClass::TextInterpolation(_)

@@ -13,11 +13,13 @@ use crate::autonodes::array_element_initializer::ArrayElementInitializerNode;
 use crate::autonodes::arrow_function::ArrowFunctionNode;
 use crate::autonodes::assignment_expression::AssignmentExpressionNode;
 use crate::autonodes::attribute::AttributeNode;
+use crate::autonodes::attribute_group::AttributeGroupNode;
 use crate::autonodes::attribute_list::AttributeListNode;
 use crate::autonodes::augmented_assignment_expression::AugmentedAssignmentExpressionNode;
 use crate::autonodes::base_clause::BaseClauseNode;
 use crate::autonodes::binary_expression::BinaryExpressionNode;
 use crate::autonodes::boolean::BooleanNode;
+use crate::autonodes::bottom_type::BottomTypeNode;
 use crate::autonodes::break_statement::BreakStatementNode;
 use crate::autonodes::by_ref::ByRefNode;
 use crate::autonodes::case_statement::CaseStatementNode;
@@ -64,11 +66,15 @@ use crate::autonodes::function_static_declaration::FunctionStaticDeclarationNode
 use crate::autonodes::global_declaration::GlobalDeclarationNode;
 use crate::autonodes::goto_statement::GotoStatementNode;
 use crate::autonodes::heredoc::HeredocNode;
+use crate::autonodes::heredoc_body::HeredocBodyNode;
+use crate::autonodes::heredoc_end::HeredocEndNode;
+use crate::autonodes::heredoc_start::HeredocStartNode;
 use crate::autonodes::if_statement::IfStatementNode;
 use crate::autonodes::include_expression::IncludeExpressionNode;
 use crate::autonodes::include_once_expression::IncludeOnceExpressionNode;
 use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::interface_declaration::InterfaceDeclarationNode;
+use crate::autonodes::intersection_type::IntersectionTypeNode;
 use crate::autonodes::list_literal::ListLiteralNode;
 use crate::autonodes::match_block::MatchBlockNode;
 use crate::autonodes::match_condition_list::MatchConditionListNode;
@@ -89,6 +95,9 @@ use crate::autonodes::namespace_use_clause::NamespaceUseClauseNode;
 use crate::autonodes::namespace_use_declaration::NamespaceUseDeclarationNode;
 use crate::autonodes::namespace_use_group::NamespaceUseGroupNode;
 use crate::autonodes::namespace_use_group_clause::NamespaceUseGroupClauseNode;
+use crate::autonodes::nowdoc::NowdocNode;
+use crate::autonodes::nowdoc_body::NowdocBodyNode;
+use crate::autonodes::nowdoc_string::NowdocStringNode;
 use crate::autonodes::null::NullNode;
 use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExpressionNode;
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
@@ -103,6 +112,7 @@ use crate::autonodes::property_declaration::PropertyDeclarationNode;
 use crate::autonodes::property_element::PropertyElementNode;
 use crate::autonodes::property_promotion_parameter::PropertyPromotionParameterNode;
 use crate::autonodes::qualified_name::QualifiedNameNode;
+use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::reference_assignment_expression::ReferenceAssignmentExpressionNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::relative_scope::RelativeScopeNode;
@@ -118,7 +128,7 @@ use crate::autonodes::simple_parameter::SimpleParameterNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
 use crate::autonodes::static_variable_declaration::StaticVariableDeclarationNode;
 use crate::autonodes::string::StringNode;
-use crate::autonodes::string_part::StringPartNode;
+use crate::autonodes::string_value::StringValueNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::switch_block::SwitchBlockNode;
 use crate::autonodes::switch_statement::SwitchStatementNode;
@@ -129,6 +139,7 @@ use crate::autonodes::trait_declaration::TraitDeclarationNode;
 use crate::autonodes::try_statement::TryStatementNode;
 use crate::autonodes::type_list::TypeListNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
+use crate::autonodes::union_type::UnionTypeNode;
 use crate::autonodes::unset_statement::UnsetStatementNode;
 use crate::autonodes::update_expression::UpdateExpressionNode;
 use crate::autonodes::use_as_clause::UseAsClauseNode;
@@ -138,6 +149,7 @@ use crate::autonodes::use_list::UseListNode;
 use crate::autonodes::var_modifier::VarModifierNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autonodes::variadic_parameter::VariadicParameterNode;
+use crate::autonodes::variadic_placeholder::VariadicPlaceholderNode;
 use crate::autonodes::variadic_unpacking::VariadicUnpackingNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autonodes::while_statement::WhileStatementNode;
@@ -167,6 +179,7 @@ pub enum AnyNodeRef<'a> {
     ArrowFunction(&'a ArrowFunctionNode),
     AssignmentExpression(&'a AssignmentExpressionNode),
     Attribute(&'a AttributeNode),
+    AttributeGroup(&'a AttributeGroupNode),
     AttributeList(&'a AttributeListNode),
     AugmentedAssignmentExpression(&'a AugmentedAssignmentExpressionNode),
     BaseClause(&'a BaseClauseNode),
@@ -213,10 +226,13 @@ pub enum AnyNodeRef<'a> {
     FunctionStaticDeclaration(&'a FunctionStaticDeclarationNode),
     GlobalDeclaration(&'a GlobalDeclarationNode),
     GotoStatement(&'a GotoStatementNode),
+    Heredoc(&'a HeredocNode),
+    HeredocBody(&'a HeredocBodyNode),
     IfStatement(&'a IfStatementNode),
     IncludeExpression(&'a IncludeExpressionNode),
     IncludeOnceExpression(&'a IncludeOnceExpressionNode),
     InterfaceDeclaration(&'a InterfaceDeclarationNode),
+    IntersectionType(&'a IntersectionTypeNode),
     ListLiteral(&'a ListLiteralNode),
     MatchBlock(&'a MatchBlockNode),
     MatchConditionList(&'a MatchConditionListNode),
@@ -237,6 +253,8 @@ pub enum AnyNodeRef<'a> {
     NamespaceUseDeclaration(&'a NamespaceUseDeclarationNode),
     NamespaceUseGroup(&'a NamespaceUseGroupNode),
     NamespaceUseGroupClause(&'a NamespaceUseGroupClauseNode),
+    Nowdoc(&'a NowdocNode),
+    NowdocBody(&'a NowdocBodyNode),
     NullsafeMemberAccessExpression(&'a NullsafeMemberAccessExpressionNode),
     NullsafeMemberCallExpression(&'a NullsafeMemberCallExpressionNode),
     ObjectCreationExpression(&'a ObjectCreationExpressionNode),
@@ -249,6 +267,7 @@ pub enum AnyNodeRef<'a> {
     PropertyElement(&'a PropertyElementNode),
     PropertyPromotionParameter(&'a PropertyPromotionParameterNode),
     QualifiedName(&'a QualifiedNameNode),
+    ReadonlyModifier(&'a ReadonlyModifierNode),
     ReferenceAssignmentExpression(&'a ReferenceAssignmentExpressionNode),
     ReferenceModifier(&'a ReferenceModifierNode),
     RelativeScope(&'a RelativeScopeNode),
@@ -258,10 +277,12 @@ pub enum AnyNodeRef<'a> {
     ScopedCallExpression(&'a ScopedCallExpressionNode),
     ScopedPropertyAccessExpression(&'a ScopedPropertyAccessExpressionNode),
     SequenceExpression(&'a SequenceExpressionNode),
+    ShellCommandExpression(&'a ShellCommandExpressionNode),
     SilenceExpression(&'a SilenceExpressionNode),
     SimpleParameter(&'a SimpleParameterNode),
     StaticModifier(&'a StaticModifierNode),
     StaticVariableDeclaration(&'a StaticVariableDeclarationNode),
+    String(&'a StringNode),
     SubscriptExpression(&'a SubscriptExpressionNode),
     SwitchBlock(&'a SwitchBlockNode),
     SwitchStatement(&'a SwitchStatementNode),
@@ -272,6 +293,7 @@ pub enum AnyNodeRef<'a> {
     TryStatement(&'a TryStatementNode),
     TypeList(&'a TypeListNode),
     UnaryOpExpression(&'a UnaryOpExpressionNode),
+    UnionType(&'a UnionTypeNode),
     UnsetStatement(&'a UnsetStatementNode),
     UpdateExpression(&'a UpdateExpressionNode),
     UseAsClause(&'a UseAsClauseNode),
@@ -280,21 +302,23 @@ pub enum AnyNodeRef<'a> {
     UseList(&'a UseListNode),
     VariableName(&'a VariableNameNode),
     VariadicParameter(&'a VariadicParameterNode),
+    VariadicPlaceholder(&'a VariadicPlaceholderNode),
     VariadicUnpacking(&'a VariadicUnpackingNode),
     VisibilityModifier(&'a VisibilityModifierNode),
     WhileStatement(&'a WhileStatementNode),
     YieldExpression(&'a YieldExpressionNode),
     Boolean(&'a BooleanNode),
+    BottomType(&'a BottomTypeNode),
     Comment(&'a CommentNode),
     EscapeSequence(&'a EscapeSequenceNode),
     Float(&'a FloatNode),
-    Heredoc(&'a HeredocNode),
+    HeredocEnd(&'a HeredocEndNode),
+    HeredocStart(&'a HeredocStartNode),
     Integer(&'a IntegerNode),
+    NowdocString(&'a NowdocStringNode),
     Null(&'a NullNode),
     PhpTag(&'a PhpTagNode),
-    ShellCommandExpression(&'a ShellCommandExpressionNode),
-    String(&'a StringNode),
-    StringPart(&'a StringPartNode),
+    StringValue(&'a StringValueNode),
     VarModifier(&'a VarModifierNode),
 }
 impl<'a> AnyNodeRef<'a> {
@@ -317,6 +341,7 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::ArrowFunction(n) => n.kind(),
             AnyNodeRef::AssignmentExpression(n) => n.kind(),
             AnyNodeRef::Attribute(n) => n.kind(),
+            AnyNodeRef::AttributeGroup(n) => n.kind(),
             AnyNodeRef::AttributeList(n) => n.kind(),
             AnyNodeRef::AugmentedAssignmentExpression(n) => n.kind(),
             AnyNodeRef::BaseClause(n) => n.kind(),
@@ -363,10 +388,13 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::FunctionStaticDeclaration(n) => n.kind(),
             AnyNodeRef::GlobalDeclaration(n) => n.kind(),
             AnyNodeRef::GotoStatement(n) => n.kind(),
+            AnyNodeRef::Heredoc(n) => n.kind(),
+            AnyNodeRef::HeredocBody(n) => n.kind(),
             AnyNodeRef::IfStatement(n) => n.kind(),
             AnyNodeRef::IncludeExpression(n) => n.kind(),
             AnyNodeRef::IncludeOnceExpression(n) => n.kind(),
             AnyNodeRef::InterfaceDeclaration(n) => n.kind(),
+            AnyNodeRef::IntersectionType(n) => n.kind(),
             AnyNodeRef::ListLiteral(n) => n.kind(),
             AnyNodeRef::MatchBlock(n) => n.kind(),
             AnyNodeRef::MatchConditionList(n) => n.kind(),
@@ -387,6 +415,8 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::NamespaceUseDeclaration(n) => n.kind(),
             AnyNodeRef::NamespaceUseGroup(n) => n.kind(),
             AnyNodeRef::NamespaceUseGroupClause(n) => n.kind(),
+            AnyNodeRef::Nowdoc(n) => n.kind(),
+            AnyNodeRef::NowdocBody(n) => n.kind(),
             AnyNodeRef::NullsafeMemberAccessExpression(n) => n.kind(),
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.kind(),
             AnyNodeRef::ObjectCreationExpression(n) => n.kind(),
@@ -399,6 +429,7 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::PropertyElement(n) => n.kind(),
             AnyNodeRef::PropertyPromotionParameter(n) => n.kind(),
             AnyNodeRef::QualifiedName(n) => n.kind(),
+            AnyNodeRef::ReadonlyModifier(n) => n.kind(),
             AnyNodeRef::ReferenceAssignmentExpression(n) => n.kind(),
             AnyNodeRef::ReferenceModifier(n) => n.kind(),
             AnyNodeRef::RelativeScope(n) => n.kind(),
@@ -408,10 +439,12 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::ScopedCallExpression(n) => n.kind(),
             AnyNodeRef::ScopedPropertyAccessExpression(n) => n.kind(),
             AnyNodeRef::SequenceExpression(n) => n.kind(),
+            AnyNodeRef::ShellCommandExpression(n) => n.kind(),
             AnyNodeRef::SilenceExpression(n) => n.kind(),
             AnyNodeRef::SimpleParameter(n) => n.kind(),
             AnyNodeRef::StaticModifier(n) => n.kind(),
             AnyNodeRef::StaticVariableDeclaration(n) => n.kind(),
+            AnyNodeRef::String(n) => n.kind(),
             AnyNodeRef::SubscriptExpression(n) => n.kind(),
             AnyNodeRef::SwitchBlock(n) => n.kind(),
             AnyNodeRef::SwitchStatement(n) => n.kind(),
@@ -422,6 +455,7 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::TryStatement(n) => n.kind(),
             AnyNodeRef::TypeList(n) => n.kind(),
             AnyNodeRef::UnaryOpExpression(n) => n.kind(),
+            AnyNodeRef::UnionType(n) => n.kind(),
             AnyNodeRef::UnsetStatement(n) => n.kind(),
             AnyNodeRef::UpdateExpression(n) => n.kind(),
             AnyNodeRef::UseAsClause(n) => n.kind(),
@@ -430,21 +464,23 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::UseList(n) => n.kind(),
             AnyNodeRef::VariableName(n) => n.kind(),
             AnyNodeRef::VariadicParameter(n) => n.kind(),
+            AnyNodeRef::VariadicPlaceholder(n) => n.kind(),
             AnyNodeRef::VariadicUnpacking(n) => n.kind(),
             AnyNodeRef::VisibilityModifier(n) => n.kind(),
             AnyNodeRef::WhileStatement(n) => n.kind(),
             AnyNodeRef::YieldExpression(n) => n.kind(),
             AnyNodeRef::Boolean(n) => n.kind(),
+            AnyNodeRef::BottomType(n) => n.kind(),
             AnyNodeRef::Comment(n) => n.kind(),
             AnyNodeRef::EscapeSequence(n) => n.kind(),
             AnyNodeRef::Float(n) => n.kind(),
-            AnyNodeRef::Heredoc(n) => n.kind(),
+            AnyNodeRef::HeredocEnd(n) => n.kind(),
+            AnyNodeRef::HeredocStart(n) => n.kind(),
             AnyNodeRef::Integer(n) => n.kind(),
+            AnyNodeRef::NowdocString(n) => n.kind(),
             AnyNodeRef::Null(n) => n.kind(),
             AnyNodeRef::PhpTag(n) => n.kind(),
-            AnyNodeRef::ShellCommandExpression(n) => n.kind(),
-            AnyNodeRef::String(n) => n.kind(),
-            AnyNodeRef::StringPart(n) => n.kind(),
+            AnyNodeRef::StringValue(n) => n.kind(),
             AnyNodeRef::VarModifier(n) => n.kind(),
         }
     }
@@ -470,6 +506,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ArrowFunction(n) => n.brief_desc(),
             AnyNodeRef::AssignmentExpression(n) => n.brief_desc(),
             AnyNodeRef::Attribute(n) => n.brief_desc(),
+            AnyNodeRef::AttributeGroup(n) => n.brief_desc(),
             AnyNodeRef::AttributeList(n) => n.brief_desc(),
             AnyNodeRef::AugmentedAssignmentExpression(n) => n.brief_desc(),
             AnyNodeRef::BaseClause(n) => n.brief_desc(),
@@ -516,10 +553,13 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::FunctionStaticDeclaration(n) => n.brief_desc(),
             AnyNodeRef::GlobalDeclaration(n) => n.brief_desc(),
             AnyNodeRef::GotoStatement(n) => n.brief_desc(),
+            AnyNodeRef::Heredoc(n) => n.brief_desc(),
+            AnyNodeRef::HeredocBody(n) => n.brief_desc(),
             AnyNodeRef::IfStatement(n) => n.brief_desc(),
             AnyNodeRef::IncludeExpression(n) => n.brief_desc(),
             AnyNodeRef::IncludeOnceExpression(n) => n.brief_desc(),
             AnyNodeRef::InterfaceDeclaration(n) => n.brief_desc(),
+            AnyNodeRef::IntersectionType(n) => n.brief_desc(),
             AnyNodeRef::ListLiteral(n) => n.brief_desc(),
             AnyNodeRef::MatchBlock(n) => n.brief_desc(),
             AnyNodeRef::MatchConditionList(n) => n.brief_desc(),
@@ -540,6 +580,8 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::NamespaceUseDeclaration(n) => n.brief_desc(),
             AnyNodeRef::NamespaceUseGroup(n) => n.brief_desc(),
             AnyNodeRef::NamespaceUseGroupClause(n) => n.brief_desc(),
+            AnyNodeRef::Nowdoc(n) => n.brief_desc(),
+            AnyNodeRef::NowdocBody(n) => n.brief_desc(),
             AnyNodeRef::NullsafeMemberAccessExpression(n) => n.brief_desc(),
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.brief_desc(),
             AnyNodeRef::ObjectCreationExpression(n) => n.brief_desc(),
@@ -552,6 +594,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::PropertyElement(n) => n.brief_desc(),
             AnyNodeRef::PropertyPromotionParameter(n) => n.brief_desc(),
             AnyNodeRef::QualifiedName(n) => n.brief_desc(),
+            AnyNodeRef::ReadonlyModifier(n) => n.brief_desc(),
             AnyNodeRef::ReferenceAssignmentExpression(n) => n.brief_desc(),
             AnyNodeRef::ReferenceModifier(n) => n.brief_desc(),
             AnyNodeRef::RelativeScope(n) => n.brief_desc(),
@@ -561,10 +604,12 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ScopedCallExpression(n) => n.brief_desc(),
             AnyNodeRef::ScopedPropertyAccessExpression(n) => n.brief_desc(),
             AnyNodeRef::SequenceExpression(n) => n.brief_desc(),
+            AnyNodeRef::ShellCommandExpression(n) => n.brief_desc(),
             AnyNodeRef::SilenceExpression(n) => n.brief_desc(),
             AnyNodeRef::SimpleParameter(n) => n.brief_desc(),
             AnyNodeRef::StaticModifier(n) => n.brief_desc(),
             AnyNodeRef::StaticVariableDeclaration(n) => n.brief_desc(),
+            AnyNodeRef::String(n) => n.brief_desc(),
             AnyNodeRef::SubscriptExpression(n) => n.brief_desc(),
             AnyNodeRef::SwitchBlock(n) => n.brief_desc(),
             AnyNodeRef::SwitchStatement(n) => n.brief_desc(),
@@ -575,6 +620,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::TryStatement(n) => n.brief_desc(),
             AnyNodeRef::TypeList(n) => n.brief_desc(),
             AnyNodeRef::UnaryOpExpression(n) => n.brief_desc(),
+            AnyNodeRef::UnionType(n) => n.brief_desc(),
             AnyNodeRef::UnsetStatement(n) => n.brief_desc(),
             AnyNodeRef::UpdateExpression(n) => n.brief_desc(),
             AnyNodeRef::UseAsClause(n) => n.brief_desc(),
@@ -583,21 +629,23 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::UseList(n) => n.brief_desc(),
             AnyNodeRef::VariableName(n) => n.brief_desc(),
             AnyNodeRef::VariadicParameter(n) => n.brief_desc(),
+            AnyNodeRef::VariadicPlaceholder(n) => n.brief_desc(),
             AnyNodeRef::VariadicUnpacking(n) => n.brief_desc(),
             AnyNodeRef::VisibilityModifier(n) => n.brief_desc(),
             AnyNodeRef::WhileStatement(n) => n.brief_desc(),
             AnyNodeRef::YieldExpression(n) => n.brief_desc(),
             AnyNodeRef::Boolean(n) => n.brief_desc(),
+            AnyNodeRef::BottomType(n) => n.brief_desc(),
             AnyNodeRef::Comment(n) => n.brief_desc(),
             AnyNodeRef::EscapeSequence(n) => n.brief_desc(),
             AnyNodeRef::Float(n) => n.brief_desc(),
-            AnyNodeRef::Heredoc(n) => n.brief_desc(),
+            AnyNodeRef::HeredocEnd(n) => n.brief_desc(),
+            AnyNodeRef::HeredocStart(n) => n.brief_desc(),
             AnyNodeRef::Integer(n) => n.brief_desc(),
+            AnyNodeRef::NowdocString(n) => n.brief_desc(),
             AnyNodeRef::Null(n) => n.brief_desc(),
             AnyNodeRef::PhpTag(n) => n.brief_desc(),
-            AnyNodeRef::ShellCommandExpression(n) => n.brief_desc(),
-            AnyNodeRef::String(n) => n.brief_desc(),
-            AnyNodeRef::StringPart(n) => n.brief_desc(),
+            AnyNodeRef::StringValue(n) => n.brief_desc(),
             AnyNodeRef::VarModifier(n) => n.brief_desc(),
         }
     }
@@ -621,6 +669,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ArrowFunction(n) => n.range(),
             AnyNodeRef::AssignmentExpression(n) => n.range(),
             AnyNodeRef::Attribute(n) => n.range(),
+            AnyNodeRef::AttributeGroup(n) => n.range(),
             AnyNodeRef::AttributeList(n) => n.range(),
             AnyNodeRef::AugmentedAssignmentExpression(n) => n.range(),
             AnyNodeRef::BaseClause(n) => n.range(),
@@ -667,10 +716,13 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::FunctionStaticDeclaration(n) => n.range(),
             AnyNodeRef::GlobalDeclaration(n) => n.range(),
             AnyNodeRef::GotoStatement(n) => n.range(),
+            AnyNodeRef::Heredoc(n) => n.range(),
+            AnyNodeRef::HeredocBody(n) => n.range(),
             AnyNodeRef::IfStatement(n) => n.range(),
             AnyNodeRef::IncludeExpression(n) => n.range(),
             AnyNodeRef::IncludeOnceExpression(n) => n.range(),
             AnyNodeRef::InterfaceDeclaration(n) => n.range(),
+            AnyNodeRef::IntersectionType(n) => n.range(),
             AnyNodeRef::ListLiteral(n) => n.range(),
             AnyNodeRef::MatchBlock(n) => n.range(),
             AnyNodeRef::MatchConditionList(n) => n.range(),
@@ -691,6 +743,8 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::NamespaceUseDeclaration(n) => n.range(),
             AnyNodeRef::NamespaceUseGroup(n) => n.range(),
             AnyNodeRef::NamespaceUseGroupClause(n) => n.range(),
+            AnyNodeRef::Nowdoc(n) => n.range(),
+            AnyNodeRef::NowdocBody(n) => n.range(),
             AnyNodeRef::NullsafeMemberAccessExpression(n) => n.range(),
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.range(),
             AnyNodeRef::ObjectCreationExpression(n) => n.range(),
@@ -703,6 +757,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::PropertyElement(n) => n.range(),
             AnyNodeRef::PropertyPromotionParameter(n) => n.range(),
             AnyNodeRef::QualifiedName(n) => n.range(),
+            AnyNodeRef::ReadonlyModifier(n) => n.range(),
             AnyNodeRef::ReferenceAssignmentExpression(n) => n.range(),
             AnyNodeRef::ReferenceModifier(n) => n.range(),
             AnyNodeRef::RelativeScope(n) => n.range(),
@@ -712,10 +767,12 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ScopedCallExpression(n) => n.range(),
             AnyNodeRef::ScopedPropertyAccessExpression(n) => n.range(),
             AnyNodeRef::SequenceExpression(n) => n.range(),
+            AnyNodeRef::ShellCommandExpression(n) => n.range(),
             AnyNodeRef::SilenceExpression(n) => n.range(),
             AnyNodeRef::SimpleParameter(n) => n.range(),
             AnyNodeRef::StaticModifier(n) => n.range(),
             AnyNodeRef::StaticVariableDeclaration(n) => n.range(),
+            AnyNodeRef::String(n) => n.range(),
             AnyNodeRef::SubscriptExpression(n) => n.range(),
             AnyNodeRef::SwitchBlock(n) => n.range(),
             AnyNodeRef::SwitchStatement(n) => n.range(),
@@ -726,6 +783,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::TryStatement(n) => n.range(),
             AnyNodeRef::TypeList(n) => n.range(),
             AnyNodeRef::UnaryOpExpression(n) => n.range(),
+            AnyNodeRef::UnionType(n) => n.range(),
             AnyNodeRef::UnsetStatement(n) => n.range(),
             AnyNodeRef::UpdateExpression(n) => n.range(),
             AnyNodeRef::UseAsClause(n) => n.range(),
@@ -734,21 +792,23 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::UseList(n) => n.range(),
             AnyNodeRef::VariableName(n) => n.range(),
             AnyNodeRef::VariadicParameter(n) => n.range(),
+            AnyNodeRef::VariadicPlaceholder(n) => n.range(),
             AnyNodeRef::VariadicUnpacking(n) => n.range(),
             AnyNodeRef::VisibilityModifier(n) => n.range(),
             AnyNodeRef::WhileStatement(n) => n.range(),
             AnyNodeRef::YieldExpression(n) => n.range(),
             AnyNodeRef::Boolean(n) => n.range(),
+            AnyNodeRef::BottomType(n) => n.range(),
             AnyNodeRef::Comment(n) => n.range(),
             AnyNodeRef::EscapeSequence(n) => n.range(),
             AnyNodeRef::Float(n) => n.range(),
-            AnyNodeRef::Heredoc(n) => n.range(),
+            AnyNodeRef::HeredocEnd(n) => n.range(),
+            AnyNodeRef::HeredocStart(n) => n.range(),
             AnyNodeRef::Integer(n) => n.range(),
+            AnyNodeRef::NowdocString(n) => n.range(),
             AnyNodeRef::Null(n) => n.range(),
             AnyNodeRef::PhpTag(n) => n.range(),
-            AnyNodeRef::ShellCommandExpression(n) => n.range(),
-            AnyNodeRef::String(n) => n.range(),
-            AnyNodeRef::StringPart(n) => n.range(),
+            AnyNodeRef::StringValue(n) => n.range(),
             AnyNodeRef::VarModifier(n) => n.range(),
         }
     }
@@ -776,6 +836,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ArrowFunction(n) => n.children_any(),
             AnyNodeRef::AssignmentExpression(n) => n.children_any(),
             AnyNodeRef::Attribute(n) => n.children_any(),
+            AnyNodeRef::AttributeGroup(n) => n.children_any(),
             AnyNodeRef::AttributeList(n) => n.children_any(),
             AnyNodeRef::AugmentedAssignmentExpression(n) => n.children_any(),
             AnyNodeRef::BaseClause(n) => n.children_any(),
@@ -822,10 +883,13 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::FunctionStaticDeclaration(n) => n.children_any(),
             AnyNodeRef::GlobalDeclaration(n) => n.children_any(),
             AnyNodeRef::GotoStatement(n) => n.children_any(),
+            AnyNodeRef::Heredoc(n) => n.children_any(),
+            AnyNodeRef::HeredocBody(n) => n.children_any(),
             AnyNodeRef::IfStatement(n) => n.children_any(),
             AnyNodeRef::IncludeExpression(n) => n.children_any(),
             AnyNodeRef::IncludeOnceExpression(n) => n.children_any(),
             AnyNodeRef::InterfaceDeclaration(n) => n.children_any(),
+            AnyNodeRef::IntersectionType(n) => n.children_any(),
             AnyNodeRef::ListLiteral(n) => n.children_any(),
             AnyNodeRef::MatchBlock(n) => n.children_any(),
             AnyNodeRef::MatchConditionList(n) => n.children_any(),
@@ -846,6 +910,8 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::NamespaceUseDeclaration(n) => n.children_any(),
             AnyNodeRef::NamespaceUseGroup(n) => n.children_any(),
             AnyNodeRef::NamespaceUseGroupClause(n) => n.children_any(),
+            AnyNodeRef::Nowdoc(n) => n.children_any(),
+            AnyNodeRef::NowdocBody(n) => n.children_any(),
             AnyNodeRef::NullsafeMemberAccessExpression(n) => n.children_any(),
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.children_any(),
             AnyNodeRef::ObjectCreationExpression(n) => n.children_any(),
@@ -858,6 +924,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::PropertyElement(n) => n.children_any(),
             AnyNodeRef::PropertyPromotionParameter(n) => n.children_any(),
             AnyNodeRef::QualifiedName(n) => n.children_any(),
+            AnyNodeRef::ReadonlyModifier(n) => n.children_any(),
             AnyNodeRef::ReferenceAssignmentExpression(n) => n.children_any(),
             AnyNodeRef::ReferenceModifier(n) => n.children_any(),
             AnyNodeRef::RelativeScope(n) => n.children_any(),
@@ -867,10 +934,12 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ScopedCallExpression(n) => n.children_any(),
             AnyNodeRef::ScopedPropertyAccessExpression(n) => n.children_any(),
             AnyNodeRef::SequenceExpression(n) => n.children_any(),
+            AnyNodeRef::ShellCommandExpression(n) => n.children_any(),
             AnyNodeRef::SilenceExpression(n) => n.children_any(),
             AnyNodeRef::SimpleParameter(n) => n.children_any(),
             AnyNodeRef::StaticModifier(n) => n.children_any(),
             AnyNodeRef::StaticVariableDeclaration(n) => n.children_any(),
+            AnyNodeRef::String(n) => n.children_any(),
             AnyNodeRef::SubscriptExpression(n) => n.children_any(),
             AnyNodeRef::SwitchBlock(n) => n.children_any(),
             AnyNodeRef::SwitchStatement(n) => n.children_any(),
@@ -881,6 +950,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::TryStatement(n) => n.children_any(),
             AnyNodeRef::TypeList(n) => n.children_any(),
             AnyNodeRef::UnaryOpExpression(n) => n.children_any(),
+            AnyNodeRef::UnionType(n) => n.children_any(),
             AnyNodeRef::UnsetStatement(n) => n.children_any(),
             AnyNodeRef::UpdateExpression(n) => n.children_any(),
             AnyNodeRef::UseAsClause(n) => n.children_any(),
@@ -889,21 +959,23 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::UseList(n) => n.children_any(),
             AnyNodeRef::VariableName(n) => n.children_any(),
             AnyNodeRef::VariadicParameter(n) => n.children_any(),
+            AnyNodeRef::VariadicPlaceholder(n) => n.children_any(),
             AnyNodeRef::VariadicUnpacking(n) => n.children_any(),
             AnyNodeRef::VisibilityModifier(n) => n.children_any(),
             AnyNodeRef::WhileStatement(n) => n.children_any(),
             AnyNodeRef::YieldExpression(n) => n.children_any(),
             AnyNodeRef::Boolean(n) => n.children_any(),
+            AnyNodeRef::BottomType(n) => n.children_any(),
             AnyNodeRef::Comment(n) => n.children_any(),
             AnyNodeRef::EscapeSequence(n) => n.children_any(),
             AnyNodeRef::Float(n) => n.children_any(),
-            AnyNodeRef::Heredoc(n) => n.children_any(),
+            AnyNodeRef::HeredocEnd(n) => n.children_any(),
+            AnyNodeRef::HeredocStart(n) => n.children_any(),
             AnyNodeRef::Integer(n) => n.children_any(),
+            AnyNodeRef::NowdocString(n) => n.children_any(),
             AnyNodeRef::Null(n) => n.children_any(),
             AnyNodeRef::PhpTag(n) => n.children_any(),
-            AnyNodeRef::ShellCommandExpression(n) => n.children_any(),
-            AnyNodeRef::String(n) => n.children_any(),
-            AnyNodeRef::StringPart(n) => n.children_any(),
+            AnyNodeRef::StringValue(n) => n.children_any(),
             AnyNodeRef::VarModifier(n) => n.children_any(),
         }
     }
@@ -926,6 +998,7 @@ pub enum AnyNode {
     ArrowFunction(Box<ArrowFunctionNode>),
     AssignmentExpression(Box<AssignmentExpressionNode>),
     Attribute(Box<AttributeNode>),
+    AttributeGroup(Box<AttributeGroupNode>),
     AttributeList(Box<AttributeListNode>),
     AugmentedAssignmentExpression(Box<AugmentedAssignmentExpressionNode>),
     BaseClause(Box<BaseClauseNode>),
@@ -972,10 +1045,13 @@ pub enum AnyNode {
     FunctionStaticDeclaration(Box<FunctionStaticDeclarationNode>),
     GlobalDeclaration(Box<GlobalDeclarationNode>),
     GotoStatement(Box<GotoStatementNode>),
+    Heredoc(Box<HeredocNode>),
+    HeredocBody(Box<HeredocBodyNode>),
     IfStatement(Box<IfStatementNode>),
     IncludeExpression(Box<IncludeExpressionNode>),
     IncludeOnceExpression(Box<IncludeOnceExpressionNode>),
     InterfaceDeclaration(Box<InterfaceDeclarationNode>),
+    IntersectionType(Box<IntersectionTypeNode>),
     ListLiteral(Box<ListLiteralNode>),
     MatchBlock(Box<MatchBlockNode>),
     MatchConditionList(Box<MatchConditionListNode>),
@@ -996,6 +1072,8 @@ pub enum AnyNode {
     NamespaceUseDeclaration(Box<NamespaceUseDeclarationNode>),
     NamespaceUseGroup(Box<NamespaceUseGroupNode>),
     NamespaceUseGroupClause(Box<NamespaceUseGroupClauseNode>),
+    Nowdoc(Box<NowdocNode>),
+    NowdocBody(Box<NowdocBodyNode>),
     NullsafeMemberAccessExpression(Box<NullsafeMemberAccessExpressionNode>),
     NullsafeMemberCallExpression(Box<NullsafeMemberCallExpressionNode>),
     ObjectCreationExpression(Box<ObjectCreationExpressionNode>),
@@ -1008,6 +1086,7 @@ pub enum AnyNode {
     PropertyElement(Box<PropertyElementNode>),
     PropertyPromotionParameter(Box<PropertyPromotionParameterNode>),
     QualifiedName(Box<QualifiedNameNode>),
+    ReadonlyModifier(Box<ReadonlyModifierNode>),
     ReferenceAssignmentExpression(Box<ReferenceAssignmentExpressionNode>),
     ReferenceModifier(Box<ReferenceModifierNode>),
     RelativeScope(Box<RelativeScopeNode>),
@@ -1017,10 +1096,12 @@ pub enum AnyNode {
     ScopedCallExpression(Box<ScopedCallExpressionNode>),
     ScopedPropertyAccessExpression(Box<ScopedPropertyAccessExpressionNode>),
     SequenceExpression(Box<SequenceExpressionNode>),
+    ShellCommandExpression(Box<ShellCommandExpressionNode>),
     SilenceExpression(Box<SilenceExpressionNode>),
     SimpleParameter(Box<SimpleParameterNode>),
     StaticModifier(Box<StaticModifierNode>),
     StaticVariableDeclaration(Box<StaticVariableDeclarationNode>),
+    String(Box<StringNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     SwitchBlock(Box<SwitchBlockNode>),
     SwitchStatement(Box<SwitchStatementNode>),
@@ -1031,6 +1112,7 @@ pub enum AnyNode {
     TryStatement(Box<TryStatementNode>),
     TypeList(Box<TypeListNode>),
     UnaryOpExpression(Box<UnaryOpExpressionNode>),
+    UnionType(Box<UnionTypeNode>),
     UnsetStatement(Box<UnsetStatementNode>),
     UpdateExpression(Box<UpdateExpressionNode>),
     UseAsClause(Box<UseAsClauseNode>),
@@ -1039,21 +1121,23 @@ pub enum AnyNode {
     UseList(Box<UseListNode>),
     VariableName(Box<VariableNameNode>),
     VariadicParameter(Box<VariadicParameterNode>),
+    VariadicPlaceholder(Box<VariadicPlaceholderNode>),
     VariadicUnpacking(Box<VariadicUnpackingNode>),
     VisibilityModifier(Box<VisibilityModifierNode>),
     WhileStatement(Box<WhileStatementNode>),
     YieldExpression(Box<YieldExpressionNode>),
     Boolean(Box<BooleanNode>),
+    BottomType(Box<BottomTypeNode>),
     Comment(Box<CommentNode>),
     EscapeSequence(Box<EscapeSequenceNode>),
     Float(Box<FloatNode>),
-    Heredoc(Box<HeredocNode>),
+    HeredocEnd(Box<HeredocEndNode>),
+    HeredocStart(Box<HeredocStartNode>),
     Integer(Box<IntegerNode>),
+    NowdocString(Box<NowdocStringNode>),
     Null(Box<NullNode>),
     PhpTag(Box<PhpTagNode>),
-    ShellCommandExpression(Box<ShellCommandExpressionNode>),
-    String(Box<StringNode>),
-    StringPart(Box<StringPartNode>),
+    StringValue(Box<StringValueNode>),
     VarModifier(Box<VarModifierNode>),
 }
 
@@ -1099,6 +1183,9 @@ impl AnyNode {
                 AssignmentExpressionNode::parse(node, source)?,
             )),
             "attribute" => AnyNode::Attribute(Box::new(AttributeNode::parse(node, source)?)),
+            "attribute_group" => {
+                AnyNode::AttributeGroup(Box::new(AttributeGroupNode::parse(node, source)?))
+            }
             "attribute_list" => {
                 AnyNode::AttributeList(Box::new(AttributeListNode::parse(node, source)?))
             }
@@ -1221,6 +1308,8 @@ impl AnyNode {
             "goto_statement" => {
                 AnyNode::GotoStatement(Box::new(GotoStatementNode::parse(node, source)?))
             }
+            "heredoc" => AnyNode::Heredoc(Box::new(HeredocNode::parse(node, source)?)),
+            "heredoc_body" => AnyNode::HeredocBody(Box::new(HeredocBodyNode::parse(node, source)?)),
             "if_statement" => AnyNode::IfStatement(Box::new(IfStatementNode::parse(node, source)?)),
             "include_expression" => {
                 AnyNode::IncludeExpression(Box::new(IncludeExpressionNode::parse(node, source)?))
@@ -1231,6 +1320,9 @@ impl AnyNode {
             "interface_declaration" => AnyNode::InterfaceDeclaration(Box::new(
                 InterfaceDeclarationNode::parse(node, source)?,
             )),
+            "intersection_type" => {
+                AnyNode::IntersectionType(Box::new(IntersectionTypeNode::parse(node, source)?))
+            }
             "list_literal" => AnyNode::ListLiteral(Box::new(ListLiteralNode::parse(node, source)?)),
             "match_block" => AnyNode::MatchBlock(Box::new(MatchBlockNode::parse(node, source)?)),
             "match_condition_list" => {
@@ -1283,6 +1375,8 @@ impl AnyNode {
             "namespace_use_group_clause" => AnyNode::NamespaceUseGroupClause(Box::new(
                 NamespaceUseGroupClauseNode::parse(node, source)?,
             )),
+            "nowdoc" => AnyNode::Nowdoc(Box::new(NowdocNode::parse(node, source)?)),
+            "nowdoc_body" => AnyNode::NowdocBody(Box::new(NowdocBodyNode::parse(node, source)?)),
             "nullsafe_member_access_expression" => AnyNode::NullsafeMemberAccessExpression(
                 Box::new(NullsafeMemberAccessExpressionNode::parse(node, source)?),
             ),
@@ -1317,6 +1411,9 @@ impl AnyNode {
             "qualified_name" => {
                 AnyNode::QualifiedName(Box::new(QualifiedNameNode::parse(node, source)?))
             }
+            "readonly_modifier" => {
+                AnyNode::ReadonlyModifier(Box::new(ReadonlyModifierNode::parse(node, source)?))
+            }
             "reference_assignment_expression" => AnyNode::ReferenceAssignmentExpression(Box::new(
                 ReferenceAssignmentExpressionNode::parse(node, source)?,
             )),
@@ -1344,6 +1441,9 @@ impl AnyNode {
             "sequence_expression" => {
                 AnyNode::SequenceExpression(Box::new(SequenceExpressionNode::parse(node, source)?))
             }
+            "shell_command_expression" => AnyNode::ShellCommandExpression(Box::new(
+                ShellCommandExpressionNode::parse(node, source)?,
+            )),
             "silence_expression" => {
                 AnyNode::SilenceExpression(Box::new(SilenceExpressionNode::parse(node, source)?))
             }
@@ -1356,6 +1456,7 @@ impl AnyNode {
             "static_variable_declaration" => AnyNode::StaticVariableDeclaration(Box::new(
                 StaticVariableDeclarationNode::parse(node, source)?,
             )),
+            "string" => AnyNode::String(Box::new(StringNode::parse(node, source)?)),
             "subscript_expression" => AnyNode::SubscriptExpression(Box::new(
                 SubscriptExpressionNode::parse(node, source)?,
             )),
@@ -1380,6 +1481,7 @@ impl AnyNode {
             "unary_op_expression" => {
                 AnyNode::UnaryOpExpression(Box::new(UnaryOpExpressionNode::parse(node, source)?))
             }
+            "union_type" => AnyNode::UnionType(Box::new(UnionTypeNode::parse(node, source)?)),
             "unset_statement" => {
                 AnyNode::UnsetStatement(Box::new(UnsetStatementNode::parse(node, source)?))
             }
@@ -1402,6 +1504,9 @@ impl AnyNode {
             "variadic_parameter" => {
                 AnyNode::VariadicParameter(Box::new(VariadicParameterNode::parse(node, source)?))
             }
+            "variadic_placeholder" => AnyNode::VariadicPlaceholder(Box::new(
+                VariadicPlaceholderNode::parse(node, source)?,
+            )),
             "variadic_unpacking" => {
                 AnyNode::VariadicUnpacking(Box::new(VariadicUnpackingNode::parse(node, source)?))
             }
@@ -1416,6 +1521,7 @@ impl AnyNode {
             }
 
             "boolean" => AnyNode::Boolean(Box::new(BooleanNode::parse(node, source)?)),
+            "bottom_type" => AnyNode::BottomType(Box::new(BottomTypeNode::parse(node, source)?)),
 
             "comment" => AnyNode::Comment(Box::new(CommentNode::parse(node, source)?)),
 
@@ -1425,20 +1531,22 @@ impl AnyNode {
 
             "float" => AnyNode::Float(Box::new(FloatNode::parse(node, source)?)),
 
-            "heredoc" => AnyNode::Heredoc(Box::new(HeredocNode::parse(node, source)?)),
+            "heredoc_end" => AnyNode::HeredocEnd(Box::new(HeredocEndNode::parse(node, source)?)),
+            "heredoc_start" => {
+                AnyNode::HeredocStart(Box::new(HeredocStartNode::parse(node, source)?))
+            }
 
             "integer" => AnyNode::Integer(Box::new(IntegerNode::parse(node, source)?)),
+
+            "nowdoc_string" => {
+                AnyNode::NowdocString(Box::new(NowdocStringNode::parse(node, source)?))
+            }
 
             "null" => AnyNode::Null(Box::new(NullNode::parse(node, source)?)),
 
             "php_tag" => AnyNode::PhpTag(Box::new(PhpTagNode::parse(node, source)?)),
 
-            "shell_command_expression" => AnyNode::ShellCommandExpression(Box::new(
-                ShellCommandExpressionNode::parse(node, source)?,
-            )),
-
-            "string" => AnyNode::String(Box::new(StringNode::parse(node, source)?)),
-            "string_part" => AnyNode::StringPart(Box::new(StringPartNode::parse(node, source)?)),
+            "string_value" => AnyNode::StringValue(Box::new(StringValueNode::parse(node, source)?)),
 
             "var_modifier" => AnyNode::VarModifier(Box::new(VarModifierNode::parse(node, source)?)),
 
@@ -1481,6 +1589,7 @@ impl NodeAccess for AnyNode {
             AnyNode::ArrowFunction(x) => x.brief_desc(),
             AnyNode::AssignmentExpression(x) => x.brief_desc(),
             AnyNode::Attribute(x) => x.brief_desc(),
+            AnyNode::AttributeGroup(x) => x.brief_desc(),
             AnyNode::AttributeList(x) => x.brief_desc(),
             AnyNode::AugmentedAssignmentExpression(x) => x.brief_desc(),
             AnyNode::BaseClause(x) => x.brief_desc(),
@@ -1527,10 +1636,13 @@ impl NodeAccess for AnyNode {
             AnyNode::FunctionStaticDeclaration(x) => x.brief_desc(),
             AnyNode::GlobalDeclaration(x) => x.brief_desc(),
             AnyNode::GotoStatement(x) => x.brief_desc(),
+            AnyNode::Heredoc(x) => x.brief_desc(),
+            AnyNode::HeredocBody(x) => x.brief_desc(),
             AnyNode::IfStatement(x) => x.brief_desc(),
             AnyNode::IncludeExpression(x) => x.brief_desc(),
             AnyNode::IncludeOnceExpression(x) => x.brief_desc(),
             AnyNode::InterfaceDeclaration(x) => x.brief_desc(),
+            AnyNode::IntersectionType(x) => x.brief_desc(),
             AnyNode::ListLiteral(x) => x.brief_desc(),
             AnyNode::MatchBlock(x) => x.brief_desc(),
             AnyNode::MatchConditionList(x) => x.brief_desc(),
@@ -1551,6 +1663,8 @@ impl NodeAccess for AnyNode {
             AnyNode::NamespaceUseDeclaration(x) => x.brief_desc(),
             AnyNode::NamespaceUseGroup(x) => x.brief_desc(),
             AnyNode::NamespaceUseGroupClause(x) => x.brief_desc(),
+            AnyNode::Nowdoc(x) => x.brief_desc(),
+            AnyNode::NowdocBody(x) => x.brief_desc(),
             AnyNode::NullsafeMemberAccessExpression(x) => x.brief_desc(),
             AnyNode::NullsafeMemberCallExpression(x) => x.brief_desc(),
             AnyNode::ObjectCreationExpression(x) => x.brief_desc(),
@@ -1563,6 +1677,7 @@ impl NodeAccess for AnyNode {
             AnyNode::PropertyElement(x) => x.brief_desc(),
             AnyNode::PropertyPromotionParameter(x) => x.brief_desc(),
             AnyNode::QualifiedName(x) => x.brief_desc(),
+            AnyNode::ReadonlyModifier(x) => x.brief_desc(),
             AnyNode::ReferenceAssignmentExpression(x) => x.brief_desc(),
             AnyNode::ReferenceModifier(x) => x.brief_desc(),
             AnyNode::RelativeScope(x) => x.brief_desc(),
@@ -1572,10 +1687,12 @@ impl NodeAccess for AnyNode {
             AnyNode::ScopedCallExpression(x) => x.brief_desc(),
             AnyNode::ScopedPropertyAccessExpression(x) => x.brief_desc(),
             AnyNode::SequenceExpression(x) => x.brief_desc(),
+            AnyNode::ShellCommandExpression(x) => x.brief_desc(),
             AnyNode::SilenceExpression(x) => x.brief_desc(),
             AnyNode::SimpleParameter(x) => x.brief_desc(),
             AnyNode::StaticModifier(x) => x.brief_desc(),
             AnyNode::StaticVariableDeclaration(x) => x.brief_desc(),
+            AnyNode::String(x) => x.brief_desc(),
             AnyNode::SubscriptExpression(x) => x.brief_desc(),
             AnyNode::SwitchBlock(x) => x.brief_desc(),
             AnyNode::SwitchStatement(x) => x.brief_desc(),
@@ -1586,6 +1703,7 @@ impl NodeAccess for AnyNode {
             AnyNode::TryStatement(x) => x.brief_desc(),
             AnyNode::TypeList(x) => x.brief_desc(),
             AnyNode::UnaryOpExpression(x) => x.brief_desc(),
+            AnyNode::UnionType(x) => x.brief_desc(),
             AnyNode::UnsetStatement(x) => x.brief_desc(),
             AnyNode::UpdateExpression(x) => x.brief_desc(),
             AnyNode::UseAsClause(x) => x.brief_desc(),
@@ -1594,12 +1712,14 @@ impl NodeAccess for AnyNode {
             AnyNode::UseList(x) => x.brief_desc(),
             AnyNode::VariableName(x) => x.brief_desc(),
             AnyNode::VariadicParameter(x) => x.brief_desc(),
+            AnyNode::VariadicPlaceholder(x) => x.brief_desc(),
             AnyNode::VariadicUnpacking(x) => x.brief_desc(),
             AnyNode::VisibilityModifier(x) => x.brief_desc(),
             AnyNode::WhileStatement(x) => x.brief_desc(),
             AnyNode::YieldExpression(x) => x.brief_desc(),
 
             AnyNode::Boolean(x) => x.brief_desc(),
+            AnyNode::BottomType(x) => x.brief_desc(),
 
             AnyNode::Comment(x) => x.brief_desc(),
 
@@ -1607,18 +1727,18 @@ impl NodeAccess for AnyNode {
 
             AnyNode::Float(x) => x.brief_desc(),
 
-            AnyNode::Heredoc(x) => x.brief_desc(),
+            AnyNode::HeredocEnd(x) => x.brief_desc(),
+            AnyNode::HeredocStart(x) => x.brief_desc(),
 
             AnyNode::Integer(x) => x.brief_desc(),
+
+            AnyNode::NowdocString(x) => x.brief_desc(),
 
             AnyNode::Null(x) => x.brief_desc(),
 
             AnyNode::PhpTag(x) => x.brief_desc(),
 
-            AnyNode::ShellCommandExpression(x) => x.brief_desc(),
-
-            AnyNode::String(x) => x.brief_desc(),
-            AnyNode::StringPart(x) => x.brief_desc(),
+            AnyNode::StringValue(x) => x.brief_desc(),
 
             AnyNode::VarModifier(x) => x.brief_desc(),
         }
@@ -1641,6 +1761,7 @@ impl NodeAccess for AnyNode {
             AnyNode::ArrowFunction(x) => x.range(),
             AnyNode::AssignmentExpression(x) => x.range(),
             AnyNode::Attribute(x) => x.range(),
+            AnyNode::AttributeGroup(x) => x.range(),
             AnyNode::AttributeList(x) => x.range(),
             AnyNode::AugmentedAssignmentExpression(x) => x.range(),
             AnyNode::BaseClause(x) => x.range(),
@@ -1687,10 +1808,13 @@ impl NodeAccess for AnyNode {
             AnyNode::FunctionStaticDeclaration(x) => x.range(),
             AnyNode::GlobalDeclaration(x) => x.range(),
             AnyNode::GotoStatement(x) => x.range(),
+            AnyNode::Heredoc(x) => x.range(),
+            AnyNode::HeredocBody(x) => x.range(),
             AnyNode::IfStatement(x) => x.range(),
             AnyNode::IncludeExpression(x) => x.range(),
             AnyNode::IncludeOnceExpression(x) => x.range(),
             AnyNode::InterfaceDeclaration(x) => x.range(),
+            AnyNode::IntersectionType(x) => x.range(),
             AnyNode::ListLiteral(x) => x.range(),
             AnyNode::MatchBlock(x) => x.range(),
             AnyNode::MatchConditionList(x) => x.range(),
@@ -1711,6 +1835,8 @@ impl NodeAccess for AnyNode {
             AnyNode::NamespaceUseDeclaration(x) => x.range(),
             AnyNode::NamespaceUseGroup(x) => x.range(),
             AnyNode::NamespaceUseGroupClause(x) => x.range(),
+            AnyNode::Nowdoc(x) => x.range(),
+            AnyNode::NowdocBody(x) => x.range(),
             AnyNode::NullsafeMemberAccessExpression(x) => x.range(),
             AnyNode::NullsafeMemberCallExpression(x) => x.range(),
             AnyNode::ObjectCreationExpression(x) => x.range(),
@@ -1723,6 +1849,7 @@ impl NodeAccess for AnyNode {
             AnyNode::PropertyElement(x) => x.range(),
             AnyNode::PropertyPromotionParameter(x) => x.range(),
             AnyNode::QualifiedName(x) => x.range(),
+            AnyNode::ReadonlyModifier(x) => x.range(),
             AnyNode::ReferenceAssignmentExpression(x) => x.range(),
             AnyNode::ReferenceModifier(x) => x.range(),
             AnyNode::RelativeScope(x) => x.range(),
@@ -1732,10 +1859,12 @@ impl NodeAccess for AnyNode {
             AnyNode::ScopedCallExpression(x) => x.range(),
             AnyNode::ScopedPropertyAccessExpression(x) => x.range(),
             AnyNode::SequenceExpression(x) => x.range(),
+            AnyNode::ShellCommandExpression(x) => x.range(),
             AnyNode::SilenceExpression(x) => x.range(),
             AnyNode::SimpleParameter(x) => x.range(),
             AnyNode::StaticModifier(x) => x.range(),
             AnyNode::StaticVariableDeclaration(x) => x.range(),
+            AnyNode::String(x) => x.range(),
             AnyNode::SubscriptExpression(x) => x.range(),
             AnyNode::SwitchBlock(x) => x.range(),
             AnyNode::SwitchStatement(x) => x.range(),
@@ -1746,6 +1875,7 @@ impl NodeAccess for AnyNode {
             AnyNode::TryStatement(x) => x.range(),
             AnyNode::TypeList(x) => x.range(),
             AnyNode::UnaryOpExpression(x) => x.range(),
+            AnyNode::UnionType(x) => x.range(),
             AnyNode::UnsetStatement(x) => x.range(),
             AnyNode::UpdateExpression(x) => x.range(),
             AnyNode::UseAsClause(x) => x.range(),
@@ -1754,12 +1884,14 @@ impl NodeAccess for AnyNode {
             AnyNode::UseList(x) => x.range(),
             AnyNode::VariableName(x) => x.range(),
             AnyNode::VariadicParameter(x) => x.range(),
+            AnyNode::VariadicPlaceholder(x) => x.range(),
             AnyNode::VariadicUnpacking(x) => x.range(),
             AnyNode::VisibilityModifier(x) => x.range(),
             AnyNode::WhileStatement(x) => x.range(),
             AnyNode::YieldExpression(x) => x.range(),
 
             AnyNode::Boolean(x) => x.range(),
+            AnyNode::BottomType(x) => x.range(),
 
             AnyNode::Comment(x) => x.range(),
 
@@ -1767,18 +1899,18 @@ impl NodeAccess for AnyNode {
 
             AnyNode::Float(x) => x.range(),
 
-            AnyNode::Heredoc(x) => x.range(),
+            AnyNode::HeredocEnd(x) => x.range(),
+            AnyNode::HeredocStart(x) => x.range(),
 
             AnyNode::Integer(x) => x.range(),
+
+            AnyNode::NowdocString(x) => x.range(),
 
             AnyNode::Null(x) => x.range(),
 
             AnyNode::PhpTag(x) => x.range(),
 
-            AnyNode::ShellCommandExpression(x) => x.range(),
-
-            AnyNode::String(x) => x.range(),
-            AnyNode::StringPart(x) => x.range(),
+            AnyNode::StringValue(x) => x.range(),
 
             AnyNode::VarModifier(x) => x.range(),
         }
@@ -1801,6 +1933,7 @@ impl NodeAccess for AnyNode {
             AnyNode::ArrowFunction(x) => x.as_any(),
             AnyNode::AssignmentExpression(x) => x.as_any(),
             AnyNode::Attribute(x) => x.as_any(),
+            AnyNode::AttributeGroup(x) => x.as_any(),
             AnyNode::AttributeList(x) => x.as_any(),
             AnyNode::AugmentedAssignmentExpression(x) => x.as_any(),
             AnyNode::BaseClause(x) => x.as_any(),
@@ -1847,10 +1980,13 @@ impl NodeAccess for AnyNode {
             AnyNode::FunctionStaticDeclaration(x) => x.as_any(),
             AnyNode::GlobalDeclaration(x) => x.as_any(),
             AnyNode::GotoStatement(x) => x.as_any(),
+            AnyNode::Heredoc(x) => x.as_any(),
+            AnyNode::HeredocBody(x) => x.as_any(),
             AnyNode::IfStatement(x) => x.as_any(),
             AnyNode::IncludeExpression(x) => x.as_any(),
             AnyNode::IncludeOnceExpression(x) => x.as_any(),
             AnyNode::InterfaceDeclaration(x) => x.as_any(),
+            AnyNode::IntersectionType(x) => x.as_any(),
             AnyNode::ListLiteral(x) => x.as_any(),
             AnyNode::MatchBlock(x) => x.as_any(),
             AnyNode::MatchConditionList(x) => x.as_any(),
@@ -1871,6 +2007,8 @@ impl NodeAccess for AnyNode {
             AnyNode::NamespaceUseDeclaration(x) => x.as_any(),
             AnyNode::NamespaceUseGroup(x) => x.as_any(),
             AnyNode::NamespaceUseGroupClause(x) => x.as_any(),
+            AnyNode::Nowdoc(x) => x.as_any(),
+            AnyNode::NowdocBody(x) => x.as_any(),
             AnyNode::NullsafeMemberAccessExpression(x) => x.as_any(),
             AnyNode::NullsafeMemberCallExpression(x) => x.as_any(),
             AnyNode::ObjectCreationExpression(x) => x.as_any(),
@@ -1883,6 +2021,7 @@ impl NodeAccess for AnyNode {
             AnyNode::PropertyElement(x) => x.as_any(),
             AnyNode::PropertyPromotionParameter(x) => x.as_any(),
             AnyNode::QualifiedName(x) => x.as_any(),
+            AnyNode::ReadonlyModifier(x) => x.as_any(),
             AnyNode::ReferenceAssignmentExpression(x) => x.as_any(),
             AnyNode::ReferenceModifier(x) => x.as_any(),
             AnyNode::RelativeScope(x) => x.as_any(),
@@ -1892,10 +2031,12 @@ impl NodeAccess for AnyNode {
             AnyNode::ScopedCallExpression(x) => x.as_any(),
             AnyNode::ScopedPropertyAccessExpression(x) => x.as_any(),
             AnyNode::SequenceExpression(x) => x.as_any(),
+            AnyNode::ShellCommandExpression(x) => x.as_any(),
             AnyNode::SilenceExpression(x) => x.as_any(),
             AnyNode::SimpleParameter(x) => x.as_any(),
             AnyNode::StaticModifier(x) => x.as_any(),
             AnyNode::StaticVariableDeclaration(x) => x.as_any(),
+            AnyNode::String(x) => x.as_any(),
             AnyNode::SubscriptExpression(x) => x.as_any(),
             AnyNode::SwitchBlock(x) => x.as_any(),
             AnyNode::SwitchStatement(x) => x.as_any(),
@@ -1906,6 +2047,7 @@ impl NodeAccess for AnyNode {
             AnyNode::TryStatement(x) => x.as_any(),
             AnyNode::TypeList(x) => x.as_any(),
             AnyNode::UnaryOpExpression(x) => x.as_any(),
+            AnyNode::UnionType(x) => x.as_any(),
             AnyNode::UnsetStatement(x) => x.as_any(),
             AnyNode::UpdateExpression(x) => x.as_any(),
             AnyNode::UseAsClause(x) => x.as_any(),
@@ -1914,12 +2056,14 @@ impl NodeAccess for AnyNode {
             AnyNode::UseList(x) => x.as_any(),
             AnyNode::VariableName(x) => x.as_any(),
             AnyNode::VariadicParameter(x) => x.as_any(),
+            AnyNode::VariadicPlaceholder(x) => x.as_any(),
             AnyNode::VariadicUnpacking(x) => x.as_any(),
             AnyNode::VisibilityModifier(x) => x.as_any(),
             AnyNode::WhileStatement(x) => x.as_any(),
             AnyNode::YieldExpression(x) => x.as_any(),
 
             AnyNode::Boolean(x) => x.as_any(),
+            AnyNode::BottomType(x) => x.as_any(),
 
             AnyNode::Comment(x) => x.as_any(),
 
@@ -1927,18 +2071,18 @@ impl NodeAccess for AnyNode {
 
             AnyNode::Float(x) => x.as_any(),
 
-            AnyNode::Heredoc(x) => x.as_any(),
+            AnyNode::HeredocEnd(x) => x.as_any(),
+            AnyNode::HeredocStart(x) => x.as_any(),
 
             AnyNode::Integer(x) => x.as_any(),
+
+            AnyNode::NowdocString(x) => x.as_any(),
 
             AnyNode::Null(x) => x.as_any(),
 
             AnyNode::PhpTag(x) => x.as_any(),
 
-            AnyNode::ShellCommandExpression(x) => x.as_any(),
-
-            AnyNode::String(x) => x.as_any(),
-            AnyNode::StringPart(x) => x.as_any(),
+            AnyNode::StringValue(x) => x.as_any(),
 
             AnyNode::VarModifier(x) => x.as_any(),
         }

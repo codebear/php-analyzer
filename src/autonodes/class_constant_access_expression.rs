@@ -10,6 +10,7 @@ use crate::autonodes::heredoc::HeredocNode;
 use crate::autonodes::member_access_expression::MemberAccessExpressionNode;
 use crate::autonodes::member_call_expression::MemberCallExpressionNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExpressionNode;
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
@@ -43,6 +44,7 @@ pub enum ClassConstantAccessExpressionClass {
     MemberAccessExpression(Box<MemberAccessExpressionNode>),
     MemberCallExpression(Box<MemberCallExpressionNode>),
     Name(Box<NameNode>),
+    Nowdoc(Box<NowdocNode>),
     NullsafeMemberAccessExpression(Box<NullsafeMemberAccessExpressionNode>),
     NullsafeMemberCallExpression(Box<NullsafeMemberCallExpressionNode>),
     ParenthesizedExpression(Box<ParenthesizedExpressionNode>),
@@ -108,6 +110,9 @@ impl ClassConstantAccessExpressionClass {
             "name" => {
                 ClassConstantAccessExpressionClass::Name(Box::new(NameNode::parse(node, source)?))
             }
+            "nowdoc" => ClassConstantAccessExpressionClass::Nowdoc(Box::new(NowdocNode::parse(
+                node, source,
+            )?)),
             "nullsafe_member_access_expression" => {
                 ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
@@ -205,6 +210,9 @@ impl ClassConstantAccessExpressionClass {
             "name" => {
                 ClassConstantAccessExpressionClass::Name(Box::new(NameNode::parse(node, source)?))
             }
+            "nowdoc" => ClassConstantAccessExpressionClass::Nowdoc(Box::new(NowdocNode::parse(
+                node, source,
+            )?)),
             "nullsafe_member_access_expression" => {
                 ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
@@ -294,6 +302,7 @@ impl ClassConstantAccessExpressionClass {
                 x.get_utype(state, emitter)
             }
             ClassConstantAccessExpressionClass::Name(x) => x.get_utype(state, emitter),
+            ClassConstantAccessExpressionClass::Nowdoc(x) => x.get_utype(state, emitter),
             ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -356,6 +365,7 @@ impl ClassConstantAccessExpressionClass {
                 x.get_php_value(state, emitter)
             }
             ClassConstantAccessExpressionClass::Name(x) => x.get_php_value(state, emitter),
+            ClassConstantAccessExpressionClass::Nowdoc(x) => x.get_php_value(state, emitter),
             ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -408,6 +418,7 @@ impl ClassConstantAccessExpressionClass {
                 x.read_from(state, emitter)
             }
             ClassConstantAccessExpressionClass::Name(x) => x.read_from(state, emitter),
+            ClassConstantAccessExpressionClass::Nowdoc(x) => x.read_from(state, emitter),
             ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -489,6 +500,10 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
                 "ClassConstantAccessExpressionClass::name({})",
                 x.brief_desc()
             ),
+            ClassConstantAccessExpressionClass::Nowdoc(x) => format!(
+                "ClassConstantAccessExpressionClass::nowdoc({})",
+                x.brief_desc()
+            ),
             ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(x) => format!(
                 "ClassConstantAccessExpressionClass::nullsafe_member_access_expression({})",
                 x.brief_desc()
@@ -547,6 +562,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
             ClassConstantAccessExpressionClass::MemberAccessExpression(x) => x.as_any(),
             ClassConstantAccessExpressionClass::MemberCallExpression(x) => x.as_any(),
             ClassConstantAccessExpressionClass::Name(x) => x.as_any(),
+            ClassConstantAccessExpressionClass::Nowdoc(x) => x.as_any(),
             ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(x) => x.as_any(),
             ClassConstantAccessExpressionClass::NullsafeMemberCallExpression(x) => x.as_any(),
             ClassConstantAccessExpressionClass::ParenthesizedExpression(x) => x.as_any(),
@@ -577,6 +593,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
             ClassConstantAccessExpressionClass::MemberAccessExpression(x) => x.children_any(),
             ClassConstantAccessExpressionClass::MemberCallExpression(x) => x.children_any(),
             ClassConstantAccessExpressionClass::Name(x) => x.children_any(),
+            ClassConstantAccessExpressionClass::Nowdoc(x) => x.children_any(),
             ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(x) => {
                 x.children_any()
             }
@@ -609,6 +626,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
             ClassConstantAccessExpressionClass::MemberAccessExpression(x) => x.range(),
             ClassConstantAccessExpressionClass::MemberCallExpression(x) => x.range(),
             ClassConstantAccessExpressionClass::Name(x) => x.range(),
+            ClassConstantAccessExpressionClass::Nowdoc(x) => x.range(),
             ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(x) => x.range(),
             ClassConstantAccessExpressionClass::NullsafeMemberCallExpression(x) => x.range(),
             ClassConstantAccessExpressionClass::ParenthesizedExpression(x) => x.range(),

@@ -13,6 +13,7 @@ use crate::autonodes::heredoc::HeredocNode;
 use crate::autonodes::member_access_expression::MemberAccessExpressionNode;
 use crate::autonodes::member_call_expression::MemberCallExpressionNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExpressionNode;
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
@@ -248,6 +249,7 @@ pub enum ScopedCallExpressionScope {
     MemberAccessExpression(Box<MemberAccessExpressionNode>),
     MemberCallExpression(Box<MemberCallExpressionNode>),
     Name(Box<NameNode>),
+    Nowdoc(Box<NowdocNode>),
     NullsafeMemberAccessExpression(Box<NullsafeMemberAccessExpressionNode>),
     NullsafeMemberCallExpression(Box<NullsafeMemberCallExpressionNode>),
     ParenthesizedExpression(Box<ParenthesizedExpressionNode>),
@@ -303,6 +305,9 @@ impl ScopedCallExpressionScope {
                 MemberCallExpressionNode::parse(node, source)?,
             )),
             "name" => ScopedCallExpressionScope::Name(Box::new(NameNode::parse(node, source)?)),
+            "nowdoc" => {
+                ScopedCallExpressionScope::Nowdoc(Box::new(NowdocNode::parse(node, source)?))
+            }
             "nullsafe_member_access_expression" => {
                 ScopedCallExpressionScope::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
@@ -388,6 +393,9 @@ impl ScopedCallExpressionScope {
                 MemberCallExpressionNode::parse(node, source)?,
             )),
             "name" => ScopedCallExpressionScope::Name(Box::new(NameNode::parse(node, source)?)),
+            "nowdoc" => {
+                ScopedCallExpressionScope::Nowdoc(Box::new(NowdocNode::parse(node, source)?))
+            }
             "nullsafe_member_access_expression" => {
                 ScopedCallExpressionScope::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
@@ -465,6 +473,7 @@ impl ScopedCallExpressionScope {
             ScopedCallExpressionScope::MemberAccessExpression(x) => x.get_utype(state, emitter),
             ScopedCallExpressionScope::MemberCallExpression(x) => x.get_utype(state, emitter),
             ScopedCallExpressionScope::Name(x) => x.get_utype(state, emitter),
+            ScopedCallExpressionScope::Nowdoc(x) => x.get_utype(state, emitter),
             ScopedCallExpressionScope::NullsafeMemberAccessExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -507,6 +516,7 @@ impl ScopedCallExpressionScope {
             ScopedCallExpressionScope::MemberAccessExpression(x) => x.get_php_value(state, emitter),
             ScopedCallExpressionScope::MemberCallExpression(x) => x.get_php_value(state, emitter),
             ScopedCallExpressionScope::Name(x) => x.get_php_value(state, emitter),
+            ScopedCallExpressionScope::Nowdoc(x) => x.get_php_value(state, emitter),
             ScopedCallExpressionScope::NullsafeMemberAccessExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -545,6 +555,7 @@ impl ScopedCallExpressionScope {
             ScopedCallExpressionScope::MemberAccessExpression(x) => x.read_from(state, emitter),
             ScopedCallExpressionScope::MemberCallExpression(x) => x.read_from(state, emitter),
             ScopedCallExpressionScope::Name(x) => x.read_from(state, emitter),
+            ScopedCallExpressionScope::Nowdoc(x) => x.read_from(state, emitter),
             ScopedCallExpressionScope::NullsafeMemberAccessExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -616,6 +627,9 @@ impl NodeAccess for ScopedCallExpressionScope {
             ScopedCallExpressionScope::Name(x) => {
                 format!("ScopedCallExpressionScope::name({})", x.brief_desc())
             }
+            ScopedCallExpressionScope::Nowdoc(x) => {
+                format!("ScopedCallExpressionScope::nowdoc({})", x.brief_desc())
+            }
             ScopedCallExpressionScope::NullsafeMemberAccessExpression(x) => format!(
                 "ScopedCallExpressionScope::nullsafe_member_access_expression({})",
                 x.brief_desc()
@@ -673,6 +687,7 @@ impl NodeAccess for ScopedCallExpressionScope {
             ScopedCallExpressionScope::MemberAccessExpression(x) => x.as_any(),
             ScopedCallExpressionScope::MemberCallExpression(x) => x.as_any(),
             ScopedCallExpressionScope::Name(x) => x.as_any(),
+            ScopedCallExpressionScope::Nowdoc(x) => x.as_any(),
             ScopedCallExpressionScope::NullsafeMemberAccessExpression(x) => x.as_any(),
             ScopedCallExpressionScope::NullsafeMemberCallExpression(x) => x.as_any(),
             ScopedCallExpressionScope::ParenthesizedExpression(x) => x.as_any(),
@@ -701,6 +716,7 @@ impl NodeAccess for ScopedCallExpressionScope {
             ScopedCallExpressionScope::MemberAccessExpression(x) => x.children_any(),
             ScopedCallExpressionScope::MemberCallExpression(x) => x.children_any(),
             ScopedCallExpressionScope::Name(x) => x.children_any(),
+            ScopedCallExpressionScope::Nowdoc(x) => x.children_any(),
             ScopedCallExpressionScope::NullsafeMemberAccessExpression(x) => x.children_any(),
             ScopedCallExpressionScope::NullsafeMemberCallExpression(x) => x.children_any(),
             ScopedCallExpressionScope::ParenthesizedExpression(x) => x.children_any(),
@@ -729,6 +745,7 @@ impl NodeAccess for ScopedCallExpressionScope {
             ScopedCallExpressionScope::MemberAccessExpression(x) => x.range(),
             ScopedCallExpressionScope::MemberCallExpression(x) => x.range(),
             ScopedCallExpressionScope::Name(x) => x.range(),
+            ScopedCallExpressionScope::Nowdoc(x) => x.range(),
             ScopedCallExpressionScope::NullsafeMemberAccessExpression(x) => x.range(),
             ScopedCallExpressionScope::NullsafeMemberCallExpression(x) => x.range(),
             ScopedCallExpressionScope::ParenthesizedExpression(x) => x.range(),

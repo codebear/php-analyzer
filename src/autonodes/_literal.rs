@@ -6,6 +6,7 @@ use crate::autonodes::encapsed_string::EncapsedStringNode;
 use crate::autonodes::float::FloatNode;
 use crate::autonodes::heredoc::HeredocNode;
 use crate::autonodes::integer::IntegerNode;
+use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::null::NullNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
@@ -25,6 +26,7 @@ pub enum _LiteralNode {
     Float(Box<FloatNode>),
     Heredoc(Box<HeredocNode>),
     Integer(Box<IntegerNode>),
+    Nowdoc(Box<NowdocNode>),
     Null(Box<NullNode>),
     String(Box<StringNode>),
     Comment(Box<CommentNode>),
@@ -47,6 +49,7 @@ impl _LiteralNode {
             "float" => _LiteralNode::Float(Box::new(FloatNode::parse(node, source)?)),
             "heredoc" => _LiteralNode::Heredoc(Box::new(HeredocNode::parse(node, source)?)),
             "integer" => _LiteralNode::Integer(Box::new(IntegerNode::parse(node, source)?)),
+            "nowdoc" => _LiteralNode::Nowdoc(Box::new(NowdocNode::parse(node, source)?)),
             "null" => _LiteralNode::Null(Box::new(NullNode::parse(node, source)?)),
             "string" => _LiteralNode::String(Box::new(StringNode::parse(node, source)?)),
 
@@ -73,6 +76,7 @@ impl _LiteralNode {
             "float" => _LiteralNode::Float(Box::new(FloatNode::parse(node, source)?)),
             "heredoc" => _LiteralNode::Heredoc(Box::new(HeredocNode::parse(node, source)?)),
             "integer" => _LiteralNode::Integer(Box::new(IntegerNode::parse(node, source)?)),
+            "nowdoc" => _LiteralNode::Nowdoc(Box::new(NowdocNode::parse(node, source)?)),
             "null" => _LiteralNode::Null(Box::new(NullNode::parse(node, source)?)),
             "string" => _LiteralNode::String(Box::new(StringNode::parse(node, source)?)),
 
@@ -109,6 +113,7 @@ impl _LiteralNode {
             _LiteralNode::Float(x) => x.get_utype(state, emitter),
             _LiteralNode::Heredoc(x) => x.get_utype(state, emitter),
             _LiteralNode::Integer(x) => x.get_utype(state, emitter),
+            _LiteralNode::Nowdoc(x) => x.get_utype(state, emitter),
             _LiteralNode::Null(x) => x.get_utype(state, emitter),
             _LiteralNode::String(x) => x.get_utype(state, emitter),
         }
@@ -128,6 +133,7 @@ impl _LiteralNode {
             _LiteralNode::Float(x) => x.get_php_value(state, emitter),
             _LiteralNode::Heredoc(x) => x.get_php_value(state, emitter),
             _LiteralNode::Integer(x) => x.get_php_value(state, emitter),
+            _LiteralNode::Nowdoc(x) => x.get_php_value(state, emitter),
             _LiteralNode::Null(x) => x.get_php_value(state, emitter),
             _LiteralNode::String(x) => x.get_php_value(state, emitter),
         }
@@ -143,6 +149,7 @@ impl _LiteralNode {
             _LiteralNode::Float(x) => x.read_from(state, emitter),
             _LiteralNode::Heredoc(x) => x.read_from(state, emitter),
             _LiteralNode::Integer(x) => x.read_from(state, emitter),
+            _LiteralNode::Nowdoc(x) => x.read_from(state, emitter),
             _LiteralNode::Null(x) => x.read_from(state, emitter),
             _LiteralNode::String(x) => x.read_from(state, emitter),
         }
@@ -164,6 +171,7 @@ impl NodeAccess for _LiteralNode {
             _LiteralNode::Float(x) => format!("_LiteralNode::float({})", x.brief_desc()),
             _LiteralNode::Heredoc(x) => format!("_LiteralNode::heredoc({})", x.brief_desc()),
             _LiteralNode::Integer(x) => format!("_LiteralNode::integer({})", x.brief_desc()),
+            _LiteralNode::Nowdoc(x) => format!("_LiteralNode::nowdoc({})", x.brief_desc()),
             _LiteralNode::Null(x) => format!("_LiteralNode::null({})", x.brief_desc()),
             _LiteralNode::String(x) => format!("_LiteralNode::string({})", x.brief_desc()),
         }
@@ -179,6 +187,7 @@ impl NodeAccess for _LiteralNode {
             _LiteralNode::Float(x) => x.as_any(),
             _LiteralNode::Heredoc(x) => x.as_any(),
             _LiteralNode::Integer(x) => x.as_any(),
+            _LiteralNode::Nowdoc(x) => x.as_any(),
             _LiteralNode::Null(x) => x.as_any(),
             _LiteralNode::String(x) => x.as_any(),
         }
@@ -194,6 +203,7 @@ impl NodeAccess for _LiteralNode {
             _LiteralNode::Float(x) => x.children_any(),
             _LiteralNode::Heredoc(x) => x.children_any(),
             _LiteralNode::Integer(x) => x.children_any(),
+            _LiteralNode::Nowdoc(x) => x.children_any(),
             _LiteralNode::Null(x) => x.children_any(),
             _LiteralNode::String(x) => x.children_any(),
         }
@@ -209,6 +219,7 @@ impl NodeAccess for _LiteralNode {
             _LiteralNode::Float(x) => x.range(),
             _LiteralNode::Heredoc(x) => x.range(),
             _LiteralNode::Integer(x) => x.range(),
+            _LiteralNode::Nowdoc(x) => x.range(),
             _LiteralNode::Null(x) => x.range(),
             _LiteralNode::String(x) => x.range(),
         }

@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{
         any::AnyNodeRef,
-        subscript_expression::{SubscriptExpressionDereferencable, SubscriptExpressionNode},
+        subscript_expression::{SubscriptExpressionDereferenceable, SubscriptExpressionNode},
     },
     issue::{Issue, IssueEmitter},
     types::union::{DiscreteType, UnionType},
@@ -23,7 +23,7 @@ impl SubscriptExpressionNode {
             return val.get_utype();
         }
         let array_type = self
-            .dereferencable
+            .dereferenceable
             .as_ref()
             .map(|deref| deref.get_utype(state, emitter))??;
 
@@ -90,7 +90,7 @@ impl SubscriptExpressionNode {
     }
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        self.dereferencable
+        self.dereferenceable
             .as_ref()
             .map(|x| x.read_from(state, emitter));
         self.index.as_ref().map(|x| x.read_from(state, emitter));
@@ -112,7 +112,7 @@ impl SubscriptExpressionNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
         let val = self
-            .dereferencable
+            .dereferenceable
             .as_ref()
             .and_then(|x| x.get_php_value(state, emitter));
 
@@ -138,7 +138,7 @@ impl SubscriptExpressionNode {
         _value: Option<PHPValue>,
     ) {
         // FIXME determine have this should be done...
-        self.dereferencable
+        self.dereferenceable
             .as_ref()
             .map(|x| x.write_to(state, emitter, None, None));
 
@@ -152,7 +152,7 @@ impl SubscriptExpressionNode {
     }
 }
 
-impl SubscriptExpressionDereferencable {
+impl SubscriptExpressionDereferenceable {
     pub fn write_to(
         &self,
         state: &mut crate::analysis::state::AnalysisState,
@@ -161,67 +161,70 @@ impl SubscriptExpressionDereferencable {
         value: Option<PHPValue>,
     ) {
         match self {
-            SubscriptExpressionDereferencable::ArrayCreationExpression(_) => {
+            SubscriptExpressionDereferenceable::ArrayCreationExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::CastExpression(_) => {
+            SubscriptExpressionDereferenceable::CastExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::ClassConstantAccessExpression(_) => {
+            SubscriptExpressionDereferenceable::ClassConstantAccessExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::DynamicVariableName(_) => {
+            SubscriptExpressionDereferenceable::DynamicVariableName(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::EncapsedString(_) => {
+            SubscriptExpressionDereferenceable::EncapsedString(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::FunctionCallExpression(_) => {
+            SubscriptExpressionDereferenceable::FunctionCallExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::Heredoc(_) => {
+            SubscriptExpressionDereferenceable::Heredoc(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::MemberAccessExpression(_) => {
+            SubscriptExpressionDereferenceable::MemberAccessExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::MemberCallExpression(_) => {
+            SubscriptExpressionDereferenceable::MemberCallExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::Name(_) => {
+            SubscriptExpressionDereferenceable::Name(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::NullsafeMemberAccessExpression(_) => {
+            SubscriptExpressionDereferenceable::NullsafeMemberAccessExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::NullsafeMemberCallExpression(_) => {
+            SubscriptExpressionDereferenceable::NullsafeMemberCallExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::ParenthesizedExpression(_) => {
+            SubscriptExpressionDereferenceable::ParenthesizedExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::QualifiedName(_) => {
+            SubscriptExpressionDereferenceable::QualifiedName(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::ScopedCallExpression(_) => {
+            SubscriptExpressionDereferenceable::ScopedCallExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::ScopedPropertyAccessExpression(_) => {
+            SubscriptExpressionDereferenceable::ScopedPropertyAccessExpression(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::String(_) => {
+            SubscriptExpressionDereferenceable::String(_) => {
                 crate::missing!("{}.write_to()", self.kind())
             }
-            SubscriptExpressionDereferencable::SubscriptExpression(se) => {
+            SubscriptExpressionDereferenceable::SubscriptExpression(se) => {
                 se.write_to(state, emitter, val_type, value)
             }
-            SubscriptExpressionDereferencable::VariableName(vn) => {
+            SubscriptExpressionDereferenceable::VariableName(vn) => {
                 vn.write_to(state, emitter, val_type, value)
             }
+            SubscriptExpressionDereferenceable::Nowdoc(_) => {
+                crate::missing!("{}.write_to()", self.kind())
+            }
 
-            SubscriptExpressionDereferencable::Comment(_)
-            | SubscriptExpressionDereferencable::TextInterpolation(_)
-            | SubscriptExpressionDereferencable::Error(_) => (),
+            SubscriptExpressionDereferenceable::Comment(_)
+            | SubscriptExpressionDereferenceable::TextInterpolation(_)
+            | SubscriptExpressionDereferenceable::Error(_) => (),
         }
     }
 }

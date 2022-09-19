@@ -1,5 +1,7 @@
 use crate::autonodes::any::AnyNodeRef;
-use crate::autonodes::attribute_group::AttributeGroupNode;
+use crate::autonodes::heredoc_end::HeredocEndNode;
+use crate::autonodes::heredoc_start::HeredocStartNode;
+use crate::autonodes::nowdoc_body::NowdocBodyNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
@@ -7,39 +9,59 @@ use tree_sitter::Node;
 use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
-pub struct AttributeListNode {
+pub struct NowdocNode {
     pub range: Range,
-    pub children: Vec<Box<AttributeGroupNode>>,
+    pub end_tag: HeredocEndNode,
+    pub identifier: HeredocStartNode,
+    pub value: Option<NowdocBodyNode>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl AttributeListNode {
+impl NowdocNode {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
-        if node.kind() != "attribute_list" {
+        if node.kind() != "nowdoc" {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [attribute_list] on pos {}:{}",
+                    "Node is of the wrong kind [{}] vs expected [nowdoc] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column
                 ),
             ));
         }
-
+        let end_tag: HeredocEndNode = node
+            .children_by_field_name("end_tag", &mut node.walk())
+            .map(|chnode1| HeredocEndNode::parse(chnode1, source))
+            .collect::<Result<Vec<_>, ParseError>>()?
+            .drain(..)
+            .next()
+            .expect("Field end_tag should exist");
+        let identifier: HeredocStartNode = node
+            .children_by_field_name("identifier", &mut node.walk())
+            .map(|chnode1| HeredocStartNode::parse(chnode1, source))
+            .collect::<Result<Vec<_>, ParseError>>()?
+            .drain(..)
+            .next()
+            .expect("Field identifier should exist");
+        let value: Option<NowdocBodyNode> = node
+            .children_by_field_name("value", &mut node.walk())
+            .map(|chnode1| NowdocBodyNode::parse(chnode1, source))
+            .collect::<Result<Vec<_>, ParseError>>()?
+            .drain(..)
+            .next();
         Ok(Self {
             range,
-            children: AttributeGroupNode::parse_vec(
-                node.named_children(&mut node.walk())
-                    .filter(|node| node.kind() != "comment"),
-                source,
-            )?,
+            end_tag,
+            identifier,
+            value,
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
                     .filter(|node| node.kind() == "comment"),
                 source,
-            )?,
+            )
+            .unwrap(),
         })
     }
 
@@ -58,25 +80,28 @@ impl AttributeListNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        "attribute_list"
+        "nowdoc"
     }
 }
 
-impl NodeAccess for AttributeListNode {
+impl NodeAccess for NowdocNode {
     fn brief_desc(&self) -> String {
-        "AttributeListNode".into()
+        "NowdocNode".into()
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        AnyNodeRef::AttributeList(self)
+        AnyNodeRef::Nowdoc(self)
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
         // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
-        child_vec.extend(self.children.iter().map(|n| n.as_any()));
-        child_vec.extend(self.extras.iter().map(|n| n.as_any()));
+        child_vec.push(self.end_tag.as_any());
+        child_vec.push(self.identifier.as_any());
+        if let Some(x) = &self.value {
+            child_vec.push(x.as_any());
+        }
 
         child_vec.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
         child_vec

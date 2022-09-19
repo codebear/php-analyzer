@@ -61,6 +61,8 @@ let type_name_map = {
     // Div
     ",": "Comma",
 
+    "\"": "DoubleQuote",
+    "??": "NullCoalescing",
 };
 
 let type_map = {};
@@ -84,6 +86,13 @@ function get_rust_type_name(type, suffix = undefined) {
         return type_map[type];
     }
     return to_camel_case(type)+(suffix !== undefined ? suffix : "Node");
+}
+
+function rust_str(value) {
+    if (value.match(/"|\\/)) {
+        return 'r#"'+value+'"#';
+    }
+    return '"'+value+'"';
 }
 
 function rustify_name(name) {
@@ -176,14 +185,14 @@ function create_enum_for_types(name, types) {
         let opt_parsing = child_type+"::parse_opt(node, source)?";
         let parsing = `${child_type}::parse(node, source)?`;
         if (child_type.match(/'static/)) {
-            parsing = '"'+type.type+'"';
+            parsing = rust_str(type.type);
             parsing += ", node.range()";
             opt_parsing = 'Some(todo!("Det lyt fiksas"))';
         } else {
             parsing = "Box::new("+parsing+")";
             opt_parsing += ".map(|x| Box::new(x))";
         }
-        let match = '"'+type.type+'"';
+        let match = rust_str(type.type);
         if (type.type.match(/^_/)) {
             match = "_";
         }

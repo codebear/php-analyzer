@@ -1,17 +1,16 @@
 use crate::autonodes::any::AnyNodeRef;
+use crate::autonodes::string_value::StringValueNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
-
-use std::ffi::OsStr;
-use std::ffi::OsString;
-use std::os::unix::ffi::OsStrExt;
+use crate::extra::ExtraChild;
 use tree_sitter::Node;
 use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct StringNode {
     pub range: Range,
-    pub raw: Vec<u8>,
+    pub child: Box<StringValueNode>,
+    pub extras: Vec<Box<ExtraChild>>,
 }
 
 impl StringNode {
@@ -31,7 +30,20 @@ impl StringNode {
 
         Ok(Self {
             range,
-            raw: source[range.start_byte..range.end_byte].to_vec(),
+            child: node
+                .named_children(&mut node.walk())
+                .filter(|node| node.kind() != "comment")
+                .map(|k| StringValueNode::parse(k, source))
+                .collect::<Result<Vec<StringValueNode>, ParseError>>()?
+                .drain(..)
+                .map(|j| Box::new(j))
+                .next()
+                .expect("Should be a child"),
+            extras: ExtraChild::parse_vec(
+                node.named_children(&mut node.walk())
+                    .filter(|node| node.kind() == "comment"),
+                source,
+            )?,
         })
     }
 
@@ -52,10 +64,6 @@ impl StringNode {
     pub fn kind(&self) -> &'static str {
         "string"
     }
-
-    pub fn get_raw(&self) -> OsString {
-        OsStr::from_bytes(&self.raw).to_os_string()
-    }
 }
 
 impl NodeAccess for StringNode {
@@ -68,7 +76,14 @@ impl NodeAccess for StringNode {
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        vec![]
+        let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
+
+        // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
+        child_vec.push(self.child.as_any());
+        child_vec.extend(self.extras.iter().map(|n| n.as_any()));
+
+        child_vec.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
+        child_vec
     }
 
     fn range(&self) -> Range {

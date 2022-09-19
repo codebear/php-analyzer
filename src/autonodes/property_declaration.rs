@@ -6,6 +6,7 @@ use crate::autonodes::attribute_list::AttributeListNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
 use crate::autonodes::property_element::PropertyElementNode;
+use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::var_modifier::VarModifierNode;
@@ -26,6 +27,7 @@ use tree_sitter::Range;
 pub enum PropertyDeclarationModifiers {
     AbstractModifier(Box<AbstractModifierNode>),
     FinalModifier(Box<FinalModifierNode>),
+    ReadonlyModifier(Box<ReadonlyModifierNode>),
     StaticModifier(Box<StaticModifierNode>),
     VarModifier(Box<VarModifierNode>),
     VisibilityModifier(Box<VisibilityModifierNode>),
@@ -51,6 +53,9 @@ impl PropertyDeclarationModifiers {
             )),
             "final_modifier" => PropertyDeclarationModifiers::FinalModifier(Box::new(
                 FinalModifierNode::parse(node, source)?,
+            )),
+            "readonly_modifier" => PropertyDeclarationModifiers::ReadonlyModifier(Box::new(
+                ReadonlyModifierNode::parse(node, source)?,
             )),
             "static_modifier" => PropertyDeclarationModifiers::StaticModifier(Box::new(
                 StaticModifierNode::parse(node, source)?,
@@ -87,6 +92,9 @@ impl PropertyDeclarationModifiers {
             )),
             "final_modifier" => PropertyDeclarationModifiers::FinalModifier(Box::new(
                 FinalModifierNode::parse(node, source)?,
+            )),
+            "readonly_modifier" => PropertyDeclarationModifiers::ReadonlyModifier(Box::new(
+                ReadonlyModifierNode::parse(node, source)?,
             )),
             "static_modifier" => PropertyDeclarationModifiers::StaticModifier(Box::new(
                 StaticModifierNode::parse(node, source)?,
@@ -128,6 +136,7 @@ impl PropertyDeclarationModifiers {
             PropertyDeclarationModifiers::Error(x) => x.get_utype(state, emitter),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.get_utype(state, emitter),
             PropertyDeclarationModifiers::FinalModifier(x) => x.get_utype(state, emitter),
+            PropertyDeclarationModifiers::ReadonlyModifier(x) => x.get_utype(state, emitter),
             PropertyDeclarationModifiers::StaticModifier(x) => x.get_utype(state, emitter),
             PropertyDeclarationModifiers::VarModifier(x) => x.get_utype(state, emitter),
             PropertyDeclarationModifiers::VisibilityModifier(x) => x.get_utype(state, emitter),
@@ -145,6 +154,7 @@ impl PropertyDeclarationModifiers {
             PropertyDeclarationModifiers::Error(x) => x.get_php_value(state, emitter),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.get_php_value(state, emitter),
             PropertyDeclarationModifiers::FinalModifier(x) => x.get_php_value(state, emitter),
+            PropertyDeclarationModifiers::ReadonlyModifier(x) => x.get_php_value(state, emitter),
             PropertyDeclarationModifiers::StaticModifier(x) => x.get_php_value(state, emitter),
             PropertyDeclarationModifiers::VarModifier(x) => x.get_php_value(state, emitter),
             PropertyDeclarationModifiers::VisibilityModifier(x) => x.get_php_value(state, emitter),
@@ -158,6 +168,7 @@ impl PropertyDeclarationModifiers {
             PropertyDeclarationModifiers::Error(x) => x.read_from(state, emitter),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.read_from(state, emitter),
             PropertyDeclarationModifiers::FinalModifier(x) => x.read_from(state, emitter),
+            PropertyDeclarationModifiers::ReadonlyModifier(x) => x.read_from(state, emitter),
             PropertyDeclarationModifiers::StaticModifier(x) => x.read_from(state, emitter),
             PropertyDeclarationModifiers::VarModifier(x) => x.read_from(state, emitter),
             PropertyDeclarationModifiers::VisibilityModifier(x) => x.read_from(state, emitter),
@@ -186,6 +197,10 @@ impl NodeAccess for PropertyDeclarationModifiers {
                 "PropertyDeclarationModifiers::final_modifier({})",
                 x.brief_desc()
             ),
+            PropertyDeclarationModifiers::ReadonlyModifier(x) => format!(
+                "PropertyDeclarationModifiers::readonly_modifier({})",
+                x.brief_desc()
+            ),
             PropertyDeclarationModifiers::StaticModifier(x) => format!(
                 "PropertyDeclarationModifiers::static_modifier({})",
                 x.brief_desc()
@@ -208,6 +223,7 @@ impl NodeAccess for PropertyDeclarationModifiers {
             PropertyDeclarationModifiers::Error(x) => x.as_any(),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.as_any(),
             PropertyDeclarationModifiers::FinalModifier(x) => x.as_any(),
+            PropertyDeclarationModifiers::ReadonlyModifier(x) => x.as_any(),
             PropertyDeclarationModifiers::StaticModifier(x) => x.as_any(),
             PropertyDeclarationModifiers::VarModifier(x) => x.as_any(),
             PropertyDeclarationModifiers::VisibilityModifier(x) => x.as_any(),
@@ -221,6 +237,7 @@ impl NodeAccess for PropertyDeclarationModifiers {
             PropertyDeclarationModifiers::Error(x) => x.children_any(),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.children_any(),
             PropertyDeclarationModifiers::FinalModifier(x) => x.children_any(),
+            PropertyDeclarationModifiers::ReadonlyModifier(x) => x.children_any(),
             PropertyDeclarationModifiers::StaticModifier(x) => x.children_any(),
             PropertyDeclarationModifiers::VarModifier(x) => x.children_any(),
             PropertyDeclarationModifiers::VisibilityModifier(x) => x.children_any(),
@@ -234,6 +251,7 @@ impl NodeAccess for PropertyDeclarationModifiers {
             PropertyDeclarationModifiers::Error(x) => x.range(),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.range(),
             PropertyDeclarationModifiers::FinalModifier(x) => x.range(),
+            PropertyDeclarationModifiers::ReadonlyModifier(x) => x.range(),
             PropertyDeclarationModifiers::StaticModifier(x) => x.range(),
             PropertyDeclarationModifiers::VarModifier(x) => x.range(),
             PropertyDeclarationModifiers::VisibilityModifier(x) => x.range(),

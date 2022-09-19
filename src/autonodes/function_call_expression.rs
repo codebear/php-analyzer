@@ -8,6 +8,7 @@ use crate::autonodes::encapsed_string::EncapsedStringNode;
 use crate::autonodes::heredoc::HeredocNode;
 use crate::autonodes::member_call_expression::MemberCallExpressionNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
 use crate::autonodes::qualified_name::QualifiedNameNode;
@@ -35,6 +36,7 @@ pub enum FunctionCallExpressionFunction {
     Heredoc(Box<HeredocNode>),
     MemberCallExpression(Box<MemberCallExpressionNode>),
     Name(Box<NameNode>),
+    Nowdoc(Box<NowdocNode>),
     NullsafeMemberCallExpression(Box<NullsafeMemberCallExpressionNode>),
     ParenthesizedExpression(Box<ParenthesizedExpressionNode>),
     QualifiedName(Box<QualifiedNameNode>),
@@ -79,6 +81,9 @@ impl FunctionCallExpressionFunction {
             ),
             "name" => {
                 FunctionCallExpressionFunction::Name(Box::new(NameNode::parse(node, source)?))
+            }
+            "nowdoc" => {
+                FunctionCallExpressionFunction::Nowdoc(Box::new(NowdocNode::parse(node, source)?))
             }
             "nullsafe_member_call_expression" => {
                 FunctionCallExpressionFunction::NullsafeMemberCallExpression(Box::new(
@@ -145,6 +150,9 @@ impl FunctionCallExpressionFunction {
             "name" => {
                 FunctionCallExpressionFunction::Name(Box::new(NameNode::parse(node, source)?))
             }
+            "nowdoc" => {
+                FunctionCallExpressionFunction::Nowdoc(Box::new(NowdocNode::parse(node, source)?))
+            }
             "nullsafe_member_call_expression" => {
                 FunctionCallExpressionFunction::NullsafeMemberCallExpression(Box::new(
                     NullsafeMemberCallExpressionNode::parse(node, source)?,
@@ -208,6 +216,7 @@ impl FunctionCallExpressionFunction {
             FunctionCallExpressionFunction::Heredoc(x) => x.get_utype(state, emitter),
             FunctionCallExpressionFunction::MemberCallExpression(x) => x.get_utype(state, emitter),
             FunctionCallExpressionFunction::Name(x) => x.get_utype(state, emitter),
+            FunctionCallExpressionFunction::Nowdoc(x) => x.get_utype(state, emitter),
             FunctionCallExpressionFunction::NullsafeMemberCallExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -246,6 +255,7 @@ impl FunctionCallExpressionFunction {
                 x.get_php_value(state, emitter)
             }
             FunctionCallExpressionFunction::Name(x) => x.get_php_value(state, emitter),
+            FunctionCallExpressionFunction::Nowdoc(x) => x.get_php_value(state, emitter),
             FunctionCallExpressionFunction::NullsafeMemberCallExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -280,6 +290,7 @@ impl FunctionCallExpressionFunction {
             FunctionCallExpressionFunction::Heredoc(x) => x.read_from(state, emitter),
             FunctionCallExpressionFunction::MemberCallExpression(x) => x.read_from(state, emitter),
             FunctionCallExpressionFunction::Name(x) => x.read_from(state, emitter),
+            FunctionCallExpressionFunction::Nowdoc(x) => x.read_from(state, emitter),
             FunctionCallExpressionFunction::NullsafeMemberCallExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -336,6 +347,9 @@ impl NodeAccess for FunctionCallExpressionFunction {
             FunctionCallExpressionFunction::Name(x) => {
                 format!("FunctionCallExpressionFunction::name({})", x.brief_desc())
             }
+            FunctionCallExpressionFunction::Nowdoc(x) => {
+                format!("FunctionCallExpressionFunction::nowdoc({})", x.brief_desc())
+            }
             FunctionCallExpressionFunction::NullsafeMemberCallExpression(x) => format!(
                 "FunctionCallExpressionFunction::nullsafe_member_call_expression({})",
                 x.brief_desc()
@@ -378,6 +392,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
             FunctionCallExpressionFunction::Heredoc(x) => x.as_any(),
             FunctionCallExpressionFunction::MemberCallExpression(x) => x.as_any(),
             FunctionCallExpressionFunction::Name(x) => x.as_any(),
+            FunctionCallExpressionFunction::Nowdoc(x) => x.as_any(),
             FunctionCallExpressionFunction::NullsafeMemberCallExpression(x) => x.as_any(),
             FunctionCallExpressionFunction::ParenthesizedExpression(x) => x.as_any(),
             FunctionCallExpressionFunction::QualifiedName(x) => x.as_any(),
@@ -400,6 +415,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
             FunctionCallExpressionFunction::Heredoc(x) => x.children_any(),
             FunctionCallExpressionFunction::MemberCallExpression(x) => x.children_any(),
             FunctionCallExpressionFunction::Name(x) => x.children_any(),
+            FunctionCallExpressionFunction::Nowdoc(x) => x.children_any(),
             FunctionCallExpressionFunction::NullsafeMemberCallExpression(x) => x.children_any(),
             FunctionCallExpressionFunction::ParenthesizedExpression(x) => x.children_any(),
             FunctionCallExpressionFunction::QualifiedName(x) => x.children_any(),
@@ -422,6 +438,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
             FunctionCallExpressionFunction::Heredoc(x) => x.range(),
             FunctionCallExpressionFunction::MemberCallExpression(x) => x.range(),
             FunctionCallExpressionFunction::Name(x) => x.range(),
+            FunctionCallExpressionFunction::Nowdoc(x) => x.range(),
             FunctionCallExpressionFunction::NullsafeMemberCallExpression(x) => x.range(),
             FunctionCallExpressionFunction::ParenthesizedExpression(x) => x.range(),
             FunctionCallExpressionFunction::QualifiedName(x) => x.range(),

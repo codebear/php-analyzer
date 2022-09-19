@@ -11,6 +11,7 @@ use crate::autonodes::heredoc::HeredocNode;
 use crate::autonodes::member_access_expression::MemberAccessExpressionNode;
 use crate::autonodes::member_call_expression::MemberCallExpressionNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExpressionNode;
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
@@ -220,6 +221,7 @@ pub enum ScopedPropertyAccessExpressionScope {
     MemberAccessExpression(Box<MemberAccessExpressionNode>),
     MemberCallExpression(Box<MemberCallExpressionNode>),
     Name(Box<NameNode>),
+    Nowdoc(Box<NowdocNode>),
     NullsafeMemberAccessExpression(Box<NullsafeMemberAccessExpressionNode>),
     NullsafeMemberCallExpression(Box<NullsafeMemberCallExpressionNode>),
     ParenthesizedExpression(Box<ParenthesizedExpressionNode>),
@@ -285,6 +287,9 @@ impl ScopedPropertyAccessExpressionScope {
             "name" => {
                 ScopedPropertyAccessExpressionScope::Name(Box::new(NameNode::parse(node, source)?))
             }
+            "nowdoc" => ScopedPropertyAccessExpressionScope::Nowdoc(Box::new(NowdocNode::parse(
+                node, source,
+            )?)),
             "nullsafe_member_access_expression" => {
                 ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
@@ -382,6 +387,9 @@ impl ScopedPropertyAccessExpressionScope {
             "name" => {
                 ScopedPropertyAccessExpressionScope::Name(Box::new(NameNode::parse(node, source)?))
             }
+            "nowdoc" => ScopedPropertyAccessExpressionScope::Nowdoc(Box::new(NowdocNode::parse(
+                node, source,
+            )?)),
             "nullsafe_member_access_expression" => {
                 ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
@@ -473,6 +481,7 @@ impl ScopedPropertyAccessExpressionScope {
                 x.get_utype(state, emitter)
             }
             ScopedPropertyAccessExpressionScope::Name(x) => x.get_utype(state, emitter),
+            ScopedPropertyAccessExpressionScope::Nowdoc(x) => x.get_utype(state, emitter),
             ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -535,6 +544,7 @@ impl ScopedPropertyAccessExpressionScope {
                 x.get_php_value(state, emitter)
             }
             ScopedPropertyAccessExpressionScope::Name(x) => x.get_php_value(state, emitter),
+            ScopedPropertyAccessExpressionScope::Nowdoc(x) => x.get_php_value(state, emitter),
             ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -593,6 +603,7 @@ impl ScopedPropertyAccessExpressionScope {
                 x.read_from(state, emitter)
             }
             ScopedPropertyAccessExpressionScope::Name(x) => x.read_from(state, emitter),
+            ScopedPropertyAccessExpressionScope::Nowdoc(x) => x.read_from(state, emitter),
             ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -674,6 +685,10 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
                 "ScopedPropertyAccessExpressionScope::name({})",
                 x.brief_desc()
             ),
+            ScopedPropertyAccessExpressionScope::Nowdoc(x) => format!(
+                "ScopedPropertyAccessExpressionScope::nowdoc({})",
+                x.brief_desc()
+            ),
             ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(x) => format!(
                 "ScopedPropertyAccessExpressionScope::nullsafe_member_access_expression({})",
                 x.brief_desc()
@@ -732,6 +747,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
             ScopedPropertyAccessExpressionScope::MemberAccessExpression(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::MemberCallExpression(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::Name(x) => x.as_any(),
+            ScopedPropertyAccessExpressionScope::Nowdoc(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::NullsafeMemberCallExpression(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::ParenthesizedExpression(x) => x.as_any(),
@@ -762,6 +778,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
             ScopedPropertyAccessExpressionScope::MemberAccessExpression(x) => x.children_any(),
             ScopedPropertyAccessExpressionScope::MemberCallExpression(x) => x.children_any(),
             ScopedPropertyAccessExpressionScope::Name(x) => x.children_any(),
+            ScopedPropertyAccessExpressionScope::Nowdoc(x) => x.children_any(),
             ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(x) => {
                 x.children_any()
             }
@@ -796,6 +813,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
             ScopedPropertyAccessExpressionScope::MemberAccessExpression(x) => x.range(),
             ScopedPropertyAccessExpressionScope::MemberCallExpression(x) => x.range(),
             ScopedPropertyAccessExpressionScope::Name(x) => x.range(),
+            ScopedPropertyAccessExpressionScope::Nowdoc(x) => x.range(),
             ScopedPropertyAccessExpressionScope::NullsafeMemberAccessExpression(x) => x.range(),
             ScopedPropertyAccessExpressionScope::NullsafeMemberCallExpression(x) => x.range(),
             ScopedPropertyAccessExpressionScope::ParenthesizedExpression(x) => x.range(),
