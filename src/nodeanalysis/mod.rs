@@ -25,7 +25,7 @@ pub mod cast_expression;
 pub mod catch_clause;
 pub mod class_constant_access_expression;
 pub mod class_declaration;
-pub mod class_interface_cluase_node;
+pub mod class_interface_clause_node;
 pub mod clone_expression;
 pub mod colon_block;
 pub mod comment;
