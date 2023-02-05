@@ -120,6 +120,11 @@ pub enum Issue {
     /// *  .0 position
     /// *  .1 expected class
     /// *  .2 provided const name
+    UnknownClassConstant(IssuePosition, FullyQualifiedName, Name),
+
+    /// *  .0 position
+    /// *  .1 expected class
+    /// *  .2 provided const name
     DuplicateClassConstant(IssuePosition, FullyQualifiedName, Name),
 
     /// Duplicates of other declarations, used i.e. on PHPDoc-entries
@@ -144,6 +149,8 @@ pub enum Issue {
     InvalidPHPDocEntry(IssuePosition, OsString),
     // PHPDocEntry which is not needed
     RedundantPHPDocEntry(IssuePosition, OsString),
+
+    UnknownPHPDocEntry(IssuePosition, OsString),
 }
 
 impl Issue {
@@ -193,6 +200,7 @@ impl Issue {
             | Self::WrongNumberOfArguments(pos, _, _, _)
             | Self::DuplicateConstant(pos, _)
             | Self::DuplicateFunction(pos, _)
+            | Self::UnknownClassConstant(pos, _, _)
             | Self::DuplicateClassConstant(pos, _, _)
             | Self::DuplicateDeclaration(pos, _)
             | Self::DuplicateTemplate(pos, _)
@@ -209,6 +217,7 @@ impl Issue {
             | Self::MisplacedPHPDocEntry(pos, _)
             | Self::InvalidPHPDocEntry(pos, _)
             | Self::RedundantPHPDocEntry(pos, _)
+            | Self::UnknownPHPDocEntry(pos, _)
             | Self::EmptyTemplate(pos, _) => pos.clone(),
         }
     }
@@ -251,6 +260,7 @@ impl Issue {
             Self::WrongFunctionNameCasing(_, _, _) => "WrongFunctionNameCasing",
             Self::DuplicateConstant(_, _) => "DuplicateConstant",
             Self::DuplicateFunction(_, _) => "DuplicateFunction",
+            Self::UnknownClassConstant(_, _, _) => "UnknownClassConstant",
             Self::DuplicateClassConstant(_, _, _) => "DuplicateClassConstant",
             Self::DuplicateDeclaration(_, _) => "DuplicateDeclaration",
             Self::UnknownIndexType(_) => "UnknownIndexType",
@@ -264,6 +274,7 @@ impl Issue {
             Self::MisplacedPHPDocEntry(_, _) => "MisplacedPHPDocEntry",
             Self::InvalidPHPDocEntry(_, _) => "InvalidPHPDocEntry",
             Self::RedundantPHPDocEntry(_, _) => "RedundantPHPDocEntry",
+            Self::UnknownPHPDocEntry(_, _) => "UnknownPHPDocEntry",
             Self::EmptyTemplate(_, _) => "EmptyTemplate",
         }
     }
@@ -311,6 +322,10 @@ impl Issue {
             ),
             Self::DuplicateConstant(_, c) => format!("Duplicate constant {}", c),
             Self::DuplicateFunction(_, f) => format!("Duplicate function {}", f),
+            Self::UnknownClassConstant(_, class, cons) => {
+                format!("Unknown class constant {}::{}", class, cons)
+            }
+
             Self::DuplicateClassConstant(_, class, cons) => {
                 format!("Duplicate class constant {}::{}", class, cons)
             }
@@ -357,6 +372,9 @@ impl Issue {
             }
             Self::RedundantPHPDocEntry(_, reason) => {
                 format!("Redundant PHPDoc-entry: {}", reason.to_string_lossy())
+            }
+            Self::UnknownPHPDocEntry(_, reason) => {
+                format!("Unknown PHPDoc-entry: {}", reason.to_string_lossy())
             }
             Self::EmptyTemplate(_, name) => format!("Generic template {} is unforfilled", name),
         }

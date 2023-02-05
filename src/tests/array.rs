@@ -45,7 +45,7 @@ fn test_array() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     //eprintln!("FOO: {:?}", result);
     /*assert_eq!(
         result.return_type,

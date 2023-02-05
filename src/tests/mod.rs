@@ -22,6 +22,7 @@ use std::{
 use crate::{
     analysis::analyzer::Analyzer,
     analysis::state::AnalysisState,
+    config::PHPAnalyzeConfig,
     issue::{Issue, IssueEmitter},
     symboldata::{FunctionData, SymbolData},
     symbols::FullyQualifiedName,
@@ -45,10 +46,6 @@ impl TestEmitter {
 
 impl IssueEmitter for TestEmitter {
     fn emit(&self, issue: Issue) {
-        /*match issue {
-            Issue::UnknownClass(_, _) => todo!(),
-            _ => (),
-        }*/
         let start = issue.range().start_point;
         let err = issue.as_string();
         if let Some(f) = issue.filename() {
@@ -97,7 +94,11 @@ impl EvaluationResult {
     }
 }
 
-fn evaluate_php_buffers<T>(buffers: T, load_native: bool) -> EvaluationResult
+fn evaluate_php_buffers<T>(
+    config: PHPAnalyzeConfig,
+    buffers: T,
+    load_native: bool,
+) -> EvaluationResult
 where
     T: IntoIterator<Item = (OsString, OsString)>,
 {
@@ -114,7 +115,7 @@ where
         let mut state = AnalysisState::new_with_symbols(symbols.clone());
         state.pass = 1;
         let mut analyzer =
-            Analyzer::new_from_buffer(outer_buffer.clone(), Some(buffer_name.clone()));
+            Analyzer::new_from_buffer(config, outer_buffer.clone(), Some(buffer_name.clone()));
         assert!(analyzer.parse().is_ok());
 
         // analyzer.dump();
@@ -125,7 +126,7 @@ where
         let mut state = AnalysisState::new_with_symbols(symbols.clone());
         state.pass = 2;
         let mut analyzer =
-            Analyzer::new_from_buffer(outer_buffer.clone(), Some(buffer_name.clone()));
+            Analyzer::new_from_buffer(config, outer_buffer.clone(), Some(buffer_name.clone()));
         assert!(analyzer.parse().is_ok());
 
         // analyzer.dump();
@@ -137,7 +138,7 @@ where
             let mut state = AnalysisState::new_with_symbols(symbols.clone());
             state.pass = 3 + idx;
             let mut analyzer =
-                Analyzer::new_from_buffer(outer_buffer.clone(), Some(buffer_name.clone()));
+                Analyzer::new_from_buffer(config, outer_buffer.clone(), Some(buffer_name.clone()));
             assert!(analyzer.parse().is_ok());
             analyzer.third_pass(&mut state, &emitter);
         }
@@ -151,13 +152,16 @@ where
     result
 }
 
-fn evaluate_php_code_in_function<T: Into<OsString>>(buffer: T) -> EvaluationResult {
+fn evaluate_php_code_in_function<T: Into<OsString>>(
+    config: PHPAnalyzeConfig,
+    buffer: T,
+) -> EvaluationResult {
     let mut outer_buffer = OsString::from("<?php ");
     outer_buffer.push("function test_output() { ");
     outer_buffer.push(buffer.into());
     outer_buffer.push("}");
 
-    let mut analyzer = Analyzer::new_from_buffer(outer_buffer, Some("test_buffer".into()));
+    let mut analyzer = Analyzer::new_from_buffer(config, outer_buffer, Some("test_buffer".into()));
     assert!(analyzer.parse().is_ok());
 
     let mut state = AnalysisState::new();
@@ -191,9 +195,9 @@ fn evaluate_php_code_in_function<T: Into<OsString>>(buffer: T) -> EvaluationResu
 }
 
 fn get_inferred_return_type<T: Into<OsString>>(buffer: T) -> Option<UnionType> {
-    evaluate_php_code_in_function(buffer).return_type
+    evaluate_php_code_in_function(Default::default(), buffer).return_type
 }
 
 fn get_inferred_return_value<T: Into<OsString>>(buffer: T) -> Option<PHPValue> {
-    evaluate_php_code_in_function(buffer).return_value
+    evaluate_php_code_in_function(Default::default(), buffer).return_value
 }

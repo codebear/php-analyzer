@@ -67,7 +67,7 @@ impl ScopedCallExpressionNode {
             }
             ScopedCallExpressionScope::QualifiedName(qname) => Some(ClassName::new_with_names(
                 qname.get_name(),
-                qname.get_fq_name(),
+                qname.get_fq_name(state),
             )),
             ScopedCallExpressionScope::RelativeScope(_) => crate::missing_none!("{}", self.kind()),
             ScopedCallExpressionScope::ScopedCallExpression(sc) => {

@@ -76,6 +76,7 @@ fn return_var_postfix_increment() {
 #[test]
 fn balle() {
     let noe = evaluate_php_code_in_function(
+        Default::default(),
         r#"
     switch(rand(0,10)) {
         case 42;
@@ -94,6 +95,7 @@ fn balle() {
 #[test]
 fn test_return_inline_string_variable() {
     let noe = evaluate_php_code_in_function(
+        Default::default(),
         r#"
             $type = 'bar';
             return "noe $type greier";
@@ -107,6 +109,7 @@ fn test_return_inline_string_variable() {
 #[test]
 fn test_echo_inline_string_variable() {
     let noe = evaluate_php_code_in_function(
+        Default::default(),
         r#"
             $type = 'bar';
             echo "noe $type greier";

@@ -10,7 +10,7 @@ fn test_hardening_true() {
 
             class X {
                 function foo() {}
-            }   
+            }
             function foo(X $x = null) {
                 if ($x) {
                     $x->foo();
@@ -19,8 +19,8 @@ fn test_hardening_true() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
-    // eprintln!("RESULT: {:?}", &result);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
+    eprintln!("RESULT: {:#?}", &result);
     /* if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
         let func_name: OsString = r"\test_return".into();
@@ -55,8 +55,8 @@ fn test_hardening_false() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
-    // eprintln!("RESULT: {:?}", &result);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
+    eprintln!("RESULT: {:#?}", &result);
     /* if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
         let func_name: OsString = r"\test_return".into();
@@ -91,7 +91,7 @@ fn test_hardening_single_false_branch() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     /* if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
@@ -125,7 +125,7 @@ fn test_hardening_instanceoof() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     /* if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
@@ -159,7 +159,7 @@ fn test_hardening_assignment() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     eprintln!("RESULT: {:#?}", &result);
     /* if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
@@ -203,7 +203,7 @@ fn test_hardening_instanceoof_multipath_1() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     /* if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
@@ -250,7 +250,7 @@ fn test_hardening_instanceoof_multipath_2() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     /* if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();

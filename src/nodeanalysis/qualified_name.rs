@@ -22,13 +22,47 @@ impl QualifiedNameNode {
         FullyQualifiedName::new()
     }
 
-    pub fn get_fq_name(&self) -> FullyQualifiedName {
+    pub fn is_root_anchored(&self) -> bool {
+        for child in &self.children {
+            match &**child {
+                QualifiedNameChildren::Name(n) => {
+                    todo!("CRAP {:?} {:?}", self.range.start_byte, n.range.start_byte);
+                    return false;
+                }
+                QualifiedNameChildren::NamespaceNameAsPrefix(nn) => {
+                    return nn.is_root_anchored();
+                }
+                QualifiedNameChildren::Comment(_)
+                | QualifiedNameChildren::TextInterpolation(_)
+                | QualifiedNameChildren::Error(_) => (),
+            }
+        }
+        false
+    }
+
+    /// This must not be used and relied upon in `use` statements, as
+    /// those are always fully-qualified originally
+    /// @see get_raw_fq_name
+    pub fn get_fq_name(&self, state: &AnalysisState) -> FullyQualifiedName {
+        let mut qn = if self.is_root_anchored() {
+            self.get_prefix()
+        } else if let Some(ns) = &state.namespace {
+            let mut qn = ns.clone();
+            qn.append_fq(self.get_prefix());
+            qn
+        } else {
+            self.get_prefix()
+        };
+        qn.push(self.get_name());
+        qn
+    }
+
+    pub fn get_raw_fq_name(&self) -> FullyQualifiedName {
         let mut qn = self.get_prefix();
 
         qn.push(self.get_name());
         qn
     }
-
     pub fn get_name(&self) -> Name {
         let mut name: Option<Name> = None;
         for x in &self.children {
@@ -53,14 +87,6 @@ impl QualifiedNameNode {
         //        crate::missing!("{}.read_from(..)", self.kind());
     }
 
-    pub fn get_php_value2(
-        &self,
-        _state: &mut AnalysisState,
-        _emitter: &dyn IssueEmitter,
-    ) -> Option<crate::value::PHPValue> {
-        crate::missing_none!("{}.get_php_value(..)", self.kind())
-    }
-
     ///
     /// A QualifiedNameNode MIGHT be in a constant-usage-context. So make sure that the node is in such a context before relying on the output from this
     ///
@@ -74,12 +100,15 @@ impl QualifiedNameNode {
             .constants
             .read()
             .unwrap()
-            .get(&self.get_fq_name())
+            .get(&self.get_fq_name(state))
         {
             x.get_value()
         } else {
             // FIXME this should not emit here, but in an analysis-pass
-            emitter.emit(Issue::UnknownConstant(self.pos(state), self.get_fq_name()));
+            emitter.emit(Issue::UnknownConstant(
+                self.pos(state),
+                self.get_fq_name(state),
+            ));
             None
         }
     }

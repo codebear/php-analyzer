@@ -37,15 +37,15 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
         // self.attributes;
         // Finn ut av
         if let Some(modi) = &self.modifier {
-            eprintln!("Const har en {:?}, hva gjør vi med det?", modi.get_raw());
+            crate::missing!("Const har en {:?}, hva gjør vi med det?", modi.get_raw());
         }
 
         for child in &self.children {
             match &**child {
                 ConstDeclarationChildren::ConstElement(c) => {
                     let name = c.get_const_name();
-                    let value = c.get_php_value(state, emitter);
-                    if let Some(val) = c.get_php_value(state, emitter) {
+                    // let value = c.get_php_value(state, emitter);
+                    if let Some(value) = c.get_php_value(state, emitter) {
                         if let Some(class_state) = &state.in_class {
                             if let Some(class_data) =
                                 state.symbol_data.get_class(&class_state.get_name())
@@ -60,7 +60,13 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                                                 name,
                                             ));
                                         } else {
-                                            c.constants.insert(name, val);
+                                            /*eprintln!(
+                                                "Inject Class {}::{} = {:?}",
+                                                class_state.get_name(),
+                                                name,
+                                                value
+                                            );*/
+                                            c.constants.insert(name, value);
                                         }
                                     }
                                     ClassType::None => todo!(),
@@ -72,7 +78,13 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                                                 name,
                                             ));
                                         } else {
-                                            intf.constants.insert(name, val);
+                                            /*eprintln!(
+                                                "Inject Interface {}::{} = {:?}",
+                                                class_state.get_name(),
+                                                name,
+                                                value
+                                            );*/
+                                            intf.constants.insert(name, value);
                                         }
                                     }
                                     ClassType::Trait(_) => todo!(),

@@ -42,6 +42,9 @@ pub fn parse_phpdoc(input: PHPDocInput) -> IResult<PHPDocInput, Vec<PHPDocEntry>
     // Verify string closes with
     our_tag(b"*/")(last)?;
     end -= 2;
+    while end > 1 && input.slice(end - 1..end).0 == b"*" {
+        end -= 1;
+    }
 
     let subset = input.slice(0..end);
 
@@ -108,8 +111,7 @@ fn _simple_tagged_no_case_with_opt_data<'a>(
 }
 
 fn template(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
-    // https://docs.phpdoc.org/guide/references/phpdoc/tags/return.html
-    // @return [type] <description>
+    // @template [ident] <of [boundary]>
     let start_range = input.1;
     let (input, _) = our_tag_no_case(b"@template")(input)?;
     let (input, _) = space1(input)?;
@@ -262,7 +264,8 @@ fn param(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
     let (input, _) = our_tag_no_case(b"@param")(input)?;
     let (input, _) = space1(input)?;
     let (input, utype) = our_union_type(input)?;
-    let (input, name) = opt(preceded(space1, name_or_var_name))(input)?;
+    let (input, _) = space0(input)?;
+    let (input, name) = opt(name_or_var_name)(input)?;
     let (input, desc) = opt(preceded(space1, text_until_eol))(input)?;
     let range = from_until_ranges(start_range, input.1);
     Ok((input, PHPDocEntry::Param(range, utype, name, desc)))

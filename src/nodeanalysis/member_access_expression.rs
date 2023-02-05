@@ -242,6 +242,8 @@ impl ThirdPassAnalyzeableNode for MemberAccessExpressionNode {
                     }
                 }
             } else {
+                // let fqname: String = format!("{}", cname.get_fq_name());
+                // eprintln!("BALLE2 Unknown class {}, {:?}", fqname, cname.get_fq_name());
                 emitter.emit(Issue::UnknownClass(self.pos(state), cname.fq_name.clone()));
             }
         } else {
@@ -302,10 +304,13 @@ impl MemberAccessExpressionObject {
             MemberAccessExpressionObject::ParenthesizedExpression(_) => {
                 crate::missing_none!("{}.get_class_name(..)", self.kind())
             }
-            MemberAccessExpressionObject::QualifiedName(qn) => Some(ClassName::new_with_names(
-                qn.get_fq_name().get_name().unwrap_or_else(|| Name::new()),
-                qn.get_fq_name(),
-            )),
+            MemberAccessExpressionObject::QualifiedName(qn) => {
+                let fq_name = qn.get_fq_name(state);
+                Some(ClassName::new_with_names(
+                    fq_name.get_name().unwrap_or_else(|| Name::new()),
+                    fq_name,
+                ))
+            }
             MemberAccessExpressionObject::ScopedCallExpression(_) => {
                 crate::missing_none!("{}.get_class_name(..)", self.kind())
             }

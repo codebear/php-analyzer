@@ -61,6 +61,7 @@ impl IntoSecondPassAnalyzeable for AnyNodeRef<'_> {
             AnyNodeRef::TraitDeclaration(td) => cb(*td),
             AnyNodeRef::MethodDeclaration(md) => cb(*md),
             AnyNodeRef::PropertyDeclaration(pd) => cb(*pd),
+            AnyNodeRef::ClassConstantAccessExpression(cc) => cb(*cc),
             _ => return None,
         })
     }

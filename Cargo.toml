@@ -5,7 +5,7 @@ authors = ["Bjørn Tore Hagen <bjorn.hagen@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
+rust-version = "1.65"
 [dependencies]
 tree-sitter="*"
 lazy_static = "1"

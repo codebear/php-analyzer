@@ -1,7 +1,8 @@
 use std::{
+    cmp::Ordering,
     convert::TryInto,
     ffi::{OsStr, OsString},
-    os::unix::prelude::OsStrExt, cmp::Ordering,
+    os::unix::prelude::OsStrExt,
 };
 
 use crate::{
@@ -13,6 +14,7 @@ use crate::{
 pub struct ObjectInstance {
     pub fq_name: FullyQualifiedName,
     pub constructor_args: Option<Vec<Option<PHPValue>>>,
+    pub generic_concretes: Option<Vec<UnionType>>,
 }
 
 impl ObjectInstance {
@@ -23,6 +25,19 @@ impl ObjectInstance {
         Self {
             fq_name,
             constructor_args,
+            generic_concretes: None,
+        }
+    }
+
+    pub fn new_with_generics(
+        fq_name: FullyQualifiedName,
+        _generic_concretes: Vec<UnionType>,
+        constructor_args: Option<Vec<Option<PHPValue>>>,
+    ) -> Self {
+        Self {
+            fq_name,
+            constructor_args,
+            generic_concretes: None,
         }
     }
 
@@ -32,13 +47,13 @@ impl ObjectInstance {
     }
 }
 
-/// We separate float into a separate type to handle eq and ord 
+/// We separate float into a separate type to handle eq and ord
 /// more easily in a separate way
 #[derive(Clone, Debug, PartialOrd)]
-pub enum PHPFloat{
+pub enum PHPFloat {
     Real(f64),
     NaN,
-    Infinite
+    Infinite,
 }
 
 impl PHPFloat {
@@ -71,9 +86,7 @@ impl PartialEq for PHPFloat {
 }
 
 // FIXME verify that this holds
-impl Eq for PHPFloat {
-
-}
+impl Eq for PHPFloat {}
 
 impl Ord for PHPFloat {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -176,8 +189,12 @@ impl PHPValue {
 
                 PHPValue::Int(i_val)
             }
-            PHPValue::Float(PHPFloat::NaN) => return crate::missing_none!("Float(NaN).as_php_int()"),
-            PHPValue::Float(PHPFloat::Infinite) => return crate::missing_none!("Float(Infinite).as_php_int()"),
+            PHPValue::Float(PHPFloat::NaN) => {
+                return crate::missing_none!("Float(NaN).as_php_int()")
+            }
+            PHPValue::Float(PHPFloat::Infinite) => {
+                return crate::missing_none!("Float(Infinite).as_php_int()")
+            }
             PHPValue::String(_) => return crate::missing_none!("String.as_php_int()"),
             PHPValue::Array(_) => return self.as_php_bool().and_then(|x| x.as_php_int()),
             PHPValue::ObjectInstance(_) => {
@@ -188,24 +205,33 @@ impl PHPValue {
 
     /// Attempt to coaelesce the value into a PHP boolean.
     /// A None only indicates that we failed to safely guestimate a thrustworhty value
+    ///
+    /// Done according to https://www.php.net/manual/en/language.types.boolean.php
+    ///
     pub fn as_php_bool(&self) -> Option<PHPValue> {
         Some(match self {
             PHPValue::NULL => PHPValue::Boolean(false),
             PHPValue::Boolean(b) => PHPValue::Boolean(*b),
             PHPValue::Int(i) => PHPValue::Boolean(if *i != 0 { true } else { false }),
-            PHPValue::Float(PHPFloat::Real(f)) => PHPValue::Boolean(if *f != 0.0 { true } else { false }),
+            PHPValue::Float(PHPFloat::Real(f)) => PHPValue::Boolean(if *f == 0.0 {
+                false
+            } else if *f == -0.0 {
+                false
+            } else {
+                true
+            }),
             PHPValue::Float(_) => return crate::missing_none!("Non real float .as_php_bool()"),
             PHPValue::String(s) => {
                 if s.len() == 0 {
                     PHPValue::Boolean(false)
+                } else if s.eq("0") {
+                    PHPValue::Boolean(false)
                 } else {
-                    return crate::missing_none!("non-zero-length String.as_php_bool()");
+                    PHPValue::Boolean(true)
                 }
             }
             PHPValue::Array(v) => PHPValue::Boolean(v.len() > 0),
-            PHPValue::ObjectInstance(_) => {
-                return crate::missing_none!("ObjectInstance.as_php_bool()")
-            }
+            PHPValue::ObjectInstance(_) => PHPValue::Boolean(true),
         })
     }
 
@@ -327,7 +353,7 @@ impl PHPValue {
     }
 
     pub fn as_raw_php(&self) -> OsString {
-         match self {
+        match self {
             PHPValue::NULL => OsStr::from_bytes(b"NULL").into(),
             PHPValue::Boolean(b) => OsStr::from_bytes(if *b { b"true" } else { b"false" }).into(),
             PHPValue::Int(i) => format!("{}", i).into(),
@@ -341,18 +367,17 @@ impl PHPValue {
     pub fn is_null(&self) -> bool {
         match self {
             PHPValue::NULL => true,
-            _ => false
+            _ => false,
         }
     }
 }
-
 
 impl PHPArray {
     pub fn len(&self) -> usize {
         match self {
             PHPArray::Empty => 0,
             PHPArray::Vector(v) => v.len(),
-            PHPArray::HashMap(h) =>h.len(),
+            PHPArray::HashMap(h) => h.len(),
         }
     }
 
@@ -375,7 +400,7 @@ impl PHPArray {
                     // FIXME: Emit error beacuse this will fail
                     None
                 }
-            },
+            }
             PHPArray::HashMap(arr) => {
                 for (key, value) in arr {
                     if key.equal_to(&array_key).unwrap_or(false) {
@@ -383,10 +408,8 @@ impl PHPArray {
                     }
                 }
                 None
-            },
+            }
         }
-      
-      
     }
 
     pub(crate) fn get_type_by_key(&self, php_idx: PHPValue) -> Option<UnionType> {

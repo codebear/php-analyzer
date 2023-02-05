@@ -42,6 +42,11 @@ impl MemberCallExpressionNode {
         let mut return_type = UnionType::new();
         for maybe_method in methods {
             if let Some((_class, method_data)) = maybe_method {
+                // eprintln!("METHOD_DATA: {:#?}", &method_data);
+                if let Some(_) = &method_data.generic_templates {
+                    crate::missing!("Need to do something with generic_templates");
+                }
+
                 let call_return_type = method_data.get_return_type()?;
                 return_type.merge_into(call_return_type);
             }
@@ -188,6 +193,7 @@ impl MemberCallExpressionNode {
             DiscreteType::Resource => None,
             DiscreteType::String => None,
             DiscreteType::Bool => None,
+            DiscreteType::Iterable => crate::missing_none!("Find class data from..."),
             DiscreteType::Mixed => crate::missing_none!("Find class data from..."),
             DiscreteType::False => None,
             DiscreteType::Array => crate::missing_none!("Find class data from..."),
@@ -246,10 +252,7 @@ impl MemberCallExpressionNode {
                 let cname = ClassName::new_with_names(lname.clone(), fq_name.clone());
                 Some(cname)
             }
-            DiscreteType::Generic(btype, _) => {
-                crate::missing!("Trying to get class-name from a generic type which a method is being called on, for now ignoring generic arguments");
-                self.get_class_name_from_discrete_type(&**btype)
-            }
+            DiscreteType::Generic(btype, _) => self.get_class_name_from_discrete_type(&**btype),
             DiscreteType::NULL => None,
             DiscreteType::Void => {
                 // FIXME emit something somehow, somewhere?
@@ -259,7 +262,8 @@ impl MemberCallExpressionNode {
             }
             _ => {
                 crate::missing_none!(
-                    "Trying to get class-name from a {} which a method is being called on",
+                    "Trying to get class-name from a {} ({:?}) which a method is being called on",
+                    dtype,
                     dtype
                 )
                 //eprintln!("2. Calling method on type: {}", t);
@@ -352,43 +356,51 @@ impl ThirdPassAnalyzeableNode for MemberCallExpressionNode {
             }
         }
 
-        if let Some(method_name) = maybe_method_name {
-            if let Some(cnames) = self.get_object_class_names(state, emitter) {
-                for cname in cnames {
-                    if let Some(cname) = cname {
-                        if let Some(cdata_handle) = state.symbol_data.get_class(&cname) {
-                            let cdata = cdata_handle.read().unwrap();
-                            if cdata
-                                .get_method(&method_name, state.symbol_data.clone())
-                                .is_none()
-                            {
-                                let fq_cname = cdata.get_fq_name();
-                                emitter.emit(Issue::UnknownMethod(
-                                    self.name.pos(state),
-                                    fq_cname,
-                                    method_name.clone(),
-                                ));
-                            }
-                        } else {
-                            emitter.emit(Issue::MethodCallOnUnknownType(
-                                self.object.pos(state),
-                                Some(cname.get_fq_name().clone()),
-                                Some(method_name.clone()),
-                            ));
-                        }
-                    } else {
-                        emitter.emit(Issue::MethodCallOnUnknownType(
-                            self.object.pos(state),
-                            None,
-                            Some(method_name.clone()),
+        let method_name = if let Some(method_name) = maybe_method_name {
+            method_name
+        } else {
+            /* @TODO we're should emit some notice of missing coverage */
+            return true;
+        };
+
+        let class_names = if let Some(cnames) = self.get_object_class_names(state, emitter) {
+            cnames
+        } else {
+            emitter.emit(Issue::MethodCallOnUnknownType(
+                self.object.pos(state),
+                None,
+                Some(method_name),
+            ));
+            return true;
+        };
+
+        for cname in class_names {
+            if let Some(cname) = cname {
+                if let Some(cdata_handle) = state.symbol_data.get_class(&cname) {
+                    let cdata = cdata_handle.read().unwrap();
+                    if cdata
+                        .get_method(&method_name, state.symbol_data.clone())
+                        .is_none()
+                    {
+                        let fq_cname = cdata.get_fq_name();
+                        emitter.emit(Issue::UnknownMethod(
+                            self.name.pos(state),
+                            fq_cname,
+                            method_name.clone(),
                         ));
                     }
+                } else {
+                    emitter.emit(Issue::MethodCallOnUnknownType(
+                        self.object.pos(state),
+                        Some(cname.get_fq_name().clone()),
+                        Some(method_name.clone()),
+                    ));
                 }
             } else {
                 emitter.emit(Issue::MethodCallOnUnknownType(
                     self.object.pos(state),
                     None,
-                    Some(method_name),
+                    Some(method_name.clone()),
                 ));
             }
         }

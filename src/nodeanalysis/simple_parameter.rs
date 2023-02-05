@@ -10,7 +10,6 @@ use crate::{
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
-use crate::autotree::NodeAccess;
 
 impl SimpleParameterNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -53,7 +52,7 @@ impl SimpleParameterNode {
         if let Some(PHPDocEntry::Param(_range, union_of_types, _name, _desc)) =
             param_data.phpdoc_entry
         {
-            UnionType::from_parsed_type(union_of_types, state, emitter)
+            UnionType::from_parsed_type(union_of_types, state, emitter, None)
         } else {
             param_data.inline_phpdoc_type.map(|x| x.1)
         }
@@ -81,11 +80,7 @@ impl SimpleParameterNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
-        if let Some(t) = &self.type_ {
-            t.get_utype(state, emitter)
-        } else {
-            None
-        }
+        self.type_.as_ref()?.get_utype(state, emitter)
     }
 
     pub fn get_default_value(

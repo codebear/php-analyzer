@@ -1,11 +1,12 @@
 pub mod parser;
 
+pub mod config;
 pub mod extra;
 pub mod native;
+pub mod phpdoc;
 pub mod symbols;
 #[cfg(test)]
 mod tests;
-pub mod phpdoc;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -31,7 +32,6 @@ pub mod value;
 extern crate lazy_static;
 
 extern crate nom;
-
 
 static VERBOSE_MISSING: bool = false;
 

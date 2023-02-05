@@ -1,5 +1,6 @@
 use std::{
     ffi::OsString,
+    os::unix::prelude::OsStrExt,
     sync::{Arc, RwLock},
 };
 
@@ -167,7 +168,7 @@ impl AnalysisOfClassLikeNode for ClassDeclarationNode {
                             ifs.push(state.get_fq_symbol_name_from_local_name(&n.get_name()))
                         }
                         ClassInterfaceClauseChildren::QualifiedName(qn) => {
-                            ifs.push(qn.get_fq_name())
+                            ifs.push(qn.get_fq_name(state))
                         }
                         _ => (),
                     }
@@ -203,7 +204,10 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
 
         let mut phpdoc = None;
 
-        if let Some((raw_doc_comment, php_doc_range)) = &state.last_doc_comment {
+        let mut phpdoc_base_class_name = None;
+        let mut phpdoc_interfaces = vec![];
+
+        if let Some((raw_doc_comment, php_doc_range)) = state.last_doc_comment.clone() {
             match PHPDocComment::parse(&raw_doc_comment, &php_doc_range) {
                 Ok(doc) => {
                     phpdoc = Some(doc.clone());
@@ -269,19 +273,95 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                 }
                                 // void
                             }
-                            PHPDocEntry::GeneralWithParam(_, param, _data) => {
-                                crate::missing!(
-                                    "Unknown PHPDoc-entry @{}",
-                                    param.to_string_lossy() // data.to_string_lossy()
-                                );
+                            PHPDocEntry::GeneralWithParam(range, param, data) => {
+                                // @extends is an alias for @inherits
+                                let lcparam = param.to_ascii_lowercase();
+                                let pname_u8v = lcparam.as_bytes();
+                                match pname_u8v {
+                                    b"extends" | b"implements" | b"inherits" | b"mixin" => {
+                                        if let Some(ptype) = UnionType::parse(
+                                            data.clone(),
+                                            range.clone(),
+                                            state,
+                                            emitter,
+                                        ) {
+                                            match pname_u8v {
+                                                b"extends" | b"inherits" => {
+                                                    // TODO might emit
+                                                    if let None = phpdoc_base_class_name {
+                                                        if let Some(dtype) = ptype.single_type() {
+                                                            phpdoc_base_class_name = Some(dtype);
+                                                        } else {
+                                                            emitter.emit(
+                                                                Issue::InvalidPHPDocEntry(
+                                                                    state.pos_from_range(
+                                                                        range.clone(),
+                                                                    ),
+                                                                    "Can't @extend a union-type"
+                                                                        .into(),
+                                                                ),
+                                                            );
+                                                        }
+                                                    } else {
+                                                        emitter.emit(Issue::InvalidPHPDocEntry(
+                                                            state.pos_from_range(range.clone()),
+                                                            "Duplicate @extends-entry".into(),
+                                                        ));
+                                                    }
+                                                }
+                                                b"implements" => {
+                                                    let mut types: Vec<_> =
+                                                        ptype.types.into_iter().collect();
+                                                    phpdoc_interfaces.append(&mut types);
+                                                }
+                                                b"mixin" => {
+                                                    crate::missing!("Implement @mixin support")
+                                                }
+                                                _ => (),
+                                            }
+                                        } else {
+                                            // void
+                                            crate::missing!(
+                                                "emit unhandledable @{} DATA: {:?}",
+                                                param.to_string_lossy(),
+                                                data
+                                            );
+                                        }
+                                    }
+                                    b"suppress" => {
+                                        // void
+                                    }
+                                    _ => {
+                                        let sparam: &str = &param.to_string_lossy();
+                                        if !state.config.phpdoc.known_tags.contains(&sparam) {
+                                            emitter.emit(Issue::UnknownPHPDocEntry(
+                                                state.pos_from_range(range.clone()),
+                                                format!(
+                                                    "Unknown PHPDoc-entry @{}",
+                                                    param.to_string_lossy()
+                                                )
+                                                .into(),
+                                            ))
+                                        }
+                                    }
+                                }
+
                                 // void
                             }
-                            PHPDocEntry::General(_, param) => {
+                            PHPDocEntry::General(range, param) => {
                                 // void
-                                crate::missing!(
-                                    "Unknown PHPDoc-entry @{}",
-                                    param.to_string_lossy()
-                                );
+                                // let lcparam = param.to_ascii_lowercase();
+                                let sparam: &str = &param.to_string_lossy();
+                                if !state.config.phpdoc.known_tags.contains(&sparam) {
+                                    emitter.emit(Issue::UnknownPHPDocEntry(
+                                        state.pos_from_range(range.clone()),
+                                        format!(
+                                            "Unknown PHPDoc-entry @{}",
+                                            param.to_string_lossy()
+                                        )
+                                        .into(),
+                                    ));
+                                }
                             }
                             _ => {
                                 todo!(
@@ -318,6 +398,8 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
         if generic_templates.len() > 0 {
             class_data.generic_templates = Some(generic_templates);
         }
+        class_data.phpdoc_base_class_name = phpdoc_base_class_name;
+        class_data.phpdoc_interfaces = phpdoc_interfaces;
         if let Some(int) = interfaces {
             class_data.interfaces = int
                 .iter()

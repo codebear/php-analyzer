@@ -36,4 +36,15 @@ impl NamespaceNameAsPrefixNode {
             FullyQualifiedName::new()
         }
     }
+
+    pub fn is_root_anchored(&self) -> bool {
+        let Some(child) = &self.child else {
+            // An namespace_name_as_prefix_node without content represents \name
+            return true;
+        };
+        // The ast is somewhat lacking here. So
+        // the only fix we've found is to sneak in the byte offsets
+        // If the first element starts after self, there is a \ at the beginning
+        child.range.start_byte > self.range.start_byte
+    }
 }

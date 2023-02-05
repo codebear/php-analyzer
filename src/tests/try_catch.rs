@@ -3,6 +3,7 @@ use crate::{tests::evaluate_php_code_in_function, types::union::DiscreteType};
 #[test]
 fn test_property_inherited() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
         try {
             // void

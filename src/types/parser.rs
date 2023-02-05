@@ -1,4 +1,9 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{
+    cell::Cell,
+    ffi::{OsStr, OsString},
+    os::unix::prelude::OsStrExt,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use nom::{
     branch::alt,
@@ -7,7 +12,7 @@ use nom::{
     combinator::opt,
     error::{Error, ErrorKind},
     multi::{many1, separated_list1},
-    sequence::preceded,
+    sequence::{delimited, preceded, terminated},
     Err, IResult,
 };
 
@@ -67,6 +72,31 @@ fn simple_type_name(input: &[u8]) -> IResult<&[u8], Name> {
     })(input)?;
 
     Ok((input, Name::from(result)))
+}
+
+fn php_var_name(input: &[u8]) -> IResult<&[u8], OsString> {
+    #[derive(Clone, Copy)]
+    enum State {
+        First,
+        Dollar,
+        Alpha,
+    }
+    let state = Cell::new(State::First);
+
+    let (input, result) = take_while1(move |x: u8| match state.get() {
+        State::First if x == b'$' => {
+            state.set(State::Dollar);
+            true
+        }
+        State::First => false,
+        State::Dollar if x.is_ascii_alphabetic() => {
+            state.set(State::Alpha);
+            true
+        }
+        State::Dollar => false,
+        State::Alpha => x.is_ascii_alphanumeric(),
+    })(input)?;
+    Ok((input, OsStr::from_bytes(result).into()))
 }
 
 pub fn union_type_with_colon(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], UnionOfTypes> {
@@ -222,6 +252,7 @@ fn one_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ParsedType> {
             class_type(multiline),
             shape_type(multiline),
             callable_type(multiline),
+            tuple_type(multiline),
             normal_type(multiline),
         ))(input)
     }
@@ -250,8 +281,23 @@ fn generic_args(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], Vec<Vec<Con
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, _) = tag(b"<")(input)?;
         let (input, _) = ourspace0(multiline)(input)?;
-        let (input, types) =
-            separated_list1(generic_separator(multiline), union_type(multiline))(input)?;
+        let (input, types) = alt((
+            move |inp| -> IResult<&[u8], Vec<Vec<ConcreteType>>> {
+                // Special-case to map `<*>` to `<mixed>`...
+                let (inp, _) = tag(b"*")(inp)?;
+
+                let ptype = ParsedType::Type(TypeStruct {
+                    type_name: TypeName::Name(Name::from("mixed")),
+                    generics: None,
+                });
+                let concrete_type = ConcreteType {
+                    nullable: false,
+                    ptype,
+                };
+                Ok((inp, vec![vec![concrete_type]]))
+            },
+            separated_list1(generic_separator(multiline), union_type(multiline)),
+        ))(input)?;
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, _) = tag(b">")(input)?;
         Ok((input, types))
@@ -279,8 +325,13 @@ fn callable_details(
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, _) = tag(b"(")(input)?;
         let (input, _) = ourspace0(multiline)(input)?;
-        let (input, types) =
-            separated_list1(generic_separator(multiline), union_type(multiline))(input)?;
+        let (input, types) = separated_list1(
+            generic_separator(multiline),
+            terminated(
+                union_type(multiline),
+                opt(preceded(ourspace0(multiline), php_var_name)),
+            ),
+        )(input)?;
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, _) = tag(b")")(input)?;
         let (input, return_type) = opt(callable_return_type(multiline))(input)?;
@@ -294,7 +345,19 @@ fn callable_return_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], Ret
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, _) = tag(b":")(input)?;
         let (input, _) = ourspace0(multiline)(input)?;
-        union_type(multiline)(input)
+        callable_return_type_details(multiline)(input)
+    }
+}
+
+fn callable_return_type_details(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ReturnType> {
+    move |input: &[u8]| -> IResult<&[u8], ReturnType> {
+        if let (input, Some(return_type)) =
+            opt(delimited(tag(b"("), union_type(multiline), tag(b")")))(input)?
+        {
+            return Ok((input, return_type));
+        };
+        let (input, ctype) = concrete_type(multiline)(input)?;
+        Ok((input, vec![ctype]))
     }
 }
 
@@ -308,5 +371,22 @@ fn class_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ParsedType> {
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, tname) = simple_type_name(input)?;
         Ok((input, ParsedType::ClassType(cname, tname)))
+    }
+}
+
+fn tuple_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ParsedType> {
+    move |input| {
+        let (input, mut noe) = delimited(
+            tag(b"("),
+            separated_list1(tag(b","), union_type(multiline)),
+            tag(b")"),
+        )(input)?;
+
+        let shape_entries: Vec<ShapeEntry> = noe
+            .drain(..)
+            .map(|vtypes| ShapeEntry(None, vtypes))
+            .collect();
+
+        Ok((input, ParsedType::Shape(shape_entries)))
     }
 }

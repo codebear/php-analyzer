@@ -4,6 +4,7 @@ use std::os::unix::prelude::OsStrExt;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autotree::AutoTree;
 use crate::autotree::NodeAccess;
+use crate::config::PHPAnalyzeConfig;
 use crate::issue::IssueEmitter;
 use crate::nodeanalysis::analysis::FirstPassAnalyzeableNode;
 use crate::nodeanalysis::analysis::SecondPassAnalyzeableNode;
@@ -12,6 +13,7 @@ use crate::nodeanalysis::analysis::ThirdPassAnalyzeableNode;
 use super::state::AnalysisState;
 
 pub struct Analyzer {
+    config: PHPAnalyzeConfig,
     get_content: Box<dyn FnMut() -> std::io::Result<Vec<u8>> + Send + Sync>,
     content_id: OsString,
     // file: PHPFile,
@@ -20,18 +22,25 @@ pub struct Analyzer {
 
 impl Analyzer {
     pub fn new(
+        config: PHPAnalyzeConfig,
         content_provider: Box<dyn FnMut() -> std::io::Result<Vec<u8>> + Send + Sync>,
         content_id: OsString,
     ) -> Analyzer {
         Self {
+            config,
             get_content: content_provider,
             content_id,
             tree: None,
         }
     }
 
-    pub fn new_from_buffer(buffer: OsString, ident: Option<OsString>) -> Self {
+    pub fn new_from_buffer(
+        config: PHPAnalyzeConfig,
+        buffer: OsString,
+        ident: Option<OsString>,
+    ) -> Self {
         Self {
+            config,
             get_content: Box::new(move || Ok(Vec::from(buffer.as_bytes()))),
             content_id: ident.unwrap_or_default(),
             tree: None,

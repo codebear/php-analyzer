@@ -29,10 +29,13 @@ impl NamedTypeNode {
                 let fq_name = state.get_fq_symbol_name_from_local_name(&n.get_name());
                 UnionType::from(DiscreteType::Named(n.get_name(), fq_name))
             }
-            NamedTypeChildren::QualifiedName(fq) => UnionType::from(DiscreteType::Named(
-                fq.get_fq_name().get_name().unwrap_or_else(|| Name::new()),
-                fq.get_fq_name(),
-            )),
+            NamedTypeChildren::QualifiedName(fq) => {
+                let fq_name = fq.get_fq_name(state);
+                UnionType::from(DiscreteType::Named(
+                    fq_name.get_name().unwrap_or_else(|| Name::new()),
+                    fq_name,
+                ))
+            }
             _ => todo!(
                 "Fint type from NamedType in {}: {:?}",
                 state.pos_as_string(self.range),

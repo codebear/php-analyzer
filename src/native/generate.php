@@ -233,12 +233,14 @@ foreach (get_defined_functions()['internal'] as $function) {
             inline_phpdoc_type: None,
             phpdoc_entry: None,
             phpdoc_type: None,
+            variadic: %s,
         }",
             $param->name,
             "None",
             $param->isDefaultValueAvailable() ? "Some(" . rust_value($param->getDefaultValue()) . ")" : "None",
             $param->allowsNull() ? "true" : "false",
-            $param->isOptional() ? "true" : "false"
+            $param->isOptional() ? "true" : "false",
+            $param->isVariadic() ? "true" : "false"
         );
         $args[] = $arg;
     }

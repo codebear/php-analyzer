@@ -3,6 +3,7 @@ use crate::{tests::evaluate_php_code_in_function, types::union::DiscreteType};
 #[test]
 fn test_dom_api1() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
         $node = new DOMElement('div');
         $node->setAttribute('foo', 'bar');
@@ -20,6 +21,7 @@ fn test_dom_api1() {
 #[test]
 fn test_dom_api2() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
 
         $doc = new DOMDocument();
@@ -39,6 +41,7 @@ fn test_dom_api2() {
 #[test]
 fn test_dom_api3() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
 
         $doc = new DOMDocument();

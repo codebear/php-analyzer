@@ -42,6 +42,7 @@ fn object_type() {
 #[test]
 fn object_method_call_1() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         "
 
         class Balle {
@@ -60,6 +61,7 @@ fn object_method_call_1() {
 #[test]
 fn object_method_call_2() {
     let res = evaluate_php_code_in_function(
+        Default::default(),
         "
 
         class Balle {
@@ -88,6 +90,7 @@ fn object_method_call_2() {
 #[test]
 fn object_method_call_inherited() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         "
 
         class A {
@@ -116,6 +119,7 @@ fn object_method_call_inherited() {
 #[test]
 fn test_static_member_variable() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
         class X {
             static $foo = 42;
@@ -135,6 +139,7 @@ fn test_static_member_variable() {
 #[test]
 fn test_this_type() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
         class X {
             function foo() {
@@ -155,6 +160,7 @@ fn test_this_type() {
 #[test]
 fn test_property_native_type() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
         class X {
             public int $foo = 0;
@@ -171,6 +177,7 @@ fn test_property_native_type() {
 #[test]
 fn test_property_doccomment_native_type() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
         class X {
             /**
@@ -190,6 +197,7 @@ fn test_property_doccomment_native_type() {
 #[test]
 fn test_property_doccomment_class_type() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
         class Y {
             function ick(): string {
@@ -250,7 +258,7 @@ fn test_property_doccomment_class_type_in_ns() {
         .into(),
     )];
 
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
 
     // eprintln!("BAR: {:#?}", result);
     assert_eq!(result.issues.len(), 0);
@@ -276,6 +284,7 @@ fn test_property_doccomment_class_type_in_ns() {
 #[test]
 fn test_property_inherited() {
     let result = evaluate_php_code_in_function(
+        Default::default(),
         r#"
         class A {
             public int $foo = 0;

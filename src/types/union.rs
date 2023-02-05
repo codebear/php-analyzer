@@ -112,6 +112,8 @@ pub enum DiscreteType {
     String,
     Bool,
     Mixed,
+    /// Requires PHP 7.1
+    Iterable,
 
     False,
     /// General common array, of unknown content
@@ -222,6 +224,26 @@ impl UnionType {
         self.types.len() > 0
     }
 
+    pub(crate) fn is_float(&self) -> bool {
+        for t in &self.types {
+            match t {
+                DiscreteType::Float => (),
+                _ => return false,
+            }
+        }
+        self.types.len() > 0
+    }
+
+    pub(crate) fn is_int(&self) -> bool {
+        for t in &self.types {
+            match t {
+                DiscreteType::Int => (),
+                _ => return false,
+            }
+        }
+        self.types.len() > 0
+    }
+
     pub fn len(&self) -> usize {
         self.types.len()
     }
@@ -240,8 +262,9 @@ impl UnionType {
         parsed_type: UnionOfTypes,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
+        temp_generics: Option<&Vec<Name>>,
     ) -> Option<UnionType> {
-        from_vec_parsed_type(parsed_type, state, Some(emitter))
+        from_vec_parsed_type(parsed_type, state, Some(emitter), temp_generics)
     }
 
     pub fn parse_with_remainder(
@@ -260,6 +283,7 @@ impl UnionType {
         parse_result: Result<(&[u8], Vec<Vec<ConcreteType>>), nom::Err<Error<&[u8]>>>,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
+        temp_generics: Option<&Vec<Name>>,
     ) -> (Option<Vec<Option<UnionType>>>, Option<OsString>) {
         let (rest, parsed_types) = if let Some((rest, parsed_type)) = parse_result.ok() {
             (rest, parsed_type)
@@ -278,7 +302,7 @@ impl UnionType {
 
         for parsed_type in &parsed_types {
             let found_types = if let Some(utype) =
-                from_vec_parsed_type(parsed_type.clone(), state, Some(emitter))
+                from_vec_parsed_type(parsed_type.clone(), state, Some(emitter), temp_generics)
             {
                 Some(utype)
             } else {
@@ -312,16 +336,17 @@ impl UnionType {
         } else {
             None
         };
-        let found_types =
-            if let Some(utype) = from_vec_parsed_type(parsed_type.clone(), state, Some(emitter)) {
-                Some(utype)
-            } else {
-                eprintln!(
-                    "Parsing of type: {:?} failed, parsed into: {:?}",
-                    type_str, parsed_type
-                );
-                None
-            };
+        let found_types = if let Some(utype) =
+            from_vec_parsed_type(parsed_type.clone(), state, Some(emitter), None)
+        {
+            Some(utype)
+        } else {
+            eprintln!(
+                "Parsing of type: {:?} failed, parsed into: {:?}",
+                type_str, parsed_type
+            );
+            None
+        };
 
         (found_types, remainder)
     }
@@ -346,7 +371,7 @@ impl UnionType {
     ) -> Option<Vec<Option<UnionType>>> {
         let parse_result = only_generic_args(true)(type_str.as_bytes());
         let (utype, remainder) =
-            Self::handle_parse_vec_result(type_str.clone(), parse_result, state, emitter);
+            Self::handle_parse_vec_result(type_str.clone(), parse_result, state, emitter, None);
         Self::handle_remainder(utype, remainder, state, emitter, range)
     }
 
@@ -411,7 +436,7 @@ impl UnionType {
         x
     }
 
-    pub(crate) fn single_type_excluding_null(&self) -> Option<DiscreteType> {
+    /*  pub(crate) fn single_type_excluding_null(&self) -> Option<DiscreteType> {
         let mut types = BTreeSet::new();
         for t in &self.types {
             match t {
@@ -426,7 +451,7 @@ impl UnionType {
         } else {
             None
         }
-    }
+    } */
 
     pub(crate) fn is_nullable(&self) -> bool {
         for t in &self.types {
@@ -486,6 +511,56 @@ impl UnionType {
             t.check_type_casing(range, state, emitter)
         }
     }
+
+    pub(crate) fn can_be_cast_to_string(&self) -> Option<Consequence> {
+        let mut consequences: Vec<Consequence> = vec![];
+        for tp in &self.types {
+            match tp {
+                DiscreteType::String | DiscreteType::Int => consequences.push(Consequence::Ok),
+                DiscreteType::Float => consequences.push(Consequence::Nonidiomatic(
+                    "Floats may be indeterministic in string-representation",
+                )),
+                DiscreteType::Array => consequences.push(Consequence::Warning(
+                    "Cast of array to string will trigger warning",
+                )),
+                DiscreteType::Named(_, _) => {
+                    // Check if object implements __toString
+                    return crate::missing_none!("Check if type {} can be cast to string", tp);
+                }
+                DiscreteType::Special(SpecialType::ClassString(_)) => {
+                    consequences.push(Consequence::Ok)
+                }
+                _ => {
+                    return crate::missing_none!("Check if type {} can be cast to string", tp);
+                }
+            }
+        }
+        Consequence::most_severe(consequences)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Consequence {
+    /// Ok
+    Ok,
+    /// Will run OK, but not idiomatic
+    Nonidiomatic(&'static str),
+    /// May emit notice in some cases
+    Notice(&'static str),
+    /// May emit warning in some cases
+    Warning(&'static str),
+    /// May fail with error in some cases
+    Error(&'static str),
+}
+
+impl Consequence {
+    fn most_severe(_consequences: Vec<Consequence>) -> Option<Consequence> {
+        todo!()
+    }
+}
+
+impl Eq for Consequence {
+    // void
 }
 
 impl DiscreteType {
@@ -508,6 +583,7 @@ impl DiscreteType {
             DiscreteType::Resource => (),
             DiscreteType::String => (),
             DiscreteType::Mixed => (),
+            DiscreteType::Iterable => (),
             DiscreteType::Bool => (),
             DiscreteType::False => (),
             DiscreteType::Array => (),
@@ -539,6 +615,9 @@ impl DiscreteType {
                 if let Some(_cdata_handle) = state.symbol_data.get_class(&fqname.into()) {
                     // alles ok?
                 } else {
+                    // let fqnames: String = format!("{}", fqname);
+
+                    // eprintln!("BALLE3 Unknown class {}, {:?}", fqnames, fqname);
                     emitter.emit(Issue::UnknownClass(
                         state.pos_from_range(range.clone()),
                         fqname.clone(),
@@ -564,6 +643,9 @@ impl DiscreteType {
                             // alles ok?
                             crate::missing!("Validate that generic arguments are as expected");
                         } else {
+                            // let fqnames: String = format!("{}", fqname);
+
+                            // eprintln!("BALLE4 Unknown class {}, {:?}", fqnames, fqname);
                             emitter.emit(Issue::UnknownClass(
                                 state.pos_from_range(range.clone()),
                                 fqname.clone(),
@@ -585,6 +667,7 @@ impl DiscreteType {
             DiscreteType::Resource => true,
             DiscreteType::String => true,
             DiscreteType::Bool => true,
+            DiscreteType::Iterable => true,
             DiscreteType::Mixed => true,
             DiscreteType::False => false,
             DiscreteType::Array => true,
@@ -612,6 +695,9 @@ impl DiscreteType {
             DiscreteType::Resource => false,
             DiscreteType::String => true,
             DiscreteType::Bool => true,
+            // An iterable might be an array, and arrays
+            // can evaluate as false
+            DiscreteType::Iterable => true,
             DiscreteType::Mixed => true,
             DiscreteType::False => true,
             DiscreteType::Array => true,
@@ -650,6 +736,7 @@ impl DiscreteType {
             DiscreteType::String => false,
             DiscreteType::Bool => false,
             DiscreteType::Mixed => true,
+            DiscreteType::Iterable => true,
             DiscreteType::False => false,
             DiscreteType::Array => false,
             DiscreteType::Object => true,
@@ -705,6 +792,7 @@ impl DiscreteType {
             DiscreteType::String => (),
             DiscreteType::Bool => (),
             DiscreteType::Mixed => (),
+            DiscreteType::Iterable => (),
             DiscreteType::False => (),
             DiscreteType::Array => (),
             DiscreteType::Object => (),
@@ -745,10 +833,16 @@ pub(crate) fn from_vec_parsed_type(
     ptypes: Vec<ConcreteType>,
     state: &mut AnalysisState,
     maybe_emitter: Option<&dyn IssueEmitter>,
+    temp_generics: Option<&Vec<Name>>,
 ) -> Option<UnionType> {
     let mut utype = UnionType::new();
     for ptype in ptypes {
-        utype.merge_into(from_parsed_type(ptype, state, maybe_emitter)?);
+        utype.merge_into(from_parsed_type(
+            ptype,
+            state,
+            maybe_emitter,
+            temp_generics,
+        )?);
     }
     Some(utype)
 }
@@ -757,9 +851,17 @@ fn from_parsed_type(
     ctype: ConcreteType,
     state: &mut AnalysisState,
     maybe_emitter: Option<&dyn IssueEmitter>,
+    temp_generics: Option<&Vec<Name>>,
 ) -> Option<UnionType> {
+    let generic_templates = state.get_generic_templates(temp_generics);
+    /*   eprintln!(
+        "CTYPE: {}, AVAILABLE GENERICS: {:?}, TEMP_GENERICS: {:?}",
+        ctype, generic_templates, temp_generics
+    );*/
     let utype = match ctype.ptype {
-        ParsedType::Type(type_struct) => from_type_struct(type_struct, state, maybe_emitter),
+        ParsedType::Type(type_struct) => {
+            from_type_struct(type_struct, state, maybe_emitter, temp_generics)
+        }
         ParsedType::Shape(entries) => {
             let mut shape = ShapeType::new();
             let mut key_idx = 0;
@@ -776,7 +878,7 @@ fn from_parsed_type(
                     key_idx += 1;
                     (k, false)
                 };
-                let utype = from_vec_parsed_type(entry.1, state, maybe_emitter)?;
+                let utype = from_vec_parsed_type(entry.1, state, maybe_emitter, temp_generics)?;
                 shape
                     .map
                     .insert(key.into(), ShapeTypeValue { optional, utype });
@@ -785,26 +887,28 @@ fn from_parsed_type(
         }
         ParsedType::Callable(args, cond_return) => {
             let return_type = match cond_return {
-                Some(rt) if rt.len() > 0 => match from_vec_parsed_type(rt, state, maybe_emitter) {
-                    Some(t) => t,
-                    None => {
-                        crate::missing!("Failed to parse return type correctly");
-                        DiscreteType::Unknown.into()
+                Some(rt) if rt.len() > 0 => {
+                    match from_vec_parsed_type(rt, state, maybe_emitter, temp_generics) {
+                        Some(t) => t,
+                        None => {
+                            crate::missing!("Failed to parse return type correctly");
+                            DiscreteType::Unknown.into()
+                        }
                     }
-                },
+                }
                 _ => DiscreteType::Void.into(),
             };
             let arg_vector: Vec<UnionType> = args
                 .iter()
-                .map(
-                    |x| match from_vec_parsed_type(x.clone(), state, maybe_emitter) {
+                .map(|x| {
+                    match from_vec_parsed_type(x.clone(), state, maybe_emitter, temp_generics) {
                         Some(utype) => utype,
                         None => {
                             crate::missing!("Failed to parse argument type correctly");
                             DiscreteType::Unknown.into()
                         }
-                    },
-                )
+                    }
+                })
                 .collect();
             Some(DiscreteType::TypedCallable(arg_vector, return_type).into())
         }
@@ -842,6 +946,7 @@ fn from_type_struct(
     type_struct: TypeStruct,
     state: &mut AnalysisState,
     maybe_emitter: Option<&dyn IssueEmitter>,
+    temp_generics: Option<&Vec<Name>>,
 ) -> Option<UnionType> {
     let dtype = if let TypeName::Name(tname) = &type_struct.type_name {
         let lc_type_str = tname.to_os_string().to_ascii_lowercase();
@@ -859,6 +964,7 @@ fn from_type_struct(
             b"static" => Some(DiscreteType::Special(SpecialType::Static)),
             b"mixed" => Some(DiscreteType::Mixed),
             b"void" => Some(DiscreteType::Void),
+            b"iterable" => Some(DiscreteType::Iterable),
             b"null" => Some(DiscreteType::NULL),
             b"class-string" => {
                 if let Some(gen) = &type_struct.generics {
@@ -897,12 +1003,27 @@ fn from_type_struct(
             b"array" => {
                 if let Some(gen) = &type_struct.generics {
                     if gen.len() == 2 {
-                        let key = from_vec_parsed_type(gen[0].clone(), state, maybe_emitter)?;
-                        let value = from_vec_parsed_type(gen[1].clone(), state, maybe_emitter)?;
+                        let key = from_vec_parsed_type(
+                            gen[0].clone(),
+                            state,
+                            maybe_emitter,
+                            temp_generics,
+                        )?;
+                        let value = from_vec_parsed_type(
+                            gen[1].clone(),
+                            state,
+                            maybe_emitter,
+                            temp_generics,
+                        )?;
 
                         Some(DiscreteType::HashMap(key, value))
                     } else if gen.len() == 1 {
-                        let value = from_vec_parsed_type(gen[0].clone(), state, maybe_emitter)?;
+                        let value = from_vec_parsed_type(
+                            gen[0].clone(),
+                            state,
+                            maybe_emitter,
+                            temp_generics,
+                        )?;
                         Some(DiscreteType::Vector(value))
                     } else {
                         // void
@@ -918,10 +1039,11 @@ fn from_type_struct(
         None
     };
 
+    let generic_templates = state.get_generic_templates(temp_generics);
+
     if type_struct.generics.is_none() {
         if let TypeName::Name(x) = &type_struct.type_name {
-            let data = state.get_generic_templates();
-            if let Some(data) = data {
+            if let Some(data) = &generic_templates {
                 if data.contains(&x) {
                     return Some(DiscreteType::Template(x.clone()).into());
                 }
@@ -943,7 +1065,61 @@ fn from_type_struct(
         dt
     } else {
         let cname = match &type_struct.type_name {
-            TypeName::Name(name) => ClassName::new_with_analysis_state(name, state),
+            TypeName::Name(name) => {
+                match (&type_struct.generics, &generic_templates) {
+                    (None, Some(templates)) if templates.contains(name) => {
+                        // The type-name is in the list of available templates
+                        eprintln!(
+                            "Trying to create a union-type from a type-struct: {:?}",
+                            &type_struct
+                        );
+                        eprintln!("generic templates: {:?}", generic_templates);
+                        panic!();
+                        todo!();
+                    }
+                    (Some(_), Some(templates)) if templates.contains(name) => {
+                        // The type-name is in the list of available templates
+                        // but it also has generic arguments itself?
+                        // this is probably wrong in some sense
+                        panic!();
+                    }
+                    (None, Some(templates)) => {
+                        ClassName::new_with_analysis_state(name, state)
+                        /*                         eprintln!("TEMPLATES: {:?}", templates);
+                        eprintln!("name: {:?}", name);
+                        eprintln!("contains {:?}", templates.contains(name));
+                        eprintln!(
+                            "BALLE: {:?}",
+                            ClassName::new_with_analysis_state(name, state)
+                        );
+                        eprintln!(
+                            "Trying to create a union-type from a type-struct: {:?}",
+                            &type_struct
+                        );
+                        eprintln!("generic templates: {:?}", state.get_generic_templates(None));
+                        panic!();
+                        todo!();*/
+                    }
+                    (None, None) => ClassName::new_with_analysis_state(name, state),
+                    (Some(_), None) => ClassName::new_with_analysis_state(name, state),
+                    (Some(a), Some(b)) => {
+                        ClassName::new_with_analysis_state(name, state)
+                        /*                         eprintln!(
+                            "\nTrying to create a union-type from a type-struct: {}",
+                            &type_struct
+                        );
+                        //                         eprintln!("Type: {}", &type_struct);
+                        eprintln!(
+                            "\ngeneric templates: {:?}",
+                            state.get_generic_templates(None)
+                        );
+
+                        eprintln!("\na={:?}, b={:?}\n", &a, &b);
+                        panic!();*/
+                        //    ClassName::new_with_analysis_state(name, state),
+                    }
+                }
+            }
             TypeName::FQName(fq_name) => ClassName::new_with_fq_name(fq_name.clone()),
             TypeName::RelativeName(path) => {
                 let mut fq_name = if let Some(ns) = &state.namespace {
@@ -965,7 +1141,12 @@ fn from_type_struct(
     if let Some(generic_args) = type_struct.generics {
         let mut generics: Vec<UnionType> = vec![];
         for gen_arg in generic_args {
-            generics.push(from_vec_parsed_type(gen_arg, state, maybe_emitter)?);
+            generics.push(from_vec_parsed_type(
+                gen_arg,
+                state,
+                maybe_emitter,
+                temp_generics,
+            )?);
         }
 
         base_type = DiscreteType::Generic(Box::new(base_type), generics);
@@ -999,6 +1180,7 @@ impl Display for DiscreteType {
                 DiscreteType::Array => "array".to_string(),
                 DiscreteType::Callable => "callable".to_string(),
                 DiscreteType::Mixed => "mixed".to_string(),
+                DiscreteType::Iterable => "iterable".to_string(),
                 DiscreteType::TypedCallable(arg_types, return_type) => format!(
                     "callable({}):{}",
                     arg_types

@@ -148,7 +148,7 @@ impl PropertyElementNode {
                 match entry {
                     PHPDocEntry::Var(range, property_type, _opt_name, _opt_desc) => {
                         comment_type =
-                            UnionType::from_parsed_type(property_type.clone(), state, emitter)
+                            UnionType::from_parsed_type(property_type.clone(), state, emitter, None)
                                 .map(|x| (x, range.clone()))
                     }
                     PHPDocEntry::Anything(range, comment) if doc_comment.entries.len() == 1 => {

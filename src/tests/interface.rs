@@ -34,7 +34,7 @@ fn test_interface_references() {
             .into(),
         ),
     ];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     /* if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();

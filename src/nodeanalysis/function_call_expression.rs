@@ -167,7 +167,7 @@ impl FunctionCallExpressionFunction {
             }
             FunctionCallExpressionFunction::ParenthesizedExpression(_) => None, // Sannsynligvis anonym funksjon
             FunctionCallExpressionFunction::QualifiedName(qn) => {
-                Some(self.fq_name_or_global_name(state, qn.get_fq_name()))
+                Some(self.fq_name_or_global_name(state, qn.get_fq_name(state)))
             }
             _ => crate::missing_none!("finne funksjonsnavn ut fra: {:?}", self.kind()),
         }
@@ -194,10 +194,17 @@ fn analyze_define_call(
         emitter.emit(Issue::ConditionalConstantDeclaration(call.pos(state)));
     }
 
-    if let Some(_) = state.namespace {
-        crate::missing!("Constant in namespace?");
+    /*
+    * namespace is irrelevant on calls to define
+    if let Some(ns) = &state.namespace {
+        crate::missing!(
+            "Constant in namespace {} ({:?}:{})?",
+            ns,
+            state.filename,
+            call.pos(state).range.start_point.row
+        );
         return;
-    }
+    }*/
 
     let mut args = call.arguments.children.iter();
 
@@ -252,8 +259,9 @@ impl FirstPassAnalyzeableNode for FunctionCallExpressionNode {
     fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(fname) = self.function.get_fq_function_name(state, emitter) {
             // FIXME check if newer rust does this cast automatically
-            if fname.to_ascii_lowercase() == b"\\define" as &[u8] {
-                analyze_define_call(self, state, emitter)
+            match fname.to_ascii_lowercase().to_os_string().as_bytes() {
+                b"\\define" => analyze_define_call(self, state, emitter),
+                _ => (),
             }
         }
     }

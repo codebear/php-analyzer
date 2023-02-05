@@ -15,6 +15,7 @@ use crate::{
 
 use crate::autotree::NodeAccess;
 
+#[derive(Debug)]
 enum ChildNode {
     ExtraNode(Box<ExtraChild>),
     ChildNode(Box<FormalParametersChildren>),
@@ -35,6 +36,7 @@ impl FormalParametersNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
         param_map: &HashMap<Name, PHPDocEntry>,
+        temp_generics: Option<&Vec<Name>>,
     ) -> Vec<FunctionArgumentData> {
         let mut params = vec![];
         let mut raw_comment: Option<(OsString, Range)> = None;
@@ -76,7 +78,7 @@ impl FormalParametersNode {
                             if let Some(PHPDocEntry::Param(_range, types, _name, _desc)) =
                                 &phpdoc_entry
                             {
-                                from_vec_parsed_type(types.clone(), state, None)
+                                from_vec_parsed_type(types.clone(), state, None, temp_generics)
                             } else {
                                 None
                             };
@@ -90,12 +92,45 @@ impl FormalParametersNode {
                             inline_phpdoc_type: inline_phpdoc_type.clone(),
                             phpdoc_entry,
                             phpdoc_type,
+                            variadic: false,
                         };
 
                         params.push(data);
                     }
-                    FormalParametersChildren::VariadicParameter(_) => {
-                        crate::missing!("Variadic parameter")
+                    FormalParametersChildren::VariadicParameter(variadic) => {
+                        let name = variadic.get_variable_name();
+                        let arg_type = variadic.get_utype(state, emitter);
+                        let default_value = None;
+                        let nullable = false; // Hmm
+                        let optional = true;
+
+                        let mut vec = vec![b'$'];
+                        vec.extend(name.as_bytes());
+                        let vname = Name::from(vec);
+
+                        let phpdoc_entry = param_map.get(&vname).cloned();
+                        let phpdoc_type =
+                            if let Some(PHPDocEntry::Param(_range, types, _name, _desc)) =
+                                &phpdoc_entry
+                            {
+                                from_vec_parsed_type(types.clone(), state, None, temp_generics)
+                            } else {
+                                None
+                            };
+
+                        let data = FunctionArgumentData {
+                            name,
+                            arg_type,
+                            default_value,
+                            nullable,
+                            optional,
+                            inline_phpdoc_type: inline_phpdoc_type.clone(),
+                            phpdoc_entry,
+                            phpdoc_type,
+                            variadic: true,
+                        };
+
+                        params.push(data);
                     }
 
                     FormalParametersChildren::Comment(c) => {

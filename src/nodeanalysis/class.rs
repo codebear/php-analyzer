@@ -61,7 +61,7 @@ pub trait AnalysisOfClassBaseLikeNode: NodeAccess {
                     BaseClauseChildren::QualifiedName(n) => {
                         res.push(ClassName {
                             name: n.get_name(),
-                            fq_name: n.get_fq_name(),
+                            fq_name: n.get_fq_name(state),
                         });
                     }
                     BaseClauseChildren::Comment(c) => {

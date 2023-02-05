@@ -18,7 +18,7 @@ fn test_inline_doccomment() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
@@ -47,7 +47,7 @@ fn test_inline_returntype() {
             "#
         .into(),
     )];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
@@ -85,7 +85,7 @@ pub fn test_noe() {
         .into(),
     )];
 
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     if let Some(data) = &result.symbol_data {
         let state = AnalysisState::new_with_symbols(data.clone());
         if let Some(noe) = data.get_class(&ClassName::new_with_fq_name("\\Foo".into())) {
@@ -121,7 +121,7 @@ pub fn test_inline_generics() -> Result<(), &'static str> {
         .into(),
     )];
 
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     let symbols = result.symbol_data.ok_or("symbol data missing")?;
     {
         let state = AnalysisState::new_with_symbols(symbols.clone());

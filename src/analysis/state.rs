@@ -7,6 +7,7 @@ use tree_sitter::Point;
 use tree_sitter::Range;
 
 use crate::autonodes::any::AnyNodeRef;
+use crate::config::PHPAnalyzeConfig;
 use crate::issue::IssuePosition;
 use crate::symboldata::class::ClassName;
 use crate::symboldata::class::ClassType;
@@ -216,6 +217,7 @@ pub struct AnalysisState {
     pub last_doc_comment: Option<(OsString, Range)>,
     pub in_conditional_branch: bool,
     pub looking_for_node: Option<LookingForNode>,
+    pub config: PHPAnalyzeConfig,
 }
 
 impl AnalysisState {
@@ -236,6 +238,7 @@ impl AnalysisState {
             last_doc_comment: None,
             in_conditional_branch: false,
             looking_for_node: None,
+            config: Default::default(),
         }
     }
 
@@ -337,15 +340,30 @@ impl AnalysisState {
         self.in_method("__construct")
     }
 
-    pub(crate) fn get_generic_templates(&self) -> Option<Vec<Name>> {
+    ///
+    /// In some parse-situations (especially parsing of method php-doc-block)
+    /// We discover template-definitions AND usage of the same templates, before
+    /// FunctionState is available in the state-object. Therefore a generic-map
+    /// is optionally supplied
+    pub(crate) fn get_generic_templates(
+        &self,
+        temp_generics: Option<&Vec<Name>>,
+    ) -> Option<Vec<Name>> {
         let class_templates = self.in_class.as_ref().map(|x| x.get_data()).and_then(|x| {
             let read = x.read().unwrap();
             read.get_generic_templates()
         });
-        let func_templates = self
+        let mut func_templates = self
             .in_function_stack
             .last()
             .and_then(|x| x.get_generic_templates());
+
+        let func_templates = match (func_templates, temp_generics) {
+            (Some(_), Some(_)) => todo!("Both generic-sources are populated..."),
+            (None, Some(a)) => Some(a.clone()),
+            (Some(a), None) => Some(a),
+            _ => None,
+        };
 
         match (class_templates, func_templates) {
             (Some(mut class_templates), Some(func_templates)) => {
@@ -358,6 +376,7 @@ impl AnalysisState {
         }
     }
 }
+
 impl LookingForNode {
     pub fn found(&self, child: AnyNodeRef, state: &mut AnalysisState, path: &Vec<AnyNodeRef>) {
         let mut handle = self.callback.write().unwrap();

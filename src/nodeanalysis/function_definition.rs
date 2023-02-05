@@ -132,9 +132,13 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                     for entry in &doc_comment.entries {
                         match entry {
                             PHPDocEntry::Return(range, ptype, _desc) => {
-                                comment_return_type =
-                                    UnionType::from_parsed_type(ptype.clone(), state, emitter)
-                                        .map(|x| (x, range.clone()));
+                                comment_return_type = UnionType::from_parsed_type(
+                                    ptype.clone(),
+                                    state,
+                                    emitter,
+                                    Some(&function_template_params),
+                                )
+                                .map(|x| (x, range.clone()));
                             }
                             PHPDocEntry::Param(_, _, osstr_name, _) => {
                                 if let Some(osstr_name) = osstr_name {
@@ -175,9 +179,12 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
 
         let php_return_type = self.get_php_declared_return_type(state, emitter);
 
-        let arguments = self
-            .parameters
-            .analyze_first_pass_parameters(state, emitter, &param_map);
+        let arguments = self.parameters.analyze_first_pass_parameters(
+            state,
+            emitter,
+            &param_map,
+            Some(&function_template_params),
+        );
 
         let mut maybe_fdata = None;
         if !is_dup {

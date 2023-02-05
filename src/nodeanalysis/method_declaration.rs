@@ -126,6 +126,41 @@ impl MethodDeclarationNode {
                 .clone(),
         )
     }
+
+    fn get_doc_comment_declared_templates(
+        &self,
+        doc_comment: &PHPDocComment,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Vec<Name> {
+        let mut method_template_params = vec![];
+
+        for entry in &doc_comment.entries {
+            match entry {
+                PHPDocEntry::Template(range, t, _) => {
+                    let generic_templates =
+                        state.get_generic_templates(Some(&method_template_params));
+                    let temp_name: Name = t.into();
+                    if let Some(gen) = generic_templates {
+                        if gen.contains(&temp_name) {
+                            emitter.emit(Issue::DuplicateTemplate(
+                                state.pos_from_range(range.clone()),
+                                temp_name,
+                            ))
+                        } else {
+                            // eprintln!("fant 1 {}", temp_name);
+                            method_template_params.push(temp_name);
+                        }
+                    } else {
+                        // eprintln!("fant 2 {}", temp_name);
+                        method_template_params.push(temp_name);
+                    }
+                }
+                _ => (),
+            }
+        }
+        method_template_params
+    }
 }
 
 impl FirstPassAnalyzeableNode for MethodDeclarationNode {
@@ -152,41 +187,46 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
         if let Some((doc_comment, range)) = &state.last_doc_comment {
             match PHPDocComment::parse(doc_comment, range) {
                 Ok(doc_comment) => {
+                    // First check for templates
+                    method_template_params =
+                        self.get_doc_comment_declared_templates(&doc_comment, state, emitter);
+                    // TODO type-parsing expects generic-information in FunctionData in state...
+
+                    // Then check the remaining entries
                     for entry in &doc_comment.entries {
                         match entry {
                             PHPDocEntry::Return(range, ptype, _desc) => {
-                                comment_return_type =
-                                    UnionType::from_parsed_type(ptype.clone(), state, emitter)
-                                        .map(|x| (x, range.clone()));
+                                comment_return_type = UnionType::from_parsed_type(
+                                    ptype.clone(),
+                                    state,
+                                    emitter,
+                                    Some(&method_template_params),
+                                )
+                                .map(|x| (x, range.clone()));
                             }
-                            PHPDocEntry::Param(_, _, osstr_name, _) => {
+                            PHPDocEntry::Param(range, vtype, osstr_name, desc) => {
                                 if let Some(osstr_name) = osstr_name {
                                     let name: Name = osstr_name.into();
                                     if param_map.contains_key(&name) {
-                                        crate::missing!("Emit duplicate phpdoc param name");
+                                        emitter.emit(Issue::InvalidPHPDocEntry(
+                                            state.pos_from_range(range.clone()),
+                                            "Duplicate @param-entry".into(),
+                                        ))
                                     } else {
                                         param_map.insert(name, entry.clone());
                                     }
                                 } else {
-                                    crate::missing!("Emit phpdoc param without name");
+                                    emitter.emit(Issue::InvalidPHPDocEntry(
+                                        state.pos_from_range(range.clone()),
+                                        format!(
+                                            "@param-entry is missing $param-name, [{:?}] [{:?}] [{:?}]",
+                                            vtype, osstr_name, desc
+                                        )
+                                        .into(),
+                                    ))
                                 }
                             }
-                            PHPDocEntry::Template(range, t, _) => {
-                                let generic_templates = state.get_generic_templates();
-                                let temp_name: Name = t.into();
-                                if let Some(gen) = generic_templates {
-                                    if gen.contains(&temp_name) {
-                                        emitter.emit(Issue::DuplicateTemplate(
-                                            state.pos_from_range(range.clone()),
-                                            temp_name,
-                                        ))
-                                    } else {
-                                        method_template_params.push(temp_name);
-                                    }
-                                } else {
-                                    method_template_params.push(temp_name);
-                                }
-                            }
+
                             PHPDocEntry::Var(range, _, _, _) => {
                                 emitter.emit(Issue::MisplacedPHPDocEntry(
                                     state.pos_from_range(range.clone()),
@@ -220,9 +260,12 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
         }
 
         let method_data = self.get_method_data(state).unwrap();
-        let arguments = self
-            .parameters
-            .analyze_first_pass_parameters(state, emitter, &param_map);
+        let arguments = self.parameters.analyze_first_pass_parameters(
+            state,
+            emitter,
+            &param_map,
+            Some(&method_template_params),
+        );
 
         {
             // We scope the locked state to make it as short as possible
@@ -235,6 +278,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
             unlocked.visibility = visibility;
             unlocked.phpdoc = phpdoc;
             unlocked.arguments = arguments;
+            unlocked.generic_templates = Some(method_template_params);
         }
 
         // eprintln!("Tolket metode: {:?}", method_data);
@@ -254,6 +298,15 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
         {
             let method_data = locked_data.read().unwrap();
             if let Some(phpdoc) = &method_data.phpdoc {
+                // First check for templates
+                let method_template_params_list =
+                    self.get_doc_comment_declared_templates(&phpdoc, state, emitter);
+                let method_template_params = if method_template_params_list.len() > 0 {
+                    Some(&method_template_params_list)
+                } else {
+                    None
+                };
+
                 for entry in &phpdoc.entries {
                     let (range, concrete_types) = match entry {
                         PHPDocEntry::Param(range, ptype, _pname, _pdesc) => (range, ptype),
@@ -261,9 +314,12 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
                         _ => continue,
                     };
 
-                    if let Some(utype) =
-                        UnionType::from_parsed_type(concrete_types.clone(), state, emitter)
-                    {
+                    if let Some(utype) = UnionType::from_parsed_type(
+                        concrete_types.clone(),
+                        state,
+                        emitter,
+                        method_template_params,
+                    ) {
                         utype.ensure_valid(state, emitter, range, true);
                     } else {
                         emitter.emit(Issue::InvalidPHPDocEntry(

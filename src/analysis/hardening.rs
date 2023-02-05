@@ -173,27 +173,59 @@ impl BranchTypeHardening for BinaryExpressionNode {
         state: &mut AnalysisState,
     ) -> Arc<RwLock<Scope>> {
         match &*self.operator {
-            BinaryExpressionOperator::NotEqual(_, _) => crate::missing!(),
-            BinaryExpressionOperator::NotIdentical(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Mod(_, _) => crate::missing!(),
-            BinaryExpressionOperator::BinaryAnd(_, _) => crate::missing!(),
-            BinaryExpressionOperator::BooleanAnd(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Mult(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Add(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Sub(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Concat(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Div(_, _) => crate::missing!(),
-            BinaryExpressionOperator::LessThan(_, _) => crate::missing!(),
-            BinaryExpressionOperator::LeftShift(_, _) => crate::missing!(),
-            BinaryExpressionOperator::LessThanOrEqual(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Spaceship(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Equal(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Identical(_, _) => crate::missing!(),
-            BinaryExpressionOperator::GreaterThan(_, _) => crate::missing!(),
-            BinaryExpressionOperator::GreaterThanOrEqual(_, _) => crate::missing!(),
-            BinaryExpressionOperator::RightShift(_, _) => crate::missing!(),
-            BinaryExpressionOperator::BinaryXor(_, _) => crate::missing!(),
-            BinaryExpressionOperator::And(_, _) => crate::missing!(),
+            BinaryExpressionOperator::NotEqual(_, _) => {
+                crate::missing!("BinaryExpressionOperator::NotEqual")
+            }
+            BinaryExpressionOperator::NotIdentical(_, _) => {
+                crate::missing!("BinaryExpressionOperator::NotIdentical")
+            }
+            BinaryExpressionOperator::Mod(_, _) => crate::missing!("BinaryExpressionOperator::Mod"),
+            BinaryExpressionOperator::BinaryAnd(_, _) => {
+                crate::missing!("BinaryExpressionOperator::BinaryAnd")
+            }
+            BinaryExpressionOperator::BooleanAnd(_, _) => {
+                crate::missing!("BinaryExpressionOperator::BooleanAnd")
+            }
+            BinaryExpressionOperator::Mult(_, _) => {
+                crate::missing!("BinaryExpressionOperator::Mult")
+            }
+            BinaryExpressionOperator::Add(_, _) => crate::missing!("BinaryExpressionOperator::Add"),
+            BinaryExpressionOperator::Sub(_, _) => crate::missing!("BinaryExpressionOperator::Sub"),
+            BinaryExpressionOperator::Concat(_, _) => {
+                crate::missing!("BinaryExpressionOperator::Concat")
+            }
+            BinaryExpressionOperator::Div(_, _) => crate::missing!("BinaryExpressionOperator::Div"),
+            BinaryExpressionOperator::LessThan(_, _) => {
+                crate::missing!("BinaryExpressionOperator::LessThan")
+            }
+            BinaryExpressionOperator::LeftShift(_, _) => {
+                crate::missing!("BinaryExpressionOperator::LeftShift")
+            }
+            BinaryExpressionOperator::LessThanOrEqual(_, _) => {
+                crate::missing!("BinaryExpressionOperator::LessThanOrEqual")
+            }
+            BinaryExpressionOperator::Spaceship(_, _) => {
+                crate::missing!("BinaryExpressionOperator::Spaceship")
+            }
+            BinaryExpressionOperator::Equal(_, _) => {
+                crate::missing!("BinaryExpressionOperator::Equal")
+            }
+            BinaryExpressionOperator::Identical(_, _) => {
+                crate::missing!("BinaryExpressionOperator::Identical")
+            }
+            BinaryExpressionOperator::GreaterThan(_, _) => {
+                crate::missing!("BinaryExpressionOperator::GreaterThan")
+            }
+            BinaryExpressionOperator::GreaterThanOrEqual(_, _) => {
+                crate::missing!("BinaryExpressionOperator::GreaterThanOrEqual")
+            }
+            BinaryExpressionOperator::RightShift(_, _) => {
+                crate::missing!("BinaryExpressionOperator::RightShift")
+            }
+            BinaryExpressionOperator::BinaryXor(_, _) => {
+                crate::missing!("BinaryExpressionOperator::BinaryXor")
+            }
+            BinaryExpressionOperator::And(_, _) => crate::missing!("BinaryExpressionOperator::And"),
             BinaryExpressionOperator::Instanceof(_, _) => {
                 // void
                 match (&self.left, &self.right) {
@@ -213,7 +245,7 @@ impl BranchTypeHardening for BinaryExpressionNode {
                             BinaryExpressionRight::NullsafeMemberAccessExpression(_) => {
                                 crate::missing_none!()
                             }
-                            BinaryExpressionRight::QualifiedName(q) => Some(q.get_fq_name()),
+                            BinaryExpressionRight::QualifiedName(q) => Some(q.get_fq_name(state)),
                             BinaryExpressionRight::ScopedPropertyAccessExpression(_) => {
                                 crate::missing_none!()
                             }
@@ -279,14 +311,22 @@ impl BranchTypeHardening for BinaryExpressionNode {
                     _ => (),
                 }
             }
-            BinaryExpressionOperator::Or(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Xor(_, _) => crate::missing!(),
-            BinaryExpressionOperator::BinaryOr(_, _) => crate::missing!(),
-            BinaryExpressionOperator::BooleanOr(_, _) => crate::missing!(),
-            BinaryExpressionOperator::Comment(_) => crate::missing!(),
-            BinaryExpressionOperator::TextInterpolation(_) => crate::missing!(),
-            BinaryExpressionOperator::Error(_) => crate::missing!(),
-            BinaryExpressionOperator::NullCoalescing(_, _) => crate::missing!(),
+            BinaryExpressionOperator::Or(_, _) => crate::missing!("BinaryExpressionOperator::Or"),
+            BinaryExpressionOperator::Xor(_, _) => crate::missing!("BinaryExpressionOperator::Xor"),
+            BinaryExpressionOperator::BinaryOr(_, _) => {
+                crate::missing!("BinaryExpressionOperator::BinaryOr")
+            }
+            BinaryExpressionOperator::BooleanOr(_, _) => {
+                crate::missing!("BinaryExpressionOperator::BooleanOr")
+            }
+
+            BinaryExpressionOperator::NullCoalescing(_, _) => {
+                crate::missing!("BinaryExpressionOperator::NullCoalescing")
+            }
+
+            BinaryExpressionOperator::Comment(_)
+            | BinaryExpressionOperator::TextInterpolation(_)
+            | BinaryExpressionOperator::Error(_) => (),
         }
 
         scope.branch()

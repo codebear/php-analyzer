@@ -1,11 +1,12 @@
 use std::{
     ffi::{OsStr, OsString},
-    os::unix::prelude::OsStrExt, fmt::Display,
+    fmt::Display,
+    os::unix::prelude::OsStrExt,
 };
 
 use crate::{
     symboldata::class::ClassName,
-    types::union::{DiscreteType, UnionType, SpecialType},
+    types::union::{DiscreteType, SpecialType, UnionType},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -90,6 +91,30 @@ impl From<&str> for Name {
     }
 }
 
+impl PartialEq<&[u8]> for Name {
+    fn eq(&self, other: &&[u8]) -> bool {
+        self.0.as_bytes() == *other
+    }
+}
+
+impl PartialEq<OsString> for Name {
+    fn eq(&self, other: &OsString) -> bool {
+        self.0 == *other
+    }
+}
+
+impl PartialEq<&str> for Name {
+    fn eq(&self, other: &&str) -> bool {
+        self.0 == *other
+    }
+}
+
+impl PartialEq<&str> for &Name {
+    fn eq(&self, other: &&str) -> bool {
+        self.0 == *other
+    }
+}
+
 impl Display for Name {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.to_string_lossy())
@@ -134,6 +159,11 @@ impl FullyQualifiedName {
         self.path.append(&mut path);
     }
 
+    pub fn append_fq(&mut self, tail: FullyQualifiedName) {
+        let mut path = tail.path.clone();
+        self.path.append(&mut path);
+    }
+
     pub fn get_utype(&self) -> UnionType {
         let dtype: DiscreteType = ClassName::new_with_fq_name(self.clone()).into();
         dtype.into()
@@ -145,8 +175,6 @@ impl FullyQualifiedName {
         }
     }
     pub fn to_os_string(&self) -> OsString {
-
-        
         let mut parts: Vec<&[u8]> = vec![];
         for part in &self.path {
             parts.push(b"\\");
@@ -158,7 +186,7 @@ impl FullyQualifiedName {
         str.into()
     }
 
-   /*  pub(crate) fn level(&self) -> usize {
+    /*  pub(crate) fn level(&self) -> usize {
         let len = self.path.len();
         if len > 0 {
             len - 1
@@ -225,9 +253,7 @@ impl From<&Name> for FullyQualifiedName {
 
 impl From<Vec<Name>> for FullyQualifiedName {
     fn from(path: Vec<Name>) -> Self {
-        Self {
-            path
-        }
+        Self { path }
     }
 }
 
@@ -245,10 +271,7 @@ impl SymbolClass {
     pub fn new_from_cname(cname: ClassName) -> Self {
         let ns = cname.get_namespace();
         let name = cname.name;
-        Self {
-            name,
-            ns
-        }
+        Self { name, ns }
     }
 }
 
@@ -328,11 +351,12 @@ impl From<DiscreteType> for Symbol {
             DiscreteType::Bool => Symbol::Native("bool"),
             DiscreteType::False => Symbol::Native("bool"),
             DiscreteType::Array => Symbol::Native("array"),
+            DiscreteType::Iterable => Symbol::Native("iterable"),
             DiscreteType::Mixed => Symbol::Native("mixed"),
             DiscreteType::Object => Symbol::Native("object"),
             DiscreteType::Callable => Symbol::Native("callable"),
             // FIXME, maybe to a better one here
-            DiscreteType::TypedCallable(_,_) => Symbol::Native("callable"),
+            DiscreteType::TypedCallable(_, _) => Symbol::Native("callable"),
             DiscreteType::Vector(_) => Symbol::Native("array"),
             DiscreteType::HashMap(_, _) => Symbol::Native("array"),
             DiscreteType::Special(SpecialType::Static) => Symbol::Native("static"),
@@ -348,7 +372,7 @@ impl From<DiscreteType> for Symbol {
             }
             DiscreteType::Generic(_, _) => todo!(),
             DiscreteType::Shape(_) => todo!(),
-            DiscreteType::ClassType(_,_) => todo!(),
+            DiscreteType::ClassType(_, _) => todo!(),
             DiscreteType::Template(_t) => todo!(),
         }
     }

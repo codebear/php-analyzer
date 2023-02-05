@@ -35,30 +35,66 @@ impl ObjectCreationExpressionNode {
     ) -> Option<crate::value::PHPValue> {
         let ctype = self.get_utype(state, emitter)?.single_type()?;
         let data = self.get_creation_data();
-        if let DiscreteType::Named(_n, fq) = ctype {
-            let class_data_handle = {
-                let cdata = state.symbol_data.classes.read().unwrap();
 
-                cdata.get(&fq)?.clone()
-            };
-            let _class_data = class_data_handle.read().unwrap();
-
-            let arguments = if let Some(args) = &data.arguments {
-                Some(args.get_argument_values(state, emitter))
-            } else {
-                None
-            };
-            // FIXME generics-analyse her eller i ObjectInstance
-            //
-            Some(PHPValue::ObjectInstance(ObjectInstance::new(
-                fq.clone(),
-                arguments,
-            )))
-
-            // crate::missing_none!("{}.get_php_value(..) fq: {:?}", self.kind(), &fq)
+        let constructor_args = if let Some(args) = &data.arguments {
+            Some(args.get_argument_values(state, emitter))
         } else {
-            crate::missing_none!("{}.get_php_value(..) unknown type", self.kind())
+            None
+        };
+
+        let (fq_name, generic_args) = match ctype {
+            DiscreteType::Named(_n, fq) => (fq, None),
+            DiscreteType::Generic(base_type, generic_template_concretes) => match &*base_type {
+                DiscreteType::Named(_n, real_fq) => {
+                    (real_fq.clone(), Some(generic_template_concretes))
+                }
+                _ => {
+                    todo!(
+                        "WHAT to do with generics: {} < {:?} >",
+                        base_type,
+                        generic_template_concretes
+                    );
+                }
+            },
+            _ => {
+                eprintln!("WHASDF: {:#?}", ctype);
+                return crate::missing_none!(
+                    "{}.get_php_value(..) unknown type: {:?}",
+                    self.kind(),
+                    ctype
+                );
+            }
+        };
+        /*
+                let class_data_handle = {
+                    let cdata = state.symbol_data.classes.read().unwrap();
+
+                    cdata.get(&fq_name)?.clone()
+                };
+                let _class_data = class_data_handle.read().unwrap();
+        */
+
+        // FIXME generics-analyse her eller i ObjectInstance
+        //
+        match generic_args {
+            Some(generics) => {
+                crate::missing!(
+                    "Validate that generic args are within boundaries: {:?}",
+                    generics
+                );
+                Some(PHPValue::ObjectInstance(ObjectInstance::new_with_generics(
+                    fq_name.clone(),
+                    generics,
+                    constructor_args,
+                )))
+            }
+            None => Some(PHPValue::ObjectInstance(ObjectInstance::new(
+                fq_name.clone(),
+                constructor_args,
+            ))),
         }
+
+        // crate::missing_none!("{}.get_php_value(..) fq: {:?}", self.kind(), &fq)
     }
 
     pub fn get_creation_data(&self) -> ObjectCreationData {
@@ -114,7 +150,9 @@ impl ObjectCreationExpressionNode {
                 let fq_name = state.get_fq_symbol_name_from_local_name(&name);
                 Some(fq_name)
             }
-            Some(ObjectCreationExpressionChildren::QualifiedName(qn)) => Some(qn.get_fq_name()),
+            Some(ObjectCreationExpressionChildren::QualifiedName(qn)) => {
+                Some(qn.get_fq_name(state))
+            }
             Some(ObjectCreationExpressionChildren::VariableName(vname)) => {
                 let value = vname.get_php_value(state, emitter)?;
                 match value {

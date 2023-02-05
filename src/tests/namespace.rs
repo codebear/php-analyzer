@@ -65,7 +65,7 @@ fn test_namespace_references() {
             .into(),
         ),
     ];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
@@ -157,7 +157,7 @@ fn test_namespace_interface_references() {
             .into(),
         ),
     ];
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // eprintln!("RESULT: {:?}", &result);
     if let Some(symbols) = result.symbol_data {
         let func_data = symbols.functions.read().unwrap();
@@ -192,7 +192,7 @@ fn test_new_class_type_in_ns() {
         .into(),
     )];
 
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     assert_eq!(result.issues.len(), 0);
     let fname = FullyQualifiedName::from(r"\na\me\sp\ace\test_output");
     if let Some(func_name) = result.symbol_data.and_then(|x| x.get_function(&fname)) {
@@ -264,7 +264,7 @@ fn test_namespace_and_root_class_ref() -> Result<(), &'static str> {
         ),
     ];
 
-    let result = evaluate_php_buffers(buffers.to_vec(), false);
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
     // should have one issue on bad casing
     assert_eq!(result.issues.len(), 1);
     for issue in result.issues {
@@ -334,4 +334,72 @@ fn test_namespace_and_root_class_ref() -> Result<(), &'static str> {
     );
 
     Ok(())
+}
+
+#[test]
+fn test_new_class_type_with_non_fq_name() {
+    let buffers: &[(OsString, OsString)] = &[
+        (
+            r"na/me/sp/ace/X.php".into(),
+            r#"<?php
+        namespace na\me\sp\ace;
+
+        class X {
+
+        }
+
+    "#
+            .into(),
+        ),
+        (
+            r"na/me/foo.php".into(),
+            r#"<?php
+        namespace na\me;
+
+        function test_output(){
+            return new sp\ace\X();
+        }
+
+        function test_output2(){
+            return new \sp\ace\X();
+        }
+
+    "#
+            .into(),
+        ),
+    ];
+
+    let result = evaluate_php_buffers(Default::default(), buffers.to_vec(), false);
+    assert_eq!(result.issues.len(), 0);
+    let fname = FullyQualifiedName::from(r"\na\me\test_output");
+    let symbol_data = result.symbol_data.as_ref().unwrap();
+    if let Some(func_name) = symbol_data.get_function(&fname) {
+        assert_eq!(
+            func_name.inferred_return_type,
+            Some(
+                DiscreteType::Named(
+                    Name::from("X"),
+                    FullyQualifiedName::from(r"\na\me\sp\ace\X")
+                )
+                .into()
+            )
+        );
+    } else {
+        assert!(false, "funksjonen mangler");
+    }
+    let fname = FullyQualifiedName::from(r"\na\me\test_output2");
+    if let Some(func_name) = symbol_data.get_function(&fname) {
+        assert_eq!(
+            func_name.inferred_return_type,
+            Some(
+                DiscreteType::Named(
+                    Name::from("X"),
+                    FullyQualifiedName::from(r"\na\me\sp\ace\X")
+                )
+                .into()
+            )
+        );
+    } else {
+        assert!(false, "funksjonen mangler");
+    }
 }

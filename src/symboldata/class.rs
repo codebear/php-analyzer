@@ -218,7 +218,7 @@ impl ClassType {
             ClassType::None => None,
             ClassType::Class(cdata) => cdata.generic_templates.clone(),
             ClassType::Interface(idata) => idata.generic_templates.clone(),
-            ClassType::Trait(_tdata) => crate::missing_none!(),
+            ClassType::Trait(tdata) => tdata.generic_templates.clone(),
         }
     }
 
@@ -233,6 +233,19 @@ impl ClassType {
             ClassType::Class(c) => c.generic_concretes = Some(noe),
             ClassType::Interface(_) => todo!(),
             ClassType::Trait(_) => todo!(),
+        }
+    }
+
+    pub fn get_constant_value(
+        &self,
+        symbol_data: &Arc<SymbolData>,
+        constant_name: &Name,
+    ) -> Option<PHPValue> {
+        match self {
+            ClassType::None => None,
+            ClassType::Class(cdata) => cdata.get_constant_value(symbol_data, constant_name),
+            ClassType::Interface(idata) => idata.get_constant_value(symbol_data, constant_name),
+            ClassType::Trait(_) => None,
         }
     }
 }
@@ -261,7 +274,9 @@ pub struct ClassData {
     pub class_name: ClassName,
     pub position: FileLocation,
     pub base_class_name: Option<ClassName>,
+    pub phpdoc_base_class_name: Option<DiscreteType>,
     pub interfaces: Vec<ClassName>,
+    pub phpdoc_interfaces: Vec<DiscreteType>,
     pub modifier: ClassModifier,
     pub constants: HashMap<Name, PHPValue>,
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
@@ -280,7 +295,9 @@ impl ClassData {
             class_name,
             position,
             base_class_name: None,
+            phpdoc_base_class_name: None,
             interfaces: vec![],
+            phpdoc_interfaces: vec![],
             modifier: ClassModifier::None,
             constants: HashMap::new(),
             methods: HashMap::new(),
@@ -298,6 +315,14 @@ impl ClassData {
         self.methods.get(&method_name.to_ascii_lowercase()).cloned()
     }
 
+    pub fn get_base_class_data(
+        &self,
+        symbol_data: &Arc<SymbolData>,
+    ) -> Option<Arc<RwLock<ClassType>>> {
+        let base = self.base_class_name.as_ref()?;
+        symbol_data.get_class(base)
+    }
+
     pub fn get_method(
         &self,
         method_name: &Name,
@@ -309,12 +334,10 @@ impl ClassData {
             return Some(mdata);
         }
 
-        if let Some(base) = &self.base_class_name {
-            if let Some(cdata_handle) = symbol_data.get_class(base) {
-                let cdata = cdata_handle.read().unwrap();
-                if let Some(m) = (*cdata).get_method(method_name, symbol_data) {
-                    return Some(m);
-                }
+        if let Some(cdata_handle) = self.get_base_class_data(&symbol_data) {
+            let cdata = cdata_handle.read().unwrap();
+            if let Some(m) = (*cdata).get_method(method_name, symbol_data) {
+                return Some(m);
             }
         }
         for _ptrait in &self.traits {
@@ -462,6 +485,32 @@ impl ClassData {
             .map(|x| x.1.read().unwrap().clone())
             .collect()
     }
+
+    fn get_constant_value(
+        &self,
+        symbol_data: &Arc<SymbolData>,
+        constant_name: &Name,
+    ) -> Option<PHPValue> {
+        if let Some(v) = self.constants.get(constant_name) {
+            return Some(v.clone());
+        }
+
+        if let Some(base) = self.get_base_class_data(symbol_data) {
+            let unlocked = base.read().ok()?;
+            if let Some(x) = unlocked.get_constant_value(symbol_data, constant_name) {
+                return Some(x);
+            }
+        }
+
+        for iface in &self.interfaces {
+            if let Some(iface_data) = &symbol_data.get_interface(iface) {
+                if let Some(const_val) = iface_data.get_constant_value(symbol_data, constant_name) {
+                    return Some(const_val);
+                }
+            }
+        }
+        None
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -599,6 +648,25 @@ impl InterfaceData {
         }
         false
     }
+
+    fn get_constant_value(
+        &self,
+        symbol_data: &SymbolData,
+        constant_name: &Name,
+    ) -> Option<PHPValue> {
+        if let Some(v) = self.constants.get(constant_name) {
+            return Some(v.clone());
+        }
+
+        for iface in self.base_interface_names.as_ref()? {
+            if let Some(iface_data) = &symbol_data.get_interface(iface) {
+                if let Some(const_val) = iface_data.get_constant_value(symbol_data, constant_name) {
+                    return Some(const_val);
+                }
+            }
+        }
+        None
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -609,6 +677,7 @@ pub struct TraitData {
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
     pub is_native: bool,
     pub phpdoc: Option<PHPDocComment>,
+    pub generic_templates: Option<Vec<Name>>,
 }
 
 impl TraitData {
@@ -620,6 +689,7 @@ impl TraitData {
             methods: HashMap::new(),
             is_native: false,
             phpdoc: None,
+            generic_templates: None,
         }
     }
     pub fn get_own_method(&self, method_name: &Name) -> Option<Arc<RwLock<MethodData>>> {
@@ -668,6 +738,7 @@ pub struct FunctionArgumentData {
     pub inline_phpdoc_type: Option<(Range, UnionType)>,
     pub phpdoc_entry: Option<PHPDocEntry>,
     pub phpdoc_type: Option<UnionType>,
+    pub variadic: bool,
 }
 impl FunctionArgumentData {
     pub fn get_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
@@ -678,7 +749,7 @@ impl FunctionArgumentData {
         }
         if let Some(PHPDocEntry::Param(_range, param, _name, _desc)) = &self.phpdoc_entry {
             // from_vec_parsed_type
-            let utype = from_vec_parsed_type(param.clone(), state, None);
+            let utype = from_vec_parsed_type(param.clone(), state, None, None);
             return utype;
         }
         if let Some((_range, utype)) = &self.inline_phpdoc_type {

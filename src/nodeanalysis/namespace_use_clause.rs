@@ -97,7 +97,7 @@ impl FirstPassAnalyzeableNode for NamespaceUseClauseNode {
                         todo!("Something askew with parsing");
                     }
                     use_name = Some(qn.get_name());
-                    use_fq_name = Some(qn.get_fq_name());
+                    use_fq_name = Some(qn.get_raw_fq_name());
                     // eprintln!("USE FQ: {:?}", use_fq_name);
                     //let fq_name = qn.get_fq_name();
 
@@ -126,7 +126,7 @@ impl FirstPassAnalyzeableNode for NamespaceUseClauseNode {
                     state.use_map.insert(lc_name, (name, fq_name));
                 }
             }
-            _ => eprintln!("Someting strange, in the neighbourhood"),
+            _ => crate::missing!("Someting strange, in the neighbourhood"),
         }
     }
 }
