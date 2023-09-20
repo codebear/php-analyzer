@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    collections::HashSet,
     convert::TryInto,
     ffi::{OsStr, OsString},
     os::unix::prelude::OsStrExt,
@@ -10,7 +11,9 @@ use crate::{
     types::union::{DiscreteType, UnionType},
 };
 
-#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq)]
+use std::hash::Hash;
+
+#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
 pub struct ObjectInstance {
     pub fq_name: FullyQualifiedName,
     pub constructor_args: Option<Vec<Option<PHPValue>>>,
@@ -76,6 +79,12 @@ impl PHPFloat {
     }
 }
 
+impl Hash for PHPFloat {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        core::mem::discriminant(self).hash(state);
+    }
+}
+
 impl PartialEq for PHPFloat {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -98,14 +107,14 @@ impl Ord for PHPFloat {
     }
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Hash)]
 pub enum PHPArray {
     Empty,
     Vector(Vec<PHPValue>),
     HashMap(Vec<(PHPValue, PHPValue)>),
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Hash)]
 pub enum PHPValue {
     NULL,
     Boolean(bool),
@@ -369,6 +378,19 @@ impl PHPValue {
             PHPValue::NULL => true,
             _ => false,
         }
+    }
+
+    pub(crate) fn unique(values: &Vec<PHPValue>) -> Vec<PHPValue> {
+        let map: HashSet<_> = values.iter().cloned().collect();
+        map.iter().cloned().collect()
+    }
+
+    pub(crate) fn single_unique(values: &Vec<PHPValue>) -> Option<PHPValue> {
+        let unique_values = Self::unique(values);
+        if unique_values.len() != 1 {
+            return None;
+        }
+        unique_values.iter().next().cloned()
     }
 }
 

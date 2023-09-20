@@ -33,16 +33,19 @@ impl ClassConstantAccessExpressionNode {
         let constant_name = self.constant.get_name();
 
         if constant_name == b"class" as &[u8] {
-            return Some(
-                if let Some(cname) = self.get_class_name(state) {
-                    DiscreteType::Special(SpecialType::ClassString(Some(
-                        cname.get_fq_name().clone(),
-                    )))
-                } else {
-                    DiscreteType::String
-                }
-                .into(),
-            );
+            return Some(if let Some(cnames) = self.get_class_names(state) {
+                cnames
+                    .iter()
+                    .map(|cname| {
+                        DiscreteType::Special(SpecialType::ClassString(Some(
+                            cname.get_fq_name().clone(),
+                        )))
+                    })
+                    .collect::<Vec<_>>()
+                    .into()
+            } else {
+                DiscreteType::String.into()
+            });
         }
 
         if let Some(val) = self.get_php_value(state, emitter) {
@@ -52,7 +55,7 @@ impl ClassConstantAccessExpressionNode {
         }
     }
 
-    pub fn get_class_name(&self, state: &mut AnalysisState) -> Option<ClassName> {
+    pub fn get_class_names(&self, state: &mut AnalysisState) -> Option<Vec<ClassName>> {
         match &*self.class {
             ClassConstantAccessExpressionClass::ArrayCreationExpression(n) => crate::missing_none!(
                 "Hvordan hente en verdi ut av {:?} at {}",
@@ -102,7 +105,10 @@ impl ClassConstantAccessExpressionNode {
                 state.pos_as_string(self.range())
             ),
             ClassConstantAccessExpressionClass::Name(n) => {
-                Some(ClassName::new_with_analysis_state(&n.get_name(), state))
+                Some(vec![ClassName::new_with_analysis_state(
+                    &n.get_name(),
+                    state,
+                )])
             }
 
             ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(n) => {
@@ -126,10 +132,10 @@ impl ClassConstantAccessExpressionNode {
             ),
             ClassConstantAccessExpressionClass::QualifiedName(n) => {
                 let fq_name = n.get_fq_name(state);
-                Some(ClassName::new_with_names(
+                Some(vec![ClassName::new_with_names(
                     fq_name.get_name().unwrap_or_else(|| Name::new()),
                     fq_name,
-                ))
+                )])
             }
             ClassConstantAccessExpressionClass::RelativeScope(n) => {
                 let rel_scope = n.get_raw();
@@ -140,7 +146,7 @@ impl ClassConstantAccessExpressionNode {
                             // This one is actually wrong...
                             // emitter.emit(self.range, format!("Refering to a constant with `static` is ilogical, as the constant can't be abstract, missing nor redefined in a subclass").into());
                             // FIXME how to ve analyze this?
-                            Some(cstate.get_name())
+                            Some(vec![cstate.get_name()])
                         } else {
                             // error-state?
                             None
@@ -148,7 +154,7 @@ impl ClassConstantAccessExpressionNode {
                     }
                     b"self" => {
                         if let Some(cstate) = &state.in_class {
-                            Some(cstate.get_name())
+                            Some(vec![cstate.get_name()])
                         } else {
                             // error-state?
                             None
@@ -185,15 +191,42 @@ impl ClassConstantAccessExpressionNode {
                 // or actually, even a union of multiple class-string<Foo>|class-string<Bar>-types
                 // and then we will and should be able to determine if the class-constant-access is valid
 
-                if let Some(t) = n.get_utype(state, &VoidEmitter::new()) {
-                    todo!("Fant {:?}", t);
-                };
-
-                crate::missing_none!(
-                    "Hvordan hente en verdi ut av {:?} at {}",
-                    n,
-                    state.pos_as_string(self.range())
-                )
+                if let Some(var_type) = n.get_utype(state, &VoidEmitter::new()) {
+                    let mut names = vec![];
+                    for dtype in &var_type.types {
+                        match &dtype {
+                            DiscreteType::Special(SpecialType::ClassString(Some(
+                                maybe_fq_name,
+                            ))) => names.push(maybe_fq_name.into()),
+                            DiscreteType::Named(name, fq_name) => {
+                                names
+                                    .push(ClassName::new_with_names(name.clone(), fq_name.clone()));
+                            }
+                            DiscreteType::Unknown => return None,
+                            _ => {
+                                return crate::missing_none!(
+                                    "Hvordan hente en verdi ut av {:?} at {}",
+                                    dtype,
+                                    state.pos_as_string(self.range())
+                                )
+                            }
+                        }
+                    }
+                    if names.len() > 0 {
+                        return Some(names);
+                    }
+                    crate::missing_none!(
+                        "Hvordan hente en verdi ut av {:?} at {}",
+                        var_type,
+                        state.pos_as_string(self.range())
+                    )
+                } else {
+                    crate::missing_none!(
+                        "Hvordan hente en verdi ut av {:?} at {}",
+                        n.kind(),
+                        state.pos_as_string(self.range())
+                    )
+                }
             }
             ClassConstantAccessExpressionClass::Nowdoc(n) => crate::missing_none!(
                 "Hvordan hente en verdi ut av {:?} at {}",
@@ -212,64 +245,77 @@ impl ClassConstantAccessExpressionNode {
         state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
-        let class_name = self.get_class_name(state)?;
+        let class_names = self.get_class_names(state)?;
+        let mut values = vec![];
+        for class_name in &class_names {
+            let constant_name = self.constant.get_name();
 
-        let constant_name = self.constant.get_name();
+            if constant_name == b"class" as &[u8] {
+                values.push(PHPValue::String(class_name.to_os_string()));
+                continue;
+            }
 
-        if constant_name == b"class" as &[u8] {
-            return Some(PHPValue::String(class_name.to_os_string()));
+            // FIXME handle SomeClass::class-constants
+
+            let class_data = state.symbol_data.get_class(&class_name)?;
+            let classish = class_data.read().unwrap();
+
+            if let Some(v) = classish.get_constant_value(&state.symbol_data, &constant_name) {
+                values.push(v);
+            } else {
+                return None;
+            }
         }
-
-        // FIXME handle SomeClass::class-constants
-
-        let class_data = state.symbol_data.get_class(&class_name)?;
-        let classish = class_data.read().unwrap();
-
-        classish.get_constant_value(&state.symbol_data, &constant_name)
+        if values.len() == 0 {
+            return None;
+        }
+        PHPValue::single_unique(&values)
     }
 }
 
 impl SecondPassAnalyzeableNode for ClassConstantAccessExpressionNode {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if let Some(class_name) = self.get_class_name(state) {
-            let constant_name = self.constant.get_name();
+        if let Some(class_names) = &self.get_class_names(state) {
+            for class_name in class_names {
+                let constant_name = self.constant.get_name();
 
-            // FIXME handle SomeClass::class-constants
+                // FIXME handle SomeClass::class-constants
 
-            if let Some(class_data) = state.symbol_data.get_class(&class_name) {
-                if constant_name == b"class" as &[u8] {
-                    return;
-                }
+                if let Some(class_data) = state.symbol_data.get_class(&class_name) {
+                    if constant_name == b"class" as &[u8] {
+                        continue;
+                    }
 
-                let classish = class_data.read().unwrap();
-                let const_val = classish.get_constant_value(&state.symbol_data, &constant_name);
+                    let classish = class_data.read().unwrap();
+                    let const_val = classish.get_constant_value(&state.symbol_data, &constant_name);
 
-                if let None = const_val {
-                    /*eprintln!(
-                        "BALLE Unknown class constant {:?}::{:?}",
-                        class_name, constant_name
-                    );*/
-                    emitter.emit(Issue::UnknownClassConstant(
+                    if let None = const_val {
+                        /*eprintln!(
+                            "BALLE Unknown class constant {:?}::{:?}",
+                            class_name, constant_name
+                        );*/
+                        emitter.emit(Issue::UnknownClassConstant(
+                            self.pos(state),
+                            class_name.get_fq_name().clone(),
+                            constant_name,
+                        ));
+                    }
+                } else {
+                    // FIXME move this emitting to the analysis-pass
+                    emitter.emit(Issue::UnknownClass(
                         self.pos(state),
                         class_name.get_fq_name().clone(),
-                        constant_name,
                     ));
+
+                    /*
+                    let fqname: String = format!("{}", class_name.get_fq_name());
+
+                    eprintln!(
+                        "BALLE Unknown class {}, {:?}",
+                        fqname,
+                        class_name.get_fq_name()
+                    );*/
                 }
-            } else {
-                // FIXME move this emitting to the analysis-pass
-                emitter.emit(Issue::UnknownClass(
-                    self.pos(state),
-                    class_name.get_fq_name().clone(),
-                ));
-
-                /*
-                let fqname: String = format!("{}", class_name.get_fq_name());
-
-                eprintln!(
-                    "BALLE Unknown class {}, {:?}",
-                    fqname,
-                    class_name.get_fq_name()
-                );*/
             }
         }
         self.analyze_second_pass_children(&self.as_any(), state, emitter);
