@@ -44,62 +44,67 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
             match &**child {
                 ConstDeclarationChildren::ConstElement(c) => {
                     let name = c.get_const_name();
+                    let maybeValue = c.get_php_value(state, emitter);
+                    if let None = &maybeValue {
+                        emitter.emit(Issue::ParseAnomaly(
+                            self.pos(state),
+                            format!("Couldn't resolve class const content for {:?}", name).into(),
+                        ));
+                    }
                     // let value = c.get_php_value(state, emitter);
-                    if let Some(value) = c.get_php_value(state, emitter) {
-                        if let Some(class_state) = &state.in_class {
-                            if let Some(class_data) =
-                                state.symbol_data.get_class(&class_state.get_name())
-                            {
-                                let mut mutable = class_data.write().unwrap();
-                                match &mut (*mutable) {
-                                    ClassType::Class(c) => {
-                                        if let Some(_) = c.constants.get(&name) {
-                                            emitter.emit(Issue::DuplicateClassConstant(
-                                                self.pos(state),
-                                                class_state.get_name().get_fq_name().clone(),
-                                                name,
-                                            ));
-                                        } else {
-                                            /*eprintln!(
-                                                "Inject Class {}::{} = {:?}",
-                                                class_state.get_name(),
-                                                name,
-                                                value
-                                            );*/
-                                            c.constants.insert(name, value);
-                                        }
-                                    }
-                                    ClassType::None => todo!(),
-                                    ClassType::Interface(intf) => {
-                                        if let Some(_) = intf.constants.get(&name) {
-                                            emitter.emit(Issue::DuplicateClassConstant(
-                                                self.pos(state),
-                                                class_state.get_name().get_fq_name().clone(),
-                                                name,
-                                            ));
-                                        } else {
-                                            /*eprintln!(
-                                                "Inject Interface {}::{} = {:?}",
-                                                class_state.get_name(),
-                                                name,
-                                                value
-                                            );*/
-                                            intf.constants.insert(name, value);
-                                        }
-                                    }
-                                    ClassType::Trait(_) => todo!(),
-                                }
+
+                    let Some(class_state) = &state.in_class else {
+                        // Global const?
+                        eprintln!("Global const decls?");
+                        todo!("Const: self::{:?} = {:?} ({:?})", name, maybeValue, c);
+                        continue;
+                    };
+
+                    let Some(class_data) = state.symbol_data.get_class(&class_state.get_name())
+                    else {
+                        eprintln!("Missing class: {:?}", class_state.get_name());
+                        // Finner ikke klassen?
+                        continue;
+                    };
+
+                    let mut mutable = class_data.write().unwrap();
+                    match &mut (*mutable) {
+                        ClassType::Class(c) => {
+                            if let Some(_) = c.constants.get(&name) {
+                                emitter.emit(Issue::DuplicateClassConstant(
+                                    self.pos(state),
+                                    class_state.get_name().get_fq_name().clone(),
+                                    name,
+                                ));
                             } else {
-                                eprintln!("Missing class: {:?}", class_state.get_name());
-                                // Finner ikke klassen?
+                                /*eprintln!(
+                                    "Inject Class {}::{} = {:?}",
+                                    class_state.get_name(),
+                                    name,
+                                    value
+                                );*/
+                                c.constants.insert(name, maybeValue);
                             }
-                        } else {
-                            // Global const?
-                            eprintln!("Global const decls?");
-                            todo!("Const: self::{:?} = {:?} ({:?})", name, value, c);
                         }
-                    } else {
-                        // emitter.emit(self.range(), format!("Couldn't resolve class const content for {:?}", name).into());
+                        ClassType::None => todo!(),
+                        ClassType::Interface(intf) => {
+                            if let Some(_) = intf.constants.get(&name) {
+                                emitter.emit(Issue::DuplicateClassConstant(
+                                    self.pos(state),
+                                    class_state.get_name().get_fq_name().clone(),
+                                    name,
+                                ));
+                            } else {
+                                /*eprintln!(
+                                    "Inject Interface {}::{} = {:?}",
+                                    class_state.get_name(),
+                                    name,
+                                    value
+                                );*/
+                                intf.constants.insert(name, maybeValue);
+                            }
+                        }
+                        ClassType::Trait(_) => todo!(),
                     }
                 }
                 ConstDeclarationChildren::VisibilityModifier(v) => todo!("analysere: {:?}", v),

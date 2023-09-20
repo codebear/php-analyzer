@@ -278,7 +278,7 @@ pub struct ClassData {
     pub interfaces: Vec<ClassName>,
     pub phpdoc_interfaces: Vec<DiscreteType>,
     pub modifier: ClassModifier,
-    pub constants: HashMap<Name, PHPValue>,
+    pub constants: HashMap<Name, Option<PHPValue>>,
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
     pub properties: HashMap<Name, Arc<RwLock<PropertyData>>>,
     pub is_native: bool,
@@ -491,7 +491,7 @@ impl ClassData {
         symbol_data: &Arc<SymbolData>,
         constant_name: &Name,
     ) -> Option<PHPValue> {
-        if let Some(v) = self.constants.get(constant_name) {
+        if let Some(Some(v)) = self.constants.get(constant_name) {
             return Some(v.clone());
         }
 
@@ -518,7 +518,7 @@ pub struct InterfaceData {
     pub interface_name: ClassName,
     pub position: FileLocation,
     pub base_interface_names: Option<Vec<ClassName>>,
-    pub constants: HashMap<Name, PHPValue>,
+    pub constants: HashMap<Name, Option<PHPValue>>,
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
     pub is_native: bool,
     pub phpdoc: Option<PHPDocComment>,
@@ -654,7 +654,7 @@ impl InterfaceData {
         symbol_data: &SymbolData,
         constant_name: &Name,
     ) -> Option<PHPValue> {
-        if let Some(v) = self.constants.get(constant_name) {
+        if let Some(Some(v)) = self.constants.get(constant_name) {
             return Some(v.clone());
         }
 
