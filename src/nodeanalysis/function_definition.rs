@@ -124,7 +124,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
 
         let mut comment_return_type = None;
         let mut param_map = HashMap::new();
-        let mut phpdoc = None;
+        //let mut phpdoc = None;
         let mut function_template_params = vec![];
         if let Some((doc_comment, range)) = &state.last_doc_comment {
             match PHPDocComment::parse(doc_comment, range) {
@@ -165,7 +165,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                             _ => (),
                         }
                     }
-                    phpdoc = Some(doc_comment);
+                    //phpdoc = Some(doc_comment);
                 }
                 Err(_) => {
                     emitter.emit(Issue::PHPDocParseError(state.pos_from_range(range.clone())))
