@@ -965,6 +965,8 @@ fn from_type_struct(
             b"integer" => Some(DiscreteType::Int),
             b"float" | b"double" => Some(DiscreteType::Float),
             b"boolean" | b"bool" => Some(DiscreteType::Bool),
+            b"false" => Some(DiscreteType::False),
+            b"true" => Some(DiscreteType::True),
             b"resource" => Some(DiscreteType::Resource),
             b"self" => Some(DiscreteType::Special(SpecialType::Self_)),
             b"static" => Some(DiscreteType::Special(SpecialType::Static)),
