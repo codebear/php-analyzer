@@ -44,8 +44,8 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
             match &**child {
                 ConstDeclarationChildren::ConstElement(c) => {
                     let name = c.get_const_name();
-                    let maybeValue = c.get_php_value(state, emitter);
-                    if let None = &maybeValue {
+                    let maybe_value = c.get_php_value(state, emitter);
+                    if let None = &maybe_value {
                         emitter.emit(Issue::ParseAnomaly(
                             self.pos(state),
                             format!("Couldn't resolve class const content for {:?}", name).into(),
@@ -56,7 +56,7 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                     let Some(class_state) = &state.in_class else {
                         // Global const?
                         eprintln!("Global const decls?");
-                        todo!("Const: self::{:?} = {:?} ({:?})", name, maybeValue, c);
+                        todo!("Const: self::{:?} = {:?} ({:?})", name, maybe_value, c);
                         continue;
                     };
 
@@ -83,7 +83,7 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                                     name,
                                     value
                                 );*/
-                                c.constants.insert(name, maybeValue);
+                                c.constants.insert(name, maybe_value);
                             }
                         }
                         ClassType::None => todo!(),
@@ -101,7 +101,7 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                                     name,
                                     value
                                 );*/
-                                intf.constants.insert(name, maybeValue);
+                                intf.constants.insert(name, maybe_value);
                             }
                         }
                         ClassType::Trait(_) => todo!(),

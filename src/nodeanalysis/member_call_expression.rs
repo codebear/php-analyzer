@@ -232,8 +232,10 @@ impl MemberCallExpressionNode {
                 class_data.set_generic_concretes(concrete);
                 Some(class_data)
             }
-            DiscreteType::ClassType(_, _) => crate::missing_none!("Find class data from..."),
-            DiscreteType::Template(_) => crate::missing_none!("Find class data from..."),
+            DiscreteType::ClassType(_, _) => {
+                crate::missing_none!("Find class data from ClassType...")
+            }
+            DiscreteType::Template(_) => crate::missing_none!("Find class data from Template..."),
         }
     }
 
