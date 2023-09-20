@@ -350,6 +350,7 @@ impl From<DiscreteType> for Symbol {
             DiscreteType::String => Symbol::Native("string"),
             DiscreteType::Bool => Symbol::Native("bool"),
             DiscreteType::False => Symbol::Native("bool"),
+            DiscreteType::True => Symbol::Native("bool"),
             DiscreteType::Array => Symbol::Native("array"),
             DiscreteType::Iterable => Symbol::Native("iterable"),
             DiscreteType::Mixed => Symbol::Native("mixed"),

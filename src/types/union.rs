@@ -116,6 +116,7 @@ pub enum DiscreteType {
     Iterable,
 
     False,
+    True,
     /// General common array, of unknown content
     Array,
     Object,
@@ -586,6 +587,7 @@ impl DiscreteType {
             DiscreteType::Iterable => (),
             DiscreteType::Bool => (),
             DiscreteType::False => (),
+            DiscreteType::True => (),
             DiscreteType::Array => (),
             DiscreteType::Object => (),
             DiscreteType::Callable => (),
@@ -670,6 +672,7 @@ impl DiscreteType {
             DiscreteType::Iterable => true,
             DiscreteType::Mixed => true,
             DiscreteType::False => false,
+            DiscreteType::True => true,
             DiscreteType::Array => true,
             DiscreteType::Object => true,
             DiscreteType::Callable => true,
@@ -700,6 +703,7 @@ impl DiscreteType {
             DiscreteType::Iterable => true,
             DiscreteType::Mixed => true,
             DiscreteType::False => true,
+            DiscreteType::True => false,
             DiscreteType::Array => true,
             DiscreteType::Object => false,
             DiscreteType::Callable => false,
@@ -738,6 +742,7 @@ impl DiscreteType {
             DiscreteType::Mixed => true,
             DiscreteType::Iterable => true,
             DiscreteType::False => false,
+            DiscreteType::True => false,
             DiscreteType::Array => false,
             DiscreteType::Object => true,
             DiscreteType::Callable => true,
@@ -794,6 +799,7 @@ impl DiscreteType {
             DiscreteType::Mixed => (),
             DiscreteType::Iterable => (),
             DiscreteType::False => (),
+            DiscreteType::True => (),
             DiscreteType::Array => (),
             DiscreteType::Object => (),
             DiscreteType::Callable => (),
@@ -853,7 +859,7 @@ fn from_parsed_type(
     maybe_emitter: Option<&dyn IssueEmitter>,
     temp_generics: Option<&Vec<Name>>,
 ) -> Option<UnionType> {
-    let generic_templates = state.get_generic_templates(temp_generics);
+    let _generic_templates = state.get_generic_templates(temp_generics);
     /*   eprintln!(
         "CTYPE: {}, AVAILABLE GENERICS: {:?}, TEMP_GENERICS: {:?}",
         ctype, generic_templates, temp_generics
@@ -1074,7 +1080,6 @@ fn from_type_struct(
                             &type_struct
                         );
                         eprintln!("generic templates: {:?}", generic_templates);
-                        panic!();
                         todo!();
                     }
                     (Some(_), Some(templates)) if templates.contains(name) => {
@@ -1083,7 +1088,7 @@ fn from_type_struct(
                         // this is probably wrong in some sense
                         panic!();
                     }
-                    (None, Some(templates)) => {
+                    (None, Some(_templates)) => {
                         ClassName::new_with_analysis_state(name, state)
                         /*                         eprintln!("TEMPLATES: {:?}", templates);
                         eprintln!("name: {:?}", name);
@@ -1102,7 +1107,7 @@ fn from_type_struct(
                     }
                     (None, None) => ClassName::new_with_analysis_state(name, state),
                     (Some(_), None) => ClassName::new_with_analysis_state(name, state),
-                    (Some(a), Some(b)) => {
+                    (Some(_a), Some(_b)) => {
                         ClassName::new_with_analysis_state(name, state)
                         /*                         eprintln!(
                             "\nTrying to create a union-type from a type-struct: {}",
@@ -1177,6 +1182,8 @@ impl Display for DiscreteType {
                 DiscreteType::Resource => "resource".to_string(),
                 DiscreteType::String => "string".to_string(),
                 DiscreteType::Bool => "bool".to_string(),
+                DiscreteType::False => "false".to_string(),
+                DiscreteType::True => "true".to_string(),
                 DiscreteType::Array => "array".to_string(),
                 DiscreteType::Callable => "callable".to_string(),
                 DiscreteType::Mixed => "mixed".to_string(),
@@ -1196,7 +1203,6 @@ impl Display for DiscreteType {
                     format!("array<{},{}>", k.to_string(), v.to_string()),
                 DiscreteType::Unknown => "*unknown*".to_string(),
                 DiscreteType::Named(_, t) => t.to_string(),
-                DiscreteType::False => "false".to_string(),
                 DiscreteType::Object => "object".to_string(),
 
                 DiscreteType::Template(t) => t.to_string(),
