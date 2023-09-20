@@ -6,6 +6,6 @@ fn main() {
     cc::Build::new()
         .include(&dir)
         .file(dir.join("parser.c"))
-        .file(dir.join("scanner.cc"))
+        .file(dir.join("scanner.c"))
         .compile("tree-sitter-php");
 }

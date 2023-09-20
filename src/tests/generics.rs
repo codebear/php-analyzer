@@ -292,7 +292,7 @@ fn balle() {
             return;
         }
         let i: usize = (x * 0x1ff / 0xffff).try_into().unwrap();
-        if i >= 0 && i < tab.len().try_into().unwrap() {
+        if i < tab.len().try_into().unwrap() {
             println!(
                 "tab[{i}] looks safe because {i} is between [0;{}]",
                 tab.len()

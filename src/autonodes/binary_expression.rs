@@ -44,7 +44,7 @@ pub enum BinaryExpressionOperator {
     GreaterThan(&'static str, Range),
     GreaterThanOrEqual(&'static str, Range),
     RightShift(&'static str, Range),
-    NullCoalescing(&'static str, Range),
+    NullCoalesce(&'static str, Range),
     BinaryXor(&'static str, Range),
     And(&'static str, Range),
     Instanceof(&'static str, Range),
@@ -87,7 +87,7 @@ impl BinaryExpressionOperator {
             ">" => BinaryExpressionOperator::GreaterThan(">", node.range()),
             ">=" => BinaryExpressionOperator::GreaterThanOrEqual(">=", node.range()),
             ">>" => BinaryExpressionOperator::RightShift(">>", node.range()),
-            "??" => BinaryExpressionOperator::NullCoalescing("??", node.range()),
+            "??" => BinaryExpressionOperator::NullCoalesce("??", node.range()),
             "^" => BinaryExpressionOperator::BinaryXor("^", node.range()),
             "and" => BinaryExpressionOperator::And("and", node.range()),
             "instanceof" => BinaryExpressionOperator::Instanceof("instanceof", node.range()),
@@ -134,7 +134,7 @@ impl BinaryExpressionOperator {
             ">" => BinaryExpressionOperator::GreaterThan(">", node.range()),
             ">=" => BinaryExpressionOperator::GreaterThanOrEqual(">=", node.range()),
             ">>" => BinaryExpressionOperator::RightShift(">>", node.range()),
-            "??" => BinaryExpressionOperator::NullCoalescing("??", node.range()),
+            "??" => BinaryExpressionOperator::NullCoalesce("??", node.range()),
             "^" => BinaryExpressionOperator::BinaryXor("^", node.range()),
             "and" => BinaryExpressionOperator::And("and", node.range()),
             "instanceof" => BinaryExpressionOperator::Instanceof("instanceof", node.range()),
@@ -190,7 +190,7 @@ impl BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::GreaterThanOrEqual(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::RightShift(_, _) => Some(DiscreteType::String.into()),
-            BinaryExpressionOperator::NullCoalescing(_, _) => Some(DiscreteType::String.into()),
+            BinaryExpressionOperator::NullCoalesce(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::BinaryXor(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::And(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::Instanceof(_, _) => Some(DiscreteType::String.into()),
@@ -267,7 +267,7 @@ impl BinaryExpressionOperator {
             BinaryExpressionOperator::RightShift(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
-            BinaryExpressionOperator::NullCoalescing(a, _) => {
+            BinaryExpressionOperator::NullCoalesce(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
             BinaryExpressionOperator::BinaryXor(a, _) => {
@@ -318,7 +318,7 @@ impl BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(_, _) => (),
             BinaryExpressionOperator::GreaterThanOrEqual(_, _) => (),
             BinaryExpressionOperator::RightShift(_, _) => (),
-            BinaryExpressionOperator::NullCoalescing(_, _) => (),
+            BinaryExpressionOperator::NullCoalesce(_, _) => (),
             BinaryExpressionOperator::BinaryXor(_, _) => (),
             BinaryExpressionOperator::And(_, _) => (),
             BinaryExpressionOperator::Instanceof(_, _) => (),
@@ -362,7 +362,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(a, _) => a.to_string(),
             BinaryExpressionOperator::GreaterThanOrEqual(a, _) => a.to_string(),
             BinaryExpressionOperator::RightShift(a, _) => a.to_string(),
-            BinaryExpressionOperator::NullCoalescing(a, _) => a.to_string(),
+            BinaryExpressionOperator::NullCoalesce(a, _) => a.to_string(),
             BinaryExpressionOperator::BinaryXor(a, _) => a.to_string(),
             BinaryExpressionOperator::And(a, _) => a.to_string(),
             BinaryExpressionOperator::Instanceof(a, _) => a.to_string(),
@@ -397,7 +397,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::GreaterThanOrEqual(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::RightShift(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            BinaryExpressionOperator::NullCoalescing(a, b) => AnyNodeRef::StaticExpr(a, *b),
+            BinaryExpressionOperator::NullCoalesce(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::BinaryXor(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::And(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::Instanceof(a, b) => AnyNodeRef::StaticExpr(a, *b),
@@ -432,7 +432,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(_, _) => todo!("Crap"),
             BinaryExpressionOperator::GreaterThanOrEqual(_, _) => todo!("Crap"),
             BinaryExpressionOperator::RightShift(_, _) => todo!("Crap"),
-            BinaryExpressionOperator::NullCoalescing(_, _) => todo!("Crap"),
+            BinaryExpressionOperator::NullCoalesce(_, _) => todo!("Crap"),
             BinaryExpressionOperator::BinaryXor(_, _) => todo!("Crap"),
             BinaryExpressionOperator::And(_, _) => todo!("Crap"),
             BinaryExpressionOperator::Instanceof(_, _) => todo!("Crap"),
@@ -467,7 +467,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::GreaterThan(_, r) => *r,
             BinaryExpressionOperator::GreaterThanOrEqual(_, r) => *r,
             BinaryExpressionOperator::RightShift(_, r) => *r,
-            BinaryExpressionOperator::NullCoalescing(_, r) => *r,
+            BinaryExpressionOperator::NullCoalesce(_, r) => *r,
             BinaryExpressionOperator::BinaryXor(_, r) => *r,
             BinaryExpressionOperator::And(_, r) => *r,
             BinaryExpressionOperator::Instanceof(_, r) => *r,

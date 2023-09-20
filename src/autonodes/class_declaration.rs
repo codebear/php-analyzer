@@ -8,6 +8,7 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::declaration_list::DeclarationListNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
@@ -23,6 +24,7 @@ use tree_sitter::Range;
 pub enum ClassDeclarationModifier {
     AbstractModifier(Box<AbstractModifierNode>),
     FinalModifier(Box<FinalModifierNode>),
+    ReadonlyModifier(Box<ReadonlyModifierNode>),
     Comment(Box<CommentNode>),
     TextInterpolation(Box<TextInterpolationNode>),
     Error(Box<ErrorNode>),
@@ -43,6 +45,9 @@ impl ClassDeclarationModifier {
             )),
             "final_modifier" => ClassDeclarationModifier::FinalModifier(Box::new(
                 FinalModifierNode::parse(node, source)?,
+            )),
+            "readonly_modifier" => ClassDeclarationModifier::ReadonlyModifier(Box::new(
+                ReadonlyModifierNode::parse(node, source)?,
             )),
 
             _ => {
@@ -68,6 +73,9 @@ impl ClassDeclarationModifier {
             )),
             "final_modifier" => ClassDeclarationModifier::FinalModifier(Box::new(
                 FinalModifierNode::parse(node, source)?,
+            )),
+            "readonly_modifier" => ClassDeclarationModifier::ReadonlyModifier(Box::new(
+                ReadonlyModifierNode::parse(node, source)?,
             )),
 
             _ => return Ok(None),
@@ -100,6 +108,7 @@ impl ClassDeclarationModifier {
             ClassDeclarationModifier::Error(x) => x.get_utype(state, emitter),
             ClassDeclarationModifier::AbstractModifier(x) => x.get_utype(state, emitter),
             ClassDeclarationModifier::FinalModifier(x) => x.get_utype(state, emitter),
+            ClassDeclarationModifier::ReadonlyModifier(x) => x.get_utype(state, emitter),
         }
     }
 
@@ -114,6 +123,7 @@ impl ClassDeclarationModifier {
             ClassDeclarationModifier::Error(x) => x.get_php_value(state, emitter),
             ClassDeclarationModifier::AbstractModifier(x) => x.get_php_value(state, emitter),
             ClassDeclarationModifier::FinalModifier(x) => x.get_php_value(state, emitter),
+            ClassDeclarationModifier::ReadonlyModifier(x) => x.get_php_value(state, emitter),
         }
     }
 
@@ -124,6 +134,7 @@ impl ClassDeclarationModifier {
             ClassDeclarationModifier::Error(x) => x.read_from(state, emitter),
             ClassDeclarationModifier::AbstractModifier(x) => x.read_from(state, emitter),
             ClassDeclarationModifier::FinalModifier(x) => x.read_from(state, emitter),
+            ClassDeclarationModifier::ReadonlyModifier(x) => x.read_from(state, emitter),
         }
     }
 }
@@ -149,6 +160,10 @@ impl NodeAccess for ClassDeclarationModifier {
                 "ClassDeclarationModifier::final_modifier({})",
                 x.brief_desc()
             ),
+            ClassDeclarationModifier::ReadonlyModifier(x) => format!(
+                "ClassDeclarationModifier::readonly_modifier({})",
+                x.brief_desc()
+            ),
         }
     }
 
@@ -159,6 +174,7 @@ impl NodeAccess for ClassDeclarationModifier {
             ClassDeclarationModifier::Error(x) => x.as_any(),
             ClassDeclarationModifier::AbstractModifier(x) => x.as_any(),
             ClassDeclarationModifier::FinalModifier(x) => x.as_any(),
+            ClassDeclarationModifier::ReadonlyModifier(x) => x.as_any(),
         }
     }
 
@@ -169,6 +185,7 @@ impl NodeAccess for ClassDeclarationModifier {
             ClassDeclarationModifier::Error(x) => x.children_any(),
             ClassDeclarationModifier::AbstractModifier(x) => x.children_any(),
             ClassDeclarationModifier::FinalModifier(x) => x.children_any(),
+            ClassDeclarationModifier::ReadonlyModifier(x) => x.children_any(),
         }
     }
 
@@ -179,6 +196,7 @@ impl NodeAccess for ClassDeclarationModifier {
             ClassDeclarationModifier::Error(x) => x.range(),
             ClassDeclarationModifier::AbstractModifier(x) => x.range(),
             ClassDeclarationModifier::FinalModifier(x) => x.range(),
+            ClassDeclarationModifier::ReadonlyModifier(x) => x.range(),
         }
     }
 }

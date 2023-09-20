@@ -304,7 +304,7 @@ impl BinaryExpressionNode {
                 left.push(right);
                 Some(PHPValue::String(left))
             }
-            BinaryExpressionOperator::NullCoalescing(_, _) => {
+            BinaryExpressionOperator::NullCoalesce(_, _) => {
                 if lval.is_null() {
                     Some(rval)
                 } else {
@@ -433,7 +433,12 @@ impl BinaryExpressionNode {
 
             // String
             BinaryExpressionOperator::Concat(_, _) => Some(DiscreteType::String.into()),
-            BinaryExpressionOperator::NullCoalescing(_, _) => todo!(),
+            BinaryExpressionOperator::NullCoalesce(_, _) => {
+                if let Some(val) = self.get_php_value(state, emitter) {
+                    return val.get_utype();
+                }
+                crate::missing_none!("Handle {:?} ?? {:?}", ltype, rtype)
+            }
 
             BinaryExpressionOperator::Comment(_)
             | BinaryExpressionOperator::TextInterpolation(_)

@@ -353,7 +353,7 @@ impl AnalysisState {
             let read = x.read().unwrap();
             read.get_generic_templates()
         });
-        let mut func_templates = self
+        let func_templates = self
             .in_function_stack
             .last()
             .and_then(|x| x.get_generic_templates());

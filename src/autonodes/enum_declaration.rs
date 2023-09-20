@@ -1,11 +1,11 @@
 use crate::analysis::state::AnalysisState;
-use crate::autonodes::_type::_TypeNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::attribute_list::AttributeListNode;
 use crate::autonodes::class_interface_clause::ClassInterfaceClauseNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::enum_declaration_list::EnumDeclarationListNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::primitive_type::PrimitiveTypeNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
@@ -19,8 +19,8 @@ use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum EnumDeclarationChildren {
-    _Type(Box<_TypeNode>),
     ClassInterfaceClause(Box<ClassInterfaceClauseNode>),
+    PrimitiveType(Box<PrimitiveTypeNode>),
     Comment(Box<CommentNode>),
     TextInterpolation(Box<TextInterpolationNode>),
     Error(Box<ErrorNode>),
@@ -39,19 +39,15 @@ impl EnumDeclarationChildren {
             "class_interface_clause" => EnumDeclarationChildren::ClassInterfaceClause(Box::new(
                 ClassInterfaceClauseNode::parse(node, source)?,
             )),
+            "primitive_type" => EnumDeclarationChildren::PrimitiveType(Box::new(
+                PrimitiveTypeNode::parse(node, source)?,
+            )),
 
             _ => {
-                if let Some(x) = _TypeNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| EnumDeclarationChildren::_Type(y))
-                {
-                    x
-                } else {
-                    return Err(ParseError::new(
-                        node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
-                    ));
-                }
+                return Err(ParseError::new(
+                    node.range(),
+                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                ))
             }
         })
     }
@@ -68,19 +64,11 @@ impl EnumDeclarationChildren {
             "class_interface_clause" => EnumDeclarationChildren::ClassInterfaceClause(Box::new(
                 ClassInterfaceClauseNode::parse(node, source)?,
             )),
+            "primitive_type" => EnumDeclarationChildren::PrimitiveType(Box::new(
+                PrimitiveTypeNode::parse(node, source)?,
+            )),
 
-            _ => {
-                return Ok(
-                    if let Some(x) = _TypeNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| EnumDeclarationChildren::_Type(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
-                )
-            }
+            _ => return Ok(None),
         }))
     }
 
@@ -108,8 +96,8 @@ impl EnumDeclarationChildren {
             EnumDeclarationChildren::Comment(x) => x.get_utype(state, emitter),
             EnumDeclarationChildren::TextInterpolation(x) => x.get_utype(state, emitter),
             EnumDeclarationChildren::Error(x) => x.get_utype(state, emitter),
-            EnumDeclarationChildren::_Type(x) => x.get_utype(state, emitter),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.get_utype(state, emitter),
+            EnumDeclarationChildren::PrimitiveType(x) => x.get_utype(state, emitter),
         }
     }
 
@@ -122,8 +110,8 @@ impl EnumDeclarationChildren {
             EnumDeclarationChildren::Comment(x) => x.get_php_value(state, emitter),
             EnumDeclarationChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
             EnumDeclarationChildren::Error(x) => x.get_php_value(state, emitter),
-            EnumDeclarationChildren::_Type(x) => x.get_php_value(state, emitter),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.get_php_value(state, emitter),
+            EnumDeclarationChildren::PrimitiveType(x) => x.get_php_value(state, emitter),
         }
     }
 
@@ -132,8 +120,8 @@ impl EnumDeclarationChildren {
             EnumDeclarationChildren::Comment(x) => x.read_from(state, emitter),
             EnumDeclarationChildren::TextInterpolation(x) => x.read_from(state, emitter),
             EnumDeclarationChildren::Error(x) => x.read_from(state, emitter),
-            EnumDeclarationChildren::_Type(x) => x.read_from(state, emitter),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.read_from(state, emitter),
+            EnumDeclarationChildren::PrimitiveType(x) => x.read_from(state, emitter),
         }
     }
 }
@@ -151,11 +139,12 @@ impl NodeAccess for EnumDeclarationChildren {
             EnumDeclarationChildren::Error(x) => {
                 format!("EnumDeclarationChildren::ERROR({})", x.brief_desc())
             }
-            EnumDeclarationChildren::_Type(x) => {
-                format!("EnumDeclarationChildren::_type({})", x.brief_desc())
-            }
             EnumDeclarationChildren::ClassInterfaceClause(x) => format!(
                 "EnumDeclarationChildren::class_interface_clause({})",
+                x.brief_desc()
+            ),
+            EnumDeclarationChildren::PrimitiveType(x) => format!(
+                "EnumDeclarationChildren::primitive_type({})",
                 x.brief_desc()
             ),
         }
@@ -166,8 +155,8 @@ impl NodeAccess for EnumDeclarationChildren {
             EnumDeclarationChildren::Comment(x) => x.as_any(),
             EnumDeclarationChildren::TextInterpolation(x) => x.as_any(),
             EnumDeclarationChildren::Error(x) => x.as_any(),
-            EnumDeclarationChildren::_Type(x) => x.as_any(),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.as_any(),
+            EnumDeclarationChildren::PrimitiveType(x) => x.as_any(),
         }
     }
 
@@ -176,8 +165,8 @@ impl NodeAccess for EnumDeclarationChildren {
             EnumDeclarationChildren::Comment(x) => x.children_any(),
             EnumDeclarationChildren::TextInterpolation(x) => x.children_any(),
             EnumDeclarationChildren::Error(x) => x.children_any(),
-            EnumDeclarationChildren::_Type(x) => x.children_any(),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.children_any(),
+            EnumDeclarationChildren::PrimitiveType(x) => x.children_any(),
         }
     }
 
@@ -186,8 +175,8 @@ impl NodeAccess for EnumDeclarationChildren {
             EnumDeclarationChildren::Comment(x) => x.range(),
             EnumDeclarationChildren::TextInterpolation(x) => x.range(),
             EnumDeclarationChildren::Error(x) => x.range(),
-            EnumDeclarationChildren::_Type(x) => x.range(),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.range(),
+            EnumDeclarationChildren::PrimitiveType(x) => x.range(),
         }
     }
 }

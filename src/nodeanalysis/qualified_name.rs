@@ -27,7 +27,7 @@ impl QualifiedNameNode {
             match &**child {
                 QualifiedNameChildren::Name(n) => {
                     todo!("CRAP {:?} {:?}", self.range.start_byte, n.range.start_byte);
-                    return false;
+                    // return false;
                 }
                 QualifiedNameChildren::NamespaceNameAsPrefix(nn) => {
                     return nn.is_root_anchored();

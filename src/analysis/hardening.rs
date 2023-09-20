@@ -320,7 +320,7 @@ impl BranchTypeHardening for BinaryExpressionNode {
                 crate::missing!("BinaryExpressionOperator::BooleanOr")
             }
 
-            BinaryExpressionOperator::NullCoalescing(_, _) => {
+            BinaryExpressionOperator::NullCoalesce(_, _) => {
                 crate::missing!("BinaryExpressionOperator::NullCoalescing")
             }
 

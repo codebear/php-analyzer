@@ -7,19 +7,19 @@ const node_defs = JSON.parse(raw_json);
 
 let type_name_map = {
     // Assignments
-    '%=':"ModAssign",
-    '&=':"AndAssign",
-    '**=':"PowAssign",
-    '*=':"MultAssign",
-    '+=':"AddAssign",
-    '-=':"SubAssign",
-    '.=':"ConcatAssign",
-    '/=':"DivAssign",
-    '<<=':"LeftShiftAssign",
-    '>>=':"RightShiftAssign",
-    '??=':"NullsafeAssign",
-    '^=':"XorAssign",
-    '|=':"OrAssign",
+    '%=': "ModAssign",
+    '&=': "AndAssign",
+    '**=': "PowAssign",
+    '*=': "MultAssign",
+    '+=': "AddAssign",
+    '-=': "SubAssign",
+    '.=': "ConcatAssign",
+    '/=': "DivAssign",
+    '<<=': "LeftShiftAssign",
+    '>>=': "RightShiftAssign",
+    '??=': "NullsafeAssign",
+    '^=': "XorAssign",
+    '|=': "OrAssign",
 
     // Binary operators
     "!=": "NotEqual",
@@ -60,16 +60,15 @@ let type_name_map = {
 
     // Div
     ",": "Comma",
-
+    "??": "NullCoalesce",
     "\"": "DoubleQuote",
-    "??": "NullCoalescing",
 };
 
 let type_map = {};
 
 function to_camel_case(str) {
     let pre = str.match(/^_/) ? "_" : "";
-    return pre+str.replace(/(_|^)(.)/g, function(_m0, _m1, m2) {
+    return pre + str.replace(/(_|^)(.)/g, function (_m0, _m1, m2) {
         return m2.toUpperCase();
     })
 }
@@ -85,14 +84,14 @@ function get_rust_type_name(type, suffix = undefined) {
     if (type in type_map) {
         return type_map[type];
     }
-    return to_camel_case(type)+(suffix !== undefined ? suffix : "Node");
+    return to_camel_case(type) + (suffix !== undefined ? suffix : "Node");
 }
 
 function rust_str(value) {
     if (value.match(/"|\\/)) {
-        return 'r#"'+value+'"#';
+        return 'r#"' + value + '"#';
     }
-    return '"'+value+'"';
+    return '"' + value + '"';
 }
 
 function rustify_name(name) {
@@ -102,9 +101,9 @@ function rustify_name(name) {
     return name;
 }
 
-for(const node_def of node_defs) {
+for (const node_def of node_defs) {
     const nostrings = [
-        'null', 
+        'null',
         'string',
         'float'
     ];
@@ -116,20 +115,20 @@ for(const node_def of node_defs) {
 function get_enum_matches(enum_name, types, callback) {
     let buf = "";
     let [capture, closure] = callback("comment", get_rust_type_name("comment"));
-    buf += `${enum_name}::Comment(${capture}) => ${closure},`+"\n";
-     [capture, closure] = callback("text_interpolation", get_rust_type_name("text_interpolation"));
-    buf += `${enum_name}::TextInterpolation(${capture}) => ${closure},`+"\n"; 
+    buf += `${enum_name}::Comment(${capture}) => ${closure},` + "\n";
+    [capture, closure] = callback("text_interpolation", get_rust_type_name("text_interpolation"));
+    buf += `${enum_name}::TextInterpolation(${capture}) => ${closure},` + "\n";
     [capture, closure] = callback("ERROR", get_rust_type_name("ERROR"));
-    buf += `${enum_name}::Error(${capture}) => ${closure},`+"\n"; 
+    buf += `${enum_name}::Error(${capture}) => ${closure},` + "\n";
 
     let map = {};
-    for(let enum_type of types) {
+    for (let enum_type of types) {
         let tname = get_rust_enum_name(enum_type.type);
         if (tname in map) {
             continue;
         }
         let [capture, closure] = callback(enum_type.type, get_rust_type_name(enum_type.type));
-        buf += `    ${enum_name}::${tname}(${capture}) => ${closure},`+"\n";
+        buf += `    ${enum_name}::${tname}(${capture}) => ${closure},` + "\n";
         map[tname] = 1;
     }
     return buf;
@@ -137,29 +136,29 @@ function get_enum_matches(enum_name, types, callback) {
 
 function create_enum_for_types(name, types) {
     let uses = [
-        "tree_sitter::Range", 
+        "tree_sitter::Range",
         "crate::autotree::NodeAccess",
         "crate::autotree::ParseError",
         "crate::autonodes::any::AnyNodeRef",
     ];
     let enum_entries = new Set();
-    for(const enum_type of types) {
+    for (const enum_type of types) {
         let tname = get_rust_enum_name(enum_type.type);
         let ttype = get_rust_type_name(enum_type.type);
-        uses.push("crate::autonodes::"+enum_type.type+"::"+ttype);
-        let entry = tname+"(";
+        uses.push("crate::autonodes::" + enum_type.type + "::" + ttype);
+        let entry = tname + "(";
         if (ttype.match(/'static/)) {
-           entry += ttype+", Range"; 
+            entry += ttype + ", Range";
         } else {
-           entry += "Box<"+ttype+">";
+            entry += "Box<" + ttype + ">";
         }
         entry += ")";
         enum_entries.add(entry);
     }
     let child_enum_buffer = "#[derive(Debug, Clone)]\n";
-    child_enum_buffer += "pub enum "+name+" {\n";
-    for(const entry of enum_entries) {
-        child_enum_buffer += "  "+entry+",\n";
+    child_enum_buffer += "pub enum " + name + " {\n";
+    for (const entry of enum_entries) {
+        child_enum_buffer += "  " + entry + ",\n";
     }
 
     // uses.push("crate::autonodes::any::AnyNode");
@@ -172,31 +171,31 @@ function create_enum_for_types(name, types) {
     child_enum_buffer += "   Error(Box<ErrorNode>),\n";
     child_enum_buffer += "}\n\n";
 
-   
+
     let match_enum_buffer = "";
-    match_enum_buffer += `      "comment" => ${name}::Comment(Box::new(CommentNode::parse(node, source)?)),`+"\n";
-    match_enum_buffer += `      "text_interpolation" => ${name}::TextInterpolation(Box::new(TextInterpolationNode::parse(node, source)?)),`+"\n";
-    match_enum_buffer += `      "ERROR" => ${name}::Error(Box::new(ErrorNode::parse(node, source)?)),`+"\n";
+    match_enum_buffer += `      "comment" => ${name}::Comment(Box::new(CommentNode::parse(node, source)?)),` + "\n";
+    match_enum_buffer += `      "text_interpolation" => ${name}::TextInterpolation(Box::new(TextInterpolationNode::parse(node, source)?)),` + "\n";
+    match_enum_buffer += `      "ERROR" => ${name}::Error(Box::new(ErrorNode::parse(node, source)?)),` + "\n";
     let opt_wildcard = "";
     let new_wildcard = "";
-   for(let type of types) {
+    for (let type of types) {
         let child_type = get_rust_type_name(type.type);
         let child_enum_variant = get_rust_enum_name(type.type);
-        let opt_parsing = child_type+"::parse_opt(node, source)?";
+        let opt_parsing = child_type + "::parse_opt(node, source)?";
         let parsing = `${child_type}::parse(node, source)?`;
         if (child_type.match(/'static/)) {
             parsing = rust_str(type.type);
             parsing += ", node.range()";
             opt_parsing = 'Some(todo!("Det lyt fiksas"))';
         } else {
-            parsing = "Box::new("+parsing+")";
+            parsing = "Box::new(" + parsing + ")";
             opt_parsing += ".map(|x| Box::new(x))";
         }
         let match = rust_str(type.type);
         if (type.type.match(/^_/)) {
             match = "_";
         }
-        let entry = `                    ${match} => ${name}::${child_enum_variant}(${parsing}),`+"\n";
+        let entry = `                    ${match} => ${name}::${child_enum_variant}(${parsing}),` + "\n";
         opt_parsing += `.map(|y| ${name}::${child_enum_variant}(y))`;
         if (match == '_') {
             new_wildcard += `if let Some(x) = ${opt_parsing} { x } else `;
@@ -251,37 +250,37 @@ function create_enum_for_types(name, types) {
 
         pub fn get_utype(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<UnionType> {
             match self {
-                ${get_enum_matches(name, types, function(child_type, rust_type) {
-                    if (rust_type.match(/'static/)) {
-                        uses.push("crate::types::union::DiscreteType");
+    ${get_enum_matches(name, types, function (child_type, rust_type) {
+        if (rust_type.match(/'static/)) {
+            uses.push("crate::types::union::DiscreteType");
 
-                        return ["_,_", 'Some(DiscreteType::String.into())'];
-                    }
-                    return ['x', 'x.get_utype(state, emitter)'];
-                })}
+            return ["_,_", 'Some(DiscreteType::String.into())'];
+        }
+        return ['x', 'x.get_utype(state, emitter)'];
+    })}
             }
         }
 
         pub fn get_php_value(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<PHPValue> {
             match self {
-                ${get_enum_matches(name, types, function(child_type, rust_type) {
-                    if (rust_type.match(/'static/)) {
-                        uses.push("std::ffi::OsStr");
-                        return ["a,_", 'Some(PHPValue::String(OsStr::new(a).to_os_string()))'];
-                    }
-                    return ['x', 'x.get_php_value(state, emitter)'];
-                })}
+    ${get_enum_matches(name, types, function (child_type, rust_type) {
+        if (rust_type.match(/'static/)) {
+            uses.push("std::ffi::OsStr");
+            return ["a,_", 'Some(PHPValue::String(OsStr::new(a).to_os_string()))'];
+        }
+        return ['x', 'x.get_php_value(state, emitter)'];
+    })}
             }
         }
 
         pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
             match self {
-                ${get_enum_matches(name, types, function(child_type, rust_type) {
-                    if (rust_type.match(/'static/)) {
-                        return ["_,_", '()'];
-                    }
-                    return ['x', 'x.read_from(state, emitter)'];
-                })}
+    ${get_enum_matches(name, types, function (child_type, rust_type) {
+        if (rust_type.match(/'static/)) {
+            return ["_,_", '()'];
+        }
+        return ['x', 'x.read_from(state, emitter)'];
+    })}
             }
         }
 
@@ -291,45 +290,45 @@ function create_enum_for_types(name, types) {
 
         fn brief_desc(&self) -> String {
             match self {
-                ${get_enum_matches(name, types, function(child_type, rust_type) {
-                    if (rust_type.match(/'static/)) {
-                        return ["a,_", `a.to_string()`];
-                    }
-                    return ["x", `format!("${name}::${child_type}({})", x.brief_desc())`];
-                })}
+    ${get_enum_matches(name, types, function (child_type, rust_type) {
+        if (rust_type.match(/'static/)) {
+            return ["a,_", `a.to_string()`];
+        }
+        return ["x", `format!("${name}::${child_type}({})", x.brief_desc())`];
+    })}
             }
         }
 
         fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
             match self {
-                ${get_enum_matches(name, types, function(child_type, rust_type) {
-                    if (rust_type.match(/'static/)) {
-                        return ["a,b", `AnyNodeRef::StaticExpr(a, *b)`];
-                    }
-                    return ["x", 'x.as_any()'];
-                })}
+    ${get_enum_matches(name, types, function (child_type, rust_type) {
+        if (rust_type.match(/'static/)) {
+            return ["a,b", `AnyNodeRef::StaticExpr(a, *b)`];
+        }
+        return ["x", 'x.as_any()'];
+    })}
             }
         }
 
         fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
             match self {
-                ${get_enum_matches(name, types, function(child_type, rust_type) {
-                    if (rust_type.match(/'static/)) {
-                        return ["_,_", 'todo!("Crap")'];
-                    }
-                    return ["x", "x.children_any()"];
-                })}
+    ${get_enum_matches(name, types, function (child_type, rust_type) {
+        if (rust_type.match(/'static/)) {
+            return ["_,_", 'todo!("Crap")'];
+        }
+        return ["x", "x.children_any()"];
+    })}
             }       
         }
 
         fn range(&self) -> Range {
             match self {
-                ${get_enum_matches(name, types, function(child_type, rust_type) {
-                    if (rust_type.match(/'static/)) {
-                        return ["_,r", "*r"];
-                    }
-                    return ["x", "x.range()"];
-                })}
+    ${get_enum_matches(name, types, function (child_type, rust_type) {
+        if (rust_type.match(/'static/)) {
+            return ["_,r", "*r"];
+        }
+        return ["x", "x.range()"];
+    })}
             }
         }
 
@@ -359,11 +358,11 @@ any_ref_buffer += `pub enum AnyNodeRef<'a> {
 
 let mod_buffer = "";
 mod_buffer += "pub mod any;\n";
-for(const node_def of node_defs) {
+for (const node_def of node_defs) {
     if (!node_def.named) {
         continue;
     }
-    console.log("## "+node_def.type+" ##");
+    console.log("## " + node_def.type + " ##");
 
     const node_name = get_rust_type_name(node_def.type);
     let uses = {};
@@ -376,8 +375,8 @@ for(const node_def of node_defs) {
     if ("subtypes" in node_def) {
         declares.push(node_name);
         let [sub_node_buffer, usings] = create_enum_for_types(node_name, node_def.subtypes);
-        usings.map(function (u) { 
-            uses[u] = ""; 
+        usings.map(function (u) {
+            uses[u] = "";
         });
         child_enum_buffer += sub_node_buffer;
 
@@ -409,7 +408,7 @@ for(const node_def of node_defs) {
                 let impl_prequel_entry = "";
 
                 let rust_name = rustify_name(field_name);
-                impl_prequel_entry += 'node.children_by_field_name("'+field_name+'", &mut node.walk())';
+                impl_prequel_entry += 'node.children_by_field_name("' + field_name + '", &mut node.walk())';
 
                 if ("children" in node_def && Object.values(node_def.children).length) {
                     impl_prequel_entry += "\n\t\t\t\t.map(|chnode| { skip_nodes.push(chnode.id()); chnode })\n";
@@ -419,25 +418,25 @@ for(const node_def of node_defs) {
                 if (field_def.types.length == 1) {
                     let raw_type = field_def.types[0].type;
                     field_type = get_rust_type_name(raw_type);
-                    uses["crate::autonodes::"+raw_type+"::"+field_type] = "";
+                    uses["crate::autonodes::" + raw_type + "::" + field_type] = "";
                     if (field_type.match(/'static/)) {
                         impl_prequel_entry += "/* hva */";
                     } else {
-                        impl_prequel_entry += "\n\t\t\t\t.map(|chnode1| "+field_type+"::parse(chnode1, source))";
+                        impl_prequel_entry += "\n\t\t\t\t.map(|chnode1| " + field_type + "::parse(chnode1, source))";
                     }
                     impl_prequel_entry += ".collect::<Result<Vec<_>, ParseError>>()?.drain(..)";
                 } else if (field_def.types.length > 1) {
                     let field_enum_name = get_rust_type_name(node_def.type, to_camel_case(field_name));
-                    impl_prequel_entry += "\n\t\t\t\t.map(|chnode2| "+field_enum_name+"::parse(chnode2, source))";
+                    impl_prequel_entry += "\n\t\t\t\t.map(|chnode2| " + field_enum_name + "::parse(chnode2, source))";
                     impl_prequel_entry += "            .collect::<Result<Vec<_>, ParseError>>()?.drain(..)";
-                    
+
                     let [part_child_enum_buffer, usings] = create_enum_for_types(field_enum_name, field_def.types);
                     child_enum_buffer += part_child_enum_buffer;
                     usings.map(function (u) {
                         uses[u] = "";
                     });
                     impl_prequel_entry += "\n\t\t\t\t.map(|z| Box::new(z))";
-                    field_type = "Box<"+field_enum_name+">";
+                    field_type = "Box<" + field_enum_name + ">";
                     boxed = true;
                     // console.log(field_def);
                 }
@@ -445,25 +444,25 @@ for(const node_def of node_defs) {
                 let child_cast_entry = "";
 
                 if (field_def.multiple) {
-                    field_type = "Vec<"+field_type+">";
-                    impl_prequel_entry += "\n\t\t\t\t.collect::<"+field_type+">()";
+                    field_type = "Vec<" + field_type + ">";
+                    impl_prequel_entry += "\n\t\t\t\t.collect::<" + field_type + ">()";
                     if (field_def.required) {
-                        child_cast_entry = `child_vec.extend(self.${rust_name}.iter().map(|v| v.as_any()));`+"\n";
+                        child_cast_entry = `child_vec.extend(self.${rust_name}.iter().map(|v| v.as_any()));` + "\n";
                     } else {
-                        child_cast_entry = `if let Some(x) = &self.${rust_name} { child_vec.extend(x.iter().map(|z| z.as_any()));}`+"\n";
+                        child_cast_entry = `if let Some(x) = &self.${rust_name} { child_vec.extend(x.iter().map(|z| z.as_any()));}` + "\n";
                     }
                 } else {
                     impl_prequel_entry += "\n\t\t\t\t.next()";
                 }
 
-//                 if let Some(x) = self.child { &[x.as_any()] } else { &[] },\n
+                //                 if let Some(x) = self.child { &[x.as_any()] } else { &[] },\n
                 if (!field_def.required) {
-                    field_type = "Option<"+field_type+">";
-                    if (!child_cast_entry) child_cast_entry += `if let Some(x) = &self.${rust_name} { child_vec.push(x.as_any()); }`+"\n";
+                    field_type = "Option<" + field_type + ">";
+                    if (!child_cast_entry) child_cast_entry += `if let Some(x) = &self.${rust_name} { child_vec.push(x.as_any()); }` + "\n";
                 } else {
-                    if (!child_cast_entry) child_cast_entry += `child_vec.push(self.${rust_name}.as_any());`+"\n";
+                    if (!child_cast_entry) child_cast_entry += `child_vec.push(self.${rust_name}.as_any());` + "\n";
                     if (!field_def.multiple) {
-                        impl_prequel_entry += '\n\t\t\t\t.expect("Field '+field_name+' should exist")';
+                        impl_prequel_entry += '\n\t\t\t\t.expect("Field ' + field_name + ' should exist")';
                     }
                 }
                 child_cast += child_cast_entry;
@@ -475,13 +474,13 @@ for(const node_def of node_defs) {
 
 
 
-                impl_members += rust_name+",\n";
+                impl_members += rust_name + ",\n";
 
-                impl_prequel += "       let "+rust_name+": "+field_type+" = "+impl_prequel_entry+";";
+                impl_prequel += "       let " + rust_name + ": " + field_type + " = " + impl_prequel_entry + ";";
 
 
                 // console.log(field_def);
-                node_buffer += `    pub ${rustify_name(field_name)}: ${field_type},\n`;    
+                node_buffer += `    pub ${rustify_name(field_name)}: ${field_type},\n`;
             }
         }
         if ("children" in node_def && Object.values(node_def.children).length) {
@@ -493,9 +492,9 @@ for(const node_def of node_defs) {
             if (children_def.types.length == 1) {
                 let raw_type = children_def.types[0].type;
                 base_children_type = children_type = get_rust_type_name(raw_type);
-                let using = "crate::autonodes::"+raw_type+"::"+children_type;
+                let using = "crate::autonodes::" + raw_type + "::" + children_type;
                 uses[using] = "";
-                children_type = "Box<"+children_type+">";
+                children_type = "Box<" + children_type + ">";
             } else if (children_def.types.length > 1) {
                 base_children_type = children_type = get_rust_type_name(node_def.type, "Children");
                 declares.push(children_type);
@@ -504,7 +503,7 @@ for(const node_def of node_defs) {
                     uses[u] = "";
                 });
 
-                children_type = "Box<"+children_type+">";
+                children_type = "Box<" + children_type + ">";
                 child_enum_buffer += rs_enum;
             } else {
                 children_type = "BROKEN";
@@ -513,17 +512,17 @@ for(const node_def of node_defs) {
                 node.named_children(&mut node.walk())
                     .filter(|node| node.kind() == "comment")`;
             if (children_def.multiple) {
-                node_buffer += "    pub children: Vec<"+children_type+">,\n";
+                node_buffer += "    pub children: Vec<" + children_type + ">,\n";
 
 
                 let children_filter = "";
-   
+
                 if ("fields" in node_def && Object.values(node_def.fields).length) {
                     children_filter += ".filter(|node| !skip_nodes.contains(&node.id()))";
                     extra += ".filter(|node| !skip_nodes.contains(&node.id()))";
                 }
                 children_filter += '.filter(|node| node.kind() != "comment")';
-                impl_members += "    children: "+base_children_type+"::parse_vec(node.named_children(&mut node.walk())"+children_filter+", source)?,\n";
+                impl_members += "    children: " + base_children_type + "::parse_vec(node.named_children(&mut node.walk())" + children_filter + ", source)?,\n";
                 extra += ",\nsource)?,";
                 impl_members += extra;
                 child_cast += "child_vec.extend(self.children.iter().map(|n| n.as_any()));\n"
@@ -535,8 +534,8 @@ for(const node_def of node_defs) {
                     extra += ".filter(|node| !skip_nodes.contains(&node.id()))";
                 }
                 impl_decl += '.filter(|node| node.kind() != "comment")';
-                impl_decl += ".map(|k| "+base_children_type+"::parse(k, source))";
-                impl_decl += ".collect::<Result<Vec<"+base_children_type+">,ParseError>>()?";
+                impl_decl += ".map(|k| " + base_children_type + "::parse(k, source))";
+                impl_decl += ".collect::<Result<Vec<" + base_children_type + ">,ParseError>>()?";
                 impl_decl += ".drain(..)";
                 if (children_type.match(/^Box</)) {
                     impl_decl += ".map(|j| Box::new(j))";
@@ -546,15 +545,15 @@ for(const node_def of node_defs) {
                     impl_decl += ".expect(\"Should be a child\")";
                     child_cast += "child_vec.push(self.child.as_any()); \n";
                 } else {
-                    children_type = "Option<"+children_type+">";
+                    children_type = "Option<" + children_type + ">";
                     child_cast += "if let Some(x) = &self.child { child_vec.push(x.as_any()); }\n";
                 }
 
 
 
-                node_buffer += "    pub child: "+children_type+",\n";
- 
-                impl_members += "    child: "+impl_decl+",\n";
+                node_buffer += "    pub child: " + children_type + ",\n";
+
+                impl_members += "    child: " + impl_decl + ",\n";
 
                 extra += ",\n source)?,";
                 impl_members += extra;
@@ -579,7 +578,7 @@ for(const node_def of node_defs) {
             uses['std::ffi::OsStr'] = '';
             uses['std::ffi::OsString'] = '';
             uses['std::os::unix::ffi::OsStrExt'] = '';
-            
+
         } else {
             node_buffer += "    pub extras: Vec<Box<ExtraChild>>,\n";
         }
@@ -644,7 +643,7 @@ for(const node_def of node_defs) {
         } else {
             impl_buffer += "vec!()"
         }
-            impl_buffer += `
+        impl_buffer += `
         }
     
         fn range(&self) -> Range {
@@ -653,14 +652,14 @@ for(const node_def of node_defs) {
 
    
         }
-        `;        
+        `;
         uses["crate::autonodes::any::AnyNodeRef"] = "";
     }
 
     any_names.push(any_name);
-    any_buffer += `     ${any_name}(Box<${node_name}>),`+"\n";
-    any_ref_buffer += `     ${any_name}(&'a ${node_name}),`+"\n";
-    let any_use = "crate::autonodes::"+node_def.type+"::"+node_name;
+    any_buffer += `     ${any_name}(Box<${node_name}>),` + "\n";
+    any_ref_buffer += `     ${any_name}(&'a ${node_name}),` + "\n";
+    let any_use = "crate::autonodes::" + node_def.type + "::" + node_name;
     any_uses[any_use] = "";
 
     let use_buffer = "";
@@ -668,19 +667,19 @@ for(const node_def of node_defs) {
         if (usage.match(/'static/)) {
             continue;
         }
-        for(let decl of declares) {
+        for (let decl of declares) {
             // Skip imports of structs declared in this file
-            let rx = new RegExp("::"+decl+"\\b");
+            let rx = new RegExp("::" + decl + "\\b");
             if (usage.match(rx)) {
                 continue usages;
             }
         }
-        use_buffer += "use "+usage+";\n";
+        use_buffer += "use " + usage + ";\n";
     }
     use_buffer += "\n";
     node_buffer += "\n";
 
-    fs.writeFileSync(`src/autonodes/${node_def.type}.rs`, use_buffer+child_enum_buffer+node_buffer+impl_buffer);
+    fs.writeFileSync(`src/autonodes/${node_def.type}.rs`, use_buffer + child_enum_buffer + node_buffer + impl_buffer);
     mod_buffer += `pub mod ${node_def.type};\n`;
 }
 any_buffer += "}\n";
@@ -701,17 +700,17 @@ impl AnyNode {
         Ok(match node.kind() {
            // "comment" => 
            // "text_interpolation" => 
-            ${Object.values(node_defs).map(node_def => {
-                const name = get_rust_type_name(node_def.type);
-                if (name.match(/'static/)) {
-                    return "";
-                }
-                if (!node_def.named) {
-                    return "";
-                }
-                let tname = get_rust_enum_name(node_def.type);
-                return `"${node_def.type}" => AnyNode::${tname}(Box::new(${name}::parse(node, source)?)),`
-            }).join("\n")}
+${Object.values(node_defs).map(node_def => {
+    const name = get_rust_type_name(node_def.type);
+    if (name.match(/'static/)) {
+        return "";
+    }
+    if (!node_def.named) {
+        return "";
+    }
+    let tname = get_rust_enum_name(node_def.type);
+    return `"${node_def.type}" => AnyNode::${tname}(Box::new(${name}::parse(node, source)?)),`
+}).join("\n")}
             _ => return Err(ParseError::new(node.range(), format!("Unknown node kind {}", node.kind()))),
         })
     }
@@ -732,49 +731,49 @@ impl NodeAccess for AnyNode {
 
     fn brief_desc(&self) -> String {
         match self {
-            ${Object.values(node_defs).map(node_def => {
-                const name = get_rust_type_name(node_def.type);
-                if (name.match(/'static/)) {
-                    return "";
-                }
-                if (!node_def.named) {
-                    return "";
-                }
-                let tname = get_rust_enum_name(node_def.type);
-                return `AnyNode::${tname}(x) => x.brief_desc(),`
-            }).join("\n")}
+${Object.values(node_defs).map(node_def => {
+    const name = get_rust_type_name(node_def.type);
+    if (name.match(/'static/)) {
+        return "";
+    }
+    if (!node_def.named) {
+        return "";
+    }
+    let tname = get_rust_enum_name(node_def.type);
+    return `AnyNode::${tname}(x) => x.brief_desc(),`
+}).join("\n")}
         }
     }
 
     fn range(&self) -> Range {
         match self {
-            ${Object.values(node_defs).map(node_def => {
-                const name = get_rust_type_name(node_def.type);
-                if (name.match(/'static/)) {
-                    return "";
-                }
-                if (!node_def.named) {
-                    return "";
-                }
-                let tname = get_rust_enum_name(node_def.type);
-                return `AnyNode::${tname}(x) => x.range(),`
-            }).join("\n")}
+${Object.values(node_defs).map(node_def => {
+    const name = get_rust_type_name(node_def.type);
+    if (name.match(/'static/)) {
+        return "";
+    }
+    if (!node_def.named) {
+        return "";
+    }
+    let tname = get_rust_enum_name(node_def.type);
+    return `AnyNode::${tname}(x) => x.range(),`
+}).join("\n")}
         }
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-        ${Object.values(node_defs).map(node_def => {
-            const name = get_rust_type_name(node_def.type);
-            if (name.match(/'static/)) {
-                return "";
-            }
-            if (!node_def.named) {
-                return "";
-            }
-            let tname = get_rust_enum_name(node_def.type);
-            return `AnyNode::${tname}(x) => x.as_any(),`
-        }).join("\n")}
+${Object.values(node_defs).map(node_def => {
+    const name = get_rust_type_name(node_def.type);
+    if (name.match(/'static/)) {
+        return "";
+    }
+    if (!node_def.named) {
+        return "";
+    }
+    let tname = get_rust_enum_name(node_def.type);
+    return `AnyNode::${tname}(x) => x.as_any(),`
+}).join("\n")}
         }    
     }
 
@@ -832,9 +831,8 @@ impl <'a> NodeAccess for AnyNodeRef<'a> {
 
 `;
 for (let usage in any_uses) {
-    any_ref_buffer = "use "+usage+";\n"+any_ref_buffer;
+    any_ref_buffer = "use " + usage + ";\n" + any_ref_buffer;
 }
 
-fs.writeFileSync('src/autonodes/any.rs', any_ref_buffer+any_buffer);
+fs.writeFileSync('src/autonodes/any.rs', any_ref_buffer + any_buffer);
 fs.writeFileSync(`src/autonodes/mod.rs`, mod_buffer);
- 

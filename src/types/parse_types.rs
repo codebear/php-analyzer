@@ -73,7 +73,7 @@ impl std::fmt::Display for ShapeEntry {
                 write!(f, "?")?;
             }
         }
-        let mut x = 0;
+        let x = 0;
         for v in &self.1 {
             if x > 0 {
                 write!(f, " | ")?;
