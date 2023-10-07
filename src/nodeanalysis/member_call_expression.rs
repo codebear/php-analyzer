@@ -256,13 +256,14 @@ impl MemberCallExpressionNode {
                 Some(cname)
             }
             DiscreteType::Generic(btype, _) => self.get_class_name_from_discrete_type(&**btype),
-            DiscreteType::NULL => None,
-            DiscreteType::Void => {
-                // FIXME emit something somehow, somewhere?
-                crate::missing_none!(
-                    "Trying to get class-name from a void which a method is being called on"
-                )
-            }
+            DiscreteType::NULL
+            | DiscreteType::Unknown
+            | DiscreteType::Void
+            | DiscreteType::False
+            | DiscreteType::Bool
+            | DiscreteType::True
+            | DiscreteType::Float
+            | DiscreteType::Int => None,
             _ => {
                 crate::missing_none!(
                     "Trying to get class-name from a {} ({:?}) which a method is being called on",

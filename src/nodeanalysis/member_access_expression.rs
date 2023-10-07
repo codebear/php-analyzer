@@ -329,6 +329,8 @@ impl MemberAccessExpressionObject {
                     DiscreteType::Named(name, fq_name) => {
                         Some(ClassName::new_with_names(name, fq_name))
                     }
+                    DiscreteType::Unknown => None,
+
                     t @ _ => crate::missing_none!(
                         "{}.get_class_name(..) har et objekt av typen {:?}",
                         self.kind(),

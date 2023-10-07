@@ -9,7 +9,7 @@ pub fn test_callable1() {
     assert!(rest.len() == 0);
     assert!(what.len() == 1);
     let ctype = &what[0];
-    let ptype = &ctype.ptype;
+    let _ptype = &ctype.ptype;
 }
 
 #[test]
@@ -21,5 +21,5 @@ pub fn test_callable2() {
     assert!(rest.len() == 0, "Remainder from parsing is not empty");
     assert!(what.len() == 1);
     let ctype = &what[0];
-    let ptype = &ctype.ptype;
+    let _ptype = &ctype.ptype;
 }
