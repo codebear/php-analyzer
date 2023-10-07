@@ -1,4 +1,5 @@
 use crate::analysis::state::AnalysisState;
+use crate::extra::ExtraChild;
 use crate::issue::{Issue, IssueEmitter};
 use crate::symboldata::class::ClassName;
 
@@ -64,7 +65,7 @@ pub trait AnalysisOfClassBaseLikeNode: NodeAccess {
                             fq_name: n.get_fq_name(state),
                         });
                     }
-                    BaseClauseChildren::Comment(c) => {
+                    BaseClauseChildren::Extra(ExtraChild::Comment(c)) => {
                         todo!("{:?}", c);
                     }
                     _ => continue,

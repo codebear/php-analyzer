@@ -55,23 +55,23 @@ pub enum ClassConstantAccessExpressionClass {
     String(Box<StringNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ClassConstantAccessExpressionClass {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ClassConstantAccessExpressionClass::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => ClassConstantAccessExpressionClass::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                ClassConstantAccessExpressionClass::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ClassConstantAccessExpressionClass::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => {
                 ClassConstantAccessExpressionClass::ArrayCreationExpression(Box::new(
                     ArrayCreationExpressionNode::parse(node, source)?,
@@ -163,15 +163,17 @@ impl ClassConstantAccessExpressionClass {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ClassConstantAccessExpressionClass::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => ClassConstantAccessExpressionClass::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                ClassConstantAccessExpressionClass::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ClassConstantAccessExpressionClass::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => {
                 ClassConstantAccessExpressionClass::ArrayCreationExpression(Box::new(
                     ArrayCreationExpressionNode::parse(node, source)?,
@@ -277,9 +279,7 @@ impl ClassConstantAccessExpressionClass {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ClassConstantAccessExpressionClass::Comment(x) => x.get_utype(state, emitter),
-            ClassConstantAccessExpressionClass::TextInterpolation(x) => x.get_utype(state, emitter),
-            ClassConstantAccessExpressionClass::Error(x) => x.get_utype(state, emitter),
+            ClassConstantAccessExpressionClass::Extra(x) => x.get_utype(state, emitter),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -334,11 +334,7 @@ impl ClassConstantAccessExpressionClass {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ClassConstantAccessExpressionClass::Comment(x) => x.get_php_value(state, emitter),
-            ClassConstantAccessExpressionClass::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            ClassConstantAccessExpressionClass::Error(x) => x.get_php_value(state, emitter),
+            ClassConstantAccessExpressionClass::Extra(x) => x.get_php_value(state, emitter),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -393,9 +389,7 @@ impl ClassConstantAccessExpressionClass {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ClassConstantAccessExpressionClass::Comment(x) => x.read_from(state, emitter),
-            ClassConstantAccessExpressionClass::TextInterpolation(x) => x.read_from(state, emitter),
-            ClassConstantAccessExpressionClass::Error(x) => x.read_from(state, emitter),
+            ClassConstantAccessExpressionClass::Extra(x) => x.read_from(state, emitter),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -448,16 +442,8 @@ impl ClassConstantAccessExpressionClass {
 impl NodeAccess for ClassConstantAccessExpressionClass {
     fn brief_desc(&self) -> String {
         match self {
-            ClassConstantAccessExpressionClass::Comment(x) => format!(
-                "ClassConstantAccessExpressionClass::comment({})",
-                x.brief_desc()
-            ),
-            ClassConstantAccessExpressionClass::TextInterpolation(x) => format!(
-                "ClassConstantAccessExpressionClass::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ClassConstantAccessExpressionClass::Error(x) => format!(
-                "ClassConstantAccessExpressionClass::ERROR({})",
+            ClassConstantAccessExpressionClass::Extra(x) => format!(
+                "ClassConstantAccessExpressionClass::extra({})",
                 x.brief_desc()
             ),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => format!(
@@ -549,9 +535,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ClassConstantAccessExpressionClass::Comment(x) => x.as_any(),
-            ClassConstantAccessExpressionClass::TextInterpolation(x) => x.as_any(),
-            ClassConstantAccessExpressionClass::Error(x) => x.as_any(),
+            ClassConstantAccessExpressionClass::Extra(x) => x.as_any(),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => x.as_any(),
             ClassConstantAccessExpressionClass::CastExpression(x) => x.as_any(),
             ClassConstantAccessExpressionClass::ClassConstantAccessExpression(x) => x.as_any(),
@@ -578,9 +562,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ClassConstantAccessExpressionClass::Comment(x) => x.children_any(),
-            ClassConstantAccessExpressionClass::TextInterpolation(x) => x.children_any(),
-            ClassConstantAccessExpressionClass::Error(x) => x.children_any(),
+            ClassConstantAccessExpressionClass::Extra(x) => x.children_any(),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => x.children_any(),
             ClassConstantAccessExpressionClass::CastExpression(x) => x.children_any(),
             ClassConstantAccessExpressionClass::ClassConstantAccessExpression(x) => {
@@ -613,9 +595,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
 
     fn range(&self) -> Range {
         match self {
-            ClassConstantAccessExpressionClass::Comment(x) => x.range(),
-            ClassConstantAccessExpressionClass::TextInterpolation(x) => x.range(),
-            ClassConstantAccessExpressionClass::Error(x) => x.range(),
+            ClassConstantAccessExpressionClass::Extra(x) => x.range(),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => x.range(),
             ClassConstantAccessExpressionClass::CastExpression(x) => x.range(),
             ClassConstantAccessExpressionClass::ClassConstantAccessExpression(x) => x.range(),

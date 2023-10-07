@@ -39,23 +39,23 @@ pub enum ReferenceAssignmentExpressionLeft {
     ScopedPropertyAccessExpression(Box<ScopedPropertyAccessExpressionNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ReferenceAssignmentExpressionLeft {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ReferenceAssignmentExpressionLeft::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => ReferenceAssignmentExpressionLeft::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ReferenceAssignmentExpressionLeft::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ReferenceAssignmentExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "cast_expression" => ReferenceAssignmentExpressionLeft::CastExpression(Box::new(
                 CastExpressionNode::parse(node, source)?,
             )),
@@ -114,15 +114,17 @@ impl ReferenceAssignmentExpressionLeft {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ReferenceAssignmentExpressionLeft::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => ReferenceAssignmentExpressionLeft::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ReferenceAssignmentExpressionLeft::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ReferenceAssignmentExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "cast_expression" => ReferenceAssignmentExpressionLeft::CastExpression(Box::new(
                 CastExpressionNode::parse(node, source)?,
             )),
@@ -195,9 +197,7 @@ impl ReferenceAssignmentExpressionLeft {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ReferenceAssignmentExpressionLeft::Comment(x) => x.get_utype(state, emitter),
-            ReferenceAssignmentExpressionLeft::TextInterpolation(x) => x.get_utype(state, emitter),
-            ReferenceAssignmentExpressionLeft::Error(x) => x.get_utype(state, emitter),
+            ReferenceAssignmentExpressionLeft::Extra(x) => x.get_utype(state, emitter),
             ReferenceAssignmentExpressionLeft::CastExpression(x) => x.get_utype(state, emitter),
             ReferenceAssignmentExpressionLeft::DynamicVariableName(x) => {
                 x.get_utype(state, emitter)
@@ -237,11 +237,7 @@ impl ReferenceAssignmentExpressionLeft {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ReferenceAssignmentExpressionLeft::Comment(x) => x.get_php_value(state, emitter),
-            ReferenceAssignmentExpressionLeft::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            ReferenceAssignmentExpressionLeft::Error(x) => x.get_php_value(state, emitter),
+            ReferenceAssignmentExpressionLeft::Extra(x) => x.get_php_value(state, emitter),
             ReferenceAssignmentExpressionLeft::CastExpression(x) => x.get_php_value(state, emitter),
             ReferenceAssignmentExpressionLeft::DynamicVariableName(x) => {
                 x.get_php_value(state, emitter)
@@ -277,9 +273,7 @@ impl ReferenceAssignmentExpressionLeft {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ReferenceAssignmentExpressionLeft::Comment(x) => x.read_from(state, emitter),
-            ReferenceAssignmentExpressionLeft::TextInterpolation(x) => x.read_from(state, emitter),
-            ReferenceAssignmentExpressionLeft::Error(x) => x.read_from(state, emitter),
+            ReferenceAssignmentExpressionLeft::Extra(x) => x.read_from(state, emitter),
             ReferenceAssignmentExpressionLeft::CastExpression(x) => x.read_from(state, emitter),
             ReferenceAssignmentExpressionLeft::DynamicVariableName(x) => {
                 x.read_from(state, emitter)
@@ -317,16 +311,8 @@ impl ReferenceAssignmentExpressionLeft {
 impl NodeAccess for ReferenceAssignmentExpressionLeft {
     fn brief_desc(&self) -> String {
         match self {
-            ReferenceAssignmentExpressionLeft::Comment(x) => format!(
-                "ReferenceAssignmentExpressionLeft::comment({})",
-                x.brief_desc()
-            ),
-            ReferenceAssignmentExpressionLeft::TextInterpolation(x) => format!(
-                "ReferenceAssignmentExpressionLeft::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ReferenceAssignmentExpressionLeft::Error(x) => format!(
-                "ReferenceAssignmentExpressionLeft::ERROR({})",
+            ReferenceAssignmentExpressionLeft::Extra(x) => format!(
+                "ReferenceAssignmentExpressionLeft::extra({})",
                 x.brief_desc()
             ),
             ReferenceAssignmentExpressionLeft::CastExpression(x) => format!(
@@ -382,9 +368,7 @@ impl NodeAccess for ReferenceAssignmentExpressionLeft {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ReferenceAssignmentExpressionLeft::Comment(x) => x.as_any(),
-            ReferenceAssignmentExpressionLeft::TextInterpolation(x) => x.as_any(),
-            ReferenceAssignmentExpressionLeft::Error(x) => x.as_any(),
+            ReferenceAssignmentExpressionLeft::Extra(x) => x.as_any(),
             ReferenceAssignmentExpressionLeft::CastExpression(x) => x.as_any(),
             ReferenceAssignmentExpressionLeft::DynamicVariableName(x) => x.as_any(),
             ReferenceAssignmentExpressionLeft::FunctionCallExpression(x) => x.as_any(),
@@ -402,9 +386,7 @@ impl NodeAccess for ReferenceAssignmentExpressionLeft {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ReferenceAssignmentExpressionLeft::Comment(x) => x.children_any(),
-            ReferenceAssignmentExpressionLeft::TextInterpolation(x) => x.children_any(),
-            ReferenceAssignmentExpressionLeft::Error(x) => x.children_any(),
+            ReferenceAssignmentExpressionLeft::Extra(x) => x.children_any(),
             ReferenceAssignmentExpressionLeft::CastExpression(x) => x.children_any(),
             ReferenceAssignmentExpressionLeft::DynamicVariableName(x) => x.children_any(),
             ReferenceAssignmentExpressionLeft::FunctionCallExpression(x) => x.children_any(),
@@ -426,9 +408,7 @@ impl NodeAccess for ReferenceAssignmentExpressionLeft {
 
     fn range(&self) -> Range {
         match self {
-            ReferenceAssignmentExpressionLeft::Comment(x) => x.range(),
-            ReferenceAssignmentExpressionLeft::TextInterpolation(x) => x.range(),
-            ReferenceAssignmentExpressionLeft::Error(x) => x.range(),
+            ReferenceAssignmentExpressionLeft::Extra(x) => x.range(),
             ReferenceAssignmentExpressionLeft::CastExpression(x) => x.range(),
             ReferenceAssignmentExpressionLeft::DynamicVariableName(x) => x.range(),
             ReferenceAssignmentExpressionLeft::FunctionCallExpression(x) => x.range(),

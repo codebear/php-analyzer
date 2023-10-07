@@ -31,9 +31,7 @@ impl UnionTypeNode {
                 UnionTypeChildren::OptionalType(ot) => ot.get_utype(state, emitter),
                 UnionTypeChildren::PrimitiveType(pt) => pt.get_utype(state, emitter),
 
-                UnionTypeChildren::Comment(_)
-                | UnionTypeChildren::TextInterpolation(_)
-                | UnionTypeChildren::Error(_) => continue,
+                UnionTypeChildren::Extra(_) => continue,
             } {
                 utype.merge_into(sometype)
             } else {

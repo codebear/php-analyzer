@@ -169,9 +169,7 @@ impl ThirdPassAnalyzeableNode for IfStatementAlternative {
             }
             IfStatementAlternative::ElseIfClause(else_if) => else_if,
 
-            IfStatementAlternative::Comment(_)
-            | IfStatementAlternative::TextInterpolation(_)
-            | IfStatementAlternative::Error(_) => return true,
+            IfStatementAlternative::Extra(_) => return true,
         };
 
         if !else_if

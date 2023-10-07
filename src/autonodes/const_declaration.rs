@@ -20,21 +20,21 @@ use tree_sitter::Range;
 pub enum ConstDeclarationChildren {
     ConstElement(Box<ConstElementNode>),
     VisibilityModifier(Box<VisibilityModifierNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ConstDeclarationChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ConstDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ConstDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ConstDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ConstDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ConstDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ConstDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "const_element" => ConstDeclarationChildren::ConstElement(Box::new(
                 ConstElementNode::parse(node, source)?,
             )),
@@ -53,13 +53,15 @@ impl ConstDeclarationChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ConstDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ConstDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ConstDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ConstDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ConstDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ConstDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "const_element" => ConstDeclarationChildren::ConstElement(Box::new(
                 ConstElementNode::parse(node, source)?,
             )),
@@ -92,9 +94,7 @@ impl ConstDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ConstDeclarationChildren::Comment(x) => x.get_utype(state, emitter),
-            ConstDeclarationChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ConstDeclarationChildren::Error(x) => x.get_utype(state, emitter),
+            ConstDeclarationChildren::Extra(x) => x.get_utype(state, emitter),
             ConstDeclarationChildren::ConstElement(x) => x.get_utype(state, emitter),
             ConstDeclarationChildren::VisibilityModifier(x) => x.get_utype(state, emitter),
         }
@@ -106,9 +106,7 @@ impl ConstDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ConstDeclarationChildren::Comment(x) => x.get_php_value(state, emitter),
-            ConstDeclarationChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ConstDeclarationChildren::Error(x) => x.get_php_value(state, emitter),
+            ConstDeclarationChildren::Extra(x) => x.get_php_value(state, emitter),
             ConstDeclarationChildren::ConstElement(x) => x.get_php_value(state, emitter),
             ConstDeclarationChildren::VisibilityModifier(x) => x.get_php_value(state, emitter),
         }
@@ -116,9 +114,7 @@ impl ConstDeclarationChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ConstDeclarationChildren::Comment(x) => x.read_from(state, emitter),
-            ConstDeclarationChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ConstDeclarationChildren::Error(x) => x.read_from(state, emitter),
+            ConstDeclarationChildren::Extra(x) => x.read_from(state, emitter),
             ConstDeclarationChildren::ConstElement(x) => x.read_from(state, emitter),
             ConstDeclarationChildren::VisibilityModifier(x) => x.read_from(state, emitter),
         }
@@ -128,15 +124,8 @@ impl ConstDeclarationChildren {
 impl NodeAccess for ConstDeclarationChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ConstDeclarationChildren::Comment(x) => {
-                format!("ConstDeclarationChildren::comment({})", x.brief_desc())
-            }
-            ConstDeclarationChildren::TextInterpolation(x) => format!(
-                "ConstDeclarationChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ConstDeclarationChildren::Error(x) => {
-                format!("ConstDeclarationChildren::ERROR({})", x.brief_desc())
+            ConstDeclarationChildren::Extra(x) => {
+                format!("ConstDeclarationChildren::extra({})", x.brief_desc())
             }
             ConstDeclarationChildren::ConstElement(x) => format!(
                 "ConstDeclarationChildren::const_element({})",
@@ -151,9 +140,7 @@ impl NodeAccess for ConstDeclarationChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ConstDeclarationChildren::Comment(x) => x.as_any(),
-            ConstDeclarationChildren::TextInterpolation(x) => x.as_any(),
-            ConstDeclarationChildren::Error(x) => x.as_any(),
+            ConstDeclarationChildren::Extra(x) => x.as_any(),
             ConstDeclarationChildren::ConstElement(x) => x.as_any(),
             ConstDeclarationChildren::VisibilityModifier(x) => x.as_any(),
         }
@@ -161,9 +148,7 @@ impl NodeAccess for ConstDeclarationChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ConstDeclarationChildren::Comment(x) => x.children_any(),
-            ConstDeclarationChildren::TextInterpolation(x) => x.children_any(),
-            ConstDeclarationChildren::Error(x) => x.children_any(),
+            ConstDeclarationChildren::Extra(x) => x.children_any(),
             ConstDeclarationChildren::ConstElement(x) => x.children_any(),
             ConstDeclarationChildren::VisibilityModifier(x) => x.children_any(),
         }
@@ -171,9 +156,7 @@ impl NodeAccess for ConstDeclarationChildren {
 
     fn range(&self) -> Range {
         match self {
-            ConstDeclarationChildren::Comment(x) => x.range(),
-            ConstDeclarationChildren::TextInterpolation(x) => x.range(),
-            ConstDeclarationChildren::Error(x) => x.range(),
+            ConstDeclarationChildren::Extra(x) => x.range(),
             ConstDeclarationChildren::ConstElement(x) => x.range(),
             ConstDeclarationChildren::VisibilityModifier(x) => x.range(),
         }

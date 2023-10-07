@@ -20,19 +20,21 @@ use tree_sitter::Range;
 pub enum EnumCaseValue {
     Integer(Box<IntegerNode>),
     String(Box<StringNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl EnumCaseValue {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => EnumCaseValue::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => EnumCaseValue::TextInterpolation(Box::new(
+            "comment" => EnumCaseValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => EnumCaseValue::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => EnumCaseValue::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                EnumCaseValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "integer" => EnumCaseValue::Integer(Box::new(IntegerNode::parse(node, source)?)),
             "string" => EnumCaseValue::String(Box::new(StringNode::parse(node, source)?)),
 
@@ -47,11 +49,15 @@ impl EnumCaseValue {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => EnumCaseValue::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => EnumCaseValue::TextInterpolation(Box::new(
+            "comment" => EnumCaseValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => EnumCaseValue::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => EnumCaseValue::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                EnumCaseValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "integer" => EnumCaseValue::Integer(Box::new(IntegerNode::parse(node, source)?)),
             "string" => EnumCaseValue::String(Box::new(StringNode::parse(node, source)?)),
 
@@ -80,9 +86,7 @@ impl EnumCaseValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            EnumCaseValue::Comment(x) => x.get_utype(state, emitter),
-            EnumCaseValue::TextInterpolation(x) => x.get_utype(state, emitter),
-            EnumCaseValue::Error(x) => x.get_utype(state, emitter),
+            EnumCaseValue::Extra(x) => x.get_utype(state, emitter),
             EnumCaseValue::Integer(x) => x.get_utype(state, emitter),
             EnumCaseValue::String(x) => x.get_utype(state, emitter),
         }
@@ -94,9 +98,7 @@ impl EnumCaseValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            EnumCaseValue::Comment(x) => x.get_php_value(state, emitter),
-            EnumCaseValue::TextInterpolation(x) => x.get_php_value(state, emitter),
-            EnumCaseValue::Error(x) => x.get_php_value(state, emitter),
+            EnumCaseValue::Extra(x) => x.get_php_value(state, emitter),
             EnumCaseValue::Integer(x) => x.get_php_value(state, emitter),
             EnumCaseValue::String(x) => x.get_php_value(state, emitter),
         }
@@ -104,9 +106,7 @@ impl EnumCaseValue {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            EnumCaseValue::Comment(x) => x.read_from(state, emitter),
-            EnumCaseValue::TextInterpolation(x) => x.read_from(state, emitter),
-            EnumCaseValue::Error(x) => x.read_from(state, emitter),
+            EnumCaseValue::Extra(x) => x.read_from(state, emitter),
             EnumCaseValue::Integer(x) => x.read_from(state, emitter),
             EnumCaseValue::String(x) => x.read_from(state, emitter),
         }
@@ -116,11 +116,7 @@ impl EnumCaseValue {
 impl NodeAccess for EnumCaseValue {
     fn brief_desc(&self) -> String {
         match self {
-            EnumCaseValue::Comment(x) => format!("EnumCaseValue::comment({})", x.brief_desc()),
-            EnumCaseValue::TextInterpolation(x) => {
-                format!("EnumCaseValue::text_interpolation({})", x.brief_desc())
-            }
-            EnumCaseValue::Error(x) => format!("EnumCaseValue::ERROR({})", x.brief_desc()),
+            EnumCaseValue::Extra(x) => format!("EnumCaseValue::extra({})", x.brief_desc()),
             EnumCaseValue::Integer(x) => format!("EnumCaseValue::integer({})", x.brief_desc()),
             EnumCaseValue::String(x) => format!("EnumCaseValue::string({})", x.brief_desc()),
         }
@@ -128,9 +124,7 @@ impl NodeAccess for EnumCaseValue {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            EnumCaseValue::Comment(x) => x.as_any(),
-            EnumCaseValue::TextInterpolation(x) => x.as_any(),
-            EnumCaseValue::Error(x) => x.as_any(),
+            EnumCaseValue::Extra(x) => x.as_any(),
             EnumCaseValue::Integer(x) => x.as_any(),
             EnumCaseValue::String(x) => x.as_any(),
         }
@@ -138,9 +132,7 @@ impl NodeAccess for EnumCaseValue {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            EnumCaseValue::Comment(x) => x.children_any(),
-            EnumCaseValue::TextInterpolation(x) => x.children_any(),
-            EnumCaseValue::Error(x) => x.children_any(),
+            EnumCaseValue::Extra(x) => x.children_any(),
             EnumCaseValue::Integer(x) => x.children_any(),
             EnumCaseValue::String(x) => x.children_any(),
         }
@@ -148,9 +140,7 @@ impl NodeAccess for EnumCaseValue {
 
     fn range(&self) -> Range {
         match self {
-            EnumCaseValue::Comment(x) => x.range(),
-            EnumCaseValue::TextInterpolation(x) => x.range(),
-            EnumCaseValue::Error(x) => x.range(),
+            EnumCaseValue::Extra(x) => x.range(),
             EnumCaseValue::Integer(x) => x.range(),
             EnumCaseValue::String(x) => x.range(),
         }

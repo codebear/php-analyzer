@@ -25,21 +25,21 @@ pub enum ClassDeclarationModifier {
     AbstractModifier(Box<AbstractModifierNode>),
     FinalModifier(Box<FinalModifierNode>),
     ReadonlyModifier(Box<ReadonlyModifierNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ClassDeclarationModifier {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ClassDeclarationModifier::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ClassDeclarationModifier::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ClassDeclarationModifier::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ClassDeclarationModifier::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ClassDeclarationModifier::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ClassDeclarationModifier::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "abstract_modifier" => ClassDeclarationModifier::AbstractModifier(Box::new(
                 AbstractModifierNode::parse(node, source)?,
             )),
@@ -61,13 +61,15 @@ impl ClassDeclarationModifier {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ClassDeclarationModifier::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ClassDeclarationModifier::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ClassDeclarationModifier::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ClassDeclarationModifier::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ClassDeclarationModifier::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ClassDeclarationModifier::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "abstract_modifier" => ClassDeclarationModifier::AbstractModifier(Box::new(
                 AbstractModifierNode::parse(node, source)?,
             )),
@@ -103,9 +105,7 @@ impl ClassDeclarationModifier {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ClassDeclarationModifier::Comment(x) => x.get_utype(state, emitter),
-            ClassDeclarationModifier::TextInterpolation(x) => x.get_utype(state, emitter),
-            ClassDeclarationModifier::Error(x) => x.get_utype(state, emitter),
+            ClassDeclarationModifier::Extra(x) => x.get_utype(state, emitter),
             ClassDeclarationModifier::AbstractModifier(x) => x.get_utype(state, emitter),
             ClassDeclarationModifier::FinalModifier(x) => x.get_utype(state, emitter),
             ClassDeclarationModifier::ReadonlyModifier(x) => x.get_utype(state, emitter),
@@ -118,9 +118,7 @@ impl ClassDeclarationModifier {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ClassDeclarationModifier::Comment(x) => x.get_php_value(state, emitter),
-            ClassDeclarationModifier::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ClassDeclarationModifier::Error(x) => x.get_php_value(state, emitter),
+            ClassDeclarationModifier::Extra(x) => x.get_php_value(state, emitter),
             ClassDeclarationModifier::AbstractModifier(x) => x.get_php_value(state, emitter),
             ClassDeclarationModifier::FinalModifier(x) => x.get_php_value(state, emitter),
             ClassDeclarationModifier::ReadonlyModifier(x) => x.get_php_value(state, emitter),
@@ -129,9 +127,7 @@ impl ClassDeclarationModifier {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ClassDeclarationModifier::Comment(x) => x.read_from(state, emitter),
-            ClassDeclarationModifier::TextInterpolation(x) => x.read_from(state, emitter),
-            ClassDeclarationModifier::Error(x) => x.read_from(state, emitter),
+            ClassDeclarationModifier::Extra(x) => x.read_from(state, emitter),
             ClassDeclarationModifier::AbstractModifier(x) => x.read_from(state, emitter),
             ClassDeclarationModifier::FinalModifier(x) => x.read_from(state, emitter),
             ClassDeclarationModifier::ReadonlyModifier(x) => x.read_from(state, emitter),
@@ -142,15 +138,8 @@ impl ClassDeclarationModifier {
 impl NodeAccess for ClassDeclarationModifier {
     fn brief_desc(&self) -> String {
         match self {
-            ClassDeclarationModifier::Comment(x) => {
-                format!("ClassDeclarationModifier::comment({})", x.brief_desc())
-            }
-            ClassDeclarationModifier::TextInterpolation(x) => format!(
-                "ClassDeclarationModifier::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ClassDeclarationModifier::Error(x) => {
-                format!("ClassDeclarationModifier::ERROR({})", x.brief_desc())
+            ClassDeclarationModifier::Extra(x) => {
+                format!("ClassDeclarationModifier::extra({})", x.brief_desc())
             }
             ClassDeclarationModifier::AbstractModifier(x) => format!(
                 "ClassDeclarationModifier::abstract_modifier({})",
@@ -169,9 +158,7 @@ impl NodeAccess for ClassDeclarationModifier {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ClassDeclarationModifier::Comment(x) => x.as_any(),
-            ClassDeclarationModifier::TextInterpolation(x) => x.as_any(),
-            ClassDeclarationModifier::Error(x) => x.as_any(),
+            ClassDeclarationModifier::Extra(x) => x.as_any(),
             ClassDeclarationModifier::AbstractModifier(x) => x.as_any(),
             ClassDeclarationModifier::FinalModifier(x) => x.as_any(),
             ClassDeclarationModifier::ReadonlyModifier(x) => x.as_any(),
@@ -180,9 +167,7 @@ impl NodeAccess for ClassDeclarationModifier {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ClassDeclarationModifier::Comment(x) => x.children_any(),
-            ClassDeclarationModifier::TextInterpolation(x) => x.children_any(),
-            ClassDeclarationModifier::Error(x) => x.children_any(),
+            ClassDeclarationModifier::Extra(x) => x.children_any(),
             ClassDeclarationModifier::AbstractModifier(x) => x.children_any(),
             ClassDeclarationModifier::FinalModifier(x) => x.children_any(),
             ClassDeclarationModifier::ReadonlyModifier(x) => x.children_any(),
@@ -191,9 +176,7 @@ impl NodeAccess for ClassDeclarationModifier {
 
     fn range(&self) -> Range {
         match self {
-            ClassDeclarationModifier::Comment(x) => x.range(),
-            ClassDeclarationModifier::TextInterpolation(x) => x.range(),
-            ClassDeclarationModifier::Error(x) => x.range(),
+            ClassDeclarationModifier::Extra(x) => x.range(),
             ClassDeclarationModifier::AbstractModifier(x) => x.range(),
             ClassDeclarationModifier::FinalModifier(x) => x.range(),
             ClassDeclarationModifier::ReadonlyModifier(x) => x.range(),
@@ -204,21 +187,21 @@ impl NodeAccess for ClassDeclarationModifier {
 pub enum ClassDeclarationChildren {
     BaseClause(Box<BaseClauseNode>),
     ClassInterfaceClause(Box<ClassInterfaceClauseNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ClassDeclarationChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ClassDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ClassDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ClassDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ClassDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ClassDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ClassDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "base_clause" => {
                 ClassDeclarationChildren::BaseClause(Box::new(BaseClauseNode::parse(node, source)?))
             }
@@ -237,13 +220,15 @@ impl ClassDeclarationChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ClassDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ClassDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ClassDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ClassDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ClassDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ClassDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "base_clause" => {
                 ClassDeclarationChildren::BaseClause(Box::new(BaseClauseNode::parse(node, source)?))
             }
@@ -276,9 +261,7 @@ impl ClassDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ClassDeclarationChildren::Comment(x) => x.get_utype(state, emitter),
-            ClassDeclarationChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ClassDeclarationChildren::Error(x) => x.get_utype(state, emitter),
+            ClassDeclarationChildren::Extra(x) => x.get_utype(state, emitter),
             ClassDeclarationChildren::BaseClause(x) => x.get_utype(state, emitter),
             ClassDeclarationChildren::ClassInterfaceClause(x) => x.get_utype(state, emitter),
         }
@@ -290,9 +273,7 @@ impl ClassDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ClassDeclarationChildren::Comment(x) => x.get_php_value(state, emitter),
-            ClassDeclarationChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ClassDeclarationChildren::Error(x) => x.get_php_value(state, emitter),
+            ClassDeclarationChildren::Extra(x) => x.get_php_value(state, emitter),
             ClassDeclarationChildren::BaseClause(x) => x.get_php_value(state, emitter),
             ClassDeclarationChildren::ClassInterfaceClause(x) => x.get_php_value(state, emitter),
         }
@@ -300,9 +281,7 @@ impl ClassDeclarationChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ClassDeclarationChildren::Comment(x) => x.read_from(state, emitter),
-            ClassDeclarationChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ClassDeclarationChildren::Error(x) => x.read_from(state, emitter),
+            ClassDeclarationChildren::Extra(x) => x.read_from(state, emitter),
             ClassDeclarationChildren::BaseClause(x) => x.read_from(state, emitter),
             ClassDeclarationChildren::ClassInterfaceClause(x) => x.read_from(state, emitter),
         }
@@ -312,15 +291,8 @@ impl ClassDeclarationChildren {
 impl NodeAccess for ClassDeclarationChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ClassDeclarationChildren::Comment(x) => {
-                format!("ClassDeclarationChildren::comment({})", x.brief_desc())
-            }
-            ClassDeclarationChildren::TextInterpolation(x) => format!(
-                "ClassDeclarationChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ClassDeclarationChildren::Error(x) => {
-                format!("ClassDeclarationChildren::ERROR({})", x.brief_desc())
+            ClassDeclarationChildren::Extra(x) => {
+                format!("ClassDeclarationChildren::extra({})", x.brief_desc())
             }
             ClassDeclarationChildren::BaseClause(x) => {
                 format!("ClassDeclarationChildren::base_clause({})", x.brief_desc())
@@ -334,9 +306,7 @@ impl NodeAccess for ClassDeclarationChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ClassDeclarationChildren::Comment(x) => x.as_any(),
-            ClassDeclarationChildren::TextInterpolation(x) => x.as_any(),
-            ClassDeclarationChildren::Error(x) => x.as_any(),
+            ClassDeclarationChildren::Extra(x) => x.as_any(),
             ClassDeclarationChildren::BaseClause(x) => x.as_any(),
             ClassDeclarationChildren::ClassInterfaceClause(x) => x.as_any(),
         }
@@ -344,9 +314,7 @@ impl NodeAccess for ClassDeclarationChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ClassDeclarationChildren::Comment(x) => x.children_any(),
-            ClassDeclarationChildren::TextInterpolation(x) => x.children_any(),
-            ClassDeclarationChildren::Error(x) => x.children_any(),
+            ClassDeclarationChildren::Extra(x) => x.children_any(),
             ClassDeclarationChildren::BaseClause(x) => x.children_any(),
             ClassDeclarationChildren::ClassInterfaceClause(x) => x.children_any(),
         }
@@ -354,9 +322,7 @@ impl NodeAccess for ClassDeclarationChildren {
 
     fn range(&self) -> Range {
         match self {
-            ClassDeclarationChildren::Comment(x) => x.range(),
-            ClassDeclarationChildren::TextInterpolation(x) => x.range(),
-            ClassDeclarationChildren::Error(x) => x.range(),
+            ClassDeclarationChildren::Extra(x) => x.range(),
             ClassDeclarationChildren::BaseClause(x) => x.range(),
             ClassDeclarationChildren::ClassInterfaceClause(x) => x.range(),
         }

@@ -44,23 +44,23 @@ pub enum FunctionCallExpressionFunction {
     String(Box<StringNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl FunctionCallExpressionFunction {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                FunctionCallExpressionFunction::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => FunctionCallExpressionFunction::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                FunctionCallExpressionFunction::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => FunctionCallExpressionFunction::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                FunctionCallExpressionFunction::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => FunctionCallExpressionFunction::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => FunctionCallExpressionFunction::ArrayCreationExpression(
                 Box::new(ArrayCreationExpressionNode::parse(node, source)?),
             ),
@@ -120,15 +120,17 @@ impl FunctionCallExpressionFunction {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                FunctionCallExpressionFunction::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => FunctionCallExpressionFunction::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                FunctionCallExpressionFunction::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => FunctionCallExpressionFunction::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                FunctionCallExpressionFunction::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => FunctionCallExpressionFunction::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => FunctionCallExpressionFunction::ArrayCreationExpression(
                 Box::new(ArrayCreationExpressionNode::parse(node, source)?),
             ),
@@ -202,9 +204,7 @@ impl FunctionCallExpressionFunction {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            FunctionCallExpressionFunction::Comment(x) => x.get_utype(state, emitter),
-            FunctionCallExpressionFunction::TextInterpolation(x) => x.get_utype(state, emitter),
-            FunctionCallExpressionFunction::Error(x) => x.get_utype(state, emitter),
+            FunctionCallExpressionFunction::Extra(x) => x.get_utype(state, emitter),
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -237,9 +237,7 @@ impl FunctionCallExpressionFunction {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            FunctionCallExpressionFunction::Comment(x) => x.get_php_value(state, emitter),
-            FunctionCallExpressionFunction::TextInterpolation(x) => x.get_php_value(state, emitter),
-            FunctionCallExpressionFunction::Error(x) => x.get_php_value(state, emitter),
+            FunctionCallExpressionFunction::Extra(x) => x.get_php_value(state, emitter),
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -276,9 +274,7 @@ impl FunctionCallExpressionFunction {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            FunctionCallExpressionFunction::Comment(x) => x.read_from(state, emitter),
-            FunctionCallExpressionFunction::TextInterpolation(x) => x.read_from(state, emitter),
-            FunctionCallExpressionFunction::Error(x) => x.read_from(state, emitter),
+            FunctionCallExpressionFunction::Extra(x) => x.read_from(state, emitter),
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -309,16 +305,8 @@ impl FunctionCallExpressionFunction {
 impl NodeAccess for FunctionCallExpressionFunction {
     fn brief_desc(&self) -> String {
         match self {
-            FunctionCallExpressionFunction::Comment(x) => format!(
-                "FunctionCallExpressionFunction::comment({})",
-                x.brief_desc()
-            ),
-            FunctionCallExpressionFunction::TextInterpolation(x) => format!(
-                "FunctionCallExpressionFunction::text_interpolation({})",
-                x.brief_desc()
-            ),
-            FunctionCallExpressionFunction::Error(x) => {
-                format!("FunctionCallExpressionFunction::ERROR({})", x.brief_desc())
+            FunctionCallExpressionFunction::Extra(x) => {
+                format!("FunctionCallExpressionFunction::extra({})", x.brief_desc())
             }
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => format!(
                 "FunctionCallExpressionFunction::array_creation_expression({})",
@@ -382,9 +370,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            FunctionCallExpressionFunction::Comment(x) => x.as_any(),
-            FunctionCallExpressionFunction::TextInterpolation(x) => x.as_any(),
-            FunctionCallExpressionFunction::Error(x) => x.as_any(),
+            FunctionCallExpressionFunction::Extra(x) => x.as_any(),
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => x.as_any(),
             FunctionCallExpressionFunction::DynamicVariableName(x) => x.as_any(),
             FunctionCallExpressionFunction::EncapsedString(x) => x.as_any(),
@@ -405,9 +391,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            FunctionCallExpressionFunction::Comment(x) => x.children_any(),
-            FunctionCallExpressionFunction::TextInterpolation(x) => x.children_any(),
-            FunctionCallExpressionFunction::Error(x) => x.children_any(),
+            FunctionCallExpressionFunction::Extra(x) => x.children_any(),
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => x.children_any(),
             FunctionCallExpressionFunction::DynamicVariableName(x) => x.children_any(),
             FunctionCallExpressionFunction::EncapsedString(x) => x.children_any(),
@@ -428,9 +412,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
 
     fn range(&self) -> Range {
         match self {
-            FunctionCallExpressionFunction::Comment(x) => x.range(),
-            FunctionCallExpressionFunction::TextInterpolation(x) => x.range(),
-            FunctionCallExpressionFunction::Error(x) => x.range(),
+            FunctionCallExpressionFunction::Extra(x) => x.range(),
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => x.range(),
             FunctionCallExpressionFunction::DynamicVariableName(x) => x.range(),
             FunctionCallExpressionFunction::EncapsedString(x) => x.range(),

@@ -18,21 +18,21 @@ use tree_sitter::Range;
 pub enum YieldExpressionChildren {
     _Expression(Box<_ExpressionNode>),
     ArrayElementInitializer(Box<ArrayElementInitializerNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl YieldExpressionChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                YieldExpressionChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => YieldExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => YieldExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => YieldExpressionChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => YieldExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => YieldExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_element_initializer" => YieldExpressionChildren::ArrayElementInitializer(
                 Box::new(ArrayElementInitializerNode::parse(node, source)?),
             ),
@@ -55,13 +55,15 @@ impl YieldExpressionChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                YieldExpressionChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => YieldExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => YieldExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => YieldExpressionChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => YieldExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => YieldExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_element_initializer" => YieldExpressionChildren::ArrayElementInitializer(
                 Box::new(ArrayElementInitializerNode::parse(node, source)?),
             ),
@@ -102,9 +104,7 @@ impl YieldExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            YieldExpressionChildren::Comment(x) => x.get_utype(state, emitter),
-            YieldExpressionChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            YieldExpressionChildren::Error(x) => x.get_utype(state, emitter),
+            YieldExpressionChildren::Extra(x) => x.get_utype(state, emitter),
             YieldExpressionChildren::_Expression(x) => x.get_utype(state, emitter),
             YieldExpressionChildren::ArrayElementInitializer(x) => x.get_utype(state, emitter),
         }
@@ -116,9 +116,7 @@ impl YieldExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            YieldExpressionChildren::Comment(x) => x.get_php_value(state, emitter),
-            YieldExpressionChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            YieldExpressionChildren::Error(x) => x.get_php_value(state, emitter),
+            YieldExpressionChildren::Extra(x) => x.get_php_value(state, emitter),
             YieldExpressionChildren::_Expression(x) => x.get_php_value(state, emitter),
             YieldExpressionChildren::ArrayElementInitializer(x) => x.get_php_value(state, emitter),
         }
@@ -126,9 +124,7 @@ impl YieldExpressionChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            YieldExpressionChildren::Comment(x) => x.read_from(state, emitter),
-            YieldExpressionChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            YieldExpressionChildren::Error(x) => x.read_from(state, emitter),
+            YieldExpressionChildren::Extra(x) => x.read_from(state, emitter),
             YieldExpressionChildren::_Expression(x) => x.read_from(state, emitter),
             YieldExpressionChildren::ArrayElementInitializer(x) => x.read_from(state, emitter),
         }
@@ -138,15 +134,8 @@ impl YieldExpressionChildren {
 impl NodeAccess for YieldExpressionChildren {
     fn brief_desc(&self) -> String {
         match self {
-            YieldExpressionChildren::Comment(x) => {
-                format!("YieldExpressionChildren::comment({})", x.brief_desc())
-            }
-            YieldExpressionChildren::TextInterpolation(x) => format!(
-                "YieldExpressionChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            YieldExpressionChildren::Error(x) => {
-                format!("YieldExpressionChildren::ERROR({})", x.brief_desc())
+            YieldExpressionChildren::Extra(x) => {
+                format!("YieldExpressionChildren::extra({})", x.brief_desc())
             }
             YieldExpressionChildren::_Expression(x) => {
                 format!("YieldExpressionChildren::_expression({})", x.brief_desc())
@@ -160,9 +149,7 @@ impl NodeAccess for YieldExpressionChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            YieldExpressionChildren::Comment(x) => x.as_any(),
-            YieldExpressionChildren::TextInterpolation(x) => x.as_any(),
-            YieldExpressionChildren::Error(x) => x.as_any(),
+            YieldExpressionChildren::Extra(x) => x.as_any(),
             YieldExpressionChildren::_Expression(x) => x.as_any(),
             YieldExpressionChildren::ArrayElementInitializer(x) => x.as_any(),
         }
@@ -170,9 +157,7 @@ impl NodeAccess for YieldExpressionChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            YieldExpressionChildren::Comment(x) => x.children_any(),
-            YieldExpressionChildren::TextInterpolation(x) => x.children_any(),
-            YieldExpressionChildren::Error(x) => x.children_any(),
+            YieldExpressionChildren::Extra(x) => x.children_any(),
             YieldExpressionChildren::_Expression(x) => x.children_any(),
             YieldExpressionChildren::ArrayElementInitializer(x) => x.children_any(),
         }
@@ -180,9 +165,7 @@ impl NodeAccess for YieldExpressionChildren {
 
     fn range(&self) -> Range {
         match self {
-            YieldExpressionChildren::Comment(x) => x.range(),
-            YieldExpressionChildren::TextInterpolation(x) => x.range(),
-            YieldExpressionChildren::Error(x) => x.range(),
+            YieldExpressionChildren::Extra(x) => x.range(),
             YieldExpressionChildren::_Expression(x) => x.range(),
             YieldExpressionChildren::ArrayElementInitializer(x) => x.range(),
         }

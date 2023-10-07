@@ -21,19 +21,21 @@ use tree_sitter::Range;
 pub enum ForeachStatementBody {
     _Statement(Box<_StatementNode>),
     ColonBlock(Box<ColonBlockNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ForeachStatementBody {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ForeachStatementBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ForeachStatementBody::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForeachStatementBody::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForeachStatementBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForeachStatementBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForeachStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "colon_block" => {
                 ForeachStatementBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -56,11 +58,15 @@ impl ForeachStatementBody {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ForeachStatementBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ForeachStatementBody::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForeachStatementBody::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForeachStatementBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForeachStatementBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForeachStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "colon_block" => {
                 ForeachStatementBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -101,9 +107,7 @@ impl ForeachStatementBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ForeachStatementBody::Comment(x) => x.get_utype(state, emitter),
-            ForeachStatementBody::TextInterpolation(x) => x.get_utype(state, emitter),
-            ForeachStatementBody::Error(x) => x.get_utype(state, emitter),
+            ForeachStatementBody::Extra(x) => x.get_utype(state, emitter),
             ForeachStatementBody::_Statement(x) => x.get_utype(state, emitter),
             ForeachStatementBody::ColonBlock(x) => x.get_utype(state, emitter),
         }
@@ -115,9 +119,7 @@ impl ForeachStatementBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ForeachStatementBody::Comment(x) => x.get_php_value(state, emitter),
-            ForeachStatementBody::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ForeachStatementBody::Error(x) => x.get_php_value(state, emitter),
+            ForeachStatementBody::Extra(x) => x.get_php_value(state, emitter),
             ForeachStatementBody::_Statement(x) => x.get_php_value(state, emitter),
             ForeachStatementBody::ColonBlock(x) => x.get_php_value(state, emitter),
         }
@@ -125,9 +127,7 @@ impl ForeachStatementBody {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ForeachStatementBody::Comment(x) => x.read_from(state, emitter),
-            ForeachStatementBody::TextInterpolation(x) => x.read_from(state, emitter),
-            ForeachStatementBody::Error(x) => x.read_from(state, emitter),
+            ForeachStatementBody::Extra(x) => x.read_from(state, emitter),
             ForeachStatementBody::_Statement(x) => x.read_from(state, emitter),
             ForeachStatementBody::ColonBlock(x) => x.read_from(state, emitter),
         }
@@ -137,15 +137,8 @@ impl ForeachStatementBody {
 impl NodeAccess for ForeachStatementBody {
     fn brief_desc(&self) -> String {
         match self {
-            ForeachStatementBody::Comment(x) => {
-                format!("ForeachStatementBody::comment({})", x.brief_desc())
-            }
-            ForeachStatementBody::TextInterpolation(x) => format!(
-                "ForeachStatementBody::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ForeachStatementBody::Error(x) => {
-                format!("ForeachStatementBody::ERROR({})", x.brief_desc())
+            ForeachStatementBody::Extra(x) => {
+                format!("ForeachStatementBody::extra({})", x.brief_desc())
             }
             ForeachStatementBody::_Statement(x) => {
                 format!("ForeachStatementBody::_statement({})", x.brief_desc())
@@ -158,9 +151,7 @@ impl NodeAccess for ForeachStatementBody {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ForeachStatementBody::Comment(x) => x.as_any(),
-            ForeachStatementBody::TextInterpolation(x) => x.as_any(),
-            ForeachStatementBody::Error(x) => x.as_any(),
+            ForeachStatementBody::Extra(x) => x.as_any(),
             ForeachStatementBody::_Statement(x) => x.as_any(),
             ForeachStatementBody::ColonBlock(x) => x.as_any(),
         }
@@ -168,9 +159,7 @@ impl NodeAccess for ForeachStatementBody {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ForeachStatementBody::Comment(x) => x.children_any(),
-            ForeachStatementBody::TextInterpolation(x) => x.children_any(),
-            ForeachStatementBody::Error(x) => x.children_any(),
+            ForeachStatementBody::Extra(x) => x.children_any(),
             ForeachStatementBody::_Statement(x) => x.children_any(),
             ForeachStatementBody::ColonBlock(x) => x.children_any(),
         }
@@ -178,9 +167,7 @@ impl NodeAccess for ForeachStatementBody {
 
     fn range(&self) -> Range {
         match self {
-            ForeachStatementBody::Comment(x) => x.range(),
-            ForeachStatementBody::TextInterpolation(x) => x.range(),
-            ForeachStatementBody::Error(x) => x.range(),
+            ForeachStatementBody::Extra(x) => x.range(),
             ForeachStatementBody::_Statement(x) => x.range(),
             ForeachStatementBody::ColonBlock(x) => x.range(),
         }
@@ -191,21 +178,21 @@ pub enum ForeachStatementValue {
     _Expression(Box<_ExpressionNode>),
     ByRef(Box<ByRefNode>),
     ListLiteral(Box<ListLiteralNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ForeachStatementValue {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ForeachStatementValue::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ForeachStatementValue::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForeachStatementValue::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForeachStatementValue::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForeachStatementValue::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForeachStatementValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "by_ref" => ForeachStatementValue::ByRef(Box::new(ByRefNode::parse(node, source)?)),
             "list_literal" => {
                 ForeachStatementValue::ListLiteral(Box::new(ListLiteralNode::parse(node, source)?))
@@ -229,13 +216,15 @@ impl ForeachStatementValue {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ForeachStatementValue::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ForeachStatementValue::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForeachStatementValue::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForeachStatementValue::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForeachStatementValue::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForeachStatementValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "by_ref" => ForeachStatementValue::ByRef(Box::new(ByRefNode::parse(node, source)?)),
             "list_literal" => {
                 ForeachStatementValue::ListLiteral(Box::new(ListLiteralNode::parse(node, source)?))
@@ -277,9 +266,7 @@ impl ForeachStatementValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ForeachStatementValue::Comment(x) => x.get_utype(state, emitter),
-            ForeachStatementValue::TextInterpolation(x) => x.get_utype(state, emitter),
-            ForeachStatementValue::Error(x) => x.get_utype(state, emitter),
+            ForeachStatementValue::Extra(x) => x.get_utype(state, emitter),
             ForeachStatementValue::_Expression(x) => x.get_utype(state, emitter),
             ForeachStatementValue::ByRef(x) => x.get_utype(state, emitter),
             ForeachStatementValue::ListLiteral(x) => x.get_utype(state, emitter),
@@ -292,9 +279,7 @@ impl ForeachStatementValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ForeachStatementValue::Comment(x) => x.get_php_value(state, emitter),
-            ForeachStatementValue::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ForeachStatementValue::Error(x) => x.get_php_value(state, emitter),
+            ForeachStatementValue::Extra(x) => x.get_php_value(state, emitter),
             ForeachStatementValue::_Expression(x) => x.get_php_value(state, emitter),
             ForeachStatementValue::ByRef(x) => x.get_php_value(state, emitter),
             ForeachStatementValue::ListLiteral(x) => x.get_php_value(state, emitter),
@@ -303,9 +288,7 @@ impl ForeachStatementValue {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ForeachStatementValue::Comment(x) => x.read_from(state, emitter),
-            ForeachStatementValue::TextInterpolation(x) => x.read_from(state, emitter),
-            ForeachStatementValue::Error(x) => x.read_from(state, emitter),
+            ForeachStatementValue::Extra(x) => x.read_from(state, emitter),
             ForeachStatementValue::_Expression(x) => x.read_from(state, emitter),
             ForeachStatementValue::ByRef(x) => x.read_from(state, emitter),
             ForeachStatementValue::ListLiteral(x) => x.read_from(state, emitter),
@@ -316,15 +299,8 @@ impl ForeachStatementValue {
 impl NodeAccess for ForeachStatementValue {
     fn brief_desc(&self) -> String {
         match self {
-            ForeachStatementValue::Comment(x) => {
-                format!("ForeachStatementValue::comment({})", x.brief_desc())
-            }
-            ForeachStatementValue::TextInterpolation(x) => format!(
-                "ForeachStatementValue::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ForeachStatementValue::Error(x) => {
-                format!("ForeachStatementValue::ERROR({})", x.brief_desc())
+            ForeachStatementValue::Extra(x) => {
+                format!("ForeachStatementValue::extra({})", x.brief_desc())
             }
             ForeachStatementValue::_Expression(x) => {
                 format!("ForeachStatementValue::_expression({})", x.brief_desc())
@@ -340,9 +316,7 @@ impl NodeAccess for ForeachStatementValue {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ForeachStatementValue::Comment(x) => x.as_any(),
-            ForeachStatementValue::TextInterpolation(x) => x.as_any(),
-            ForeachStatementValue::Error(x) => x.as_any(),
+            ForeachStatementValue::Extra(x) => x.as_any(),
             ForeachStatementValue::_Expression(x) => x.as_any(),
             ForeachStatementValue::ByRef(x) => x.as_any(),
             ForeachStatementValue::ListLiteral(x) => x.as_any(),
@@ -351,9 +325,7 @@ impl NodeAccess for ForeachStatementValue {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ForeachStatementValue::Comment(x) => x.children_any(),
-            ForeachStatementValue::TextInterpolation(x) => x.children_any(),
-            ForeachStatementValue::Error(x) => x.children_any(),
+            ForeachStatementValue::Extra(x) => x.children_any(),
             ForeachStatementValue::_Expression(x) => x.children_any(),
             ForeachStatementValue::ByRef(x) => x.children_any(),
             ForeachStatementValue::ListLiteral(x) => x.children_any(),
@@ -362,9 +334,7 @@ impl NodeAccess for ForeachStatementValue {
 
     fn range(&self) -> Range {
         match self {
-            ForeachStatementValue::Comment(x) => x.range(),
-            ForeachStatementValue::TextInterpolation(x) => x.range(),
-            ForeachStatementValue::Error(x) => x.range(),
+            ForeachStatementValue::Extra(x) => x.range(),
             ForeachStatementValue::_Expression(x) => x.range(),
             ForeachStatementValue::ByRef(x) => x.range(),
             ForeachStatementValue::ListLiteral(x) => x.range(),

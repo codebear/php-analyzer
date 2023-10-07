@@ -19,19 +19,21 @@ use tree_sitter::Range;
 pub enum AttributeChildren {
     Name(Box<NameNode>),
     QualifiedName(Box<QualifiedNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl AttributeChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => AttributeChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => AttributeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => AttributeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => AttributeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => AttributeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => AttributeChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "name" => AttributeChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => {
                 AttributeChildren::QualifiedName(Box::new(QualifiedNameNode::parse(node, source)?))
@@ -48,11 +50,15 @@ impl AttributeChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => AttributeChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => AttributeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => AttributeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => AttributeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => AttributeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => AttributeChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "name" => AttributeChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => {
                 AttributeChildren::QualifiedName(Box::new(QualifiedNameNode::parse(node, source)?))
@@ -83,9 +89,7 @@ impl AttributeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            AttributeChildren::Comment(x) => x.get_utype(state, emitter),
-            AttributeChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            AttributeChildren::Error(x) => x.get_utype(state, emitter),
+            AttributeChildren::Extra(x) => x.get_utype(state, emitter),
             AttributeChildren::Name(x) => x.get_utype(state, emitter),
             AttributeChildren::QualifiedName(x) => x.get_utype(state, emitter),
         }
@@ -97,9 +101,7 @@ impl AttributeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            AttributeChildren::Comment(x) => x.get_php_value(state, emitter),
-            AttributeChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            AttributeChildren::Error(x) => x.get_php_value(state, emitter),
+            AttributeChildren::Extra(x) => x.get_php_value(state, emitter),
             AttributeChildren::Name(x) => x.get_php_value(state, emitter),
             AttributeChildren::QualifiedName(x) => x.get_php_value(state, emitter),
         }
@@ -107,9 +109,7 @@ impl AttributeChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            AttributeChildren::Comment(x) => x.read_from(state, emitter),
-            AttributeChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            AttributeChildren::Error(x) => x.read_from(state, emitter),
+            AttributeChildren::Extra(x) => x.read_from(state, emitter),
             AttributeChildren::Name(x) => x.read_from(state, emitter),
             AttributeChildren::QualifiedName(x) => x.read_from(state, emitter),
         }
@@ -119,13 +119,7 @@ impl AttributeChildren {
 impl NodeAccess for AttributeChildren {
     fn brief_desc(&self) -> String {
         match self {
-            AttributeChildren::Comment(x) => {
-                format!("AttributeChildren::comment({})", x.brief_desc())
-            }
-            AttributeChildren::TextInterpolation(x) => {
-                format!("AttributeChildren::text_interpolation({})", x.brief_desc())
-            }
-            AttributeChildren::Error(x) => format!("AttributeChildren::ERROR({})", x.brief_desc()),
+            AttributeChildren::Extra(x) => format!("AttributeChildren::extra({})", x.brief_desc()),
             AttributeChildren::Name(x) => format!("AttributeChildren::name({})", x.brief_desc()),
             AttributeChildren::QualifiedName(x) => {
                 format!("AttributeChildren::qualified_name({})", x.brief_desc())
@@ -135,9 +129,7 @@ impl NodeAccess for AttributeChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            AttributeChildren::Comment(x) => x.as_any(),
-            AttributeChildren::TextInterpolation(x) => x.as_any(),
-            AttributeChildren::Error(x) => x.as_any(),
+            AttributeChildren::Extra(x) => x.as_any(),
             AttributeChildren::Name(x) => x.as_any(),
             AttributeChildren::QualifiedName(x) => x.as_any(),
         }
@@ -145,9 +137,7 @@ impl NodeAccess for AttributeChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            AttributeChildren::Comment(x) => x.children_any(),
-            AttributeChildren::TextInterpolation(x) => x.children_any(),
-            AttributeChildren::Error(x) => x.children_any(),
+            AttributeChildren::Extra(x) => x.children_any(),
             AttributeChildren::Name(x) => x.children_any(),
             AttributeChildren::QualifiedName(x) => x.children_any(),
         }
@@ -155,9 +145,7 @@ impl NodeAccess for AttributeChildren {
 
     fn range(&self) -> Range {
         match self {
-            AttributeChildren::Comment(x) => x.range(),
-            AttributeChildren::TextInterpolation(x) => x.range(),
-            AttributeChildren::Error(x) => x.range(),
+            AttributeChildren::Extra(x) => x.range(),
             AttributeChildren::Name(x) => x.range(),
             AttributeChildren::QualifiedName(x) => x.range(),
         }

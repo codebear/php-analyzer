@@ -19,19 +19,21 @@ use tree_sitter::Range;
 pub enum WhileStatementBody {
     _Statement(Box<_StatementNode>),
     ColonBlock(Box<ColonBlockNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl WhileStatementBody {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => WhileStatementBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => WhileStatementBody::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => WhileStatementBody::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => WhileStatementBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => WhileStatementBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => WhileStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "colon_block" => {
                 WhileStatementBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -54,11 +56,15 @@ impl WhileStatementBody {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => WhileStatementBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => WhileStatementBody::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => WhileStatementBody::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => WhileStatementBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => WhileStatementBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => WhileStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "colon_block" => {
                 WhileStatementBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -99,9 +105,7 @@ impl WhileStatementBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            WhileStatementBody::Comment(x) => x.get_utype(state, emitter),
-            WhileStatementBody::TextInterpolation(x) => x.get_utype(state, emitter),
-            WhileStatementBody::Error(x) => x.get_utype(state, emitter),
+            WhileStatementBody::Extra(x) => x.get_utype(state, emitter),
             WhileStatementBody::_Statement(x) => x.get_utype(state, emitter),
             WhileStatementBody::ColonBlock(x) => x.get_utype(state, emitter),
         }
@@ -113,9 +117,7 @@ impl WhileStatementBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            WhileStatementBody::Comment(x) => x.get_php_value(state, emitter),
-            WhileStatementBody::TextInterpolation(x) => x.get_php_value(state, emitter),
-            WhileStatementBody::Error(x) => x.get_php_value(state, emitter),
+            WhileStatementBody::Extra(x) => x.get_php_value(state, emitter),
             WhileStatementBody::_Statement(x) => x.get_php_value(state, emitter),
             WhileStatementBody::ColonBlock(x) => x.get_php_value(state, emitter),
         }
@@ -123,9 +125,7 @@ impl WhileStatementBody {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            WhileStatementBody::Comment(x) => x.read_from(state, emitter),
-            WhileStatementBody::TextInterpolation(x) => x.read_from(state, emitter),
-            WhileStatementBody::Error(x) => x.read_from(state, emitter),
+            WhileStatementBody::Extra(x) => x.read_from(state, emitter),
             WhileStatementBody::_Statement(x) => x.read_from(state, emitter),
             WhileStatementBody::ColonBlock(x) => x.read_from(state, emitter),
         }
@@ -135,14 +135,8 @@ impl WhileStatementBody {
 impl NodeAccess for WhileStatementBody {
     fn brief_desc(&self) -> String {
         match self {
-            WhileStatementBody::Comment(x) => {
-                format!("WhileStatementBody::comment({})", x.brief_desc())
-            }
-            WhileStatementBody::TextInterpolation(x) => {
-                format!("WhileStatementBody::text_interpolation({})", x.brief_desc())
-            }
-            WhileStatementBody::Error(x) => {
-                format!("WhileStatementBody::ERROR({})", x.brief_desc())
+            WhileStatementBody::Extra(x) => {
+                format!("WhileStatementBody::extra({})", x.brief_desc())
             }
             WhileStatementBody::_Statement(x) => {
                 format!("WhileStatementBody::_statement({})", x.brief_desc())
@@ -155,9 +149,7 @@ impl NodeAccess for WhileStatementBody {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            WhileStatementBody::Comment(x) => x.as_any(),
-            WhileStatementBody::TextInterpolation(x) => x.as_any(),
-            WhileStatementBody::Error(x) => x.as_any(),
+            WhileStatementBody::Extra(x) => x.as_any(),
             WhileStatementBody::_Statement(x) => x.as_any(),
             WhileStatementBody::ColonBlock(x) => x.as_any(),
         }
@@ -165,9 +157,7 @@ impl NodeAccess for WhileStatementBody {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            WhileStatementBody::Comment(x) => x.children_any(),
-            WhileStatementBody::TextInterpolation(x) => x.children_any(),
-            WhileStatementBody::Error(x) => x.children_any(),
+            WhileStatementBody::Extra(x) => x.children_any(),
             WhileStatementBody::_Statement(x) => x.children_any(),
             WhileStatementBody::ColonBlock(x) => x.children_any(),
         }
@@ -175,9 +165,7 @@ impl NodeAccess for WhileStatementBody {
 
     fn range(&self) -> Range {
         match self {
-            WhileStatementBody::Comment(x) => x.range(),
-            WhileStatementBody::TextInterpolation(x) => x.range(),
-            WhileStatementBody::Error(x) => x.range(),
+            WhileStatementBody::Extra(x) => x.range(),
             WhileStatementBody::_Statement(x) => x.range(),
             WhileStatementBody::ColonBlock(x) => x.range(),
         }

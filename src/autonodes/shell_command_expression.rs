@@ -28,23 +28,23 @@ pub enum ShellCommandExpressionChildren {
     StringValue(Box<StringValueNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ShellCommandExpressionChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ShellCommandExpressionChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ShellCommandExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ShellCommandExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ShellCommandExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ShellCommandExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ShellCommandExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => ShellCommandExpressionChildren::DynamicVariableName(
                 Box::new(DynamicVariableNameNode::parse(node, source)?),
             ),
@@ -82,15 +82,17 @@ impl ShellCommandExpressionChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ShellCommandExpressionChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ShellCommandExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ShellCommandExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ShellCommandExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ShellCommandExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ShellCommandExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => ShellCommandExpressionChildren::DynamicVariableName(
                 Box::new(DynamicVariableNameNode::parse(node, source)?),
             ),
@@ -146,9 +148,7 @@ impl ShellCommandExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ShellCommandExpressionChildren::Comment(x) => x.get_utype(state, emitter),
-            ShellCommandExpressionChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ShellCommandExpressionChildren::Error(x) => x.get_utype(state, emitter),
+            ShellCommandExpressionChildren::Extra(x) => x.get_utype(state, emitter),
             ShellCommandExpressionChildren::_Expression(x) => x.get_utype(state, emitter),
             ShellCommandExpressionChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             ShellCommandExpressionChildren::EscapeSequence(x) => x.get_utype(state, emitter),
@@ -167,9 +167,7 @@ impl ShellCommandExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ShellCommandExpressionChildren::Comment(x) => x.get_php_value(state, emitter),
-            ShellCommandExpressionChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ShellCommandExpressionChildren::Error(x) => x.get_php_value(state, emitter),
+            ShellCommandExpressionChildren::Extra(x) => x.get_php_value(state, emitter),
             ShellCommandExpressionChildren::_Expression(x) => x.get_php_value(state, emitter),
             ShellCommandExpressionChildren::DynamicVariableName(x) => {
                 x.get_php_value(state, emitter)
@@ -188,9 +186,7 @@ impl ShellCommandExpressionChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ShellCommandExpressionChildren::Comment(x) => x.read_from(state, emitter),
-            ShellCommandExpressionChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ShellCommandExpressionChildren::Error(x) => x.read_from(state, emitter),
+            ShellCommandExpressionChildren::Extra(x) => x.read_from(state, emitter),
             ShellCommandExpressionChildren::_Expression(x) => x.read_from(state, emitter),
             ShellCommandExpressionChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             ShellCommandExpressionChildren::EscapeSequence(x) => x.read_from(state, emitter),
@@ -207,16 +203,8 @@ impl ShellCommandExpressionChildren {
 impl NodeAccess for ShellCommandExpressionChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ShellCommandExpressionChildren::Comment(x) => format!(
-                "ShellCommandExpressionChildren::comment({})",
-                x.brief_desc()
-            ),
-            ShellCommandExpressionChildren::TextInterpolation(x) => format!(
-                "ShellCommandExpressionChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ShellCommandExpressionChildren::Error(x) => {
-                format!("ShellCommandExpressionChildren::ERROR({})", x.brief_desc())
+            ShellCommandExpressionChildren::Extra(x) => {
+                format!("ShellCommandExpressionChildren::extra({})", x.brief_desc())
             }
             ShellCommandExpressionChildren::_Expression(x) => format!(
                 "ShellCommandExpressionChildren::_expression({})",
@@ -251,9 +239,7 @@ impl NodeAccess for ShellCommandExpressionChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ShellCommandExpressionChildren::Comment(x) => x.as_any(),
-            ShellCommandExpressionChildren::TextInterpolation(x) => x.as_any(),
-            ShellCommandExpressionChildren::Error(x) => x.as_any(),
+            ShellCommandExpressionChildren::Extra(x) => x.as_any(),
             ShellCommandExpressionChildren::_Expression(x) => x.as_any(),
             ShellCommandExpressionChildren::DynamicVariableName(x) => x.as_any(),
             ShellCommandExpressionChildren::EscapeSequence(x) => x.as_any(),
@@ -266,9 +252,7 @@ impl NodeAccess for ShellCommandExpressionChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ShellCommandExpressionChildren::Comment(x) => x.children_any(),
-            ShellCommandExpressionChildren::TextInterpolation(x) => x.children_any(),
-            ShellCommandExpressionChildren::Error(x) => x.children_any(),
+            ShellCommandExpressionChildren::Extra(x) => x.children_any(),
             ShellCommandExpressionChildren::_Expression(x) => x.children_any(),
             ShellCommandExpressionChildren::DynamicVariableName(x) => x.children_any(),
             ShellCommandExpressionChildren::EscapeSequence(x) => x.children_any(),
@@ -281,9 +265,7 @@ impl NodeAccess for ShellCommandExpressionChildren {
 
     fn range(&self) -> Range {
         match self {
-            ShellCommandExpressionChildren::Comment(x) => x.range(),
-            ShellCommandExpressionChildren::TextInterpolation(x) => x.range(),
-            ShellCommandExpressionChildren::Error(x) => x.range(),
+            ShellCommandExpressionChildren::Extra(x) => x.range(),
             ShellCommandExpressionChildren::_Expression(x) => x.range(),
             ShellCommandExpressionChildren::DynamicVariableName(x) => x.range(),
             ShellCommandExpressionChildren::EscapeSequence(x) => x.range(),

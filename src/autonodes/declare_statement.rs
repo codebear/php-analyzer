@@ -18,21 +18,21 @@ use tree_sitter::Range;
 pub enum DeclareStatementChildren {
     _Statement(Box<_StatementNode>),
     DeclareDirective(Box<DeclareDirectiveNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl DeclareStatementChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                DeclareStatementChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => DeclareStatementChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => DeclareStatementChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => DeclareStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => DeclareStatementChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => DeclareStatementChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "declare_directive" => DeclareStatementChildren::DeclareDirective(Box::new(
                 DeclareDirectiveNode::parse(node, source)?,
             )),
@@ -55,13 +55,15 @@ impl DeclareStatementChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                DeclareStatementChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => DeclareStatementChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => DeclareStatementChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => DeclareStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => DeclareStatementChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => DeclareStatementChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "declare_directive" => DeclareStatementChildren::DeclareDirective(Box::new(
                 DeclareDirectiveNode::parse(node, source)?,
             )),
@@ -102,9 +104,7 @@ impl DeclareStatementChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            DeclareStatementChildren::Comment(x) => x.get_utype(state, emitter),
-            DeclareStatementChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            DeclareStatementChildren::Error(x) => x.get_utype(state, emitter),
+            DeclareStatementChildren::Extra(x) => x.get_utype(state, emitter),
             DeclareStatementChildren::_Statement(x) => x.get_utype(state, emitter),
             DeclareStatementChildren::DeclareDirective(x) => x.get_utype(state, emitter),
         }
@@ -116,9 +116,7 @@ impl DeclareStatementChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            DeclareStatementChildren::Comment(x) => x.get_php_value(state, emitter),
-            DeclareStatementChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            DeclareStatementChildren::Error(x) => x.get_php_value(state, emitter),
+            DeclareStatementChildren::Extra(x) => x.get_php_value(state, emitter),
             DeclareStatementChildren::_Statement(x) => x.get_php_value(state, emitter),
             DeclareStatementChildren::DeclareDirective(x) => x.get_php_value(state, emitter),
         }
@@ -126,9 +124,7 @@ impl DeclareStatementChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            DeclareStatementChildren::Comment(x) => x.read_from(state, emitter),
-            DeclareStatementChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            DeclareStatementChildren::Error(x) => x.read_from(state, emitter),
+            DeclareStatementChildren::Extra(x) => x.read_from(state, emitter),
             DeclareStatementChildren::_Statement(x) => x.read_from(state, emitter),
             DeclareStatementChildren::DeclareDirective(x) => x.read_from(state, emitter),
         }
@@ -138,15 +134,8 @@ impl DeclareStatementChildren {
 impl NodeAccess for DeclareStatementChildren {
     fn brief_desc(&self) -> String {
         match self {
-            DeclareStatementChildren::Comment(x) => {
-                format!("DeclareStatementChildren::comment({})", x.brief_desc())
-            }
-            DeclareStatementChildren::TextInterpolation(x) => format!(
-                "DeclareStatementChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            DeclareStatementChildren::Error(x) => {
-                format!("DeclareStatementChildren::ERROR({})", x.brief_desc())
+            DeclareStatementChildren::Extra(x) => {
+                format!("DeclareStatementChildren::extra({})", x.brief_desc())
             }
             DeclareStatementChildren::_Statement(x) => {
                 format!("DeclareStatementChildren::_statement({})", x.brief_desc())
@@ -160,9 +149,7 @@ impl NodeAccess for DeclareStatementChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            DeclareStatementChildren::Comment(x) => x.as_any(),
-            DeclareStatementChildren::TextInterpolation(x) => x.as_any(),
-            DeclareStatementChildren::Error(x) => x.as_any(),
+            DeclareStatementChildren::Extra(x) => x.as_any(),
             DeclareStatementChildren::_Statement(x) => x.as_any(),
             DeclareStatementChildren::DeclareDirective(x) => x.as_any(),
         }
@@ -170,9 +157,7 @@ impl NodeAccess for DeclareStatementChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            DeclareStatementChildren::Comment(x) => x.children_any(),
-            DeclareStatementChildren::TextInterpolation(x) => x.children_any(),
-            DeclareStatementChildren::Error(x) => x.children_any(),
+            DeclareStatementChildren::Extra(x) => x.children_any(),
             DeclareStatementChildren::_Statement(x) => x.children_any(),
             DeclareStatementChildren::DeclareDirective(x) => x.children_any(),
         }
@@ -180,9 +165,7 @@ impl NodeAccess for DeclareStatementChildren {
 
     fn range(&self) -> Range {
         match self {
-            DeclareStatementChildren::Comment(x) => x.range(),
-            DeclareStatementChildren::TextInterpolation(x) => x.range(),
-            DeclareStatementChildren::Error(x) => x.range(),
+            DeclareStatementChildren::Extra(x) => x.range(),
             DeclareStatementChildren::_Statement(x) => x.range(),
             DeclareStatementChildren::DeclareDirective(x) => x.range(),
         }

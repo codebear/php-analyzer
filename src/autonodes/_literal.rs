@@ -13,6 +13,7 @@ use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
+use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
@@ -29,19 +30,21 @@ pub enum _LiteralNode {
     Nowdoc(Box<NowdocNode>),
     Null(Box<NullNode>),
     String(Box<StringNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl _LiteralNode {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => _LiteralNode::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => _LiteralNode::TextInterpolation(Box::new(
+            "comment" => _LiteralNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => _LiteralNode::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => _LiteralNode::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                _LiteralNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "boolean" => _LiteralNode::Boolean(Box::new(BooleanNode::parse(node, source)?)),
             "encapsed_string" => {
                 _LiteralNode::EncapsedString(Box::new(EncapsedStringNode::parse(node, source)?))
@@ -64,11 +67,15 @@ impl _LiteralNode {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => _LiteralNode::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => _LiteralNode::TextInterpolation(Box::new(
+            "comment" => _LiteralNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => _LiteralNode::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => _LiteralNode::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                _LiteralNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "boolean" => _LiteralNode::Boolean(Box::new(BooleanNode::parse(node, source)?)),
             "encapsed_string" => {
                 _LiteralNode::EncapsedString(Box::new(EncapsedStringNode::parse(node, source)?))
@@ -105,9 +112,7 @@ impl _LiteralNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            _LiteralNode::Comment(x) => x.get_utype(state, emitter),
-            _LiteralNode::TextInterpolation(x) => x.get_utype(state, emitter),
-            _LiteralNode::Error(x) => x.get_utype(state, emitter),
+            _LiteralNode::Extra(x) => x.get_utype(state, emitter),
             _LiteralNode::Boolean(x) => x.get_utype(state, emitter),
             _LiteralNode::EncapsedString(x) => x.get_utype(state, emitter),
             _LiteralNode::Float(x) => x.get_utype(state, emitter),
@@ -125,9 +130,7 @@ impl _LiteralNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            _LiteralNode::Comment(x) => x.get_php_value(state, emitter),
-            _LiteralNode::TextInterpolation(x) => x.get_php_value(state, emitter),
-            _LiteralNode::Error(x) => x.get_php_value(state, emitter),
+            _LiteralNode::Extra(x) => x.get_php_value(state, emitter),
             _LiteralNode::Boolean(x) => x.get_php_value(state, emitter),
             _LiteralNode::EncapsedString(x) => x.get_php_value(state, emitter),
             _LiteralNode::Float(x) => x.get_php_value(state, emitter),
@@ -141,9 +144,7 @@ impl _LiteralNode {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            _LiteralNode::Comment(x) => x.read_from(state, emitter),
-            _LiteralNode::TextInterpolation(x) => x.read_from(state, emitter),
-            _LiteralNode::Error(x) => x.read_from(state, emitter),
+            _LiteralNode::Extra(x) => x.read_from(state, emitter),
             _LiteralNode::Boolean(x) => x.read_from(state, emitter),
             _LiteralNode::EncapsedString(x) => x.read_from(state, emitter),
             _LiteralNode::Float(x) => x.read_from(state, emitter),
@@ -159,11 +160,7 @@ impl _LiteralNode {
 impl NodeAccess for _LiteralNode {
     fn brief_desc(&self) -> String {
         match self {
-            _LiteralNode::Comment(x) => format!("_LiteralNode::comment({})", x.brief_desc()),
-            _LiteralNode::TextInterpolation(x) => {
-                format!("_LiteralNode::text_interpolation({})", x.brief_desc())
-            }
-            _LiteralNode::Error(x) => format!("_LiteralNode::ERROR({})", x.brief_desc()),
+            _LiteralNode::Extra(x) => format!("_LiteralNode::extra({})", x.brief_desc()),
             _LiteralNode::Boolean(x) => format!("_LiteralNode::boolean({})", x.brief_desc()),
             _LiteralNode::EncapsedString(x) => {
                 format!("_LiteralNode::encapsed_string({})", x.brief_desc())
@@ -179,9 +176,7 @@ impl NodeAccess for _LiteralNode {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            _LiteralNode::Comment(x) => x.as_any(),
-            _LiteralNode::TextInterpolation(x) => x.as_any(),
-            _LiteralNode::Error(x) => x.as_any(),
+            _LiteralNode::Extra(x) => x.as_any(),
             _LiteralNode::Boolean(x) => x.as_any(),
             _LiteralNode::EncapsedString(x) => x.as_any(),
             _LiteralNode::Float(x) => x.as_any(),
@@ -195,9 +190,7 @@ impl NodeAccess for _LiteralNode {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            _LiteralNode::Comment(x) => x.children_any(),
-            _LiteralNode::TextInterpolation(x) => x.children_any(),
-            _LiteralNode::Error(x) => x.children_any(),
+            _LiteralNode::Extra(x) => x.children_any(),
             _LiteralNode::Boolean(x) => x.children_any(),
             _LiteralNode::EncapsedString(x) => x.children_any(),
             _LiteralNode::Float(x) => x.children_any(),
@@ -211,9 +204,7 @@ impl NodeAccess for _LiteralNode {
 
     fn range(&self) -> Range {
         match self {
-            _LiteralNode::Comment(x) => x.range(),
-            _LiteralNode::TextInterpolation(x) => x.range(),
-            _LiteralNode::Error(x) => x.range(),
+            _LiteralNode::Extra(x) => x.range(),
             _LiteralNode::Boolean(x) => x.range(),
             _LiteralNode::EncapsedString(x) => x.range(),
             _LiteralNode::Float(x) => x.range(),

@@ -20,19 +20,21 @@ pub enum ProgramChildren {
     _Statement(Box<_StatementNode>),
     PhpTag(Box<PhpTagNode>),
     Text(Box<TextNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ProgramChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ProgramChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ProgramChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ProgramChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => ProgramChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ProgramChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => {
+                ProgramChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "php_tag" => ProgramChildren::PhpTag(Box::new(PhpTagNode::parse(node, source)?)),
             "text" => ProgramChildren::Text(Box::new(TextNode::parse(node, source)?)),
 
@@ -54,11 +56,15 @@ impl ProgramChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ProgramChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ProgramChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ProgramChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => ProgramChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ProgramChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => {
+                ProgramChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "php_tag" => ProgramChildren::PhpTag(Box::new(PhpTagNode::parse(node, source)?)),
             "text" => ProgramChildren::Text(Box::new(TextNode::parse(node, source)?)),
 
@@ -98,9 +104,7 @@ impl ProgramChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ProgramChildren::Comment(x) => x.get_utype(state, emitter),
-            ProgramChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ProgramChildren::Error(x) => x.get_utype(state, emitter),
+            ProgramChildren::Extra(x) => x.get_utype(state, emitter),
             ProgramChildren::_Statement(x) => x.get_utype(state, emitter),
             ProgramChildren::PhpTag(x) => x.get_utype(state, emitter),
             ProgramChildren::Text(x) => x.get_utype(state, emitter),
@@ -113,9 +117,7 @@ impl ProgramChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ProgramChildren::Comment(x) => x.get_php_value(state, emitter),
-            ProgramChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ProgramChildren::Error(x) => x.get_php_value(state, emitter),
+            ProgramChildren::Extra(x) => x.get_php_value(state, emitter),
             ProgramChildren::_Statement(x) => x.get_php_value(state, emitter),
             ProgramChildren::PhpTag(x) => x.get_php_value(state, emitter),
             ProgramChildren::Text(x) => x.get_php_value(state, emitter),
@@ -124,9 +126,7 @@ impl ProgramChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ProgramChildren::Comment(x) => x.read_from(state, emitter),
-            ProgramChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ProgramChildren::Error(x) => x.read_from(state, emitter),
+            ProgramChildren::Extra(x) => x.read_from(state, emitter),
             ProgramChildren::_Statement(x) => x.read_from(state, emitter),
             ProgramChildren::PhpTag(x) => x.read_from(state, emitter),
             ProgramChildren::Text(x) => x.read_from(state, emitter),
@@ -137,11 +137,7 @@ impl ProgramChildren {
 impl NodeAccess for ProgramChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ProgramChildren::Comment(x) => format!("ProgramChildren::comment({})", x.brief_desc()),
-            ProgramChildren::TextInterpolation(x) => {
-                format!("ProgramChildren::text_interpolation({})", x.brief_desc())
-            }
-            ProgramChildren::Error(x) => format!("ProgramChildren::ERROR({})", x.brief_desc()),
+            ProgramChildren::Extra(x) => format!("ProgramChildren::extra({})", x.brief_desc()),
             ProgramChildren::_Statement(x) => {
                 format!("ProgramChildren::_statement({})", x.brief_desc())
             }
@@ -152,9 +148,7 @@ impl NodeAccess for ProgramChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ProgramChildren::Comment(x) => x.as_any(),
-            ProgramChildren::TextInterpolation(x) => x.as_any(),
-            ProgramChildren::Error(x) => x.as_any(),
+            ProgramChildren::Extra(x) => x.as_any(),
             ProgramChildren::_Statement(x) => x.as_any(),
             ProgramChildren::PhpTag(x) => x.as_any(),
             ProgramChildren::Text(x) => x.as_any(),
@@ -163,9 +157,7 @@ impl NodeAccess for ProgramChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ProgramChildren::Comment(x) => x.children_any(),
-            ProgramChildren::TextInterpolation(x) => x.children_any(),
-            ProgramChildren::Error(x) => x.children_any(),
+            ProgramChildren::Extra(x) => x.children_any(),
             ProgramChildren::_Statement(x) => x.children_any(),
             ProgramChildren::PhpTag(x) => x.children_any(),
             ProgramChildren::Text(x) => x.children_any(),
@@ -174,9 +166,7 @@ impl NodeAccess for ProgramChildren {
 
     fn range(&self) -> Range {
         match self {
-            ProgramChildren::Comment(x) => x.range(),
-            ProgramChildren::TextInterpolation(x) => x.range(),
-            ProgramChildren::Error(x) => x.range(),
+            ProgramChildren::Extra(x) => x.range(),
             ProgramChildren::_Statement(x) => x.range(),
             ProgramChildren::PhpTag(x) => x.range(),
             ProgramChildren::Text(x) => x.range(),

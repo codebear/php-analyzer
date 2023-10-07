@@ -20,23 +20,23 @@ pub enum NamespaceUseDeclarationChildren {
     NamespaceName(Box<NamespaceNameNode>),
     NamespaceUseClause(Box<NamespaceUseClauseNode>),
     NamespaceUseGroup(Box<NamespaceUseGroupNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl NamespaceUseDeclarationChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => NamespaceUseDeclarationChildren::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => NamespaceUseDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                NamespaceUseDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => NamespaceUseDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NamespaceUseDeclarationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => NamespaceUseDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "namespace_name" => NamespaceUseDeclarationChildren::NamespaceName(Box::new(
                 NamespaceNameNode::parse(node, source)?,
             )),
@@ -58,15 +58,17 @@ impl NamespaceUseDeclarationChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => NamespaceUseDeclarationChildren::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => NamespaceUseDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                NamespaceUseDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => NamespaceUseDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NamespaceUseDeclarationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => NamespaceUseDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "namespace_name" => NamespaceUseDeclarationChildren::NamespaceName(Box::new(
                 NamespaceNameNode::parse(node, source)?,
             )),
@@ -102,9 +104,7 @@ impl NamespaceUseDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            NamespaceUseDeclarationChildren::Comment(x) => x.get_utype(state, emitter),
-            NamespaceUseDeclarationChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            NamespaceUseDeclarationChildren::Error(x) => x.get_utype(state, emitter),
+            NamespaceUseDeclarationChildren::Extra(x) => x.get_utype(state, emitter),
             NamespaceUseDeclarationChildren::NamespaceName(x) => x.get_utype(state, emitter),
             NamespaceUseDeclarationChildren::NamespaceUseClause(x) => x.get_utype(state, emitter),
             NamespaceUseDeclarationChildren::NamespaceUseGroup(x) => x.get_utype(state, emitter),
@@ -117,11 +117,7 @@ impl NamespaceUseDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            NamespaceUseDeclarationChildren::Comment(x) => x.get_php_value(state, emitter),
-            NamespaceUseDeclarationChildren::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            NamespaceUseDeclarationChildren::Error(x) => x.get_php_value(state, emitter),
+            NamespaceUseDeclarationChildren::Extra(x) => x.get_php_value(state, emitter),
             NamespaceUseDeclarationChildren::NamespaceName(x) => x.get_php_value(state, emitter),
             NamespaceUseDeclarationChildren::NamespaceUseClause(x) => {
                 x.get_php_value(state, emitter)
@@ -134,9 +130,7 @@ impl NamespaceUseDeclarationChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            NamespaceUseDeclarationChildren::Comment(x) => x.read_from(state, emitter),
-            NamespaceUseDeclarationChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            NamespaceUseDeclarationChildren::Error(x) => x.read_from(state, emitter),
+            NamespaceUseDeclarationChildren::Extra(x) => x.read_from(state, emitter),
             NamespaceUseDeclarationChildren::NamespaceName(x) => x.read_from(state, emitter),
             NamespaceUseDeclarationChildren::NamespaceUseClause(x) => x.read_from(state, emitter),
             NamespaceUseDeclarationChildren::NamespaceUseGroup(x) => x.read_from(state, emitter),
@@ -147,16 +141,8 @@ impl NamespaceUseDeclarationChildren {
 impl NodeAccess for NamespaceUseDeclarationChildren {
     fn brief_desc(&self) -> String {
         match self {
-            NamespaceUseDeclarationChildren::Comment(x) => format!(
-                "NamespaceUseDeclarationChildren::comment({})",
-                x.brief_desc()
-            ),
-            NamespaceUseDeclarationChildren::TextInterpolation(x) => format!(
-                "NamespaceUseDeclarationChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            NamespaceUseDeclarationChildren::Error(x) => {
-                format!("NamespaceUseDeclarationChildren::ERROR({})", x.brief_desc())
+            NamespaceUseDeclarationChildren::Extra(x) => {
+                format!("NamespaceUseDeclarationChildren::extra({})", x.brief_desc())
             }
             NamespaceUseDeclarationChildren::NamespaceName(x) => format!(
                 "NamespaceUseDeclarationChildren::namespace_name({})",
@@ -175,9 +161,7 @@ impl NodeAccess for NamespaceUseDeclarationChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            NamespaceUseDeclarationChildren::Comment(x) => x.as_any(),
-            NamespaceUseDeclarationChildren::TextInterpolation(x) => x.as_any(),
-            NamespaceUseDeclarationChildren::Error(x) => x.as_any(),
+            NamespaceUseDeclarationChildren::Extra(x) => x.as_any(),
             NamespaceUseDeclarationChildren::NamespaceName(x) => x.as_any(),
             NamespaceUseDeclarationChildren::NamespaceUseClause(x) => x.as_any(),
             NamespaceUseDeclarationChildren::NamespaceUseGroup(x) => x.as_any(),
@@ -186,9 +170,7 @@ impl NodeAccess for NamespaceUseDeclarationChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            NamespaceUseDeclarationChildren::Comment(x) => x.children_any(),
-            NamespaceUseDeclarationChildren::TextInterpolation(x) => x.children_any(),
-            NamespaceUseDeclarationChildren::Error(x) => x.children_any(),
+            NamespaceUseDeclarationChildren::Extra(x) => x.children_any(),
             NamespaceUseDeclarationChildren::NamespaceName(x) => x.children_any(),
             NamespaceUseDeclarationChildren::NamespaceUseClause(x) => x.children_any(),
             NamespaceUseDeclarationChildren::NamespaceUseGroup(x) => x.children_any(),
@@ -197,9 +179,7 @@ impl NodeAccess for NamespaceUseDeclarationChildren {
 
     fn range(&self) -> Range {
         match self {
-            NamespaceUseDeclarationChildren::Comment(x) => x.range(),
-            NamespaceUseDeclarationChildren::TextInterpolation(x) => x.range(),
-            NamespaceUseDeclarationChildren::Error(x) => x.range(),
+            NamespaceUseDeclarationChildren::Extra(x) => x.range(),
             NamespaceUseDeclarationChildren::NamespaceName(x) => x.range(),
             NamespaceUseDeclarationChildren::NamespaceUseClause(x) => x.range(),
             NamespaceUseDeclarationChildren::NamespaceUseGroup(x) => x.range(),

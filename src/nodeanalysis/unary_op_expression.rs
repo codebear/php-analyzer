@@ -34,9 +34,7 @@ impl UnaryOpExpressionNode {
                 .get_utype(),
             UnaryOpExpressionOperator::BinaryNot(_, _) => Some(DiscreteType::Int.into()),
 
-            UnaryOpExpressionOperator::Comment(_)
-            | UnaryOpExpressionOperator::TextInterpolation(_)
-            | UnaryOpExpressionOperator::Error(_) => None,
+            UnaryOpExpressionOperator::Extra(_) => None,
         }
     }
 
@@ -75,12 +73,7 @@ impl UnaryOpExpressionNode {
                 crate::missing_none!("unary binary not")
             }
 
-            (
-                UnaryOpExpressionOperator::Comment(_)
-                | UnaryOpExpressionOperator::TextInterpolation(_)
-                | UnaryOpExpressionOperator::Error(_),
-                _,
-            ) => return None,
+            (UnaryOpExpressionOperator::Extra(_), _) => return None,
             _ => crate::missing_none!("get_php_value: {:?}", self),
         }
     }

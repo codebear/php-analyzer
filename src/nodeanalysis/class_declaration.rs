@@ -124,10 +124,9 @@ impl ClassDeclarationNode {
                     start_search_pos = i.range().end_byte;
                 }
 
-                (_, ClassDeclarationChildren::Comment(_)) => todo!(),
+                (_, ClassDeclarationChildren::Extra(ExtraChild::Comment(_))) => todo!(),
 
-                (_, ClassDeclarationChildren::TextInterpolation(_))
-                | (_, ClassDeclarationChildren::Error(_)) => (),
+                (_, ClassDeclarationChildren::Extra(_)) => (),
             }
         }
 

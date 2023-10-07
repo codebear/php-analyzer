@@ -20,21 +20,23 @@ pub enum NamespaceUseClauseChildren {
     Name(Box<NameNode>),
     NamespaceAliasingClause(Box<NamespaceAliasingClauseNode>),
     QualifiedName(Box<QualifiedNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl NamespaceUseClauseChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                NamespaceUseClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => NamespaceUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NamespaceUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => NamespaceUseClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => NamespaceUseClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => NamespaceUseClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "name" => NamespaceUseClauseChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "namespace_aliasing_clause" => NamespaceUseClauseChildren::NamespaceAliasingClause(
                 Box::new(NamespaceAliasingClauseNode::parse(node, source)?),
@@ -54,13 +56,17 @@ impl NamespaceUseClauseChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                NamespaceUseClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => NamespaceUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NamespaceUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => NamespaceUseClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => NamespaceUseClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => NamespaceUseClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "name" => NamespaceUseClauseChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "namespace_aliasing_clause" => NamespaceUseClauseChildren::NamespaceAliasingClause(
                 Box::new(NamespaceAliasingClauseNode::parse(node, source)?),
@@ -94,9 +100,7 @@ impl NamespaceUseClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            NamespaceUseClauseChildren::Comment(x) => x.get_utype(state, emitter),
-            NamespaceUseClauseChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            NamespaceUseClauseChildren::Error(x) => x.get_utype(state, emitter),
+            NamespaceUseClauseChildren::Extra(x) => x.get_utype(state, emitter),
             NamespaceUseClauseChildren::Name(x) => x.get_utype(state, emitter),
             NamespaceUseClauseChildren::NamespaceAliasingClause(x) => x.get_utype(state, emitter),
             NamespaceUseClauseChildren::QualifiedName(x) => x.get_utype(state, emitter),
@@ -109,9 +113,7 @@ impl NamespaceUseClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            NamespaceUseClauseChildren::Comment(x) => x.get_php_value(state, emitter),
-            NamespaceUseClauseChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            NamespaceUseClauseChildren::Error(x) => x.get_php_value(state, emitter),
+            NamespaceUseClauseChildren::Extra(x) => x.get_php_value(state, emitter),
             NamespaceUseClauseChildren::Name(x) => x.get_php_value(state, emitter),
             NamespaceUseClauseChildren::NamespaceAliasingClause(x) => {
                 x.get_php_value(state, emitter)
@@ -122,9 +124,7 @@ impl NamespaceUseClauseChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            NamespaceUseClauseChildren::Comment(x) => x.read_from(state, emitter),
-            NamespaceUseClauseChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            NamespaceUseClauseChildren::Error(x) => x.read_from(state, emitter),
+            NamespaceUseClauseChildren::Extra(x) => x.read_from(state, emitter),
             NamespaceUseClauseChildren::Name(x) => x.read_from(state, emitter),
             NamespaceUseClauseChildren::NamespaceAliasingClause(x) => x.read_from(state, emitter),
             NamespaceUseClauseChildren::QualifiedName(x) => x.read_from(state, emitter),
@@ -135,15 +135,8 @@ impl NamespaceUseClauseChildren {
 impl NodeAccess for NamespaceUseClauseChildren {
     fn brief_desc(&self) -> String {
         match self {
-            NamespaceUseClauseChildren::Comment(x) => {
-                format!("NamespaceUseClauseChildren::comment({})", x.brief_desc())
-            }
-            NamespaceUseClauseChildren::TextInterpolation(x) => format!(
-                "NamespaceUseClauseChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            NamespaceUseClauseChildren::Error(x) => {
-                format!("NamespaceUseClauseChildren::ERROR({})", x.brief_desc())
+            NamespaceUseClauseChildren::Extra(x) => {
+                format!("NamespaceUseClauseChildren::extra({})", x.brief_desc())
             }
             NamespaceUseClauseChildren::Name(x) => {
                 format!("NamespaceUseClauseChildren::name({})", x.brief_desc())
@@ -161,9 +154,7 @@ impl NodeAccess for NamespaceUseClauseChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            NamespaceUseClauseChildren::Comment(x) => x.as_any(),
-            NamespaceUseClauseChildren::TextInterpolation(x) => x.as_any(),
-            NamespaceUseClauseChildren::Error(x) => x.as_any(),
+            NamespaceUseClauseChildren::Extra(x) => x.as_any(),
             NamespaceUseClauseChildren::Name(x) => x.as_any(),
             NamespaceUseClauseChildren::NamespaceAliasingClause(x) => x.as_any(),
             NamespaceUseClauseChildren::QualifiedName(x) => x.as_any(),
@@ -172,9 +163,7 @@ impl NodeAccess for NamespaceUseClauseChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            NamespaceUseClauseChildren::Comment(x) => x.children_any(),
-            NamespaceUseClauseChildren::TextInterpolation(x) => x.children_any(),
-            NamespaceUseClauseChildren::Error(x) => x.children_any(),
+            NamespaceUseClauseChildren::Extra(x) => x.children_any(),
             NamespaceUseClauseChildren::Name(x) => x.children_any(),
             NamespaceUseClauseChildren::NamespaceAliasingClause(x) => x.children_any(),
             NamespaceUseClauseChildren::QualifiedName(x) => x.children_any(),
@@ -183,9 +172,7 @@ impl NodeAccess for NamespaceUseClauseChildren {
 
     fn range(&self) -> Range {
         match self {
-            NamespaceUseClauseChildren::Comment(x) => x.range(),
-            NamespaceUseClauseChildren::TextInterpolation(x) => x.range(),
-            NamespaceUseClauseChildren::Error(x) => x.range(),
+            NamespaceUseClauseChildren::Extra(x) => x.range(),
             NamespaceUseClauseChildren::Name(x) => x.range(),
             NamespaceUseClauseChildren::NamespaceAliasingClause(x) => x.range(),
             NamespaceUseClauseChildren::QualifiedName(x) => x.range(),

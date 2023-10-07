@@ -79,9 +79,7 @@ impl ThirdPassAnalyzeableNode for ScopedPropertyAccessExpressionName {
                 true
             }
 
-            ScopedPropertyAccessExpressionName::Comment(_)
-            | ScopedPropertyAccessExpressionName::TextInterpolation(_)
-            | ScopedPropertyAccessExpressionName::Error(_) => true,
+            ScopedPropertyAccessExpressionName::Extra(_) => true,
         }
     }
 }

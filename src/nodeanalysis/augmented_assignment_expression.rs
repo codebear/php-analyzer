@@ -121,9 +121,7 @@ impl AugmentedAssignmentExpressionNode {
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::Comment(_)
-            | AugmentedAssignmentExpressionOperator::TextInterpolation(_)
-            | AugmentedAssignmentExpressionOperator::Error(_) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::Extra(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
@@ -191,9 +189,7 @@ impl AugmentedAssignmentExpressionNode {
                 crate::missing_none!("{}.get_utype(..)", self.kind())
             }
 
-            AugmentedAssignmentExpressionOperator::Comment(_)
-            | AugmentedAssignmentExpressionOperator::TextInterpolation(_)
-            | AugmentedAssignmentExpressionOperator::Error(_) => None,
+            AugmentedAssignmentExpressionOperator::Extra(_) => None,
         }
     }
 }
@@ -297,9 +293,7 @@ impl ThirdPassAnalyzeableNode for AugmentedAssignmentExpressionNode {
                 crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
             ),
 
-            AugmentedAssignmentExpressionOperator::Comment(_)
-            | AugmentedAssignmentExpressionOperator::TextInterpolation(_)
-            | AugmentedAssignmentExpressionOperator::Error(_) => (None, None),
+            AugmentedAssignmentExpressionOperator::Extra(_) => (None, None),
         };
         // let val_type = self.right.get_utype(state, emitter);
         self.left.write_to(state, emitter, val_type, value);
@@ -350,9 +344,7 @@ impl AugmentedAssignmentExpressionLeft {
                 vn.write_to(state, emitter, val_type, value)
             }
 
-            AugmentedAssignmentExpressionLeft::Comment(_)
-            | AugmentedAssignmentExpressionLeft::TextInterpolation(_)
-            | AugmentedAssignmentExpressionLeft::Error(_) => (),
+            AugmentedAssignmentExpressionLeft::Extra(_) => (),
         }
     }
 }

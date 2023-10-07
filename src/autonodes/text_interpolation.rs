@@ -17,21 +17,23 @@ use tree_sitter::Range;
 pub enum TextInterpolationChildren {
     PhpTag(Box<PhpTagNode>),
     Text(Box<TextNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl TextInterpolationChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                TextInterpolationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => TextInterpolationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                TextInterpolationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => TextInterpolationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => TextInterpolationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => TextInterpolationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "php_tag" => {
                 TextInterpolationChildren::PhpTag(Box::new(PhpTagNode::parse(node, source)?))
             }
@@ -48,13 +50,17 @@ impl TextInterpolationChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                TextInterpolationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => TextInterpolationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                TextInterpolationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => TextInterpolationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => TextInterpolationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => TextInterpolationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "php_tag" => {
                 TextInterpolationChildren::PhpTag(Box::new(PhpTagNode::parse(node, source)?))
             }
@@ -85,9 +91,7 @@ impl TextInterpolationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            TextInterpolationChildren::Comment(x) => x.get_utype(state, emitter),
-            TextInterpolationChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            TextInterpolationChildren::Error(x) => x.get_utype(state, emitter),
+            TextInterpolationChildren::Extra(x) => x.get_utype(state, emitter),
             TextInterpolationChildren::PhpTag(x) => x.get_utype(state, emitter),
             TextInterpolationChildren::Text(x) => x.get_utype(state, emitter),
         }
@@ -99,9 +103,7 @@ impl TextInterpolationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            TextInterpolationChildren::Comment(x) => x.get_php_value(state, emitter),
-            TextInterpolationChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            TextInterpolationChildren::Error(x) => x.get_php_value(state, emitter),
+            TextInterpolationChildren::Extra(x) => x.get_php_value(state, emitter),
             TextInterpolationChildren::PhpTag(x) => x.get_php_value(state, emitter),
             TextInterpolationChildren::Text(x) => x.get_php_value(state, emitter),
         }
@@ -109,9 +111,7 @@ impl TextInterpolationChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            TextInterpolationChildren::Comment(x) => x.read_from(state, emitter),
-            TextInterpolationChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            TextInterpolationChildren::Error(x) => x.read_from(state, emitter),
+            TextInterpolationChildren::Extra(x) => x.read_from(state, emitter),
             TextInterpolationChildren::PhpTag(x) => x.read_from(state, emitter),
             TextInterpolationChildren::Text(x) => x.read_from(state, emitter),
         }
@@ -121,15 +121,8 @@ impl TextInterpolationChildren {
 impl NodeAccess for TextInterpolationChildren {
     fn brief_desc(&self) -> String {
         match self {
-            TextInterpolationChildren::Comment(x) => {
-                format!("TextInterpolationChildren::comment({})", x.brief_desc())
-            }
-            TextInterpolationChildren::TextInterpolation(x) => format!(
-                "TextInterpolationChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            TextInterpolationChildren::Error(x) => {
-                format!("TextInterpolationChildren::ERROR({})", x.brief_desc())
+            TextInterpolationChildren::Extra(x) => {
+                format!("TextInterpolationChildren::extra({})", x.brief_desc())
             }
             TextInterpolationChildren::PhpTag(x) => {
                 format!("TextInterpolationChildren::php_tag({})", x.brief_desc())
@@ -142,9 +135,7 @@ impl NodeAccess for TextInterpolationChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            TextInterpolationChildren::Comment(x) => x.as_any(),
-            TextInterpolationChildren::TextInterpolation(x) => x.as_any(),
-            TextInterpolationChildren::Error(x) => x.as_any(),
+            TextInterpolationChildren::Extra(x) => x.as_any(),
             TextInterpolationChildren::PhpTag(x) => x.as_any(),
             TextInterpolationChildren::Text(x) => x.as_any(),
         }
@@ -152,9 +143,7 @@ impl NodeAccess for TextInterpolationChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            TextInterpolationChildren::Comment(x) => x.children_any(),
-            TextInterpolationChildren::TextInterpolation(x) => x.children_any(),
-            TextInterpolationChildren::Error(x) => x.children_any(),
+            TextInterpolationChildren::Extra(x) => x.children_any(),
             TextInterpolationChildren::PhpTag(x) => x.children_any(),
             TextInterpolationChildren::Text(x) => x.children_any(),
         }
@@ -162,9 +151,7 @@ impl NodeAccess for TextInterpolationChildren {
 
     fn range(&self) -> Range {
         match self {
-            TextInterpolationChildren::Comment(x) => x.range(),
-            TextInterpolationChildren::TextInterpolation(x) => x.range(),
-            TextInterpolationChildren::Error(x) => x.range(),
+            TextInterpolationChildren::Extra(x) => x.range(),
             TextInterpolationChildren::PhpTag(x) => x.range(),
             TextInterpolationChildren::Text(x) => x.range(),
         }

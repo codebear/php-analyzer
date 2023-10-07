@@ -18,21 +18,23 @@ use tree_sitter::Range;
 pub enum UseInsteadOfClauseChildren {
     ClassConstantAccessExpression(Box<ClassConstantAccessExpressionNode>),
     Name(Box<NameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl UseInsteadOfClauseChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                UseInsteadOfClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => UseInsteadOfClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                UseInsteadOfClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => UseInsteadOfClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => UseInsteadOfClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UseInsteadOfClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "class_constant_access_expression" => {
                 UseInsteadOfClauseChildren::ClassConstantAccessExpression(Box::new(
                     ClassConstantAccessExpressionNode::parse(node, source)?,
@@ -51,13 +53,17 @@ impl UseInsteadOfClauseChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                UseInsteadOfClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => UseInsteadOfClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                UseInsteadOfClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => UseInsteadOfClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => UseInsteadOfClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UseInsteadOfClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "class_constant_access_expression" => {
                 UseInsteadOfClauseChildren::ClassConstantAccessExpression(Box::new(
                     ClassConstantAccessExpressionNode::parse(node, source)?,
@@ -90,9 +96,7 @@ impl UseInsteadOfClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            UseInsteadOfClauseChildren::Comment(x) => x.get_utype(state, emitter),
-            UseInsteadOfClauseChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            UseInsteadOfClauseChildren::Error(x) => x.get_utype(state, emitter),
+            UseInsteadOfClauseChildren::Extra(x) => x.get_utype(state, emitter),
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -106,9 +110,7 @@ impl UseInsteadOfClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            UseInsteadOfClauseChildren::Comment(x) => x.get_php_value(state, emitter),
-            UseInsteadOfClauseChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            UseInsteadOfClauseChildren::Error(x) => x.get_php_value(state, emitter),
+            UseInsteadOfClauseChildren::Extra(x) => x.get_php_value(state, emitter),
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -118,9 +120,7 @@ impl UseInsteadOfClauseChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            UseInsteadOfClauseChildren::Comment(x) => x.read_from(state, emitter),
-            UseInsteadOfClauseChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            UseInsteadOfClauseChildren::Error(x) => x.read_from(state, emitter),
+            UseInsteadOfClauseChildren::Extra(x) => x.read_from(state, emitter),
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -132,15 +132,8 @@ impl UseInsteadOfClauseChildren {
 impl NodeAccess for UseInsteadOfClauseChildren {
     fn brief_desc(&self) -> String {
         match self {
-            UseInsteadOfClauseChildren::Comment(x) => {
-                format!("UseInsteadOfClauseChildren::comment({})", x.brief_desc())
-            }
-            UseInsteadOfClauseChildren::TextInterpolation(x) => format!(
-                "UseInsteadOfClauseChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            UseInsteadOfClauseChildren::Error(x) => {
-                format!("UseInsteadOfClauseChildren::ERROR({})", x.brief_desc())
+            UseInsteadOfClauseChildren::Extra(x) => {
+                format!("UseInsteadOfClauseChildren::extra({})", x.brief_desc())
             }
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => format!(
                 "UseInsteadOfClauseChildren::class_constant_access_expression({})",
@@ -154,9 +147,7 @@ impl NodeAccess for UseInsteadOfClauseChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            UseInsteadOfClauseChildren::Comment(x) => x.as_any(),
-            UseInsteadOfClauseChildren::TextInterpolation(x) => x.as_any(),
-            UseInsteadOfClauseChildren::Error(x) => x.as_any(),
+            UseInsteadOfClauseChildren::Extra(x) => x.as_any(),
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => x.as_any(),
             UseInsteadOfClauseChildren::Name(x) => x.as_any(),
         }
@@ -164,9 +155,7 @@ impl NodeAccess for UseInsteadOfClauseChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            UseInsteadOfClauseChildren::Comment(x) => x.children_any(),
-            UseInsteadOfClauseChildren::TextInterpolation(x) => x.children_any(),
-            UseInsteadOfClauseChildren::Error(x) => x.children_any(),
+            UseInsteadOfClauseChildren::Extra(x) => x.children_any(),
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => x.children_any(),
             UseInsteadOfClauseChildren::Name(x) => x.children_any(),
         }
@@ -174,9 +163,7 @@ impl NodeAccess for UseInsteadOfClauseChildren {
 
     fn range(&self) -> Range {
         match self {
-            UseInsteadOfClauseChildren::Comment(x) => x.range(),
-            UseInsteadOfClauseChildren::TextInterpolation(x) => x.range(),
-            UseInsteadOfClauseChildren::Error(x) => x.range(),
+            UseInsteadOfClauseChildren::Extra(x) => x.range(),
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => x.range(),
             UseInsteadOfClauseChildren::Name(x) => x.range(),
         }

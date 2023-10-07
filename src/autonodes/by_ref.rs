@@ -32,19 +32,21 @@ pub enum ByRefChildren {
     ScopedCallExpression(Box<ScopedCallExpressionNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ByRefChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ByRefChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ByRefChildren::TextInterpolation(Box::new(
+            "comment" => ByRefChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => ByRefChildren::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => ByRefChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                ByRefChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "dynamic_variable_name" => ByRefChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -84,11 +86,15 @@ impl ByRefChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ByRefChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ByRefChildren::TextInterpolation(Box::new(
+            "comment" => ByRefChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => ByRefChildren::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => ByRefChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                ByRefChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "dynamic_variable_name" => ByRefChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -142,9 +148,7 @@ impl ByRefChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ByRefChildren::Comment(x) => x.get_utype(state, emitter),
-            ByRefChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ByRefChildren::Error(x) => x.get_utype(state, emitter),
+            ByRefChildren::Extra(x) => x.get_utype(state, emitter),
             ByRefChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             ByRefChildren::FunctionCallExpression(x) => x.get_utype(state, emitter),
             ByRefChildren::MemberAccessExpression(x) => x.get_utype(state, emitter),
@@ -163,9 +167,7 @@ impl ByRefChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ByRefChildren::Comment(x) => x.get_php_value(state, emitter),
-            ByRefChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ByRefChildren::Error(x) => x.get_php_value(state, emitter),
+            ByRefChildren::Extra(x) => x.get_php_value(state, emitter),
             ByRefChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             ByRefChildren::FunctionCallExpression(x) => x.get_php_value(state, emitter),
             ByRefChildren::MemberAccessExpression(x) => x.get_php_value(state, emitter),
@@ -180,9 +182,7 @@ impl ByRefChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ByRefChildren::Comment(x) => x.read_from(state, emitter),
-            ByRefChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ByRefChildren::Error(x) => x.read_from(state, emitter),
+            ByRefChildren::Extra(x) => x.read_from(state, emitter),
             ByRefChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             ByRefChildren::FunctionCallExpression(x) => x.read_from(state, emitter),
             ByRefChildren::MemberAccessExpression(x) => x.read_from(state, emitter),
@@ -199,11 +199,7 @@ impl ByRefChildren {
 impl NodeAccess for ByRefChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ByRefChildren::Comment(x) => format!("ByRefChildren::comment({})", x.brief_desc()),
-            ByRefChildren::TextInterpolation(x) => {
-                format!("ByRefChildren::text_interpolation({})", x.brief_desc())
-            }
-            ByRefChildren::Error(x) => format!("ByRefChildren::ERROR({})", x.brief_desc()),
+            ByRefChildren::Extra(x) => format!("ByRefChildren::extra({})", x.brief_desc()),
             ByRefChildren::DynamicVariableName(x) => {
                 format!("ByRefChildren::dynamic_variable_name({})", x.brief_desc())
             }
@@ -240,9 +236,7 @@ impl NodeAccess for ByRefChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ByRefChildren::Comment(x) => x.as_any(),
-            ByRefChildren::TextInterpolation(x) => x.as_any(),
-            ByRefChildren::Error(x) => x.as_any(),
+            ByRefChildren::Extra(x) => x.as_any(),
             ByRefChildren::DynamicVariableName(x) => x.as_any(),
             ByRefChildren::FunctionCallExpression(x) => x.as_any(),
             ByRefChildren::MemberAccessExpression(x) => x.as_any(),
@@ -257,9 +251,7 @@ impl NodeAccess for ByRefChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ByRefChildren::Comment(x) => x.children_any(),
-            ByRefChildren::TextInterpolation(x) => x.children_any(),
-            ByRefChildren::Error(x) => x.children_any(),
+            ByRefChildren::Extra(x) => x.children_any(),
             ByRefChildren::DynamicVariableName(x) => x.children_any(),
             ByRefChildren::FunctionCallExpression(x) => x.children_any(),
             ByRefChildren::MemberAccessExpression(x) => x.children_any(),
@@ -274,9 +266,7 @@ impl NodeAccess for ByRefChildren {
 
     fn range(&self) -> Range {
         match self {
-            ByRefChildren::Comment(x) => x.range(),
-            ByRefChildren::TextInterpolation(x) => x.range(),
-            ByRefChildren::Error(x) => x.range(),
+            ByRefChildren::Extra(x) => x.range(),
             ByRefChildren::DynamicVariableName(x) => x.range(),
             ByRefChildren::FunctionCallExpression(x) => x.range(),
             ByRefChildren::MemberAccessExpression(x) => x.range(),

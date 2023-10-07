@@ -60,9 +60,7 @@ impl UpdateExpressionExpr {
             }
             UpdateExpressionExpr::VariableName(vn) => vn.write_to(state, emitter, val_type, value),
 
-            UpdateExpressionExpr::Comment(_)
-            | UpdateExpressionExpr::TextInterpolation(_)
-            | UpdateExpressionExpr::Error(_) => (),
+            UpdateExpressionExpr::Extra(_) => (),
         }
     }
 }
@@ -105,9 +103,7 @@ impl UpdateExpressionNode {
                 (_, PHPValue::Array(_)) => None, // this emits in analysis round two
                 (_, PHPValue::ObjectInstance(_)) => None, // this emits in analysis round two,
 
-                (UpdateExpressionPrefix::Comment(_), _)
-                | (UpdateExpressionPrefix::TextInterpolation(_), _)
-                | (UpdateExpressionPrefix::Error(_), _) => None,
+                (UpdateExpressionPrefix::Extra(_), _) => None,
             }
         } else if let Some(_) = &self.postfix {
             Some(val)
@@ -166,9 +162,7 @@ impl UpdateExpressionNode {
             UpdateExpressionPrefix::Increment(_, _) => Some(Operator::Increment),
             UpdateExpressionPrefix::Decrement(_, _) => Some(Operator::Decrement),
 
-            UpdateExpressionPrefix::Comment(_)
-            | UpdateExpressionPrefix::TextInterpolation(_)
-            | UpdateExpressionPrefix::Error(_) => None,
+            UpdateExpressionPrefix::Extra(_) => None,
         })
     }
 
@@ -177,9 +171,7 @@ impl UpdateExpressionNode {
             UpdateExpressionPostfix::Increment(_, _) => Some(Operator::Increment),
             UpdateExpressionPostfix::Decrement(_, _) => Some(Operator::Decrement),
 
-            UpdateExpressionPostfix::Comment(_)
-            | UpdateExpressionPostfix::TextInterpolation(_)
-            | UpdateExpressionPostfix::Error(_) => None,
+            UpdateExpressionPostfix::Extra(_) => None,
         })
     }
 

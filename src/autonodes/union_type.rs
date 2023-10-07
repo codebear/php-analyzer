@@ -20,19 +20,21 @@ pub enum UnionTypeChildren {
     NamedType(Box<NamedTypeNode>),
     OptionalType(Box<OptionalTypeNode>),
     PrimitiveType(Box<PrimitiveTypeNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl UnionTypeChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => UnionTypeChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => UnionTypeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UnionTypeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => UnionTypeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UnionTypeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UnionTypeChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "named_type" => {
                 UnionTypeChildren::NamedType(Box::new(NamedTypeNode::parse(node, source)?))
             }
@@ -54,11 +56,15 @@ impl UnionTypeChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => UnionTypeChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => UnionTypeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UnionTypeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => UnionTypeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UnionTypeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UnionTypeChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "named_type" => {
                 UnionTypeChildren::NamedType(Box::new(NamedTypeNode::parse(node, source)?))
             }
@@ -94,9 +100,7 @@ impl UnionTypeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            UnionTypeChildren::Comment(x) => x.get_utype(state, emitter),
-            UnionTypeChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            UnionTypeChildren::Error(x) => x.get_utype(state, emitter),
+            UnionTypeChildren::Extra(x) => x.get_utype(state, emitter),
             UnionTypeChildren::NamedType(x) => x.get_utype(state, emitter),
             UnionTypeChildren::OptionalType(x) => x.get_utype(state, emitter),
             UnionTypeChildren::PrimitiveType(x) => x.get_utype(state, emitter),
@@ -109,9 +113,7 @@ impl UnionTypeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            UnionTypeChildren::Comment(x) => x.get_php_value(state, emitter),
-            UnionTypeChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            UnionTypeChildren::Error(x) => x.get_php_value(state, emitter),
+            UnionTypeChildren::Extra(x) => x.get_php_value(state, emitter),
             UnionTypeChildren::NamedType(x) => x.get_php_value(state, emitter),
             UnionTypeChildren::OptionalType(x) => x.get_php_value(state, emitter),
             UnionTypeChildren::PrimitiveType(x) => x.get_php_value(state, emitter),
@@ -120,9 +122,7 @@ impl UnionTypeChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            UnionTypeChildren::Comment(x) => x.read_from(state, emitter),
-            UnionTypeChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            UnionTypeChildren::Error(x) => x.read_from(state, emitter),
+            UnionTypeChildren::Extra(x) => x.read_from(state, emitter),
             UnionTypeChildren::NamedType(x) => x.read_from(state, emitter),
             UnionTypeChildren::OptionalType(x) => x.read_from(state, emitter),
             UnionTypeChildren::PrimitiveType(x) => x.read_from(state, emitter),
@@ -133,13 +133,7 @@ impl UnionTypeChildren {
 impl NodeAccess for UnionTypeChildren {
     fn brief_desc(&self) -> String {
         match self {
-            UnionTypeChildren::Comment(x) => {
-                format!("UnionTypeChildren::comment({})", x.brief_desc())
-            }
-            UnionTypeChildren::TextInterpolation(x) => {
-                format!("UnionTypeChildren::text_interpolation({})", x.brief_desc())
-            }
-            UnionTypeChildren::Error(x) => format!("UnionTypeChildren::ERROR({})", x.brief_desc()),
+            UnionTypeChildren::Extra(x) => format!("UnionTypeChildren::extra({})", x.brief_desc()),
             UnionTypeChildren::NamedType(x) => {
                 format!("UnionTypeChildren::named_type({})", x.brief_desc())
             }
@@ -154,9 +148,7 @@ impl NodeAccess for UnionTypeChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            UnionTypeChildren::Comment(x) => x.as_any(),
-            UnionTypeChildren::TextInterpolation(x) => x.as_any(),
-            UnionTypeChildren::Error(x) => x.as_any(),
+            UnionTypeChildren::Extra(x) => x.as_any(),
             UnionTypeChildren::NamedType(x) => x.as_any(),
             UnionTypeChildren::OptionalType(x) => x.as_any(),
             UnionTypeChildren::PrimitiveType(x) => x.as_any(),
@@ -165,9 +157,7 @@ impl NodeAccess for UnionTypeChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            UnionTypeChildren::Comment(x) => x.children_any(),
-            UnionTypeChildren::TextInterpolation(x) => x.children_any(),
-            UnionTypeChildren::Error(x) => x.children_any(),
+            UnionTypeChildren::Extra(x) => x.children_any(),
             UnionTypeChildren::NamedType(x) => x.children_any(),
             UnionTypeChildren::OptionalType(x) => x.children_any(),
             UnionTypeChildren::PrimitiveType(x) => x.children_any(),
@@ -176,9 +166,7 @@ impl NodeAccess for UnionTypeChildren {
 
     fn range(&self) -> Range {
         match self {
-            UnionTypeChildren::Comment(x) => x.range(),
-            UnionTypeChildren::TextInterpolation(x) => x.range(),
-            UnionTypeChildren::Error(x) => x.range(),
+            UnionTypeChildren::Extra(x) => x.range(),
             UnionTypeChildren::NamedType(x) => x.range(),
             UnionTypeChildren::OptionalType(x) => x.range(),
             UnionTypeChildren::PrimitiveType(x) => x.range(),

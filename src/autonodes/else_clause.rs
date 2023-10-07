@@ -18,19 +18,21 @@ use tree_sitter::Range;
 pub enum ElseClauseBody {
     _Statement(Box<_StatementNode>),
     ColonBlock(Box<ColonBlockNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ElseClauseBody {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ElseClauseBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ElseClauseBody::TextInterpolation(Box::new(
+            "comment" => ElseClauseBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => ElseClauseBody::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => ElseClauseBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                ElseClauseBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "colon_block" => {
                 ElseClauseBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -53,11 +55,15 @@ impl ElseClauseBody {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ElseClauseBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ElseClauseBody::TextInterpolation(Box::new(
+            "comment" => ElseClauseBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => ElseClauseBody::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => ElseClauseBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                ElseClauseBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "colon_block" => {
                 ElseClauseBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -98,9 +104,7 @@ impl ElseClauseBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ElseClauseBody::Comment(x) => x.get_utype(state, emitter),
-            ElseClauseBody::TextInterpolation(x) => x.get_utype(state, emitter),
-            ElseClauseBody::Error(x) => x.get_utype(state, emitter),
+            ElseClauseBody::Extra(x) => x.get_utype(state, emitter),
             ElseClauseBody::_Statement(x) => x.get_utype(state, emitter),
             ElseClauseBody::ColonBlock(x) => x.get_utype(state, emitter),
         }
@@ -112,9 +116,7 @@ impl ElseClauseBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ElseClauseBody::Comment(x) => x.get_php_value(state, emitter),
-            ElseClauseBody::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ElseClauseBody::Error(x) => x.get_php_value(state, emitter),
+            ElseClauseBody::Extra(x) => x.get_php_value(state, emitter),
             ElseClauseBody::_Statement(x) => x.get_php_value(state, emitter),
             ElseClauseBody::ColonBlock(x) => x.get_php_value(state, emitter),
         }
@@ -122,9 +124,7 @@ impl ElseClauseBody {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ElseClauseBody::Comment(x) => x.read_from(state, emitter),
-            ElseClauseBody::TextInterpolation(x) => x.read_from(state, emitter),
-            ElseClauseBody::Error(x) => x.read_from(state, emitter),
+            ElseClauseBody::Extra(x) => x.read_from(state, emitter),
             ElseClauseBody::_Statement(x) => x.read_from(state, emitter),
             ElseClauseBody::ColonBlock(x) => x.read_from(state, emitter),
         }
@@ -134,11 +134,7 @@ impl ElseClauseBody {
 impl NodeAccess for ElseClauseBody {
     fn brief_desc(&self) -> String {
         match self {
-            ElseClauseBody::Comment(x) => format!("ElseClauseBody::comment({})", x.brief_desc()),
-            ElseClauseBody::TextInterpolation(x) => {
-                format!("ElseClauseBody::text_interpolation({})", x.brief_desc())
-            }
-            ElseClauseBody::Error(x) => format!("ElseClauseBody::ERROR({})", x.brief_desc()),
+            ElseClauseBody::Extra(x) => format!("ElseClauseBody::extra({})", x.brief_desc()),
             ElseClauseBody::_Statement(x) => {
                 format!("ElseClauseBody::_statement({})", x.brief_desc())
             }
@@ -150,9 +146,7 @@ impl NodeAccess for ElseClauseBody {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ElseClauseBody::Comment(x) => x.as_any(),
-            ElseClauseBody::TextInterpolation(x) => x.as_any(),
-            ElseClauseBody::Error(x) => x.as_any(),
+            ElseClauseBody::Extra(x) => x.as_any(),
             ElseClauseBody::_Statement(x) => x.as_any(),
             ElseClauseBody::ColonBlock(x) => x.as_any(),
         }
@@ -160,9 +154,7 @@ impl NodeAccess for ElseClauseBody {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ElseClauseBody::Comment(x) => x.children_any(),
-            ElseClauseBody::TextInterpolation(x) => x.children_any(),
-            ElseClauseBody::Error(x) => x.children_any(),
+            ElseClauseBody::Extra(x) => x.children_any(),
             ElseClauseBody::_Statement(x) => x.children_any(),
             ElseClauseBody::ColonBlock(x) => x.children_any(),
         }
@@ -170,9 +162,7 @@ impl NodeAccess for ElseClauseBody {
 
     fn range(&self) -> Range {
         match self {
-            ElseClauseBody::Comment(x) => x.range(),
-            ElseClauseBody::TextInterpolation(x) => x.range(),
-            ElseClauseBody::Error(x) => x.range(),
+            ElseClauseBody::Extra(x) => x.range(),
             ElseClauseBody::_Statement(x) => x.range(),
             ElseClauseBody::ColonBlock(x) => x.range(),
         }

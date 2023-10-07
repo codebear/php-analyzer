@@ -23,21 +23,21 @@ use tree_sitter::Range;
 pub enum ArrowFunctionReturnType {
     _Type(Box<_TypeNode>),
     BottomType(Box<BottomTypeNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ArrowFunctionReturnType {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ArrowFunctionReturnType::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ArrowFunctionReturnType::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ArrowFunctionReturnType::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ArrowFunctionReturnType::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ArrowFunctionReturnType::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ArrowFunctionReturnType::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "bottom_type" => {
                 ArrowFunctionReturnType::BottomType(Box::new(BottomTypeNode::parse(node, source)?))
             }
@@ -60,13 +60,15 @@ impl ArrowFunctionReturnType {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ArrowFunctionReturnType::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ArrowFunctionReturnType::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ArrowFunctionReturnType::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ArrowFunctionReturnType::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ArrowFunctionReturnType::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ArrowFunctionReturnType::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "bottom_type" => {
                 ArrowFunctionReturnType::BottomType(Box::new(BottomTypeNode::parse(node, source)?))
             }
@@ -107,9 +109,7 @@ impl ArrowFunctionReturnType {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ArrowFunctionReturnType::Comment(x) => x.get_utype(state, emitter),
-            ArrowFunctionReturnType::TextInterpolation(x) => x.get_utype(state, emitter),
-            ArrowFunctionReturnType::Error(x) => x.get_utype(state, emitter),
+            ArrowFunctionReturnType::Extra(x) => x.get_utype(state, emitter),
             ArrowFunctionReturnType::_Type(x) => x.get_utype(state, emitter),
             ArrowFunctionReturnType::BottomType(x) => x.get_utype(state, emitter),
         }
@@ -121,9 +121,7 @@ impl ArrowFunctionReturnType {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ArrowFunctionReturnType::Comment(x) => x.get_php_value(state, emitter),
-            ArrowFunctionReturnType::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ArrowFunctionReturnType::Error(x) => x.get_php_value(state, emitter),
+            ArrowFunctionReturnType::Extra(x) => x.get_php_value(state, emitter),
             ArrowFunctionReturnType::_Type(x) => x.get_php_value(state, emitter),
             ArrowFunctionReturnType::BottomType(x) => x.get_php_value(state, emitter),
         }
@@ -131,9 +129,7 @@ impl ArrowFunctionReturnType {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ArrowFunctionReturnType::Comment(x) => x.read_from(state, emitter),
-            ArrowFunctionReturnType::TextInterpolation(x) => x.read_from(state, emitter),
-            ArrowFunctionReturnType::Error(x) => x.read_from(state, emitter),
+            ArrowFunctionReturnType::Extra(x) => x.read_from(state, emitter),
             ArrowFunctionReturnType::_Type(x) => x.read_from(state, emitter),
             ArrowFunctionReturnType::BottomType(x) => x.read_from(state, emitter),
         }
@@ -143,15 +139,8 @@ impl ArrowFunctionReturnType {
 impl NodeAccess for ArrowFunctionReturnType {
     fn brief_desc(&self) -> String {
         match self {
-            ArrowFunctionReturnType::Comment(x) => {
-                format!("ArrowFunctionReturnType::comment({})", x.brief_desc())
-            }
-            ArrowFunctionReturnType::TextInterpolation(x) => format!(
-                "ArrowFunctionReturnType::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ArrowFunctionReturnType::Error(x) => {
-                format!("ArrowFunctionReturnType::ERROR({})", x.brief_desc())
+            ArrowFunctionReturnType::Extra(x) => {
+                format!("ArrowFunctionReturnType::extra({})", x.brief_desc())
             }
             ArrowFunctionReturnType::_Type(x) => {
                 format!("ArrowFunctionReturnType::_type({})", x.brief_desc())
@@ -164,9 +153,7 @@ impl NodeAccess for ArrowFunctionReturnType {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ArrowFunctionReturnType::Comment(x) => x.as_any(),
-            ArrowFunctionReturnType::TextInterpolation(x) => x.as_any(),
-            ArrowFunctionReturnType::Error(x) => x.as_any(),
+            ArrowFunctionReturnType::Extra(x) => x.as_any(),
             ArrowFunctionReturnType::_Type(x) => x.as_any(),
             ArrowFunctionReturnType::BottomType(x) => x.as_any(),
         }
@@ -174,9 +161,7 @@ impl NodeAccess for ArrowFunctionReturnType {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ArrowFunctionReturnType::Comment(x) => x.children_any(),
-            ArrowFunctionReturnType::TextInterpolation(x) => x.children_any(),
-            ArrowFunctionReturnType::Error(x) => x.children_any(),
+            ArrowFunctionReturnType::Extra(x) => x.children_any(),
             ArrowFunctionReturnType::_Type(x) => x.children_any(),
             ArrowFunctionReturnType::BottomType(x) => x.children_any(),
         }
@@ -184,9 +169,7 @@ impl NodeAccess for ArrowFunctionReturnType {
 
     fn range(&self) -> Range {
         match self {
-            ArrowFunctionReturnType::Comment(x) => x.range(),
-            ArrowFunctionReturnType::TextInterpolation(x) => x.range(),
-            ArrowFunctionReturnType::Error(x) => x.range(),
+            ArrowFunctionReturnType::Extra(x) => x.range(),
             ArrowFunctionReturnType::_Type(x) => x.range(),
             ArrowFunctionReturnType::BottomType(x) => x.range(),
         }

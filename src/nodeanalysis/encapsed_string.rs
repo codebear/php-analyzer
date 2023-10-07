@@ -1,6 +1,7 @@
 use crate::{
     analysis::state::AnalysisState,
     autonodes::encapsed_string::{EncapsedStringChildren, EncapsedStringNode},
+    extra::ExtraChild,
     issue::IssueEmitter,
     types::union::{DiscreteType, UnionType},
     value::PHPValue,
@@ -23,8 +24,8 @@ impl EncapsedStringNode {
 
         for child in &self.children {
             match &**child {
-                EncapsedStringChildren::Comment(_)
-                | EncapsedStringChildren::TextInterpolation(_) => continue,
+                EncapsedStringChildren::Extra(ExtraChild::Comment(_))
+                | EncapsedStringChildren::Extra(ExtraChild::TextInterpolation(_)) => continue,
 
                 _ => parts.push(child.get_php_value(state, emitter)?.as_php_string()?),
             }

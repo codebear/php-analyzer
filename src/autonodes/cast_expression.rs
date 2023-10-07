@@ -29,19 +29,21 @@ pub enum CastExpressionValue {
     IncludeOnceExpression(Box<IncludeOnceExpressionNode>),
     SilenceExpression(Box<SilenceExpressionNode>),
     UnaryOpExpression(Box<UnaryOpExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl CastExpressionValue {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => CastExpressionValue::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => CastExpressionValue::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => CastExpressionValue::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => CastExpressionValue::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => CastExpressionValue::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => CastExpressionValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "clone_expression" => CastExpressionValue::CloneExpression(Box::new(
                 CloneExpressionNode::parse(node, source)?,
             )),
@@ -79,11 +81,15 @@ impl CastExpressionValue {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => CastExpressionValue::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => CastExpressionValue::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => CastExpressionValue::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => CastExpressionValue::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => CastExpressionValue::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => CastExpressionValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "clone_expression" => CastExpressionValue::CloneExpression(Box::new(
                 CloneExpressionNode::parse(node, source)?,
             )),
@@ -139,9 +145,7 @@ impl CastExpressionValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            CastExpressionValue::Comment(x) => x.get_utype(state, emitter),
-            CastExpressionValue::TextInterpolation(x) => x.get_utype(state, emitter),
-            CastExpressionValue::Error(x) => x.get_utype(state, emitter),
+            CastExpressionValue::Extra(x) => x.get_utype(state, emitter),
             CastExpressionValue::_PrimaryExpression(x) => x.get_utype(state, emitter),
             CastExpressionValue::CloneExpression(x) => x.get_utype(state, emitter),
             CastExpressionValue::ExponentiationExpression(x) => x.get_utype(state, emitter),
@@ -158,9 +162,7 @@ impl CastExpressionValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            CastExpressionValue::Comment(x) => x.get_php_value(state, emitter),
-            CastExpressionValue::TextInterpolation(x) => x.get_php_value(state, emitter),
-            CastExpressionValue::Error(x) => x.get_php_value(state, emitter),
+            CastExpressionValue::Extra(x) => x.get_php_value(state, emitter),
             CastExpressionValue::_PrimaryExpression(x) => x.get_php_value(state, emitter),
             CastExpressionValue::CloneExpression(x) => x.get_php_value(state, emitter),
             CastExpressionValue::ExponentiationExpression(x) => x.get_php_value(state, emitter),
@@ -173,9 +175,7 @@ impl CastExpressionValue {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            CastExpressionValue::Comment(x) => x.read_from(state, emitter),
-            CastExpressionValue::TextInterpolation(x) => x.read_from(state, emitter),
-            CastExpressionValue::Error(x) => x.read_from(state, emitter),
+            CastExpressionValue::Extra(x) => x.read_from(state, emitter),
             CastExpressionValue::_PrimaryExpression(x) => x.read_from(state, emitter),
             CastExpressionValue::CloneExpression(x) => x.read_from(state, emitter),
             CastExpressionValue::ExponentiationExpression(x) => x.read_from(state, emitter),
@@ -190,15 +190,8 @@ impl CastExpressionValue {
 impl NodeAccess for CastExpressionValue {
     fn brief_desc(&self) -> String {
         match self {
-            CastExpressionValue::Comment(x) => {
-                format!("CastExpressionValue::comment({})", x.brief_desc())
-            }
-            CastExpressionValue::TextInterpolation(x) => format!(
-                "CastExpressionValue::text_interpolation({})",
-                x.brief_desc()
-            ),
-            CastExpressionValue::Error(x) => {
-                format!("CastExpressionValue::ERROR({})", x.brief_desc())
+            CastExpressionValue::Extra(x) => {
+                format!("CastExpressionValue::extra({})", x.brief_desc())
             }
             CastExpressionValue::_PrimaryExpression(x) => format!(
                 "CastExpressionValue::_primary_expression({})",
@@ -232,9 +225,7 @@ impl NodeAccess for CastExpressionValue {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            CastExpressionValue::Comment(x) => x.as_any(),
-            CastExpressionValue::TextInterpolation(x) => x.as_any(),
-            CastExpressionValue::Error(x) => x.as_any(),
+            CastExpressionValue::Extra(x) => x.as_any(),
             CastExpressionValue::_PrimaryExpression(x) => x.as_any(),
             CastExpressionValue::CloneExpression(x) => x.as_any(),
             CastExpressionValue::ExponentiationExpression(x) => x.as_any(),
@@ -247,9 +238,7 @@ impl NodeAccess for CastExpressionValue {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            CastExpressionValue::Comment(x) => x.children_any(),
-            CastExpressionValue::TextInterpolation(x) => x.children_any(),
-            CastExpressionValue::Error(x) => x.children_any(),
+            CastExpressionValue::Extra(x) => x.children_any(),
             CastExpressionValue::_PrimaryExpression(x) => x.children_any(),
             CastExpressionValue::CloneExpression(x) => x.children_any(),
             CastExpressionValue::ExponentiationExpression(x) => x.children_any(),
@@ -262,9 +251,7 @@ impl NodeAccess for CastExpressionValue {
 
     fn range(&self) -> Range {
         match self {
-            CastExpressionValue::Comment(x) => x.range(),
-            CastExpressionValue::TextInterpolation(x) => x.range(),
-            CastExpressionValue::Error(x) => x.range(),
+            CastExpressionValue::Extra(x) => x.range(),
             CastExpressionValue::_PrimaryExpression(x) => x.range(),
             CastExpressionValue::CloneExpression(x) => x.range(),
             CastExpressionValue::ExponentiationExpression(x) => x.range(),

@@ -18,19 +18,21 @@ use tree_sitter::Range;
 pub enum OptionalTypeChildren {
     NamedType(Box<NamedTypeNode>),
     PrimitiveType(Box<PrimitiveTypeNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl OptionalTypeChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => OptionalTypeChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => OptionalTypeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => OptionalTypeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => OptionalTypeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => OptionalTypeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => OptionalTypeChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "named_type" => {
                 OptionalTypeChildren::NamedType(Box::new(NamedTypeNode::parse(node, source)?))
             }
@@ -49,11 +51,15 @@ impl OptionalTypeChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => OptionalTypeChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => OptionalTypeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => OptionalTypeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => OptionalTypeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => OptionalTypeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => OptionalTypeChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "named_type" => {
                 OptionalTypeChildren::NamedType(Box::new(NamedTypeNode::parse(node, source)?))
             }
@@ -86,9 +92,7 @@ impl OptionalTypeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            OptionalTypeChildren::Comment(x) => x.get_utype(state, emitter),
-            OptionalTypeChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            OptionalTypeChildren::Error(x) => x.get_utype(state, emitter),
+            OptionalTypeChildren::Extra(x) => x.get_utype(state, emitter),
             OptionalTypeChildren::NamedType(x) => x.get_utype(state, emitter),
             OptionalTypeChildren::PrimitiveType(x) => x.get_utype(state, emitter),
         }
@@ -100,9 +104,7 @@ impl OptionalTypeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            OptionalTypeChildren::Comment(x) => x.get_php_value(state, emitter),
-            OptionalTypeChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            OptionalTypeChildren::Error(x) => x.get_php_value(state, emitter),
+            OptionalTypeChildren::Extra(x) => x.get_php_value(state, emitter),
             OptionalTypeChildren::NamedType(x) => x.get_php_value(state, emitter),
             OptionalTypeChildren::PrimitiveType(x) => x.get_php_value(state, emitter),
         }
@@ -110,9 +112,7 @@ impl OptionalTypeChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            OptionalTypeChildren::Comment(x) => x.read_from(state, emitter),
-            OptionalTypeChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            OptionalTypeChildren::Error(x) => x.read_from(state, emitter),
+            OptionalTypeChildren::Extra(x) => x.read_from(state, emitter),
             OptionalTypeChildren::NamedType(x) => x.read_from(state, emitter),
             OptionalTypeChildren::PrimitiveType(x) => x.read_from(state, emitter),
         }
@@ -122,15 +122,8 @@ impl OptionalTypeChildren {
 impl NodeAccess for OptionalTypeChildren {
     fn brief_desc(&self) -> String {
         match self {
-            OptionalTypeChildren::Comment(x) => {
-                format!("OptionalTypeChildren::comment({})", x.brief_desc())
-            }
-            OptionalTypeChildren::TextInterpolation(x) => format!(
-                "OptionalTypeChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            OptionalTypeChildren::Error(x) => {
-                format!("OptionalTypeChildren::ERROR({})", x.brief_desc())
+            OptionalTypeChildren::Extra(x) => {
+                format!("OptionalTypeChildren::extra({})", x.brief_desc())
             }
             OptionalTypeChildren::NamedType(x) => {
                 format!("OptionalTypeChildren::named_type({})", x.brief_desc())
@@ -143,9 +136,7 @@ impl NodeAccess for OptionalTypeChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            OptionalTypeChildren::Comment(x) => x.as_any(),
-            OptionalTypeChildren::TextInterpolation(x) => x.as_any(),
-            OptionalTypeChildren::Error(x) => x.as_any(),
+            OptionalTypeChildren::Extra(x) => x.as_any(),
             OptionalTypeChildren::NamedType(x) => x.as_any(),
             OptionalTypeChildren::PrimitiveType(x) => x.as_any(),
         }
@@ -153,9 +144,7 @@ impl NodeAccess for OptionalTypeChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            OptionalTypeChildren::Comment(x) => x.children_any(),
-            OptionalTypeChildren::TextInterpolation(x) => x.children_any(),
-            OptionalTypeChildren::Error(x) => x.children_any(),
+            OptionalTypeChildren::Extra(x) => x.children_any(),
             OptionalTypeChildren::NamedType(x) => x.children_any(),
             OptionalTypeChildren::PrimitiveType(x) => x.children_any(),
         }
@@ -163,9 +152,7 @@ impl NodeAccess for OptionalTypeChildren {
 
     fn range(&self) -> Range {
         match self {
-            OptionalTypeChildren::Comment(x) => x.range(),
-            OptionalTypeChildren::TextInterpolation(x) => x.range(),
-            OptionalTypeChildren::Error(x) => x.range(),
+            OptionalTypeChildren::Extra(x) => x.range(),
             OptionalTypeChildren::NamedType(x) => x.range(),
             OptionalTypeChildren::PrimitiveType(x) => x.range(),
         }

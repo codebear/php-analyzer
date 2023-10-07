@@ -36,21 +36,21 @@ pub enum UnsetStatementChildren {
     ScopedPropertyAccessExpression(Box<ScopedPropertyAccessExpressionNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl UnsetStatementChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                UnsetStatementChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => UnsetStatementChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UnsetStatementChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => UnsetStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UnsetStatementChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UnsetStatementChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "cast_expression" => UnsetStatementChildren::CastExpression(Box::new(
                 CastExpressionNode::parse(node, source)?,
             )),
@@ -102,13 +102,15 @@ impl UnsetStatementChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                UnsetStatementChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => UnsetStatementChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UnsetStatementChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => UnsetStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UnsetStatementChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UnsetStatementChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "cast_expression" => UnsetStatementChildren::CastExpression(Box::new(
                 CastExpressionNode::parse(node, source)?,
             )),
@@ -174,9 +176,7 @@ impl UnsetStatementChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            UnsetStatementChildren::Comment(x) => x.get_utype(state, emitter),
-            UnsetStatementChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            UnsetStatementChildren::Error(x) => x.get_utype(state, emitter),
+            UnsetStatementChildren::Extra(x) => x.get_utype(state, emitter),
             UnsetStatementChildren::CastExpression(x) => x.get_utype(state, emitter),
             UnsetStatementChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             UnsetStatementChildren::FunctionCallExpression(x) => x.get_utype(state, emitter),
@@ -201,9 +201,7 @@ impl UnsetStatementChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            UnsetStatementChildren::Comment(x) => x.get_php_value(state, emitter),
-            UnsetStatementChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            UnsetStatementChildren::Error(x) => x.get_php_value(state, emitter),
+            UnsetStatementChildren::Extra(x) => x.get_php_value(state, emitter),
             UnsetStatementChildren::CastExpression(x) => x.get_php_value(state, emitter),
             UnsetStatementChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             UnsetStatementChildren::FunctionCallExpression(x) => x.get_php_value(state, emitter),
@@ -226,9 +224,7 @@ impl UnsetStatementChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            UnsetStatementChildren::Comment(x) => x.read_from(state, emitter),
-            UnsetStatementChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            UnsetStatementChildren::Error(x) => x.read_from(state, emitter),
+            UnsetStatementChildren::Extra(x) => x.read_from(state, emitter),
             UnsetStatementChildren::CastExpression(x) => x.read_from(state, emitter),
             UnsetStatementChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             UnsetStatementChildren::FunctionCallExpression(x) => x.read_from(state, emitter),
@@ -251,15 +247,8 @@ impl UnsetStatementChildren {
 impl NodeAccess for UnsetStatementChildren {
     fn brief_desc(&self) -> String {
         match self {
-            UnsetStatementChildren::Comment(x) => {
-                format!("UnsetStatementChildren::comment({})", x.brief_desc())
-            }
-            UnsetStatementChildren::TextInterpolation(x) => format!(
-                "UnsetStatementChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            UnsetStatementChildren::Error(x) => {
-                format!("UnsetStatementChildren::ERROR({})", x.brief_desc())
+            UnsetStatementChildren::Extra(x) => {
+                format!("UnsetStatementChildren::extra({})", x.brief_desc())
             }
             UnsetStatementChildren::CastExpression(x) => format!(
                 "UnsetStatementChildren::cast_expression({})",
@@ -309,9 +298,7 @@ impl NodeAccess for UnsetStatementChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            UnsetStatementChildren::Comment(x) => x.as_any(),
-            UnsetStatementChildren::TextInterpolation(x) => x.as_any(),
-            UnsetStatementChildren::Error(x) => x.as_any(),
+            UnsetStatementChildren::Extra(x) => x.as_any(),
             UnsetStatementChildren::CastExpression(x) => x.as_any(),
             UnsetStatementChildren::DynamicVariableName(x) => x.as_any(),
             UnsetStatementChildren::FunctionCallExpression(x) => x.as_any(),
@@ -328,9 +315,7 @@ impl NodeAccess for UnsetStatementChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            UnsetStatementChildren::Comment(x) => x.children_any(),
-            UnsetStatementChildren::TextInterpolation(x) => x.children_any(),
-            UnsetStatementChildren::Error(x) => x.children_any(),
+            UnsetStatementChildren::Extra(x) => x.children_any(),
             UnsetStatementChildren::CastExpression(x) => x.children_any(),
             UnsetStatementChildren::DynamicVariableName(x) => x.children_any(),
             UnsetStatementChildren::FunctionCallExpression(x) => x.children_any(),
@@ -347,9 +332,7 @@ impl NodeAccess for UnsetStatementChildren {
 
     fn range(&self) -> Range {
         match self {
-            UnsetStatementChildren::Comment(x) => x.range(),
-            UnsetStatementChildren::TextInterpolation(x) => x.range(),
-            UnsetStatementChildren::Error(x) => x.range(),
+            UnsetStatementChildren::Extra(x) => x.range(),
             UnsetStatementChildren::CastExpression(x) => x.range(),
             UnsetStatementChildren::DynamicVariableName(x) => x.range(),
             UnsetStatementChildren::FunctionCallExpression(x) => x.range(),

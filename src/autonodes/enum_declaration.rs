@@ -21,21 +21,21 @@ use tree_sitter::Range;
 pub enum EnumDeclarationChildren {
     ClassInterfaceClause(Box<ClassInterfaceClauseNode>),
     PrimitiveType(Box<PrimitiveTypeNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl EnumDeclarationChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                EnumDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => EnumDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => EnumDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => EnumDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => EnumDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => EnumDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "class_interface_clause" => EnumDeclarationChildren::ClassInterfaceClause(Box::new(
                 ClassInterfaceClauseNode::parse(node, source)?,
             )),
@@ -54,13 +54,15 @@ impl EnumDeclarationChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                EnumDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => EnumDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => EnumDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => EnumDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => EnumDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => EnumDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "class_interface_clause" => EnumDeclarationChildren::ClassInterfaceClause(Box::new(
                 ClassInterfaceClauseNode::parse(node, source)?,
             )),
@@ -93,9 +95,7 @@ impl EnumDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            EnumDeclarationChildren::Comment(x) => x.get_utype(state, emitter),
-            EnumDeclarationChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            EnumDeclarationChildren::Error(x) => x.get_utype(state, emitter),
+            EnumDeclarationChildren::Extra(x) => x.get_utype(state, emitter),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.get_utype(state, emitter),
             EnumDeclarationChildren::PrimitiveType(x) => x.get_utype(state, emitter),
         }
@@ -107,9 +107,7 @@ impl EnumDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            EnumDeclarationChildren::Comment(x) => x.get_php_value(state, emitter),
-            EnumDeclarationChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            EnumDeclarationChildren::Error(x) => x.get_php_value(state, emitter),
+            EnumDeclarationChildren::Extra(x) => x.get_php_value(state, emitter),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.get_php_value(state, emitter),
             EnumDeclarationChildren::PrimitiveType(x) => x.get_php_value(state, emitter),
         }
@@ -117,9 +115,7 @@ impl EnumDeclarationChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            EnumDeclarationChildren::Comment(x) => x.read_from(state, emitter),
-            EnumDeclarationChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            EnumDeclarationChildren::Error(x) => x.read_from(state, emitter),
+            EnumDeclarationChildren::Extra(x) => x.read_from(state, emitter),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.read_from(state, emitter),
             EnumDeclarationChildren::PrimitiveType(x) => x.read_from(state, emitter),
         }
@@ -129,15 +125,8 @@ impl EnumDeclarationChildren {
 impl NodeAccess for EnumDeclarationChildren {
     fn brief_desc(&self) -> String {
         match self {
-            EnumDeclarationChildren::Comment(x) => {
-                format!("EnumDeclarationChildren::comment({})", x.brief_desc())
-            }
-            EnumDeclarationChildren::TextInterpolation(x) => format!(
-                "EnumDeclarationChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            EnumDeclarationChildren::Error(x) => {
-                format!("EnumDeclarationChildren::ERROR({})", x.brief_desc())
+            EnumDeclarationChildren::Extra(x) => {
+                format!("EnumDeclarationChildren::extra({})", x.brief_desc())
             }
             EnumDeclarationChildren::ClassInterfaceClause(x) => format!(
                 "EnumDeclarationChildren::class_interface_clause({})",
@@ -152,9 +141,7 @@ impl NodeAccess for EnumDeclarationChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            EnumDeclarationChildren::Comment(x) => x.as_any(),
-            EnumDeclarationChildren::TextInterpolation(x) => x.as_any(),
-            EnumDeclarationChildren::Error(x) => x.as_any(),
+            EnumDeclarationChildren::Extra(x) => x.as_any(),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.as_any(),
             EnumDeclarationChildren::PrimitiveType(x) => x.as_any(),
         }
@@ -162,9 +149,7 @@ impl NodeAccess for EnumDeclarationChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            EnumDeclarationChildren::Comment(x) => x.children_any(),
-            EnumDeclarationChildren::TextInterpolation(x) => x.children_any(),
-            EnumDeclarationChildren::Error(x) => x.children_any(),
+            EnumDeclarationChildren::Extra(x) => x.children_any(),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.children_any(),
             EnumDeclarationChildren::PrimitiveType(x) => x.children_any(),
         }
@@ -172,9 +157,7 @@ impl NodeAccess for EnumDeclarationChildren {
 
     fn range(&self) -> Range {
         match self {
-            EnumDeclarationChildren::Comment(x) => x.range(),
-            EnumDeclarationChildren::TextInterpolation(x) => x.range(),
-            EnumDeclarationChildren::Error(x) => x.range(),
+            EnumDeclarationChildren::Extra(x) => x.range(),
             EnumDeclarationChildren::ClassInterfaceClause(x) => x.range(),
             EnumDeclarationChildren::PrimitiveType(x) => x.range(),
         }

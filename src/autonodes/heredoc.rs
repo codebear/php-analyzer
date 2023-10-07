@@ -21,19 +21,21 @@ use tree_sitter::Range;
 pub enum HeredocIdentifier {
     DoubleQuote(&'static str, Range),
     HeredocStart(Box<HeredocStartNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl HeredocIdentifier {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => HeredocIdentifier::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => HeredocIdentifier::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => HeredocIdentifier::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => HeredocIdentifier::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => HeredocIdentifier::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => HeredocIdentifier::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             r#"""# => HeredocIdentifier::DoubleQuote(r#"""#, node.range()),
             "heredoc_start" => {
                 HeredocIdentifier::HeredocStart(Box::new(HeredocStartNode::parse(node, source)?))
@@ -50,11 +52,15 @@ impl HeredocIdentifier {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => HeredocIdentifier::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => HeredocIdentifier::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => HeredocIdentifier::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => HeredocIdentifier::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => HeredocIdentifier::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => HeredocIdentifier::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             r#"""# => HeredocIdentifier::DoubleQuote(r#"""#, node.range()),
             "heredoc_start" => {
                 HeredocIdentifier::HeredocStart(Box::new(HeredocStartNode::parse(node, source)?))
@@ -85,9 +91,7 @@ impl HeredocIdentifier {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            HeredocIdentifier::Comment(x) => x.get_utype(state, emitter),
-            HeredocIdentifier::TextInterpolation(x) => x.get_utype(state, emitter),
-            HeredocIdentifier::Error(x) => x.get_utype(state, emitter),
+            HeredocIdentifier::Extra(x) => x.get_utype(state, emitter),
             HeredocIdentifier::DoubleQuote(_, _) => Some(DiscreteType::String.into()),
             HeredocIdentifier::HeredocStart(x) => x.get_utype(state, emitter),
         }
@@ -99,9 +103,7 @@ impl HeredocIdentifier {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            HeredocIdentifier::Comment(x) => x.get_php_value(state, emitter),
-            HeredocIdentifier::TextInterpolation(x) => x.get_php_value(state, emitter),
-            HeredocIdentifier::Error(x) => x.get_php_value(state, emitter),
+            HeredocIdentifier::Extra(x) => x.get_php_value(state, emitter),
             HeredocIdentifier::DoubleQuote(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
@@ -111,9 +113,7 @@ impl HeredocIdentifier {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            HeredocIdentifier::Comment(x) => x.read_from(state, emitter),
-            HeredocIdentifier::TextInterpolation(x) => x.read_from(state, emitter),
-            HeredocIdentifier::Error(x) => x.read_from(state, emitter),
+            HeredocIdentifier::Extra(x) => x.read_from(state, emitter),
             HeredocIdentifier::DoubleQuote(_, _) => (),
             HeredocIdentifier::HeredocStart(x) => x.read_from(state, emitter),
         }
@@ -123,13 +123,7 @@ impl HeredocIdentifier {
 impl NodeAccess for HeredocIdentifier {
     fn brief_desc(&self) -> String {
         match self {
-            HeredocIdentifier::Comment(x) => {
-                format!("HeredocIdentifier::comment({})", x.brief_desc())
-            }
-            HeredocIdentifier::TextInterpolation(x) => {
-                format!("HeredocIdentifier::text_interpolation({})", x.brief_desc())
-            }
-            HeredocIdentifier::Error(x) => format!("HeredocIdentifier::ERROR({})", x.brief_desc()),
+            HeredocIdentifier::Extra(x) => format!("HeredocIdentifier::extra({})", x.brief_desc()),
             HeredocIdentifier::DoubleQuote(a, _) => a.to_string(),
             HeredocIdentifier::HeredocStart(x) => {
                 format!("HeredocIdentifier::heredoc_start({})", x.brief_desc())
@@ -139,9 +133,7 @@ impl NodeAccess for HeredocIdentifier {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            HeredocIdentifier::Comment(x) => x.as_any(),
-            HeredocIdentifier::TextInterpolation(x) => x.as_any(),
-            HeredocIdentifier::Error(x) => x.as_any(),
+            HeredocIdentifier::Extra(x) => x.as_any(),
             HeredocIdentifier::DoubleQuote(a, b) => AnyNodeRef::StaticExpr(a, *b),
             HeredocIdentifier::HeredocStart(x) => x.as_any(),
         }
@@ -149,9 +141,7 @@ impl NodeAccess for HeredocIdentifier {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            HeredocIdentifier::Comment(x) => x.children_any(),
-            HeredocIdentifier::TextInterpolation(x) => x.children_any(),
-            HeredocIdentifier::Error(x) => x.children_any(),
+            HeredocIdentifier::Extra(x) => x.children_any(),
             HeredocIdentifier::DoubleQuote(_, _) => todo!("Crap"),
             HeredocIdentifier::HeredocStart(x) => x.children_any(),
         }
@@ -159,9 +149,7 @@ impl NodeAccess for HeredocIdentifier {
 
     fn range(&self) -> Range {
         match self {
-            HeredocIdentifier::Comment(x) => x.range(),
-            HeredocIdentifier::TextInterpolation(x) => x.range(),
-            HeredocIdentifier::Error(x) => x.range(),
+            HeredocIdentifier::Extra(x) => x.range(),
             HeredocIdentifier::DoubleQuote(_, r) => *r,
             HeredocIdentifier::HeredocStart(x) => x.range(),
         }

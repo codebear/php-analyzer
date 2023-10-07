@@ -20,19 +20,21 @@ pub enum UseAsClauseChildren {
     ClassConstantAccessExpression(Box<ClassConstantAccessExpressionNode>),
     Name(Box<NameNode>),
     VisibilityModifier(Box<VisibilityModifierNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl UseAsClauseChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => UseAsClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => UseAsClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UseAsClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => UseAsClauseChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UseAsClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UseAsClauseChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "class_constant_access_expression" => {
                 UseAsClauseChildren::ClassConstantAccessExpression(Box::new(
                     ClassConstantAccessExpressionNode::parse(node, source)?,
@@ -54,11 +56,15 @@ impl UseAsClauseChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => UseAsClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => UseAsClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UseAsClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => UseAsClauseChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UseAsClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UseAsClauseChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "class_constant_access_expression" => {
                 UseAsClauseChildren::ClassConstantAccessExpression(Box::new(
                     ClassConstantAccessExpressionNode::parse(node, source)?,
@@ -94,9 +100,7 @@ impl UseAsClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            UseAsClauseChildren::Comment(x) => x.get_utype(state, emitter),
-            UseAsClauseChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            UseAsClauseChildren::Error(x) => x.get_utype(state, emitter),
+            UseAsClauseChildren::Extra(x) => x.get_utype(state, emitter),
             UseAsClauseChildren::ClassConstantAccessExpression(x) => x.get_utype(state, emitter),
             UseAsClauseChildren::Name(x) => x.get_utype(state, emitter),
             UseAsClauseChildren::VisibilityModifier(x) => x.get_utype(state, emitter),
@@ -109,9 +113,7 @@ impl UseAsClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            UseAsClauseChildren::Comment(x) => x.get_php_value(state, emitter),
-            UseAsClauseChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            UseAsClauseChildren::Error(x) => x.get_php_value(state, emitter),
+            UseAsClauseChildren::Extra(x) => x.get_php_value(state, emitter),
             UseAsClauseChildren::ClassConstantAccessExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -122,9 +124,7 @@ impl UseAsClauseChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            UseAsClauseChildren::Comment(x) => x.read_from(state, emitter),
-            UseAsClauseChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            UseAsClauseChildren::Error(x) => x.read_from(state, emitter),
+            UseAsClauseChildren::Extra(x) => x.read_from(state, emitter),
             UseAsClauseChildren::ClassConstantAccessExpression(x) => x.read_from(state, emitter),
             UseAsClauseChildren::Name(x) => x.read_from(state, emitter),
             UseAsClauseChildren::VisibilityModifier(x) => x.read_from(state, emitter),
@@ -135,15 +135,8 @@ impl UseAsClauseChildren {
 impl NodeAccess for UseAsClauseChildren {
     fn brief_desc(&self) -> String {
         match self {
-            UseAsClauseChildren::Comment(x) => {
-                format!("UseAsClauseChildren::comment({})", x.brief_desc())
-            }
-            UseAsClauseChildren::TextInterpolation(x) => format!(
-                "UseAsClauseChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            UseAsClauseChildren::Error(x) => {
-                format!("UseAsClauseChildren::ERROR({})", x.brief_desc())
+            UseAsClauseChildren::Extra(x) => {
+                format!("UseAsClauseChildren::extra({})", x.brief_desc())
             }
             UseAsClauseChildren::ClassConstantAccessExpression(x) => format!(
                 "UseAsClauseChildren::class_constant_access_expression({})",
@@ -161,9 +154,7 @@ impl NodeAccess for UseAsClauseChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            UseAsClauseChildren::Comment(x) => x.as_any(),
-            UseAsClauseChildren::TextInterpolation(x) => x.as_any(),
-            UseAsClauseChildren::Error(x) => x.as_any(),
+            UseAsClauseChildren::Extra(x) => x.as_any(),
             UseAsClauseChildren::ClassConstantAccessExpression(x) => x.as_any(),
             UseAsClauseChildren::Name(x) => x.as_any(),
             UseAsClauseChildren::VisibilityModifier(x) => x.as_any(),
@@ -172,9 +163,7 @@ impl NodeAccess for UseAsClauseChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            UseAsClauseChildren::Comment(x) => x.children_any(),
-            UseAsClauseChildren::TextInterpolation(x) => x.children_any(),
-            UseAsClauseChildren::Error(x) => x.children_any(),
+            UseAsClauseChildren::Extra(x) => x.children_any(),
             UseAsClauseChildren::ClassConstantAccessExpression(x) => x.children_any(),
             UseAsClauseChildren::Name(x) => x.children_any(),
             UseAsClauseChildren::VisibilityModifier(x) => x.children_any(),
@@ -183,9 +172,7 @@ impl NodeAccess for UseAsClauseChildren {
 
     fn range(&self) -> Range {
         match self {
-            UseAsClauseChildren::Comment(x) => x.range(),
-            UseAsClauseChildren::TextInterpolation(x) => x.range(),
-            UseAsClauseChildren::Error(x) => x.range(),
+            UseAsClauseChildren::Extra(x) => x.range(),
             UseAsClauseChildren::ClassConstantAccessExpression(x) => x.range(),
             UseAsClauseChildren::Name(x) => x.range(),
             UseAsClauseChildren::VisibilityModifier(x) => x.range(),

@@ -183,9 +183,7 @@ impl MemberAccessExpressionName {
                 }
             }
 
-            MemberAccessExpressionName::Comment(_)
-            | MemberAccessExpressionName::TextInterpolation(_)
-            | MemberAccessExpressionName::Error(_) => None,
+            MemberAccessExpressionName::Extra(_) => None,
         }
     }
 }
@@ -341,9 +339,7 @@ impl MemberAccessExpressionObject {
             MemberAccessExpressionObject::Nowdoc(_) => {
                 crate::missing_none!("{}.get_class_name(..)", self.kind())
             }
-            MemberAccessExpressionObject::Comment(_)
-            | MemberAccessExpressionObject::TextInterpolation(_)
-            | MemberAccessExpressionObject::Error(_) => None,
+            MemberAccessExpressionObject::Extra(_) => None,
         }
     }
 }

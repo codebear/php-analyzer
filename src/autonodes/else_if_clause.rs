@@ -19,19 +19,21 @@ use tree_sitter::Range;
 pub enum ElseIfClauseBody {
     _Statement(Box<_StatementNode>),
     ColonBlock(Box<ColonBlockNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ElseIfClauseBody {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ElseIfClauseBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ElseIfClauseBody::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ElseIfClauseBody::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ElseIfClauseBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ElseIfClauseBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ElseIfClauseBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "colon_block" => {
                 ElseIfClauseBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -54,11 +56,15 @@ impl ElseIfClauseBody {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ElseIfClauseBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ElseIfClauseBody::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ElseIfClauseBody::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ElseIfClauseBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ElseIfClauseBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ElseIfClauseBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "colon_block" => {
                 ElseIfClauseBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -99,9 +105,7 @@ impl ElseIfClauseBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ElseIfClauseBody::Comment(x) => x.get_utype(state, emitter),
-            ElseIfClauseBody::TextInterpolation(x) => x.get_utype(state, emitter),
-            ElseIfClauseBody::Error(x) => x.get_utype(state, emitter),
+            ElseIfClauseBody::Extra(x) => x.get_utype(state, emitter),
             ElseIfClauseBody::_Statement(x) => x.get_utype(state, emitter),
             ElseIfClauseBody::ColonBlock(x) => x.get_utype(state, emitter),
         }
@@ -113,9 +117,7 @@ impl ElseIfClauseBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ElseIfClauseBody::Comment(x) => x.get_php_value(state, emitter),
-            ElseIfClauseBody::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ElseIfClauseBody::Error(x) => x.get_php_value(state, emitter),
+            ElseIfClauseBody::Extra(x) => x.get_php_value(state, emitter),
             ElseIfClauseBody::_Statement(x) => x.get_php_value(state, emitter),
             ElseIfClauseBody::ColonBlock(x) => x.get_php_value(state, emitter),
         }
@@ -123,9 +125,7 @@ impl ElseIfClauseBody {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ElseIfClauseBody::Comment(x) => x.read_from(state, emitter),
-            ElseIfClauseBody::TextInterpolation(x) => x.read_from(state, emitter),
-            ElseIfClauseBody::Error(x) => x.read_from(state, emitter),
+            ElseIfClauseBody::Extra(x) => x.read_from(state, emitter),
             ElseIfClauseBody::_Statement(x) => x.read_from(state, emitter),
             ElseIfClauseBody::ColonBlock(x) => x.read_from(state, emitter),
         }
@@ -135,13 +135,7 @@ impl ElseIfClauseBody {
 impl NodeAccess for ElseIfClauseBody {
     fn brief_desc(&self) -> String {
         match self {
-            ElseIfClauseBody::Comment(x) => {
-                format!("ElseIfClauseBody::comment({})", x.brief_desc())
-            }
-            ElseIfClauseBody::TextInterpolation(x) => {
-                format!("ElseIfClauseBody::text_interpolation({})", x.brief_desc())
-            }
-            ElseIfClauseBody::Error(x) => format!("ElseIfClauseBody::ERROR({})", x.brief_desc()),
+            ElseIfClauseBody::Extra(x) => format!("ElseIfClauseBody::extra({})", x.brief_desc()),
             ElseIfClauseBody::_Statement(x) => {
                 format!("ElseIfClauseBody::_statement({})", x.brief_desc())
             }
@@ -153,9 +147,7 @@ impl NodeAccess for ElseIfClauseBody {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ElseIfClauseBody::Comment(x) => x.as_any(),
-            ElseIfClauseBody::TextInterpolation(x) => x.as_any(),
-            ElseIfClauseBody::Error(x) => x.as_any(),
+            ElseIfClauseBody::Extra(x) => x.as_any(),
             ElseIfClauseBody::_Statement(x) => x.as_any(),
             ElseIfClauseBody::ColonBlock(x) => x.as_any(),
         }
@@ -163,9 +155,7 @@ impl NodeAccess for ElseIfClauseBody {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ElseIfClauseBody::Comment(x) => x.children_any(),
-            ElseIfClauseBody::TextInterpolation(x) => x.children_any(),
-            ElseIfClauseBody::Error(x) => x.children_any(),
+            ElseIfClauseBody::Extra(x) => x.children_any(),
             ElseIfClauseBody::_Statement(x) => x.children_any(),
             ElseIfClauseBody::ColonBlock(x) => x.children_any(),
         }
@@ -173,9 +163,7 @@ impl NodeAccess for ElseIfClauseBody {
 
     fn range(&self) -> Range {
         match self {
-            ElseIfClauseBody::Comment(x) => x.range(),
-            ElseIfClauseBody::TextInterpolation(x) => x.range(),
-            ElseIfClauseBody::Error(x) => x.range(),
+            ElseIfClauseBody::Extra(x) => x.range(),
             ElseIfClauseBody::_Statement(x) => x.range(),
             ElseIfClauseBody::ColonBlock(x) => x.range(),
         }

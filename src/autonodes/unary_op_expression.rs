@@ -22,21 +22,23 @@ pub enum UnaryOpExpressionOperator {
     Add(&'static str, Range),
     Sub(&'static str, Range),
     BinaryNot(&'static str, Range),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl UnaryOpExpressionOperator {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                UnaryOpExpressionOperator::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => UnaryOpExpressionOperator::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                UnaryOpExpressionOperator::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => UnaryOpExpressionOperator::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => UnaryOpExpressionOperator::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UnaryOpExpressionOperator::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "!" => UnaryOpExpressionOperator::Not("!", node.range()),
             "+" => UnaryOpExpressionOperator::Add("+", node.range()),
             "-" => UnaryOpExpressionOperator::Sub("-", node.range()),
@@ -53,13 +55,17 @@ impl UnaryOpExpressionOperator {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                UnaryOpExpressionOperator::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => UnaryOpExpressionOperator::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                UnaryOpExpressionOperator::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => UnaryOpExpressionOperator::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => UnaryOpExpressionOperator::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UnaryOpExpressionOperator::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "!" => UnaryOpExpressionOperator::Not("!", node.range()),
             "+" => UnaryOpExpressionOperator::Add("+", node.range()),
             "-" => UnaryOpExpressionOperator::Sub("-", node.range()),
@@ -90,9 +96,7 @@ impl UnaryOpExpressionOperator {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            UnaryOpExpressionOperator::Comment(x) => x.get_utype(state, emitter),
-            UnaryOpExpressionOperator::TextInterpolation(x) => x.get_utype(state, emitter),
-            UnaryOpExpressionOperator::Error(x) => x.get_utype(state, emitter),
+            UnaryOpExpressionOperator::Extra(x) => x.get_utype(state, emitter),
             UnaryOpExpressionOperator::Not(_, _) => Some(DiscreteType::String.into()),
             UnaryOpExpressionOperator::Add(_, _) => Some(DiscreteType::String.into()),
             UnaryOpExpressionOperator::Sub(_, _) => Some(DiscreteType::String.into()),
@@ -106,9 +110,7 @@ impl UnaryOpExpressionOperator {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            UnaryOpExpressionOperator::Comment(x) => x.get_php_value(state, emitter),
-            UnaryOpExpressionOperator::TextInterpolation(x) => x.get_php_value(state, emitter),
-            UnaryOpExpressionOperator::Error(x) => x.get_php_value(state, emitter),
+            UnaryOpExpressionOperator::Extra(x) => x.get_php_value(state, emitter),
             UnaryOpExpressionOperator::Not(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
@@ -126,9 +128,7 @@ impl UnaryOpExpressionOperator {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            UnaryOpExpressionOperator::Comment(x) => x.read_from(state, emitter),
-            UnaryOpExpressionOperator::TextInterpolation(x) => x.read_from(state, emitter),
-            UnaryOpExpressionOperator::Error(x) => x.read_from(state, emitter),
+            UnaryOpExpressionOperator::Extra(x) => x.read_from(state, emitter),
             UnaryOpExpressionOperator::Not(_, _) => (),
             UnaryOpExpressionOperator::Add(_, _) => (),
             UnaryOpExpressionOperator::Sub(_, _) => (),
@@ -140,15 +140,8 @@ impl UnaryOpExpressionOperator {
 impl NodeAccess for UnaryOpExpressionOperator {
     fn brief_desc(&self) -> String {
         match self {
-            UnaryOpExpressionOperator::Comment(x) => {
-                format!("UnaryOpExpressionOperator::comment({})", x.brief_desc())
-            }
-            UnaryOpExpressionOperator::TextInterpolation(x) => format!(
-                "UnaryOpExpressionOperator::text_interpolation({})",
-                x.brief_desc()
-            ),
-            UnaryOpExpressionOperator::Error(x) => {
-                format!("UnaryOpExpressionOperator::ERROR({})", x.brief_desc())
+            UnaryOpExpressionOperator::Extra(x) => {
+                format!("UnaryOpExpressionOperator::extra({})", x.brief_desc())
             }
             UnaryOpExpressionOperator::Not(a, _) => a.to_string(),
             UnaryOpExpressionOperator::Add(a, _) => a.to_string(),
@@ -159,9 +152,7 @@ impl NodeAccess for UnaryOpExpressionOperator {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            UnaryOpExpressionOperator::Comment(x) => x.as_any(),
-            UnaryOpExpressionOperator::TextInterpolation(x) => x.as_any(),
-            UnaryOpExpressionOperator::Error(x) => x.as_any(),
+            UnaryOpExpressionOperator::Extra(x) => x.as_any(),
             UnaryOpExpressionOperator::Not(a, b) => AnyNodeRef::StaticExpr(a, *b),
             UnaryOpExpressionOperator::Add(a, b) => AnyNodeRef::StaticExpr(a, *b),
             UnaryOpExpressionOperator::Sub(a, b) => AnyNodeRef::StaticExpr(a, *b),
@@ -171,9 +162,7 @@ impl NodeAccess for UnaryOpExpressionOperator {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            UnaryOpExpressionOperator::Comment(x) => x.children_any(),
-            UnaryOpExpressionOperator::TextInterpolation(x) => x.children_any(),
-            UnaryOpExpressionOperator::Error(x) => x.children_any(),
+            UnaryOpExpressionOperator::Extra(x) => x.children_any(),
             UnaryOpExpressionOperator::Not(_, _) => todo!("Crap"),
             UnaryOpExpressionOperator::Add(_, _) => todo!("Crap"),
             UnaryOpExpressionOperator::Sub(_, _) => todo!("Crap"),
@@ -183,9 +172,7 @@ impl NodeAccess for UnaryOpExpressionOperator {
 
     fn range(&self) -> Range {
         match self {
-            UnaryOpExpressionOperator::Comment(x) => x.range(),
-            UnaryOpExpressionOperator::TextInterpolation(x) => x.range(),
-            UnaryOpExpressionOperator::Error(x) => x.range(),
+            UnaryOpExpressionOperator::Extra(x) => x.range(),
             UnaryOpExpressionOperator::Not(_, r) => *r,
             UnaryOpExpressionOperator::Add(_, r) => *r,
             UnaryOpExpressionOperator::Sub(_, r) => *r,

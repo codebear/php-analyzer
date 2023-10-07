@@ -20,23 +20,23 @@ pub enum EnumDeclarationListChildren {
     EnumCase(Box<EnumCaseNode>),
     MethodDeclaration(Box<MethodDeclarationNode>),
     UseDeclaration(Box<UseDeclarationNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl EnumDeclarationListChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                EnumDeclarationListChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => EnumDeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                EnumDeclarationListChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => EnumDeclarationListChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                EnumDeclarationListChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => EnumDeclarationListChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "enum_case" => {
                 EnumDeclarationListChildren::EnumCase(Box::new(EnumCaseNode::parse(node, source)?))
             }
@@ -58,15 +58,17 @@ impl EnumDeclarationListChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                EnumDeclarationListChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => EnumDeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                EnumDeclarationListChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => EnumDeclarationListChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                EnumDeclarationListChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => EnumDeclarationListChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "enum_case" => {
                 EnumDeclarationListChildren::EnumCase(Box::new(EnumCaseNode::parse(node, source)?))
             }
@@ -102,9 +104,7 @@ impl EnumDeclarationListChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            EnumDeclarationListChildren::Comment(x) => x.get_utype(state, emitter),
-            EnumDeclarationListChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            EnumDeclarationListChildren::Error(x) => x.get_utype(state, emitter),
+            EnumDeclarationListChildren::Extra(x) => x.get_utype(state, emitter),
             EnumDeclarationListChildren::EnumCase(x) => x.get_utype(state, emitter),
             EnumDeclarationListChildren::MethodDeclaration(x) => x.get_utype(state, emitter),
             EnumDeclarationListChildren::UseDeclaration(x) => x.get_utype(state, emitter),
@@ -117,9 +117,7 @@ impl EnumDeclarationListChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            EnumDeclarationListChildren::Comment(x) => x.get_php_value(state, emitter),
-            EnumDeclarationListChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            EnumDeclarationListChildren::Error(x) => x.get_php_value(state, emitter),
+            EnumDeclarationListChildren::Extra(x) => x.get_php_value(state, emitter),
             EnumDeclarationListChildren::EnumCase(x) => x.get_php_value(state, emitter),
             EnumDeclarationListChildren::MethodDeclaration(x) => x.get_php_value(state, emitter),
             EnumDeclarationListChildren::UseDeclaration(x) => x.get_php_value(state, emitter),
@@ -128,9 +126,7 @@ impl EnumDeclarationListChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            EnumDeclarationListChildren::Comment(x) => x.read_from(state, emitter),
-            EnumDeclarationListChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            EnumDeclarationListChildren::Error(x) => x.read_from(state, emitter),
+            EnumDeclarationListChildren::Extra(x) => x.read_from(state, emitter),
             EnumDeclarationListChildren::EnumCase(x) => x.read_from(state, emitter),
             EnumDeclarationListChildren::MethodDeclaration(x) => x.read_from(state, emitter),
             EnumDeclarationListChildren::UseDeclaration(x) => x.read_from(state, emitter),
@@ -141,15 +137,8 @@ impl EnumDeclarationListChildren {
 impl NodeAccess for EnumDeclarationListChildren {
     fn brief_desc(&self) -> String {
         match self {
-            EnumDeclarationListChildren::Comment(x) => {
-                format!("EnumDeclarationListChildren::comment({})", x.brief_desc())
-            }
-            EnumDeclarationListChildren::TextInterpolation(x) => format!(
-                "EnumDeclarationListChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            EnumDeclarationListChildren::Error(x) => {
-                format!("EnumDeclarationListChildren::ERROR({})", x.brief_desc())
+            EnumDeclarationListChildren::Extra(x) => {
+                format!("EnumDeclarationListChildren::extra({})", x.brief_desc())
             }
             EnumDeclarationListChildren::EnumCase(x) => {
                 format!("EnumDeclarationListChildren::enum_case({})", x.brief_desc())
@@ -167,9 +156,7 @@ impl NodeAccess for EnumDeclarationListChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            EnumDeclarationListChildren::Comment(x) => x.as_any(),
-            EnumDeclarationListChildren::TextInterpolation(x) => x.as_any(),
-            EnumDeclarationListChildren::Error(x) => x.as_any(),
+            EnumDeclarationListChildren::Extra(x) => x.as_any(),
             EnumDeclarationListChildren::EnumCase(x) => x.as_any(),
             EnumDeclarationListChildren::MethodDeclaration(x) => x.as_any(),
             EnumDeclarationListChildren::UseDeclaration(x) => x.as_any(),
@@ -178,9 +165,7 @@ impl NodeAccess for EnumDeclarationListChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            EnumDeclarationListChildren::Comment(x) => x.children_any(),
-            EnumDeclarationListChildren::TextInterpolation(x) => x.children_any(),
-            EnumDeclarationListChildren::Error(x) => x.children_any(),
+            EnumDeclarationListChildren::Extra(x) => x.children_any(),
             EnumDeclarationListChildren::EnumCase(x) => x.children_any(),
             EnumDeclarationListChildren::MethodDeclaration(x) => x.children_any(),
             EnumDeclarationListChildren::UseDeclaration(x) => x.children_any(),
@@ -189,9 +174,7 @@ impl NodeAccess for EnumDeclarationListChildren {
 
     fn range(&self) -> Range {
         match self {
-            EnumDeclarationListChildren::Comment(x) => x.range(),
-            EnumDeclarationListChildren::TextInterpolation(x) => x.range(),
-            EnumDeclarationListChildren::Error(x) => x.range(),
+            EnumDeclarationListChildren::Extra(x) => x.range(),
             EnumDeclarationListChildren::EnumCase(x) => x.range(),
             EnumDeclarationListChildren::MethodDeclaration(x) => x.range(),
             EnumDeclarationListChildren::UseDeclaration(x) => x.range(),

@@ -20,21 +20,21 @@ pub enum IntersectionTypeChildren {
     NamedType(Box<NamedTypeNode>),
     OptionalType(Box<OptionalTypeNode>),
     PrimitiveType(Box<PrimitiveTypeNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl IntersectionTypeChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                IntersectionTypeChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => IntersectionTypeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => IntersectionTypeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => IntersectionTypeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => IntersectionTypeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => IntersectionTypeChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "named_type" => {
                 IntersectionTypeChildren::NamedType(Box::new(NamedTypeNode::parse(node, source)?))
             }
@@ -56,13 +56,15 @@ impl IntersectionTypeChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                IntersectionTypeChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => IntersectionTypeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => IntersectionTypeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => IntersectionTypeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => IntersectionTypeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => IntersectionTypeChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "named_type" => {
                 IntersectionTypeChildren::NamedType(Box::new(NamedTypeNode::parse(node, source)?))
             }
@@ -98,9 +100,7 @@ impl IntersectionTypeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            IntersectionTypeChildren::Comment(x) => x.get_utype(state, emitter),
-            IntersectionTypeChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            IntersectionTypeChildren::Error(x) => x.get_utype(state, emitter),
+            IntersectionTypeChildren::Extra(x) => x.get_utype(state, emitter),
             IntersectionTypeChildren::NamedType(x) => x.get_utype(state, emitter),
             IntersectionTypeChildren::OptionalType(x) => x.get_utype(state, emitter),
             IntersectionTypeChildren::PrimitiveType(x) => x.get_utype(state, emitter),
@@ -113,9 +113,7 @@ impl IntersectionTypeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            IntersectionTypeChildren::Comment(x) => x.get_php_value(state, emitter),
-            IntersectionTypeChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            IntersectionTypeChildren::Error(x) => x.get_php_value(state, emitter),
+            IntersectionTypeChildren::Extra(x) => x.get_php_value(state, emitter),
             IntersectionTypeChildren::NamedType(x) => x.get_php_value(state, emitter),
             IntersectionTypeChildren::OptionalType(x) => x.get_php_value(state, emitter),
             IntersectionTypeChildren::PrimitiveType(x) => x.get_php_value(state, emitter),
@@ -124,9 +122,7 @@ impl IntersectionTypeChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            IntersectionTypeChildren::Comment(x) => x.read_from(state, emitter),
-            IntersectionTypeChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            IntersectionTypeChildren::Error(x) => x.read_from(state, emitter),
+            IntersectionTypeChildren::Extra(x) => x.read_from(state, emitter),
             IntersectionTypeChildren::NamedType(x) => x.read_from(state, emitter),
             IntersectionTypeChildren::OptionalType(x) => x.read_from(state, emitter),
             IntersectionTypeChildren::PrimitiveType(x) => x.read_from(state, emitter),
@@ -137,15 +133,8 @@ impl IntersectionTypeChildren {
 impl NodeAccess for IntersectionTypeChildren {
     fn brief_desc(&self) -> String {
         match self {
-            IntersectionTypeChildren::Comment(x) => {
-                format!("IntersectionTypeChildren::comment({})", x.brief_desc())
-            }
-            IntersectionTypeChildren::TextInterpolation(x) => format!(
-                "IntersectionTypeChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            IntersectionTypeChildren::Error(x) => {
-                format!("IntersectionTypeChildren::ERROR({})", x.brief_desc())
+            IntersectionTypeChildren::Extra(x) => {
+                format!("IntersectionTypeChildren::extra({})", x.brief_desc())
             }
             IntersectionTypeChildren::NamedType(x) => {
                 format!("IntersectionTypeChildren::named_type({})", x.brief_desc())
@@ -163,9 +152,7 @@ impl NodeAccess for IntersectionTypeChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            IntersectionTypeChildren::Comment(x) => x.as_any(),
-            IntersectionTypeChildren::TextInterpolation(x) => x.as_any(),
-            IntersectionTypeChildren::Error(x) => x.as_any(),
+            IntersectionTypeChildren::Extra(x) => x.as_any(),
             IntersectionTypeChildren::NamedType(x) => x.as_any(),
             IntersectionTypeChildren::OptionalType(x) => x.as_any(),
             IntersectionTypeChildren::PrimitiveType(x) => x.as_any(),
@@ -174,9 +161,7 @@ impl NodeAccess for IntersectionTypeChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            IntersectionTypeChildren::Comment(x) => x.children_any(),
-            IntersectionTypeChildren::TextInterpolation(x) => x.children_any(),
-            IntersectionTypeChildren::Error(x) => x.children_any(),
+            IntersectionTypeChildren::Extra(x) => x.children_any(),
             IntersectionTypeChildren::NamedType(x) => x.children_any(),
             IntersectionTypeChildren::OptionalType(x) => x.children_any(),
             IntersectionTypeChildren::PrimitiveType(x) => x.children_any(),
@@ -185,9 +170,7 @@ impl NodeAccess for IntersectionTypeChildren {
 
     fn range(&self) -> Range {
         match self {
-            IntersectionTypeChildren::Comment(x) => x.range(),
-            IntersectionTypeChildren::TextInterpolation(x) => x.range(),
-            IntersectionTypeChildren::Error(x) => x.range(),
+            IntersectionTypeChildren::Extra(x) => x.range(),
             IntersectionTypeChildren::NamedType(x) => x.range(),
             IntersectionTypeChildren::OptionalType(x) => x.range(),
             IntersectionTypeChildren::PrimitiveType(x) => x.range(),

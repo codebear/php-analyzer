@@ -22,6 +22,7 @@ use crate::autonodes::yield_expression::YieldExpressionNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
+use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
@@ -47,19 +48,21 @@ pub enum _ExpressionNode {
     SilenceExpression(Box<SilenceExpressionNode>),
     UnaryOpExpression(Box<UnaryOpExpressionNode>),
     YieldExpression(Box<YieldExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl _ExpressionNode {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => _ExpressionNode::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => _ExpressionNode::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => _ExpressionNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => _ExpressionNode::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => _ExpressionNode::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => {
+                _ExpressionNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "assignment_expression" => _ExpressionNode::AssignmentExpression(Box::new(
                 AssignmentExpressionNode::parse(node, source)?,
             )),
@@ -127,11 +130,15 @@ impl _ExpressionNode {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => _ExpressionNode::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => _ExpressionNode::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => _ExpressionNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => _ExpressionNode::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => _ExpressionNode::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => {
+                _ExpressionNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "assignment_expression" => _ExpressionNode::AssignmentExpression(Box::new(
                 AssignmentExpressionNode::parse(node, source)?,
             )),
@@ -217,9 +224,7 @@ impl _ExpressionNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            _ExpressionNode::Comment(x) => x.get_utype(state, emitter),
-            _ExpressionNode::TextInterpolation(x) => x.get_utype(state, emitter),
-            _ExpressionNode::Error(x) => x.get_utype(state, emitter),
+            _ExpressionNode::Extra(x) => x.get_utype(state, emitter),
             _ExpressionNode::_PrimaryExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::AssignmentExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::AugmentedAssignmentExpression(x) => x.get_utype(state, emitter),
@@ -246,9 +251,7 @@ impl _ExpressionNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            _ExpressionNode::Comment(x) => x.get_php_value(state, emitter),
-            _ExpressionNode::TextInterpolation(x) => x.get_php_value(state, emitter),
-            _ExpressionNode::Error(x) => x.get_php_value(state, emitter),
+            _ExpressionNode::Extra(x) => x.get_php_value(state, emitter),
             _ExpressionNode::_PrimaryExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::AssignmentExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::AugmentedAssignmentExpression(x) => x.get_php_value(state, emitter),
@@ -271,9 +274,7 @@ impl _ExpressionNode {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            _ExpressionNode::Comment(x) => x.read_from(state, emitter),
-            _ExpressionNode::TextInterpolation(x) => x.read_from(state, emitter),
-            _ExpressionNode::Error(x) => x.read_from(state, emitter),
+            _ExpressionNode::Extra(x) => x.read_from(state, emitter),
             _ExpressionNode::_PrimaryExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::AssignmentExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::AugmentedAssignmentExpression(x) => x.read_from(state, emitter),
@@ -298,11 +299,7 @@ impl _ExpressionNode {
 impl NodeAccess for _ExpressionNode {
     fn brief_desc(&self) -> String {
         match self {
-            _ExpressionNode::Comment(x) => format!("_ExpressionNode::comment({})", x.brief_desc()),
-            _ExpressionNode::TextInterpolation(x) => {
-                format!("_ExpressionNode::text_interpolation({})", x.brief_desc())
-            }
-            _ExpressionNode::Error(x) => format!("_ExpressionNode::ERROR({})", x.brief_desc()),
+            _ExpressionNode::Extra(x) => format!("_ExpressionNode::extra({})", x.brief_desc()),
             _ExpressionNode::_PrimaryExpression(x) => {
                 format!("_ExpressionNode::_primary_expression({})", x.brief_desc())
             }
@@ -365,9 +362,7 @@ impl NodeAccess for _ExpressionNode {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            _ExpressionNode::Comment(x) => x.as_any(),
-            _ExpressionNode::TextInterpolation(x) => x.as_any(),
-            _ExpressionNode::Error(x) => x.as_any(),
+            _ExpressionNode::Extra(x) => x.as_any(),
             _ExpressionNode::_PrimaryExpression(x) => x.as_any(),
             _ExpressionNode::AssignmentExpression(x) => x.as_any(),
             _ExpressionNode::AugmentedAssignmentExpression(x) => x.as_any(),
@@ -390,9 +385,7 @@ impl NodeAccess for _ExpressionNode {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            _ExpressionNode::Comment(x) => x.children_any(),
-            _ExpressionNode::TextInterpolation(x) => x.children_any(),
-            _ExpressionNode::Error(x) => x.children_any(),
+            _ExpressionNode::Extra(x) => x.children_any(),
             _ExpressionNode::_PrimaryExpression(x) => x.children_any(),
             _ExpressionNode::AssignmentExpression(x) => x.children_any(),
             _ExpressionNode::AugmentedAssignmentExpression(x) => x.children_any(),
@@ -415,9 +408,7 @@ impl NodeAccess for _ExpressionNode {
 
     fn range(&self) -> Range {
         match self {
-            _ExpressionNode::Comment(x) => x.range(),
-            _ExpressionNode::TextInterpolation(x) => x.range(),
-            _ExpressionNode::Error(x) => x.range(),
+            _ExpressionNode::Extra(x) => x.range(),
             _ExpressionNode::_PrimaryExpression(x) => x.range(),
             _ExpressionNode::AssignmentExpression(x) => x.range(),
             _ExpressionNode::AugmentedAssignmentExpression(x) => x.range(),

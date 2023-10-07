@@ -19,19 +19,21 @@ use tree_sitter::Range;
 pub enum TryStatementChildren {
     CatchClause(Box<CatchClauseNode>),
     FinallyClause(Box<FinallyClauseNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl TryStatementChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => TryStatementChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => TryStatementChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => TryStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => TryStatementChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => TryStatementChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "catch_clause" => {
                 TryStatementChildren::CatchClause(Box::new(CatchClauseNode::parse(node, source)?))
             }
@@ -50,11 +52,15 @@ impl TryStatementChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => TryStatementChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => TryStatementChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => TryStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => TryStatementChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => TryStatementChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "catch_clause" => {
                 TryStatementChildren::CatchClause(Box::new(CatchClauseNode::parse(node, source)?))
             }
@@ -87,9 +93,7 @@ impl TryStatementChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            TryStatementChildren::Comment(x) => x.get_utype(state, emitter),
-            TryStatementChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            TryStatementChildren::Error(x) => x.get_utype(state, emitter),
+            TryStatementChildren::Extra(x) => x.get_utype(state, emitter),
             TryStatementChildren::CatchClause(x) => x.get_utype(state, emitter),
             TryStatementChildren::FinallyClause(x) => x.get_utype(state, emitter),
         }
@@ -101,9 +105,7 @@ impl TryStatementChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            TryStatementChildren::Comment(x) => x.get_php_value(state, emitter),
-            TryStatementChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            TryStatementChildren::Error(x) => x.get_php_value(state, emitter),
+            TryStatementChildren::Extra(x) => x.get_php_value(state, emitter),
             TryStatementChildren::CatchClause(x) => x.get_php_value(state, emitter),
             TryStatementChildren::FinallyClause(x) => x.get_php_value(state, emitter),
         }
@@ -111,9 +113,7 @@ impl TryStatementChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            TryStatementChildren::Comment(x) => x.read_from(state, emitter),
-            TryStatementChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            TryStatementChildren::Error(x) => x.read_from(state, emitter),
+            TryStatementChildren::Extra(x) => x.read_from(state, emitter),
             TryStatementChildren::CatchClause(x) => x.read_from(state, emitter),
             TryStatementChildren::FinallyClause(x) => x.read_from(state, emitter),
         }
@@ -123,15 +123,8 @@ impl TryStatementChildren {
 impl NodeAccess for TryStatementChildren {
     fn brief_desc(&self) -> String {
         match self {
-            TryStatementChildren::Comment(x) => {
-                format!("TryStatementChildren::comment({})", x.brief_desc())
-            }
-            TryStatementChildren::TextInterpolation(x) => format!(
-                "TryStatementChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            TryStatementChildren::Error(x) => {
-                format!("TryStatementChildren::ERROR({})", x.brief_desc())
+            TryStatementChildren::Extra(x) => {
+                format!("TryStatementChildren::extra({})", x.brief_desc())
             }
             TryStatementChildren::CatchClause(x) => {
                 format!("TryStatementChildren::catch_clause({})", x.brief_desc())
@@ -144,9 +137,7 @@ impl NodeAccess for TryStatementChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            TryStatementChildren::Comment(x) => x.as_any(),
-            TryStatementChildren::TextInterpolation(x) => x.as_any(),
-            TryStatementChildren::Error(x) => x.as_any(),
+            TryStatementChildren::Extra(x) => x.as_any(),
             TryStatementChildren::CatchClause(x) => x.as_any(),
             TryStatementChildren::FinallyClause(x) => x.as_any(),
         }
@@ -154,9 +145,7 @@ impl NodeAccess for TryStatementChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            TryStatementChildren::Comment(x) => x.children_any(),
-            TryStatementChildren::TextInterpolation(x) => x.children_any(),
-            TryStatementChildren::Error(x) => x.children_any(),
+            TryStatementChildren::Extra(x) => x.children_any(),
             TryStatementChildren::CatchClause(x) => x.children_any(),
             TryStatementChildren::FinallyClause(x) => x.children_any(),
         }
@@ -164,9 +153,7 @@ impl NodeAccess for TryStatementChildren {
 
     fn range(&self) -> Range {
         match self {
-            TryStatementChildren::Comment(x) => x.range(),
-            TryStatementChildren::TextInterpolation(x) => x.range(),
-            TryStatementChildren::Error(x) => x.range(),
+            TryStatementChildren::Extra(x) => x.range(),
             TryStatementChildren::CatchClause(x) => x.range(),
             TryStatementChildren::FinallyClause(x) => x.range(),
         }

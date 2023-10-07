@@ -18,21 +18,21 @@ use tree_sitter::Range;
 pub enum QualifiedNameChildren {
     Name(Box<NameNode>),
     NamespaceNameAsPrefix(Box<NamespaceNameAsPrefixNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl QualifiedNameChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                QualifiedNameChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => QualifiedNameChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => QualifiedNameChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => QualifiedNameChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => QualifiedNameChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => QualifiedNameChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "name" => QualifiedNameChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "namespace_name_as_prefix" => QualifiedNameChildren::NamespaceNameAsPrefix(Box::new(
                 NamespaceNameAsPrefixNode::parse(node, source)?,
@@ -49,13 +49,15 @@ impl QualifiedNameChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                QualifiedNameChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => QualifiedNameChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => QualifiedNameChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => QualifiedNameChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => QualifiedNameChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => QualifiedNameChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "name" => QualifiedNameChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "namespace_name_as_prefix" => QualifiedNameChildren::NamespaceNameAsPrefix(Box::new(
                 NamespaceNameAsPrefixNode::parse(node, source)?,
@@ -86,9 +88,7 @@ impl QualifiedNameChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            QualifiedNameChildren::Comment(x) => x.get_utype(state, emitter),
-            QualifiedNameChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            QualifiedNameChildren::Error(x) => x.get_utype(state, emitter),
+            QualifiedNameChildren::Extra(x) => x.get_utype(state, emitter),
             QualifiedNameChildren::Name(x) => x.get_utype(state, emitter),
             QualifiedNameChildren::NamespaceNameAsPrefix(x) => x.get_utype(state, emitter),
         }
@@ -100,9 +100,7 @@ impl QualifiedNameChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            QualifiedNameChildren::Comment(x) => x.get_php_value(state, emitter),
-            QualifiedNameChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            QualifiedNameChildren::Error(x) => x.get_php_value(state, emitter),
+            QualifiedNameChildren::Extra(x) => x.get_php_value(state, emitter),
             QualifiedNameChildren::Name(x) => x.get_php_value(state, emitter),
             QualifiedNameChildren::NamespaceNameAsPrefix(x) => x.get_php_value(state, emitter),
         }
@@ -110,9 +108,7 @@ impl QualifiedNameChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            QualifiedNameChildren::Comment(x) => x.read_from(state, emitter),
-            QualifiedNameChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            QualifiedNameChildren::Error(x) => x.read_from(state, emitter),
+            QualifiedNameChildren::Extra(x) => x.read_from(state, emitter),
             QualifiedNameChildren::Name(x) => x.read_from(state, emitter),
             QualifiedNameChildren::NamespaceNameAsPrefix(x) => x.read_from(state, emitter),
         }
@@ -122,15 +118,8 @@ impl QualifiedNameChildren {
 impl NodeAccess for QualifiedNameChildren {
     fn brief_desc(&self) -> String {
         match self {
-            QualifiedNameChildren::Comment(x) => {
-                format!("QualifiedNameChildren::comment({})", x.brief_desc())
-            }
-            QualifiedNameChildren::TextInterpolation(x) => format!(
-                "QualifiedNameChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            QualifiedNameChildren::Error(x) => {
-                format!("QualifiedNameChildren::ERROR({})", x.brief_desc())
+            QualifiedNameChildren::Extra(x) => {
+                format!("QualifiedNameChildren::extra({})", x.brief_desc())
             }
             QualifiedNameChildren::Name(x) => {
                 format!("QualifiedNameChildren::name({})", x.brief_desc())
@@ -144,9 +133,7 @@ impl NodeAccess for QualifiedNameChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            QualifiedNameChildren::Comment(x) => x.as_any(),
-            QualifiedNameChildren::TextInterpolation(x) => x.as_any(),
-            QualifiedNameChildren::Error(x) => x.as_any(),
+            QualifiedNameChildren::Extra(x) => x.as_any(),
             QualifiedNameChildren::Name(x) => x.as_any(),
             QualifiedNameChildren::NamespaceNameAsPrefix(x) => x.as_any(),
         }
@@ -154,9 +141,7 @@ impl NodeAccess for QualifiedNameChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            QualifiedNameChildren::Comment(x) => x.children_any(),
-            QualifiedNameChildren::TextInterpolation(x) => x.children_any(),
-            QualifiedNameChildren::Error(x) => x.children_any(),
+            QualifiedNameChildren::Extra(x) => x.children_any(),
             QualifiedNameChildren::Name(x) => x.children_any(),
             QualifiedNameChildren::NamespaceNameAsPrefix(x) => x.children_any(),
         }
@@ -164,9 +149,7 @@ impl NodeAccess for QualifiedNameChildren {
 
     fn range(&self) -> Range {
         match self {
-            QualifiedNameChildren::Comment(x) => x.range(),
-            QualifiedNameChildren::TextInterpolation(x) => x.range(),
-            QualifiedNameChildren::Error(x) => x.range(),
+            QualifiedNameChildren::Extra(x) => x.range(),
             QualifiedNameChildren::Name(x) => x.range(),
             QualifiedNameChildren::NamespaceNameAsPrefix(x) => x.range(),
         }

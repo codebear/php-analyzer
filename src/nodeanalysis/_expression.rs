@@ -30,9 +30,7 @@ impl _ExpressionNode {
             _ExpressionNode::UnaryOpExpression(_) => missing!(),
             _ExpressionNode::YieldExpression(_) => missing!(),
 
-            _ExpressionNode::Comment(_)
-            | _ExpressionNode::TextInterpolation(_)
-            | _ExpressionNode::Error(_) => missing!(),
+            _ExpressionNode::Extra(_) => missing!(),
         }
     }
 }

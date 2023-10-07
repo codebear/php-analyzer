@@ -329,9 +329,7 @@ impl MemberCallExpressionName {
                 }
             }
 
-            MemberCallExpressionName::Comment(_)
-            | MemberCallExpressionName::TextInterpolation(_)
-            | MemberCallExpressionName::Error(_) => None,
+            MemberCallExpressionName::Extra(_) => None,
         }
     }
 }

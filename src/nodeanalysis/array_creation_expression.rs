@@ -110,9 +110,7 @@ impl ArrayCreationExpressionNode {
                     ArrayElementInitializerValue::_Expression(e) => e.get_php_value(state, emitter),
                     ArrayElementInitializerValue::ByRef(v) => v.get_php_value(state, emitter),
 
-                    ArrayElementInitializerValue::Comment(_)
-                    | ArrayElementInitializerValue::TextInterpolation(_)
-                    | ArrayElementInitializerValue::Error(_) => todo!(),
+                    ArrayElementInitializerValue::Extra(_) => todo!(),
                 }
             } else {
                 None

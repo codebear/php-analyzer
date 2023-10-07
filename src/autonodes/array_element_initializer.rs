@@ -19,23 +19,23 @@ use tree_sitter::Range;
 pub enum ArrayElementInitializerValue {
     _Expression(Box<_ExpressionNode>),
     ByRef(Box<ByRefNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ArrayElementInitializerValue {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ArrayElementInitializerValue::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ArrayElementInitializerValue::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ArrayElementInitializerValue::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ArrayElementInitializerValue::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ArrayElementInitializerValue::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ArrayElementInitializerValue::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "by_ref" => {
                 ArrayElementInitializerValue::ByRef(Box::new(ByRefNode::parse(node, source)?))
             }
@@ -58,15 +58,17 @@ impl ArrayElementInitializerValue {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ArrayElementInitializerValue::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ArrayElementInitializerValue::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ArrayElementInitializerValue::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ArrayElementInitializerValue::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ArrayElementInitializerValue::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ArrayElementInitializerValue::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "by_ref" => {
                 ArrayElementInitializerValue::ByRef(Box::new(ByRefNode::parse(node, source)?))
             }
@@ -107,9 +109,7 @@ impl ArrayElementInitializerValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ArrayElementInitializerValue::Comment(x) => x.get_utype(state, emitter),
-            ArrayElementInitializerValue::TextInterpolation(x) => x.get_utype(state, emitter),
-            ArrayElementInitializerValue::Error(x) => x.get_utype(state, emitter),
+            ArrayElementInitializerValue::Extra(x) => x.get_utype(state, emitter),
             ArrayElementInitializerValue::_Expression(x) => x.get_utype(state, emitter),
             ArrayElementInitializerValue::ByRef(x) => x.get_utype(state, emitter),
         }
@@ -121,9 +121,7 @@ impl ArrayElementInitializerValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ArrayElementInitializerValue::Comment(x) => x.get_php_value(state, emitter),
-            ArrayElementInitializerValue::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ArrayElementInitializerValue::Error(x) => x.get_php_value(state, emitter),
+            ArrayElementInitializerValue::Extra(x) => x.get_php_value(state, emitter),
             ArrayElementInitializerValue::_Expression(x) => x.get_php_value(state, emitter),
             ArrayElementInitializerValue::ByRef(x) => x.get_php_value(state, emitter),
         }
@@ -131,9 +129,7 @@ impl ArrayElementInitializerValue {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ArrayElementInitializerValue::Comment(x) => x.read_from(state, emitter),
-            ArrayElementInitializerValue::TextInterpolation(x) => x.read_from(state, emitter),
-            ArrayElementInitializerValue::Error(x) => x.read_from(state, emitter),
+            ArrayElementInitializerValue::Extra(x) => x.read_from(state, emitter),
             ArrayElementInitializerValue::_Expression(x) => x.read_from(state, emitter),
             ArrayElementInitializerValue::ByRef(x) => x.read_from(state, emitter),
         }
@@ -143,15 +139,8 @@ impl ArrayElementInitializerValue {
 impl NodeAccess for ArrayElementInitializerValue {
     fn brief_desc(&self) -> String {
         match self {
-            ArrayElementInitializerValue::Comment(x) => {
-                format!("ArrayElementInitializerValue::comment({})", x.brief_desc())
-            }
-            ArrayElementInitializerValue::TextInterpolation(x) => format!(
-                "ArrayElementInitializerValue::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ArrayElementInitializerValue::Error(x) => {
-                format!("ArrayElementInitializerValue::ERROR({})", x.brief_desc())
+            ArrayElementInitializerValue::Extra(x) => {
+                format!("ArrayElementInitializerValue::extra({})", x.brief_desc())
             }
             ArrayElementInitializerValue::_Expression(x) => format!(
                 "ArrayElementInitializerValue::_expression({})",
@@ -165,9 +154,7 @@ impl NodeAccess for ArrayElementInitializerValue {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ArrayElementInitializerValue::Comment(x) => x.as_any(),
-            ArrayElementInitializerValue::TextInterpolation(x) => x.as_any(),
-            ArrayElementInitializerValue::Error(x) => x.as_any(),
+            ArrayElementInitializerValue::Extra(x) => x.as_any(),
             ArrayElementInitializerValue::_Expression(x) => x.as_any(),
             ArrayElementInitializerValue::ByRef(x) => x.as_any(),
         }
@@ -175,9 +162,7 @@ impl NodeAccess for ArrayElementInitializerValue {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ArrayElementInitializerValue::Comment(x) => x.children_any(),
-            ArrayElementInitializerValue::TextInterpolation(x) => x.children_any(),
-            ArrayElementInitializerValue::Error(x) => x.children_any(),
+            ArrayElementInitializerValue::Extra(x) => x.children_any(),
             ArrayElementInitializerValue::_Expression(x) => x.children_any(),
             ArrayElementInitializerValue::ByRef(x) => x.children_any(),
         }
@@ -185,9 +170,7 @@ impl NodeAccess for ArrayElementInitializerValue {
 
     fn range(&self) -> Range {
         match self {
-            ArrayElementInitializerValue::Comment(x) => x.range(),
-            ArrayElementInitializerValue::TextInterpolation(x) => x.range(),
-            ArrayElementInitializerValue::Error(x) => x.range(),
+            ArrayElementInitializerValue::Extra(x) => x.range(),
             ArrayElementInitializerValue::_Expression(x) => x.range(),
             ArrayElementInitializerValue::ByRef(x) => x.range(),
         }

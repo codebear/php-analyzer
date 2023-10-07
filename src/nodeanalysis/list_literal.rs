@@ -101,9 +101,7 @@ impl ListLiteralNode {
                     vname.write_to(state, emitter, sub_val_type, sub_value);
                 }
 
-                ListLiteralChildren::Comment(_)
-                | ListLiteralChildren::TextInterpolation(_)
-                | ListLiteralChildren::Error(_) => (),
+                ListLiteralChildren::Extra(_) => (),
             }
             idx += 1;
         }

@@ -18,19 +18,21 @@ use tree_sitter::Range;
 pub enum NamedTypeChildren {
     Name(Box<NameNode>),
     QualifiedName(Box<QualifiedNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl NamedTypeChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => NamedTypeChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => NamedTypeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => NamedTypeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => NamedTypeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => NamedTypeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => NamedTypeChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "name" => NamedTypeChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => {
                 NamedTypeChildren::QualifiedName(Box::new(QualifiedNameNode::parse(node, source)?))
@@ -47,11 +49,15 @@ impl NamedTypeChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => NamedTypeChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => NamedTypeChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => NamedTypeChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => NamedTypeChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => NamedTypeChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => NamedTypeChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "name" => NamedTypeChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => {
                 NamedTypeChildren::QualifiedName(Box::new(QualifiedNameNode::parse(node, source)?))
@@ -82,9 +88,7 @@ impl NamedTypeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            NamedTypeChildren::Comment(x) => x.get_utype(state, emitter),
-            NamedTypeChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            NamedTypeChildren::Error(x) => x.get_utype(state, emitter),
+            NamedTypeChildren::Extra(x) => x.get_utype(state, emitter),
             NamedTypeChildren::Name(x) => x.get_utype(state, emitter),
             NamedTypeChildren::QualifiedName(x) => x.get_utype(state, emitter),
         }
@@ -96,9 +100,7 @@ impl NamedTypeChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            NamedTypeChildren::Comment(x) => x.get_php_value(state, emitter),
-            NamedTypeChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            NamedTypeChildren::Error(x) => x.get_php_value(state, emitter),
+            NamedTypeChildren::Extra(x) => x.get_php_value(state, emitter),
             NamedTypeChildren::Name(x) => x.get_php_value(state, emitter),
             NamedTypeChildren::QualifiedName(x) => x.get_php_value(state, emitter),
         }
@@ -106,9 +108,7 @@ impl NamedTypeChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            NamedTypeChildren::Comment(x) => x.read_from(state, emitter),
-            NamedTypeChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            NamedTypeChildren::Error(x) => x.read_from(state, emitter),
+            NamedTypeChildren::Extra(x) => x.read_from(state, emitter),
             NamedTypeChildren::Name(x) => x.read_from(state, emitter),
             NamedTypeChildren::QualifiedName(x) => x.read_from(state, emitter),
         }
@@ -118,13 +118,7 @@ impl NamedTypeChildren {
 impl NodeAccess for NamedTypeChildren {
     fn brief_desc(&self) -> String {
         match self {
-            NamedTypeChildren::Comment(x) => {
-                format!("NamedTypeChildren::comment({})", x.brief_desc())
-            }
-            NamedTypeChildren::TextInterpolation(x) => {
-                format!("NamedTypeChildren::text_interpolation({})", x.brief_desc())
-            }
-            NamedTypeChildren::Error(x) => format!("NamedTypeChildren::ERROR({})", x.brief_desc()),
+            NamedTypeChildren::Extra(x) => format!("NamedTypeChildren::extra({})", x.brief_desc()),
             NamedTypeChildren::Name(x) => format!("NamedTypeChildren::name({})", x.brief_desc()),
             NamedTypeChildren::QualifiedName(x) => {
                 format!("NamedTypeChildren::qualified_name({})", x.brief_desc())
@@ -134,9 +128,7 @@ impl NodeAccess for NamedTypeChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            NamedTypeChildren::Comment(x) => x.as_any(),
-            NamedTypeChildren::TextInterpolation(x) => x.as_any(),
-            NamedTypeChildren::Error(x) => x.as_any(),
+            NamedTypeChildren::Extra(x) => x.as_any(),
             NamedTypeChildren::Name(x) => x.as_any(),
             NamedTypeChildren::QualifiedName(x) => x.as_any(),
         }
@@ -144,9 +136,7 @@ impl NodeAccess for NamedTypeChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            NamedTypeChildren::Comment(x) => x.children_any(),
-            NamedTypeChildren::TextInterpolation(x) => x.children_any(),
-            NamedTypeChildren::Error(x) => x.children_any(),
+            NamedTypeChildren::Extra(x) => x.children_any(),
             NamedTypeChildren::Name(x) => x.children_any(),
             NamedTypeChildren::QualifiedName(x) => x.children_any(),
         }
@@ -154,9 +144,7 @@ impl NodeAccess for NamedTypeChildren {
 
     fn range(&self) -> Range {
         match self {
-            NamedTypeChildren::Comment(x) => x.range(),
-            NamedTypeChildren::TextInterpolation(x) => x.range(),
-            NamedTypeChildren::Error(x) => x.range(),
+            NamedTypeChildren::Extra(x) => x.range(),
             NamedTypeChildren::Name(x) => x.range(),
             NamedTypeChildren::QualifiedName(x) => x.range(),
         }

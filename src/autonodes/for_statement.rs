@@ -19,21 +19,21 @@ use tree_sitter::Range;
 pub enum ForStatementCondition {
     _Expression(Box<_ExpressionNode>),
     SequenceExpression(Box<SequenceExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ForStatementCondition {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ForStatementCondition::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ForStatementCondition::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForStatementCondition::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForStatementCondition::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForStatementCondition::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForStatementCondition::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "sequence_expression" => ForStatementCondition::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -56,13 +56,15 @@ impl ForStatementCondition {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ForStatementCondition::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ForStatementCondition::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForStatementCondition::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForStatementCondition::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForStatementCondition::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForStatementCondition::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "sequence_expression" => ForStatementCondition::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -103,9 +105,7 @@ impl ForStatementCondition {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ForStatementCondition::Comment(x) => x.get_utype(state, emitter),
-            ForStatementCondition::TextInterpolation(x) => x.get_utype(state, emitter),
-            ForStatementCondition::Error(x) => x.get_utype(state, emitter),
+            ForStatementCondition::Extra(x) => x.get_utype(state, emitter),
             ForStatementCondition::_Expression(x) => x.get_utype(state, emitter),
             ForStatementCondition::SequenceExpression(x) => x.get_utype(state, emitter),
         }
@@ -117,9 +117,7 @@ impl ForStatementCondition {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ForStatementCondition::Comment(x) => x.get_php_value(state, emitter),
-            ForStatementCondition::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ForStatementCondition::Error(x) => x.get_php_value(state, emitter),
+            ForStatementCondition::Extra(x) => x.get_php_value(state, emitter),
             ForStatementCondition::_Expression(x) => x.get_php_value(state, emitter),
             ForStatementCondition::SequenceExpression(x) => x.get_php_value(state, emitter),
         }
@@ -127,9 +125,7 @@ impl ForStatementCondition {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ForStatementCondition::Comment(x) => x.read_from(state, emitter),
-            ForStatementCondition::TextInterpolation(x) => x.read_from(state, emitter),
-            ForStatementCondition::Error(x) => x.read_from(state, emitter),
+            ForStatementCondition::Extra(x) => x.read_from(state, emitter),
             ForStatementCondition::_Expression(x) => x.read_from(state, emitter),
             ForStatementCondition::SequenceExpression(x) => x.read_from(state, emitter),
         }
@@ -139,15 +135,8 @@ impl ForStatementCondition {
 impl NodeAccess for ForStatementCondition {
     fn brief_desc(&self) -> String {
         match self {
-            ForStatementCondition::Comment(x) => {
-                format!("ForStatementCondition::comment({})", x.brief_desc())
-            }
-            ForStatementCondition::TextInterpolation(x) => format!(
-                "ForStatementCondition::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ForStatementCondition::Error(x) => {
-                format!("ForStatementCondition::ERROR({})", x.brief_desc())
+            ForStatementCondition::Extra(x) => {
+                format!("ForStatementCondition::extra({})", x.brief_desc())
             }
             ForStatementCondition::_Expression(x) => {
                 format!("ForStatementCondition::_expression({})", x.brief_desc())
@@ -161,9 +150,7 @@ impl NodeAccess for ForStatementCondition {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ForStatementCondition::Comment(x) => x.as_any(),
-            ForStatementCondition::TextInterpolation(x) => x.as_any(),
-            ForStatementCondition::Error(x) => x.as_any(),
+            ForStatementCondition::Extra(x) => x.as_any(),
             ForStatementCondition::_Expression(x) => x.as_any(),
             ForStatementCondition::SequenceExpression(x) => x.as_any(),
         }
@@ -171,9 +158,7 @@ impl NodeAccess for ForStatementCondition {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ForStatementCondition::Comment(x) => x.children_any(),
-            ForStatementCondition::TextInterpolation(x) => x.children_any(),
-            ForStatementCondition::Error(x) => x.children_any(),
+            ForStatementCondition::Extra(x) => x.children_any(),
             ForStatementCondition::_Expression(x) => x.children_any(),
             ForStatementCondition::SequenceExpression(x) => x.children_any(),
         }
@@ -181,9 +166,7 @@ impl NodeAccess for ForStatementCondition {
 
     fn range(&self) -> Range {
         match self {
-            ForStatementCondition::Comment(x) => x.range(),
-            ForStatementCondition::TextInterpolation(x) => x.range(),
-            ForStatementCondition::Error(x) => x.range(),
+            ForStatementCondition::Extra(x) => x.range(),
             ForStatementCondition::_Expression(x) => x.range(),
             ForStatementCondition::SequenceExpression(x) => x.range(),
         }
@@ -193,21 +176,21 @@ impl NodeAccess for ForStatementCondition {
 pub enum ForStatementIncrement {
     _Expression(Box<_ExpressionNode>),
     SequenceExpression(Box<SequenceExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ForStatementIncrement {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ForStatementIncrement::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ForStatementIncrement::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForStatementIncrement::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForStatementIncrement::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForStatementIncrement::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForStatementIncrement::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "sequence_expression" => ForStatementIncrement::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -230,13 +213,15 @@ impl ForStatementIncrement {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ForStatementIncrement::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ForStatementIncrement::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForStatementIncrement::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForStatementIncrement::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForStatementIncrement::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForStatementIncrement::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "sequence_expression" => ForStatementIncrement::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -277,9 +262,7 @@ impl ForStatementIncrement {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ForStatementIncrement::Comment(x) => x.get_utype(state, emitter),
-            ForStatementIncrement::TextInterpolation(x) => x.get_utype(state, emitter),
-            ForStatementIncrement::Error(x) => x.get_utype(state, emitter),
+            ForStatementIncrement::Extra(x) => x.get_utype(state, emitter),
             ForStatementIncrement::_Expression(x) => x.get_utype(state, emitter),
             ForStatementIncrement::SequenceExpression(x) => x.get_utype(state, emitter),
         }
@@ -291,9 +274,7 @@ impl ForStatementIncrement {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ForStatementIncrement::Comment(x) => x.get_php_value(state, emitter),
-            ForStatementIncrement::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ForStatementIncrement::Error(x) => x.get_php_value(state, emitter),
+            ForStatementIncrement::Extra(x) => x.get_php_value(state, emitter),
             ForStatementIncrement::_Expression(x) => x.get_php_value(state, emitter),
             ForStatementIncrement::SequenceExpression(x) => x.get_php_value(state, emitter),
         }
@@ -301,9 +282,7 @@ impl ForStatementIncrement {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ForStatementIncrement::Comment(x) => x.read_from(state, emitter),
-            ForStatementIncrement::TextInterpolation(x) => x.read_from(state, emitter),
-            ForStatementIncrement::Error(x) => x.read_from(state, emitter),
+            ForStatementIncrement::Extra(x) => x.read_from(state, emitter),
             ForStatementIncrement::_Expression(x) => x.read_from(state, emitter),
             ForStatementIncrement::SequenceExpression(x) => x.read_from(state, emitter),
         }
@@ -313,15 +292,8 @@ impl ForStatementIncrement {
 impl NodeAccess for ForStatementIncrement {
     fn brief_desc(&self) -> String {
         match self {
-            ForStatementIncrement::Comment(x) => {
-                format!("ForStatementIncrement::comment({})", x.brief_desc())
-            }
-            ForStatementIncrement::TextInterpolation(x) => format!(
-                "ForStatementIncrement::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ForStatementIncrement::Error(x) => {
-                format!("ForStatementIncrement::ERROR({})", x.brief_desc())
+            ForStatementIncrement::Extra(x) => {
+                format!("ForStatementIncrement::extra({})", x.brief_desc())
             }
             ForStatementIncrement::_Expression(x) => {
                 format!("ForStatementIncrement::_expression({})", x.brief_desc())
@@ -335,9 +307,7 @@ impl NodeAccess for ForStatementIncrement {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ForStatementIncrement::Comment(x) => x.as_any(),
-            ForStatementIncrement::TextInterpolation(x) => x.as_any(),
-            ForStatementIncrement::Error(x) => x.as_any(),
+            ForStatementIncrement::Extra(x) => x.as_any(),
             ForStatementIncrement::_Expression(x) => x.as_any(),
             ForStatementIncrement::SequenceExpression(x) => x.as_any(),
         }
@@ -345,9 +315,7 @@ impl NodeAccess for ForStatementIncrement {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ForStatementIncrement::Comment(x) => x.children_any(),
-            ForStatementIncrement::TextInterpolation(x) => x.children_any(),
-            ForStatementIncrement::Error(x) => x.children_any(),
+            ForStatementIncrement::Extra(x) => x.children_any(),
             ForStatementIncrement::_Expression(x) => x.children_any(),
             ForStatementIncrement::SequenceExpression(x) => x.children_any(),
         }
@@ -355,9 +323,7 @@ impl NodeAccess for ForStatementIncrement {
 
     fn range(&self) -> Range {
         match self {
-            ForStatementIncrement::Comment(x) => x.range(),
-            ForStatementIncrement::TextInterpolation(x) => x.range(),
-            ForStatementIncrement::Error(x) => x.range(),
+            ForStatementIncrement::Extra(x) => x.range(),
             ForStatementIncrement::_Expression(x) => x.range(),
             ForStatementIncrement::SequenceExpression(x) => x.range(),
         }
@@ -367,21 +333,21 @@ impl NodeAccess for ForStatementIncrement {
 pub enum ForStatementInitialize {
     _Expression(Box<_ExpressionNode>),
     SequenceExpression(Box<SequenceExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ForStatementInitialize {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ForStatementInitialize::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ForStatementInitialize::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForStatementInitialize::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForStatementInitialize::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForStatementInitialize::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForStatementInitialize::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "sequence_expression" => ForStatementInitialize::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -404,13 +370,15 @@ impl ForStatementInitialize {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ForStatementInitialize::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ForStatementInitialize::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ForStatementInitialize::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ForStatementInitialize::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ForStatementInitialize::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ForStatementInitialize::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "sequence_expression" => ForStatementInitialize::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -451,9 +419,7 @@ impl ForStatementInitialize {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ForStatementInitialize::Comment(x) => x.get_utype(state, emitter),
-            ForStatementInitialize::TextInterpolation(x) => x.get_utype(state, emitter),
-            ForStatementInitialize::Error(x) => x.get_utype(state, emitter),
+            ForStatementInitialize::Extra(x) => x.get_utype(state, emitter),
             ForStatementInitialize::_Expression(x) => x.get_utype(state, emitter),
             ForStatementInitialize::SequenceExpression(x) => x.get_utype(state, emitter),
         }
@@ -465,9 +431,7 @@ impl ForStatementInitialize {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ForStatementInitialize::Comment(x) => x.get_php_value(state, emitter),
-            ForStatementInitialize::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ForStatementInitialize::Error(x) => x.get_php_value(state, emitter),
+            ForStatementInitialize::Extra(x) => x.get_php_value(state, emitter),
             ForStatementInitialize::_Expression(x) => x.get_php_value(state, emitter),
             ForStatementInitialize::SequenceExpression(x) => x.get_php_value(state, emitter),
         }
@@ -475,9 +439,7 @@ impl ForStatementInitialize {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ForStatementInitialize::Comment(x) => x.read_from(state, emitter),
-            ForStatementInitialize::TextInterpolation(x) => x.read_from(state, emitter),
-            ForStatementInitialize::Error(x) => x.read_from(state, emitter),
+            ForStatementInitialize::Extra(x) => x.read_from(state, emitter),
             ForStatementInitialize::_Expression(x) => x.read_from(state, emitter),
             ForStatementInitialize::SequenceExpression(x) => x.read_from(state, emitter),
         }
@@ -487,15 +449,8 @@ impl ForStatementInitialize {
 impl NodeAccess for ForStatementInitialize {
     fn brief_desc(&self) -> String {
         match self {
-            ForStatementInitialize::Comment(x) => {
-                format!("ForStatementInitialize::comment({})", x.brief_desc())
-            }
-            ForStatementInitialize::TextInterpolation(x) => format!(
-                "ForStatementInitialize::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ForStatementInitialize::Error(x) => {
-                format!("ForStatementInitialize::ERROR({})", x.brief_desc())
+            ForStatementInitialize::Extra(x) => {
+                format!("ForStatementInitialize::extra({})", x.brief_desc())
             }
             ForStatementInitialize::_Expression(x) => {
                 format!("ForStatementInitialize::_expression({})", x.brief_desc())
@@ -509,9 +464,7 @@ impl NodeAccess for ForStatementInitialize {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ForStatementInitialize::Comment(x) => x.as_any(),
-            ForStatementInitialize::TextInterpolation(x) => x.as_any(),
-            ForStatementInitialize::Error(x) => x.as_any(),
+            ForStatementInitialize::Extra(x) => x.as_any(),
             ForStatementInitialize::_Expression(x) => x.as_any(),
             ForStatementInitialize::SequenceExpression(x) => x.as_any(),
         }
@@ -519,9 +472,7 @@ impl NodeAccess for ForStatementInitialize {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ForStatementInitialize::Comment(x) => x.children_any(),
-            ForStatementInitialize::TextInterpolation(x) => x.children_any(),
-            ForStatementInitialize::Error(x) => x.children_any(),
+            ForStatementInitialize::Extra(x) => x.children_any(),
             ForStatementInitialize::_Expression(x) => x.children_any(),
             ForStatementInitialize::SequenceExpression(x) => x.children_any(),
         }
@@ -529,9 +480,7 @@ impl NodeAccess for ForStatementInitialize {
 
     fn range(&self) -> Range {
         match self {
-            ForStatementInitialize::Comment(x) => x.range(),
-            ForStatementInitialize::TextInterpolation(x) => x.range(),
-            ForStatementInitialize::Error(x) => x.range(),
+            ForStatementInitialize::Extra(x) => x.range(),
             ForStatementInitialize::_Expression(x) => x.range(),
             ForStatementInitialize::SequenceExpression(x) => x.range(),
         }

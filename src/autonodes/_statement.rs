@@ -33,6 +33,7 @@ use crate::autonodes::while_statement::WhileStatementNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
+use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
@@ -69,19 +70,21 @@ pub enum _StatementNode {
     TryStatement(Box<TryStatementNode>),
     UnsetStatement(Box<UnsetStatementNode>),
     WhileStatement(Box<WhileStatementNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl _StatementNode {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => _StatementNode::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => _StatementNode::TextInterpolation(Box::new(
+            "comment" => _StatementNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => _StatementNode::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => _StatementNode::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                _StatementNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "break_statement" => {
                 _StatementNode::BreakStatement(Box::new(BreakStatementNode::parse(node, source)?))
             }
@@ -178,11 +181,15 @@ impl _StatementNode {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => _StatementNode::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => _StatementNode::TextInterpolation(Box::new(
+            "comment" => _StatementNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => _StatementNode::Extra(ExtraChild::TextInterpolation(Box::new(
                 TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => _StatementNode::Error(Box::new(ErrorNode::parse(node, source)?)),
+            ))),
+            "ERROR" => {
+                _StatementNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "break_statement" => {
                 _StatementNode::BreakStatement(Box::new(BreakStatementNode::parse(node, source)?))
             }
@@ -293,9 +300,7 @@ impl _StatementNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            _StatementNode::Comment(x) => x.get_utype(state, emitter),
-            _StatementNode::TextInterpolation(x) => x.get_utype(state, emitter),
-            _StatementNode::Error(x) => x.get_utype(state, emitter),
+            _StatementNode::Extra(x) => x.get_utype(state, emitter),
             _StatementNode::BreakStatement(x) => x.get_utype(state, emitter),
             _StatementNode::ClassDeclaration(x) => x.get_utype(state, emitter),
             _StatementNode::CompoundStatement(x) => x.get_utype(state, emitter),
@@ -333,9 +338,7 @@ impl _StatementNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            _StatementNode::Comment(x) => x.get_php_value(state, emitter),
-            _StatementNode::TextInterpolation(x) => x.get_php_value(state, emitter),
-            _StatementNode::Error(x) => x.get_php_value(state, emitter),
+            _StatementNode::Extra(x) => x.get_php_value(state, emitter),
             _StatementNode::BreakStatement(x) => x.get_php_value(state, emitter),
             _StatementNode::ClassDeclaration(x) => x.get_php_value(state, emitter),
             _StatementNode::CompoundStatement(x) => x.get_php_value(state, emitter),
@@ -369,9 +372,7 @@ impl _StatementNode {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            _StatementNode::Comment(x) => x.read_from(state, emitter),
-            _StatementNode::TextInterpolation(x) => x.read_from(state, emitter),
-            _StatementNode::Error(x) => x.read_from(state, emitter),
+            _StatementNode::Extra(x) => x.read_from(state, emitter),
             _StatementNode::BreakStatement(x) => x.read_from(state, emitter),
             _StatementNode::ClassDeclaration(x) => x.read_from(state, emitter),
             _StatementNode::CompoundStatement(x) => x.read_from(state, emitter),
@@ -407,11 +408,7 @@ impl _StatementNode {
 impl NodeAccess for _StatementNode {
     fn brief_desc(&self) -> String {
         match self {
-            _StatementNode::Comment(x) => format!("_StatementNode::comment({})", x.brief_desc()),
-            _StatementNode::TextInterpolation(x) => {
-                format!("_StatementNode::text_interpolation({})", x.brief_desc())
-            }
-            _StatementNode::Error(x) => format!("_StatementNode::ERROR({})", x.brief_desc()),
+            _StatementNode::Extra(x) => format!("_StatementNode::extra({})", x.brief_desc()),
             _StatementNode::BreakStatement(x) => {
                 format!("_StatementNode::break_statement({})", x.brief_desc())
             }
@@ -503,9 +500,7 @@ impl NodeAccess for _StatementNode {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            _StatementNode::Comment(x) => x.as_any(),
-            _StatementNode::TextInterpolation(x) => x.as_any(),
-            _StatementNode::Error(x) => x.as_any(),
+            _StatementNode::Extra(x) => x.as_any(),
             _StatementNode::BreakStatement(x) => x.as_any(),
             _StatementNode::ClassDeclaration(x) => x.as_any(),
             _StatementNode::CompoundStatement(x) => x.as_any(),
@@ -539,9 +534,7 @@ impl NodeAccess for _StatementNode {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            _StatementNode::Comment(x) => x.children_any(),
-            _StatementNode::TextInterpolation(x) => x.children_any(),
-            _StatementNode::Error(x) => x.children_any(),
+            _StatementNode::Extra(x) => x.children_any(),
             _StatementNode::BreakStatement(x) => x.children_any(),
             _StatementNode::ClassDeclaration(x) => x.children_any(),
             _StatementNode::CompoundStatement(x) => x.children_any(),
@@ -575,9 +568,7 @@ impl NodeAccess for _StatementNode {
 
     fn range(&self) -> Range {
         match self {
-            _StatementNode::Comment(x) => x.range(),
-            _StatementNode::TextInterpolation(x) => x.range(),
-            _StatementNode::Error(x) => x.range(),
+            _StatementNode::Extra(x) => x.range(),
             _StatementNode::BreakStatement(x) => x.range(),
             _StatementNode::ClassDeclaration(x) => x.range(),
             _StatementNode::CompoundStatement(x) => x.range(),

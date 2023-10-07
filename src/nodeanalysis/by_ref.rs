@@ -60,9 +60,7 @@ impl ByRefNode {
                 vn.write_to(state, emitter, val_type, value)
             }
 
-            crate::autonodes::by_ref::ByRefChildren::Comment(_)
-            | crate::autonodes::by_ref::ByRefChildren::TextInterpolation(_)
-            | crate::autonodes::by_ref::ByRefChildren::Error(_) => (),
+            crate::autonodes::by_ref::ByRefChildren::Extra(_) => (),
         }
     }
 }

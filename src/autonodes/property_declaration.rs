@@ -31,23 +31,23 @@ pub enum PropertyDeclarationModifiers {
     StaticModifier(Box<StaticModifierNode>),
     VarModifier(Box<VarModifierNode>),
     VisibilityModifier(Box<VisibilityModifierNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl PropertyDeclarationModifiers {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                PropertyDeclarationModifiers::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => PropertyDeclarationModifiers::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                PropertyDeclarationModifiers::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => PropertyDeclarationModifiers::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                PropertyDeclarationModifiers::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => PropertyDeclarationModifiers::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "abstract_modifier" => PropertyDeclarationModifiers::AbstractModifier(Box::new(
                 AbstractModifierNode::parse(node, source)?,
             )),
@@ -78,15 +78,17 @@ impl PropertyDeclarationModifiers {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                PropertyDeclarationModifiers::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => PropertyDeclarationModifiers::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                PropertyDeclarationModifiers::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => PropertyDeclarationModifiers::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                PropertyDeclarationModifiers::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => PropertyDeclarationModifiers::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "abstract_modifier" => PropertyDeclarationModifiers::AbstractModifier(Box::new(
                 AbstractModifierNode::parse(node, source)?,
             )),
@@ -131,9 +133,7 @@ impl PropertyDeclarationModifiers {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            PropertyDeclarationModifiers::Comment(x) => x.get_utype(state, emitter),
-            PropertyDeclarationModifiers::TextInterpolation(x) => x.get_utype(state, emitter),
-            PropertyDeclarationModifiers::Error(x) => x.get_utype(state, emitter),
+            PropertyDeclarationModifiers::Extra(x) => x.get_utype(state, emitter),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.get_utype(state, emitter),
             PropertyDeclarationModifiers::FinalModifier(x) => x.get_utype(state, emitter),
             PropertyDeclarationModifiers::ReadonlyModifier(x) => x.get_utype(state, emitter),
@@ -149,9 +149,7 @@ impl PropertyDeclarationModifiers {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            PropertyDeclarationModifiers::Comment(x) => x.get_php_value(state, emitter),
-            PropertyDeclarationModifiers::TextInterpolation(x) => x.get_php_value(state, emitter),
-            PropertyDeclarationModifiers::Error(x) => x.get_php_value(state, emitter),
+            PropertyDeclarationModifiers::Extra(x) => x.get_php_value(state, emitter),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.get_php_value(state, emitter),
             PropertyDeclarationModifiers::FinalModifier(x) => x.get_php_value(state, emitter),
             PropertyDeclarationModifiers::ReadonlyModifier(x) => x.get_php_value(state, emitter),
@@ -163,9 +161,7 @@ impl PropertyDeclarationModifiers {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            PropertyDeclarationModifiers::Comment(x) => x.read_from(state, emitter),
-            PropertyDeclarationModifiers::TextInterpolation(x) => x.read_from(state, emitter),
-            PropertyDeclarationModifiers::Error(x) => x.read_from(state, emitter),
+            PropertyDeclarationModifiers::Extra(x) => x.read_from(state, emitter),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.read_from(state, emitter),
             PropertyDeclarationModifiers::FinalModifier(x) => x.read_from(state, emitter),
             PropertyDeclarationModifiers::ReadonlyModifier(x) => x.read_from(state, emitter),
@@ -179,15 +175,8 @@ impl PropertyDeclarationModifiers {
 impl NodeAccess for PropertyDeclarationModifiers {
     fn brief_desc(&self) -> String {
         match self {
-            PropertyDeclarationModifiers::Comment(x) => {
-                format!("PropertyDeclarationModifiers::comment({})", x.brief_desc())
-            }
-            PropertyDeclarationModifiers::TextInterpolation(x) => format!(
-                "PropertyDeclarationModifiers::text_interpolation({})",
-                x.brief_desc()
-            ),
-            PropertyDeclarationModifiers::Error(x) => {
-                format!("PropertyDeclarationModifiers::ERROR({})", x.brief_desc())
+            PropertyDeclarationModifiers::Extra(x) => {
+                format!("PropertyDeclarationModifiers::extra({})", x.brief_desc())
             }
             PropertyDeclarationModifiers::AbstractModifier(x) => format!(
                 "PropertyDeclarationModifiers::abstract_modifier({})",
@@ -218,9 +207,7 @@ impl NodeAccess for PropertyDeclarationModifiers {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            PropertyDeclarationModifiers::Comment(x) => x.as_any(),
-            PropertyDeclarationModifiers::TextInterpolation(x) => x.as_any(),
-            PropertyDeclarationModifiers::Error(x) => x.as_any(),
+            PropertyDeclarationModifiers::Extra(x) => x.as_any(),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.as_any(),
             PropertyDeclarationModifiers::FinalModifier(x) => x.as_any(),
             PropertyDeclarationModifiers::ReadonlyModifier(x) => x.as_any(),
@@ -232,9 +219,7 @@ impl NodeAccess for PropertyDeclarationModifiers {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            PropertyDeclarationModifiers::Comment(x) => x.children_any(),
-            PropertyDeclarationModifiers::TextInterpolation(x) => x.children_any(),
-            PropertyDeclarationModifiers::Error(x) => x.children_any(),
+            PropertyDeclarationModifiers::Extra(x) => x.children_any(),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.children_any(),
             PropertyDeclarationModifiers::FinalModifier(x) => x.children_any(),
             PropertyDeclarationModifiers::ReadonlyModifier(x) => x.children_any(),
@@ -246,9 +231,7 @@ impl NodeAccess for PropertyDeclarationModifiers {
 
     fn range(&self) -> Range {
         match self {
-            PropertyDeclarationModifiers::Comment(x) => x.range(),
-            PropertyDeclarationModifiers::TextInterpolation(x) => x.range(),
-            PropertyDeclarationModifiers::Error(x) => x.range(),
+            PropertyDeclarationModifiers::Extra(x) => x.range(),
             PropertyDeclarationModifiers::AbstractModifier(x) => x.range(),
             PropertyDeclarationModifiers::FinalModifier(x) => x.range(),
             PropertyDeclarationModifiers::ReadonlyModifier(x) => x.range(),
@@ -262,23 +245,23 @@ impl NodeAccess for PropertyDeclarationModifiers {
 pub enum PropertyDeclarationProperties {
     Comma(&'static str, Range),
     PropertyElement(Box<PropertyElementNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl PropertyDeclarationProperties {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                PropertyDeclarationProperties::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => PropertyDeclarationProperties::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                PropertyDeclarationProperties::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => PropertyDeclarationProperties::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                PropertyDeclarationProperties::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => PropertyDeclarationProperties::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "," => PropertyDeclarationProperties::Comma(",", node.range()),
             "property_element" => PropertyDeclarationProperties::PropertyElement(Box::new(
                 PropertyElementNode::parse(node, source)?,
@@ -295,15 +278,17 @@ impl PropertyDeclarationProperties {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                PropertyDeclarationProperties::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => PropertyDeclarationProperties::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                PropertyDeclarationProperties::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => PropertyDeclarationProperties::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                PropertyDeclarationProperties::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => PropertyDeclarationProperties::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "," => PropertyDeclarationProperties::Comma(",", node.range()),
             "property_element" => PropertyDeclarationProperties::PropertyElement(Box::new(
                 PropertyElementNode::parse(node, source)?,
@@ -334,9 +319,7 @@ impl PropertyDeclarationProperties {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            PropertyDeclarationProperties::Comment(x) => x.get_utype(state, emitter),
-            PropertyDeclarationProperties::TextInterpolation(x) => x.get_utype(state, emitter),
-            PropertyDeclarationProperties::Error(x) => x.get_utype(state, emitter),
+            PropertyDeclarationProperties::Extra(x) => x.get_utype(state, emitter),
             PropertyDeclarationProperties::Comma(_, _) => Some(DiscreteType::String.into()),
             PropertyDeclarationProperties::PropertyElement(x) => x.get_utype(state, emitter),
         }
@@ -348,9 +331,7 @@ impl PropertyDeclarationProperties {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            PropertyDeclarationProperties::Comment(x) => x.get_php_value(state, emitter),
-            PropertyDeclarationProperties::TextInterpolation(x) => x.get_php_value(state, emitter),
-            PropertyDeclarationProperties::Error(x) => x.get_php_value(state, emitter),
+            PropertyDeclarationProperties::Extra(x) => x.get_php_value(state, emitter),
             PropertyDeclarationProperties::Comma(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
@@ -360,9 +341,7 @@ impl PropertyDeclarationProperties {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            PropertyDeclarationProperties::Comment(x) => x.read_from(state, emitter),
-            PropertyDeclarationProperties::TextInterpolation(x) => x.read_from(state, emitter),
-            PropertyDeclarationProperties::Error(x) => x.read_from(state, emitter),
+            PropertyDeclarationProperties::Extra(x) => x.read_from(state, emitter),
             PropertyDeclarationProperties::Comma(_, _) => (),
             PropertyDeclarationProperties::PropertyElement(x) => x.read_from(state, emitter),
         }
@@ -372,15 +351,8 @@ impl PropertyDeclarationProperties {
 impl NodeAccess for PropertyDeclarationProperties {
     fn brief_desc(&self) -> String {
         match self {
-            PropertyDeclarationProperties::Comment(x) => {
-                format!("PropertyDeclarationProperties::comment({})", x.brief_desc())
-            }
-            PropertyDeclarationProperties::TextInterpolation(x) => format!(
-                "PropertyDeclarationProperties::text_interpolation({})",
-                x.brief_desc()
-            ),
-            PropertyDeclarationProperties::Error(x) => {
-                format!("PropertyDeclarationProperties::ERROR({})", x.brief_desc())
+            PropertyDeclarationProperties::Extra(x) => {
+                format!("PropertyDeclarationProperties::extra({})", x.brief_desc())
             }
             PropertyDeclarationProperties::Comma(a, _) => a.to_string(),
             PropertyDeclarationProperties::PropertyElement(x) => format!(
@@ -392,9 +364,7 @@ impl NodeAccess for PropertyDeclarationProperties {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            PropertyDeclarationProperties::Comment(x) => x.as_any(),
-            PropertyDeclarationProperties::TextInterpolation(x) => x.as_any(),
-            PropertyDeclarationProperties::Error(x) => x.as_any(),
+            PropertyDeclarationProperties::Extra(x) => x.as_any(),
             PropertyDeclarationProperties::Comma(a, b) => AnyNodeRef::StaticExpr(a, *b),
             PropertyDeclarationProperties::PropertyElement(x) => x.as_any(),
         }
@@ -402,9 +372,7 @@ impl NodeAccess for PropertyDeclarationProperties {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            PropertyDeclarationProperties::Comment(x) => x.children_any(),
-            PropertyDeclarationProperties::TextInterpolation(x) => x.children_any(),
-            PropertyDeclarationProperties::Error(x) => x.children_any(),
+            PropertyDeclarationProperties::Extra(x) => x.children_any(),
             PropertyDeclarationProperties::Comma(_, _) => todo!("Crap"),
             PropertyDeclarationProperties::PropertyElement(x) => x.children_any(),
         }
@@ -412,9 +380,7 @@ impl NodeAccess for PropertyDeclarationProperties {
 
     fn range(&self) -> Range {
         match self {
-            PropertyDeclarationProperties::Comment(x) => x.range(),
-            PropertyDeclarationProperties::TextInterpolation(x) => x.range(),
-            PropertyDeclarationProperties::Error(x) => x.range(),
+            PropertyDeclarationProperties::Extra(x) => x.range(),
             PropertyDeclarationProperties::Comma(_, r) => *r,
             PropertyDeclarationProperties::PropertyElement(x) => x.range(),
         }

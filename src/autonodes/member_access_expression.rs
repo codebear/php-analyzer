@@ -38,21 +38,23 @@ pub enum MemberAccessExpressionName {
     DynamicVariableName(Box<DynamicVariableNameNode>),
     Name(Box<NameNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl MemberAccessExpressionName {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                MemberAccessExpressionName::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => MemberAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                MemberAccessExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => MemberAccessExpressionName::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => MemberAccessExpressionName::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => MemberAccessExpressionName::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => MemberAccessExpressionName::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -79,13 +81,17 @@ impl MemberAccessExpressionName {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                MemberAccessExpressionName::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => MemberAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                MemberAccessExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => MemberAccessExpressionName::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => MemberAccessExpressionName::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => MemberAccessExpressionName::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => MemberAccessExpressionName::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -130,9 +136,7 @@ impl MemberAccessExpressionName {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            MemberAccessExpressionName::Comment(x) => x.get_utype(state, emitter),
-            MemberAccessExpressionName::TextInterpolation(x) => x.get_utype(state, emitter),
-            MemberAccessExpressionName::Error(x) => x.get_utype(state, emitter),
+            MemberAccessExpressionName::Extra(x) => x.get_utype(state, emitter),
             MemberAccessExpressionName::_Expression(x) => x.get_utype(state, emitter),
             MemberAccessExpressionName::DynamicVariableName(x) => x.get_utype(state, emitter),
             MemberAccessExpressionName::Name(x) => x.get_utype(state, emitter),
@@ -146,9 +150,7 @@ impl MemberAccessExpressionName {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            MemberAccessExpressionName::Comment(x) => x.get_php_value(state, emitter),
-            MemberAccessExpressionName::TextInterpolation(x) => x.get_php_value(state, emitter),
-            MemberAccessExpressionName::Error(x) => x.get_php_value(state, emitter),
+            MemberAccessExpressionName::Extra(x) => x.get_php_value(state, emitter),
             MemberAccessExpressionName::_Expression(x) => x.get_php_value(state, emitter),
             MemberAccessExpressionName::DynamicVariableName(x) => x.get_php_value(state, emitter),
             MemberAccessExpressionName::Name(x) => x.get_php_value(state, emitter),
@@ -158,9 +160,7 @@ impl MemberAccessExpressionName {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            MemberAccessExpressionName::Comment(x) => x.read_from(state, emitter),
-            MemberAccessExpressionName::TextInterpolation(x) => x.read_from(state, emitter),
-            MemberAccessExpressionName::Error(x) => x.read_from(state, emitter),
+            MemberAccessExpressionName::Extra(x) => x.read_from(state, emitter),
             MemberAccessExpressionName::_Expression(x) => x.read_from(state, emitter),
             MemberAccessExpressionName::DynamicVariableName(x) => x.read_from(state, emitter),
             MemberAccessExpressionName::Name(x) => x.read_from(state, emitter),
@@ -172,15 +172,8 @@ impl MemberAccessExpressionName {
 impl NodeAccess for MemberAccessExpressionName {
     fn brief_desc(&self) -> String {
         match self {
-            MemberAccessExpressionName::Comment(x) => {
-                format!("MemberAccessExpressionName::comment({})", x.brief_desc())
-            }
-            MemberAccessExpressionName::TextInterpolation(x) => format!(
-                "MemberAccessExpressionName::text_interpolation({})",
-                x.brief_desc()
-            ),
-            MemberAccessExpressionName::Error(x) => {
-                format!("MemberAccessExpressionName::ERROR({})", x.brief_desc())
+            MemberAccessExpressionName::Extra(x) => {
+                format!("MemberAccessExpressionName::extra({})", x.brief_desc())
             }
             MemberAccessExpressionName::_Expression(x) => format!(
                 "MemberAccessExpressionName::_expression({})",
@@ -202,9 +195,7 @@ impl NodeAccess for MemberAccessExpressionName {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            MemberAccessExpressionName::Comment(x) => x.as_any(),
-            MemberAccessExpressionName::TextInterpolation(x) => x.as_any(),
-            MemberAccessExpressionName::Error(x) => x.as_any(),
+            MemberAccessExpressionName::Extra(x) => x.as_any(),
             MemberAccessExpressionName::_Expression(x) => x.as_any(),
             MemberAccessExpressionName::DynamicVariableName(x) => x.as_any(),
             MemberAccessExpressionName::Name(x) => x.as_any(),
@@ -214,9 +205,7 @@ impl NodeAccess for MemberAccessExpressionName {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            MemberAccessExpressionName::Comment(x) => x.children_any(),
-            MemberAccessExpressionName::TextInterpolation(x) => x.children_any(),
-            MemberAccessExpressionName::Error(x) => x.children_any(),
+            MemberAccessExpressionName::Extra(x) => x.children_any(),
             MemberAccessExpressionName::_Expression(x) => x.children_any(),
             MemberAccessExpressionName::DynamicVariableName(x) => x.children_any(),
             MemberAccessExpressionName::Name(x) => x.children_any(),
@@ -226,9 +215,7 @@ impl NodeAccess for MemberAccessExpressionName {
 
     fn range(&self) -> Range {
         match self {
-            MemberAccessExpressionName::Comment(x) => x.range(),
-            MemberAccessExpressionName::TextInterpolation(x) => x.range(),
-            MemberAccessExpressionName::Error(x) => x.range(),
+            MemberAccessExpressionName::Extra(x) => x.range(),
             MemberAccessExpressionName::_Expression(x) => x.range(),
             MemberAccessExpressionName::DynamicVariableName(x) => x.range(),
             MemberAccessExpressionName::Name(x) => x.range(),
@@ -258,23 +245,23 @@ pub enum MemberAccessExpressionObject {
     String(Box<StringNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl MemberAccessExpressionObject {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                MemberAccessExpressionObject::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => MemberAccessExpressionObject::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                MemberAccessExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => MemberAccessExpressionObject::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                MemberAccessExpressionObject::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => MemberAccessExpressionObject::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => MemberAccessExpressionObject::ArrayCreationExpression(
                 Box::new(ArrayCreationExpressionNode::parse(node, source)?),
             ),
@@ -353,15 +340,17 @@ impl MemberAccessExpressionObject {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                MemberAccessExpressionObject::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => MemberAccessExpressionObject::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                MemberAccessExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => MemberAccessExpressionObject::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                MemberAccessExpressionObject::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => MemberAccessExpressionObject::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => MemberAccessExpressionObject::ArrayCreationExpression(
                 Box::new(ArrayCreationExpressionNode::parse(node, source)?),
             ),
@@ -454,9 +443,7 @@ impl MemberAccessExpressionObject {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            MemberAccessExpressionObject::Comment(x) => x.get_utype(state, emitter),
-            MemberAccessExpressionObject::TextInterpolation(x) => x.get_utype(state, emitter),
-            MemberAccessExpressionObject::Error(x) => x.get_utype(state, emitter),
+            MemberAccessExpressionObject::Extra(x) => x.get_utype(state, emitter),
             MemberAccessExpressionObject::ArrayCreationExpression(x) => x.get_utype(state, emitter),
             MemberAccessExpressionObject::CastExpression(x) => x.get_utype(state, emitter),
             MemberAccessExpressionObject::ClassConstantAccessExpression(x) => {
@@ -494,9 +481,7 @@ impl MemberAccessExpressionObject {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            MemberAccessExpressionObject::Comment(x) => x.get_php_value(state, emitter),
-            MemberAccessExpressionObject::TextInterpolation(x) => x.get_php_value(state, emitter),
-            MemberAccessExpressionObject::Error(x) => x.get_php_value(state, emitter),
+            MemberAccessExpressionObject::Extra(x) => x.get_php_value(state, emitter),
             MemberAccessExpressionObject::ArrayCreationExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -542,9 +527,7 @@ impl MemberAccessExpressionObject {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            MemberAccessExpressionObject::Comment(x) => x.read_from(state, emitter),
-            MemberAccessExpressionObject::TextInterpolation(x) => x.read_from(state, emitter),
-            MemberAccessExpressionObject::Error(x) => x.read_from(state, emitter),
+            MemberAccessExpressionObject::Extra(x) => x.read_from(state, emitter),
             MemberAccessExpressionObject::ArrayCreationExpression(x) => x.read_from(state, emitter),
             MemberAccessExpressionObject::CastExpression(x) => x.read_from(state, emitter),
             MemberAccessExpressionObject::ClassConstantAccessExpression(x) => {
@@ -580,15 +563,8 @@ impl MemberAccessExpressionObject {
 impl NodeAccess for MemberAccessExpressionObject {
     fn brief_desc(&self) -> String {
         match self {
-            MemberAccessExpressionObject::Comment(x) => {
-                format!("MemberAccessExpressionObject::comment({})", x.brief_desc())
-            }
-            MemberAccessExpressionObject::TextInterpolation(x) => format!(
-                "MemberAccessExpressionObject::text_interpolation({})",
-                x.brief_desc()
-            ),
-            MemberAccessExpressionObject::Error(x) => {
-                format!("MemberAccessExpressionObject::ERROR({})", x.brief_desc())
+            MemberAccessExpressionObject::Extra(x) => {
+                format!("MemberAccessExpressionObject::extra({})", x.brief_desc())
             }
             MemberAccessExpressionObject::ArrayCreationExpression(x) => format!(
                 "MemberAccessExpressionObject::array_creation_expression({})",
@@ -671,9 +647,7 @@ impl NodeAccess for MemberAccessExpressionObject {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            MemberAccessExpressionObject::Comment(x) => x.as_any(),
-            MemberAccessExpressionObject::TextInterpolation(x) => x.as_any(),
-            MemberAccessExpressionObject::Error(x) => x.as_any(),
+            MemberAccessExpressionObject::Extra(x) => x.as_any(),
             MemberAccessExpressionObject::ArrayCreationExpression(x) => x.as_any(),
             MemberAccessExpressionObject::CastExpression(x) => x.as_any(),
             MemberAccessExpressionObject::ClassConstantAccessExpression(x) => x.as_any(),
@@ -699,9 +673,7 @@ impl NodeAccess for MemberAccessExpressionObject {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            MemberAccessExpressionObject::Comment(x) => x.children_any(),
-            MemberAccessExpressionObject::TextInterpolation(x) => x.children_any(),
-            MemberAccessExpressionObject::Error(x) => x.children_any(),
+            MemberAccessExpressionObject::Extra(x) => x.children_any(),
             MemberAccessExpressionObject::ArrayCreationExpression(x) => x.children_any(),
             MemberAccessExpressionObject::CastExpression(x) => x.children_any(),
             MemberAccessExpressionObject::ClassConstantAccessExpression(x) => x.children_any(),
@@ -727,9 +699,7 @@ impl NodeAccess for MemberAccessExpressionObject {
 
     fn range(&self) -> Range {
         match self {
-            MemberAccessExpressionObject::Comment(x) => x.range(),
-            MemberAccessExpressionObject::TextInterpolation(x) => x.range(),
-            MemberAccessExpressionObject::Error(x) => x.range(),
+            MemberAccessExpressionObject::Extra(x) => x.range(),
             MemberAccessExpressionObject::ArrayCreationExpression(x) => x.range(),
             MemberAccessExpressionObject::CastExpression(x) => x.range(),
             MemberAccessExpressionObject::ClassConstantAccessExpression(x) => x.range(),

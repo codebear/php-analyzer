@@ -18,21 +18,23 @@ use tree_sitter::Range;
 pub enum GlobalDeclarationChildren {
     DynamicVariableName(Box<DynamicVariableNameNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl GlobalDeclarationChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                GlobalDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => GlobalDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                GlobalDeclarationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => GlobalDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => GlobalDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => GlobalDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => GlobalDeclarationChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -51,13 +53,17 @@ impl GlobalDeclarationChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                GlobalDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => GlobalDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                GlobalDeclarationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => GlobalDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => GlobalDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => GlobalDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => GlobalDeclarationChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -90,9 +96,7 @@ impl GlobalDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            GlobalDeclarationChildren::Comment(x) => x.get_utype(state, emitter),
-            GlobalDeclarationChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            GlobalDeclarationChildren::Error(x) => x.get_utype(state, emitter),
+            GlobalDeclarationChildren::Extra(x) => x.get_utype(state, emitter),
             GlobalDeclarationChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             GlobalDeclarationChildren::VariableName(x) => x.get_utype(state, emitter),
         }
@@ -104,9 +108,7 @@ impl GlobalDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            GlobalDeclarationChildren::Comment(x) => x.get_php_value(state, emitter),
-            GlobalDeclarationChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            GlobalDeclarationChildren::Error(x) => x.get_php_value(state, emitter),
+            GlobalDeclarationChildren::Extra(x) => x.get_php_value(state, emitter),
             GlobalDeclarationChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             GlobalDeclarationChildren::VariableName(x) => x.get_php_value(state, emitter),
         }
@@ -114,9 +116,7 @@ impl GlobalDeclarationChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            GlobalDeclarationChildren::Comment(x) => x.read_from(state, emitter),
-            GlobalDeclarationChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            GlobalDeclarationChildren::Error(x) => x.read_from(state, emitter),
+            GlobalDeclarationChildren::Extra(x) => x.read_from(state, emitter),
             GlobalDeclarationChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             GlobalDeclarationChildren::VariableName(x) => x.read_from(state, emitter),
         }
@@ -126,15 +126,8 @@ impl GlobalDeclarationChildren {
 impl NodeAccess for GlobalDeclarationChildren {
     fn brief_desc(&self) -> String {
         match self {
-            GlobalDeclarationChildren::Comment(x) => {
-                format!("GlobalDeclarationChildren::comment({})", x.brief_desc())
-            }
-            GlobalDeclarationChildren::TextInterpolation(x) => format!(
-                "GlobalDeclarationChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            GlobalDeclarationChildren::Error(x) => {
-                format!("GlobalDeclarationChildren::ERROR({})", x.brief_desc())
+            GlobalDeclarationChildren::Extra(x) => {
+                format!("GlobalDeclarationChildren::extra({})", x.brief_desc())
             }
             GlobalDeclarationChildren::DynamicVariableName(x) => format!(
                 "GlobalDeclarationChildren::dynamic_variable_name({})",
@@ -149,9 +142,7 @@ impl NodeAccess for GlobalDeclarationChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            GlobalDeclarationChildren::Comment(x) => x.as_any(),
-            GlobalDeclarationChildren::TextInterpolation(x) => x.as_any(),
-            GlobalDeclarationChildren::Error(x) => x.as_any(),
+            GlobalDeclarationChildren::Extra(x) => x.as_any(),
             GlobalDeclarationChildren::DynamicVariableName(x) => x.as_any(),
             GlobalDeclarationChildren::VariableName(x) => x.as_any(),
         }
@@ -159,9 +150,7 @@ impl NodeAccess for GlobalDeclarationChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            GlobalDeclarationChildren::Comment(x) => x.children_any(),
-            GlobalDeclarationChildren::TextInterpolation(x) => x.children_any(),
-            GlobalDeclarationChildren::Error(x) => x.children_any(),
+            GlobalDeclarationChildren::Extra(x) => x.children_any(),
             GlobalDeclarationChildren::DynamicVariableName(x) => x.children_any(),
             GlobalDeclarationChildren::VariableName(x) => x.children_any(),
         }
@@ -169,9 +158,7 @@ impl NodeAccess for GlobalDeclarationChildren {
 
     fn range(&self) -> Range {
         match self {
-            GlobalDeclarationChildren::Comment(x) => x.range(),
-            GlobalDeclarationChildren::TextInterpolation(x) => x.range(),
-            GlobalDeclarationChildren::Error(x) => x.range(),
+            GlobalDeclarationChildren::Extra(x) => x.range(),
             GlobalDeclarationChildren::DynamicVariableName(x) => x.range(),
             GlobalDeclarationChildren::VariableName(x) => x.range(),
         }

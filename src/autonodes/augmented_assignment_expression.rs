@@ -39,23 +39,23 @@ pub enum AugmentedAssignmentExpressionLeft {
     ScopedPropertyAccessExpression(Box<ScopedPropertyAccessExpressionNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl AugmentedAssignmentExpressionLeft {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => AugmentedAssignmentExpressionLeft::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => AugmentedAssignmentExpressionLeft::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                AugmentedAssignmentExpressionLeft::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                AugmentedAssignmentExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "cast_expression" => AugmentedAssignmentExpressionLeft::CastExpression(Box::new(
                 CastExpressionNode::parse(node, source)?,
             )),
@@ -111,15 +111,17 @@ impl AugmentedAssignmentExpressionLeft {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => AugmentedAssignmentExpressionLeft::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => AugmentedAssignmentExpressionLeft::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                AugmentedAssignmentExpressionLeft::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                AugmentedAssignmentExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "cast_expression" => AugmentedAssignmentExpressionLeft::CastExpression(Box::new(
                 CastExpressionNode::parse(node, source)?,
             )),
@@ -189,9 +191,7 @@ impl AugmentedAssignmentExpressionLeft {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            AugmentedAssignmentExpressionLeft::Comment(x) => x.get_utype(state, emitter),
-            AugmentedAssignmentExpressionLeft::TextInterpolation(x) => x.get_utype(state, emitter),
-            AugmentedAssignmentExpressionLeft::Error(x) => x.get_utype(state, emitter),
+            AugmentedAssignmentExpressionLeft::Extra(x) => x.get_utype(state, emitter),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.get_utype(state, emitter),
             AugmentedAssignmentExpressionLeft::DynamicVariableName(x) => {
                 x.get_utype(state, emitter)
@@ -230,11 +230,7 @@ impl AugmentedAssignmentExpressionLeft {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            AugmentedAssignmentExpressionLeft::Comment(x) => x.get_php_value(state, emitter),
-            AugmentedAssignmentExpressionLeft::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            AugmentedAssignmentExpressionLeft::Error(x) => x.get_php_value(state, emitter),
+            AugmentedAssignmentExpressionLeft::Extra(x) => x.get_php_value(state, emitter),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.get_php_value(state, emitter),
             AugmentedAssignmentExpressionLeft::DynamicVariableName(x) => {
                 x.get_php_value(state, emitter)
@@ -269,9 +265,7 @@ impl AugmentedAssignmentExpressionLeft {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            AugmentedAssignmentExpressionLeft::Comment(x) => x.read_from(state, emitter),
-            AugmentedAssignmentExpressionLeft::TextInterpolation(x) => x.read_from(state, emitter),
-            AugmentedAssignmentExpressionLeft::Error(x) => x.read_from(state, emitter),
+            AugmentedAssignmentExpressionLeft::Extra(x) => x.read_from(state, emitter),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.read_from(state, emitter),
             AugmentedAssignmentExpressionLeft::DynamicVariableName(x) => {
                 x.read_from(state, emitter)
@@ -308,16 +302,8 @@ impl AugmentedAssignmentExpressionLeft {
 impl NodeAccess for AugmentedAssignmentExpressionLeft {
     fn brief_desc(&self) -> String {
         match self {
-            AugmentedAssignmentExpressionLeft::Comment(x) => format!(
-                "AugmentedAssignmentExpressionLeft::comment({})",
-                x.brief_desc()
-            ),
-            AugmentedAssignmentExpressionLeft::TextInterpolation(x) => format!(
-                "AugmentedAssignmentExpressionLeft::text_interpolation({})",
-                x.brief_desc()
-            ),
-            AugmentedAssignmentExpressionLeft::Error(x) => format!(
-                "AugmentedAssignmentExpressionLeft::ERROR({})",
+            AugmentedAssignmentExpressionLeft::Extra(x) => format!(
+                "AugmentedAssignmentExpressionLeft::extra({})",
                 x.brief_desc()
             ),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => format!(
@@ -369,9 +355,7 @@ impl NodeAccess for AugmentedAssignmentExpressionLeft {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            AugmentedAssignmentExpressionLeft::Comment(x) => x.as_any(),
-            AugmentedAssignmentExpressionLeft::TextInterpolation(x) => x.as_any(),
-            AugmentedAssignmentExpressionLeft::Error(x) => x.as_any(),
+            AugmentedAssignmentExpressionLeft::Extra(x) => x.as_any(),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.as_any(),
             AugmentedAssignmentExpressionLeft::DynamicVariableName(x) => x.as_any(),
             AugmentedAssignmentExpressionLeft::FunctionCallExpression(x) => x.as_any(),
@@ -388,9 +372,7 @@ impl NodeAccess for AugmentedAssignmentExpressionLeft {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            AugmentedAssignmentExpressionLeft::Comment(x) => x.children_any(),
-            AugmentedAssignmentExpressionLeft::TextInterpolation(x) => x.children_any(),
-            AugmentedAssignmentExpressionLeft::Error(x) => x.children_any(),
+            AugmentedAssignmentExpressionLeft::Extra(x) => x.children_any(),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.children_any(),
             AugmentedAssignmentExpressionLeft::DynamicVariableName(x) => x.children_any(),
             AugmentedAssignmentExpressionLeft::FunctionCallExpression(x) => x.children_any(),
@@ -411,9 +393,7 @@ impl NodeAccess for AugmentedAssignmentExpressionLeft {
 
     fn range(&self) -> Range {
         match self {
-            AugmentedAssignmentExpressionLeft::Comment(x) => x.range(),
-            AugmentedAssignmentExpressionLeft::TextInterpolation(x) => x.range(),
-            AugmentedAssignmentExpressionLeft::Error(x) => x.range(),
+            AugmentedAssignmentExpressionLeft::Extra(x) => x.range(),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.range(),
             AugmentedAssignmentExpressionLeft::DynamicVariableName(x) => x.range(),
             AugmentedAssignmentExpressionLeft::FunctionCallExpression(x) => x.range(),
@@ -443,23 +423,23 @@ pub enum AugmentedAssignmentExpressionOperator {
     NullsafeAssign(&'static str, Range),
     XorAssign(&'static str, Range),
     OrAssign(&'static str, Range),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl AugmentedAssignmentExpressionOperator {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => AugmentedAssignmentExpressionOperator::Comment(Box::new(
-                CommentNode::parse(node, source)?,
+            "comment" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Comment(
+                Box::new(CommentNode::parse(node, source)?),
             )),
-            "text_interpolation" => AugmentedAssignmentExpressionOperator::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => AugmentedAssignmentExpressionOperator::Error(Box::new(ErrorNode::parse(
-                node, source,
-            )?)),
+            "text_interpolation" => {
+                AugmentedAssignmentExpressionOperator::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
+                ))
+            }
+            "ERROR" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "%=" => AugmentedAssignmentExpressionOperator::ModAssign("%=", node.range()),
             "&=" => AugmentedAssignmentExpressionOperator::AndAssign("&=", node.range()),
             "**=" => AugmentedAssignmentExpressionOperator::PowAssign("**=", node.range()),
@@ -485,15 +465,17 @@ impl AugmentedAssignmentExpressionOperator {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => AugmentedAssignmentExpressionOperator::Comment(Box::new(
-                CommentNode::parse(node, source)?,
+            "comment" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Comment(
+                Box::new(CommentNode::parse(node, source)?),
             )),
-            "text_interpolation" => AugmentedAssignmentExpressionOperator::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => AugmentedAssignmentExpressionOperator::Error(Box::new(ErrorNode::parse(
-                node, source,
-            )?)),
+            "text_interpolation" => {
+                AugmentedAssignmentExpressionOperator::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
+                ))
+            }
+            "ERROR" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "%=" => AugmentedAssignmentExpressionOperator::ModAssign("%=", node.range()),
             "&=" => AugmentedAssignmentExpressionOperator::AndAssign("&=", node.range()),
             "**=" => AugmentedAssignmentExpressionOperator::PowAssign("**=", node.range()),
@@ -533,11 +515,7 @@ impl AugmentedAssignmentExpressionOperator {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            AugmentedAssignmentExpressionOperator::Comment(x) => x.get_utype(state, emitter),
-            AugmentedAssignmentExpressionOperator::TextInterpolation(x) => {
-                x.get_utype(state, emitter)
-            }
-            AugmentedAssignmentExpressionOperator::Error(x) => x.get_utype(state, emitter),
+            AugmentedAssignmentExpressionOperator::Extra(x) => x.get_utype(state, emitter),
             AugmentedAssignmentExpressionOperator::ModAssign(_, _) => {
                 Some(DiscreteType::String.into())
             }
@@ -586,11 +564,7 @@ impl AugmentedAssignmentExpressionOperator {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            AugmentedAssignmentExpressionOperator::Comment(x) => x.get_php_value(state, emitter),
-            AugmentedAssignmentExpressionOperator::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            AugmentedAssignmentExpressionOperator::Error(x) => x.get_php_value(state, emitter),
+            AugmentedAssignmentExpressionOperator::Extra(x) => x.get_php_value(state, emitter),
             AugmentedAssignmentExpressionOperator::ModAssign(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
@@ -635,11 +609,7 @@ impl AugmentedAssignmentExpressionOperator {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            AugmentedAssignmentExpressionOperator::Comment(x) => x.read_from(state, emitter),
-            AugmentedAssignmentExpressionOperator::TextInterpolation(x) => {
-                x.read_from(state, emitter)
-            }
-            AugmentedAssignmentExpressionOperator::Error(x) => x.read_from(state, emitter),
+            AugmentedAssignmentExpressionOperator::Extra(x) => x.read_from(state, emitter),
             AugmentedAssignmentExpressionOperator::ModAssign(_, _) => (),
             AugmentedAssignmentExpressionOperator::AndAssign(_, _) => (),
             AugmentedAssignmentExpressionOperator::PowAssign(_, _) => (),
@@ -660,16 +630,8 @@ impl AugmentedAssignmentExpressionOperator {
 impl NodeAccess for AugmentedAssignmentExpressionOperator {
     fn brief_desc(&self) -> String {
         match self {
-            AugmentedAssignmentExpressionOperator::Comment(x) => format!(
-                "AugmentedAssignmentExpressionOperator::comment({})",
-                x.brief_desc()
-            ),
-            AugmentedAssignmentExpressionOperator::TextInterpolation(x) => format!(
-                "AugmentedAssignmentExpressionOperator::text_interpolation({})",
-                x.brief_desc()
-            ),
-            AugmentedAssignmentExpressionOperator::Error(x) => format!(
-                "AugmentedAssignmentExpressionOperator::ERROR({})",
+            AugmentedAssignmentExpressionOperator::Extra(x) => format!(
+                "AugmentedAssignmentExpressionOperator::extra({})",
                 x.brief_desc()
             ),
             AugmentedAssignmentExpressionOperator::ModAssign(a, _) => a.to_string(),
@@ -690,9 +652,7 @@ impl NodeAccess for AugmentedAssignmentExpressionOperator {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            AugmentedAssignmentExpressionOperator::Comment(x) => x.as_any(),
-            AugmentedAssignmentExpressionOperator::TextInterpolation(x) => x.as_any(),
-            AugmentedAssignmentExpressionOperator::Error(x) => x.as_any(),
+            AugmentedAssignmentExpressionOperator::Extra(x) => x.as_any(),
             AugmentedAssignmentExpressionOperator::ModAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
             AugmentedAssignmentExpressionOperator::AndAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
             AugmentedAssignmentExpressionOperator::PowAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
@@ -721,9 +681,7 @@ impl NodeAccess for AugmentedAssignmentExpressionOperator {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            AugmentedAssignmentExpressionOperator::Comment(x) => x.children_any(),
-            AugmentedAssignmentExpressionOperator::TextInterpolation(x) => x.children_any(),
-            AugmentedAssignmentExpressionOperator::Error(x) => x.children_any(),
+            AugmentedAssignmentExpressionOperator::Extra(x) => x.children_any(),
             AugmentedAssignmentExpressionOperator::ModAssign(_, _) => todo!("Crap"),
             AugmentedAssignmentExpressionOperator::AndAssign(_, _) => todo!("Crap"),
             AugmentedAssignmentExpressionOperator::PowAssign(_, _) => todo!("Crap"),
@@ -742,9 +700,7 @@ impl NodeAccess for AugmentedAssignmentExpressionOperator {
 
     fn range(&self) -> Range {
         match self {
-            AugmentedAssignmentExpressionOperator::Comment(x) => x.range(),
-            AugmentedAssignmentExpressionOperator::TextInterpolation(x) => x.range(),
-            AugmentedAssignmentExpressionOperator::Error(x) => x.range(),
+            AugmentedAssignmentExpressionOperator::Extra(x) => x.range(),
             AugmentedAssignmentExpressionOperator::ModAssign(_, r) => *r,
             AugmentedAssignmentExpressionOperator::AndAssign(_, r) => *r,
             AugmentedAssignmentExpressionOperator::PowAssign(_, r) => *r,

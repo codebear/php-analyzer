@@ -21,21 +21,21 @@ use tree_sitter::Range;
 pub enum IfStatementAlternative {
     ElseClause(Box<ElseClauseNode>),
     ElseIfClause(Box<ElseIfClauseNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl IfStatementAlternative {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                IfStatementAlternative::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => IfStatementAlternative::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => IfStatementAlternative::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => IfStatementAlternative::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => IfStatementAlternative::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "else_clause" => {
                 IfStatementAlternative::ElseClause(Box::new(ElseClauseNode::parse(node, source)?))
             }
@@ -54,13 +54,15 @@ impl IfStatementAlternative {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                IfStatementAlternative::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => IfStatementAlternative::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => IfStatementAlternative::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => IfStatementAlternative::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => IfStatementAlternative::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "else_clause" => {
                 IfStatementAlternative::ElseClause(Box::new(ElseClauseNode::parse(node, source)?))
             }
@@ -93,9 +95,7 @@ impl IfStatementAlternative {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            IfStatementAlternative::Comment(x) => x.get_utype(state, emitter),
-            IfStatementAlternative::TextInterpolation(x) => x.get_utype(state, emitter),
-            IfStatementAlternative::Error(x) => x.get_utype(state, emitter),
+            IfStatementAlternative::Extra(x) => x.get_utype(state, emitter),
             IfStatementAlternative::ElseClause(x) => x.get_utype(state, emitter),
             IfStatementAlternative::ElseIfClause(x) => x.get_utype(state, emitter),
         }
@@ -107,9 +107,7 @@ impl IfStatementAlternative {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            IfStatementAlternative::Comment(x) => x.get_php_value(state, emitter),
-            IfStatementAlternative::TextInterpolation(x) => x.get_php_value(state, emitter),
-            IfStatementAlternative::Error(x) => x.get_php_value(state, emitter),
+            IfStatementAlternative::Extra(x) => x.get_php_value(state, emitter),
             IfStatementAlternative::ElseClause(x) => x.get_php_value(state, emitter),
             IfStatementAlternative::ElseIfClause(x) => x.get_php_value(state, emitter),
         }
@@ -117,9 +115,7 @@ impl IfStatementAlternative {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            IfStatementAlternative::Comment(x) => x.read_from(state, emitter),
-            IfStatementAlternative::TextInterpolation(x) => x.read_from(state, emitter),
-            IfStatementAlternative::Error(x) => x.read_from(state, emitter),
+            IfStatementAlternative::Extra(x) => x.read_from(state, emitter),
             IfStatementAlternative::ElseClause(x) => x.read_from(state, emitter),
             IfStatementAlternative::ElseIfClause(x) => x.read_from(state, emitter),
         }
@@ -129,15 +125,8 @@ impl IfStatementAlternative {
 impl NodeAccess for IfStatementAlternative {
     fn brief_desc(&self) -> String {
         match self {
-            IfStatementAlternative::Comment(x) => {
-                format!("IfStatementAlternative::comment({})", x.brief_desc())
-            }
-            IfStatementAlternative::TextInterpolation(x) => format!(
-                "IfStatementAlternative::text_interpolation({})",
-                x.brief_desc()
-            ),
-            IfStatementAlternative::Error(x) => {
-                format!("IfStatementAlternative::ERROR({})", x.brief_desc())
+            IfStatementAlternative::Extra(x) => {
+                format!("IfStatementAlternative::extra({})", x.brief_desc())
             }
             IfStatementAlternative::ElseClause(x) => {
                 format!("IfStatementAlternative::else_clause({})", x.brief_desc())
@@ -150,9 +139,7 @@ impl NodeAccess for IfStatementAlternative {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            IfStatementAlternative::Comment(x) => x.as_any(),
-            IfStatementAlternative::TextInterpolation(x) => x.as_any(),
-            IfStatementAlternative::Error(x) => x.as_any(),
+            IfStatementAlternative::Extra(x) => x.as_any(),
             IfStatementAlternative::ElseClause(x) => x.as_any(),
             IfStatementAlternative::ElseIfClause(x) => x.as_any(),
         }
@@ -160,9 +147,7 @@ impl NodeAccess for IfStatementAlternative {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            IfStatementAlternative::Comment(x) => x.children_any(),
-            IfStatementAlternative::TextInterpolation(x) => x.children_any(),
-            IfStatementAlternative::Error(x) => x.children_any(),
+            IfStatementAlternative::Extra(x) => x.children_any(),
             IfStatementAlternative::ElseClause(x) => x.children_any(),
             IfStatementAlternative::ElseIfClause(x) => x.children_any(),
         }
@@ -170,9 +155,7 @@ impl NodeAccess for IfStatementAlternative {
 
     fn range(&self) -> Range {
         match self {
-            IfStatementAlternative::Comment(x) => x.range(),
-            IfStatementAlternative::TextInterpolation(x) => x.range(),
-            IfStatementAlternative::Error(x) => x.range(),
+            IfStatementAlternative::Extra(x) => x.range(),
             IfStatementAlternative::ElseClause(x) => x.range(),
             IfStatementAlternative::ElseIfClause(x) => x.range(),
         }
@@ -182,19 +165,21 @@ impl NodeAccess for IfStatementAlternative {
 pub enum IfStatementBody {
     _Statement(Box<_StatementNode>),
     ColonBlock(Box<ColonBlockNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl IfStatementBody {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => IfStatementBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => IfStatementBody::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => IfStatementBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => IfStatementBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => {
+                IfStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "colon_block" => {
                 IfStatementBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -217,11 +202,15 @@ impl IfStatementBody {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => IfStatementBody::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => IfStatementBody::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => IfStatementBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => IfStatementBody::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => {
+                IfStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "colon_block" => {
                 IfStatementBody::ColonBlock(Box::new(ColonBlockNode::parse(node, source)?))
             }
@@ -262,9 +251,7 @@ impl IfStatementBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            IfStatementBody::Comment(x) => x.get_utype(state, emitter),
-            IfStatementBody::TextInterpolation(x) => x.get_utype(state, emitter),
-            IfStatementBody::Error(x) => x.get_utype(state, emitter),
+            IfStatementBody::Extra(x) => x.get_utype(state, emitter),
             IfStatementBody::_Statement(x) => x.get_utype(state, emitter),
             IfStatementBody::ColonBlock(x) => x.get_utype(state, emitter),
         }
@@ -276,9 +263,7 @@ impl IfStatementBody {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            IfStatementBody::Comment(x) => x.get_php_value(state, emitter),
-            IfStatementBody::TextInterpolation(x) => x.get_php_value(state, emitter),
-            IfStatementBody::Error(x) => x.get_php_value(state, emitter),
+            IfStatementBody::Extra(x) => x.get_php_value(state, emitter),
             IfStatementBody::_Statement(x) => x.get_php_value(state, emitter),
             IfStatementBody::ColonBlock(x) => x.get_php_value(state, emitter),
         }
@@ -286,9 +271,7 @@ impl IfStatementBody {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            IfStatementBody::Comment(x) => x.read_from(state, emitter),
-            IfStatementBody::TextInterpolation(x) => x.read_from(state, emitter),
-            IfStatementBody::Error(x) => x.read_from(state, emitter),
+            IfStatementBody::Extra(x) => x.read_from(state, emitter),
             IfStatementBody::_Statement(x) => x.read_from(state, emitter),
             IfStatementBody::ColonBlock(x) => x.read_from(state, emitter),
         }
@@ -298,11 +281,7 @@ impl IfStatementBody {
 impl NodeAccess for IfStatementBody {
     fn brief_desc(&self) -> String {
         match self {
-            IfStatementBody::Comment(x) => format!("IfStatementBody::comment({})", x.brief_desc()),
-            IfStatementBody::TextInterpolation(x) => {
-                format!("IfStatementBody::text_interpolation({})", x.brief_desc())
-            }
-            IfStatementBody::Error(x) => format!("IfStatementBody::ERROR({})", x.brief_desc()),
+            IfStatementBody::Extra(x) => format!("IfStatementBody::extra({})", x.brief_desc()),
             IfStatementBody::_Statement(x) => {
                 format!("IfStatementBody::_statement({})", x.brief_desc())
             }
@@ -314,9 +293,7 @@ impl NodeAccess for IfStatementBody {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            IfStatementBody::Comment(x) => x.as_any(),
-            IfStatementBody::TextInterpolation(x) => x.as_any(),
-            IfStatementBody::Error(x) => x.as_any(),
+            IfStatementBody::Extra(x) => x.as_any(),
             IfStatementBody::_Statement(x) => x.as_any(),
             IfStatementBody::ColonBlock(x) => x.as_any(),
         }
@@ -324,9 +301,7 @@ impl NodeAccess for IfStatementBody {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            IfStatementBody::Comment(x) => x.children_any(),
-            IfStatementBody::TextInterpolation(x) => x.children_any(),
-            IfStatementBody::Error(x) => x.children_any(),
+            IfStatementBody::Extra(x) => x.children_any(),
             IfStatementBody::_Statement(x) => x.children_any(),
             IfStatementBody::ColonBlock(x) => x.children_any(),
         }
@@ -334,9 +309,7 @@ impl NodeAccess for IfStatementBody {
 
     fn range(&self) -> Range {
         match self {
-            IfStatementBody::Comment(x) => x.range(),
-            IfStatementBody::TextInterpolation(x) => x.range(),
-            IfStatementBody::Error(x) => x.range(),
+            IfStatementBody::Extra(x) => x.range(),
             IfStatementBody::_Statement(x) => x.range(),
             IfStatementBody::ColonBlock(x) => x.range(),
         }

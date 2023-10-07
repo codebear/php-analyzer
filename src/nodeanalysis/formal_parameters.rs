@@ -132,12 +132,10 @@ impl FormalParametersNode {
 
                         params.push(data);
                     }
-
-                    FormalParametersChildren::Comment(c) => {
+                    FormalParametersChildren::Extra(ExtraChild::Comment(c)) => {
                         raw_comment = Some((c.get_raw(), c.range()));
                     }
-                    FormalParametersChildren::TextInterpolation(_)
-                    | FormalParametersChildren::Error(_) => (),
+                    FormalParametersChildren::Extra(_) => (),
                 },
             }
             if inline_phpdoc_type.is_some() {

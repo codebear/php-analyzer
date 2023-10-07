@@ -28,19 +28,21 @@ pub enum HeredocBodyChildren {
     StringValue(Box<StringValueNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl HeredocBodyChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => HeredocBodyChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => HeredocBodyChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => HeredocBodyChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => HeredocBodyChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => HeredocBodyChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => HeredocBodyChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "dynamic_variable_name" => HeredocBodyChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -78,11 +80,15 @@ impl HeredocBodyChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => HeredocBodyChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => HeredocBodyChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => HeredocBodyChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => HeredocBodyChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => HeredocBodyChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => HeredocBodyChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "dynamic_variable_name" => HeredocBodyChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -138,9 +144,7 @@ impl HeredocBodyChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            HeredocBodyChildren::Comment(x) => x.get_utype(state, emitter),
-            HeredocBodyChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            HeredocBodyChildren::Error(x) => x.get_utype(state, emitter),
+            HeredocBodyChildren::Extra(x) => x.get_utype(state, emitter),
             HeredocBodyChildren::_Expression(x) => x.get_utype(state, emitter),
             HeredocBodyChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             HeredocBodyChildren::EscapeSequence(x) => x.get_utype(state, emitter),
@@ -157,9 +161,7 @@ impl HeredocBodyChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            HeredocBodyChildren::Comment(x) => x.get_php_value(state, emitter),
-            HeredocBodyChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            HeredocBodyChildren::Error(x) => x.get_php_value(state, emitter),
+            HeredocBodyChildren::Extra(x) => x.get_php_value(state, emitter),
             HeredocBodyChildren::_Expression(x) => x.get_php_value(state, emitter),
             HeredocBodyChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             HeredocBodyChildren::EscapeSequence(x) => x.get_php_value(state, emitter),
@@ -172,9 +174,7 @@ impl HeredocBodyChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            HeredocBodyChildren::Comment(x) => x.read_from(state, emitter),
-            HeredocBodyChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            HeredocBodyChildren::Error(x) => x.read_from(state, emitter),
+            HeredocBodyChildren::Extra(x) => x.read_from(state, emitter),
             HeredocBodyChildren::_Expression(x) => x.read_from(state, emitter),
             HeredocBodyChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             HeredocBodyChildren::EscapeSequence(x) => x.read_from(state, emitter),
@@ -189,15 +189,8 @@ impl HeredocBodyChildren {
 impl NodeAccess for HeredocBodyChildren {
     fn brief_desc(&self) -> String {
         match self {
-            HeredocBodyChildren::Comment(x) => {
-                format!("HeredocBodyChildren::comment({})", x.brief_desc())
-            }
-            HeredocBodyChildren::TextInterpolation(x) => format!(
-                "HeredocBodyChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            HeredocBodyChildren::Error(x) => {
-                format!("HeredocBodyChildren::ERROR({})", x.brief_desc())
+            HeredocBodyChildren::Extra(x) => {
+                format!("HeredocBodyChildren::extra({})", x.brief_desc())
             }
             HeredocBodyChildren::_Expression(x) => {
                 format!("HeredocBodyChildren::_expression({})", x.brief_desc())
@@ -228,9 +221,7 @@ impl NodeAccess for HeredocBodyChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            HeredocBodyChildren::Comment(x) => x.as_any(),
-            HeredocBodyChildren::TextInterpolation(x) => x.as_any(),
-            HeredocBodyChildren::Error(x) => x.as_any(),
+            HeredocBodyChildren::Extra(x) => x.as_any(),
             HeredocBodyChildren::_Expression(x) => x.as_any(),
             HeredocBodyChildren::DynamicVariableName(x) => x.as_any(),
             HeredocBodyChildren::EscapeSequence(x) => x.as_any(),
@@ -243,9 +234,7 @@ impl NodeAccess for HeredocBodyChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            HeredocBodyChildren::Comment(x) => x.children_any(),
-            HeredocBodyChildren::TextInterpolation(x) => x.children_any(),
-            HeredocBodyChildren::Error(x) => x.children_any(),
+            HeredocBodyChildren::Extra(x) => x.children_any(),
             HeredocBodyChildren::_Expression(x) => x.children_any(),
             HeredocBodyChildren::DynamicVariableName(x) => x.children_any(),
             HeredocBodyChildren::EscapeSequence(x) => x.children_any(),
@@ -258,9 +247,7 @@ impl NodeAccess for HeredocBodyChildren {
 
     fn range(&self) -> Range {
         match self {
-            HeredocBodyChildren::Comment(x) => x.range(),
-            HeredocBodyChildren::TextInterpolation(x) => x.range(),
-            HeredocBodyChildren::Error(x) => x.range(),
+            HeredocBodyChildren::Extra(x) => x.range(),
             HeredocBodyChildren::_Expression(x) => x.range(),
             HeredocBodyChildren::DynamicVariableName(x) => x.range(),
             HeredocBodyChildren::EscapeSequence(x) => x.range(),

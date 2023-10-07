@@ -77,9 +77,7 @@ impl _PrimaryExpressionNode {
                 vn.write_to(state, emitter, val_type, value)
             }
 
-            _PrimaryExpressionNode::Comment(_)
-            | _PrimaryExpressionNode::TextInterpolation(_)
-            | _PrimaryExpressionNode::Error(_) => (),
+            _PrimaryExpressionNode::Extra(_) => (),
         }
     }
 }

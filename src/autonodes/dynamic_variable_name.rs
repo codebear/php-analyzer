@@ -19,23 +19,23 @@ pub enum DynamicVariableNameChildren {
     _Expression(Box<_ExpressionNode>),
     DynamicVariableName(Box<DynamicVariableNameNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl DynamicVariableNameChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                DynamicVariableNameChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => DynamicVariableNameChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                DynamicVariableNameChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => DynamicVariableNameChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                DynamicVariableNameChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => DynamicVariableNameChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => DynamicVariableNameChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -61,15 +61,17 @@ impl DynamicVariableNameChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                DynamicVariableNameChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => DynamicVariableNameChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                DynamicVariableNameChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => DynamicVariableNameChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                DynamicVariableNameChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => DynamicVariableNameChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => DynamicVariableNameChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -113,9 +115,7 @@ impl DynamicVariableNameChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            DynamicVariableNameChildren::Comment(x) => x.get_utype(state, emitter),
-            DynamicVariableNameChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            DynamicVariableNameChildren::Error(x) => x.get_utype(state, emitter),
+            DynamicVariableNameChildren::Extra(x) => x.get_utype(state, emitter),
             DynamicVariableNameChildren::_Expression(x) => x.get_utype(state, emitter),
             DynamicVariableNameChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             DynamicVariableNameChildren::VariableName(x) => x.get_utype(state, emitter),
@@ -128,9 +128,7 @@ impl DynamicVariableNameChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            DynamicVariableNameChildren::Comment(x) => x.get_php_value(state, emitter),
-            DynamicVariableNameChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            DynamicVariableNameChildren::Error(x) => x.get_php_value(state, emitter),
+            DynamicVariableNameChildren::Extra(x) => x.get_php_value(state, emitter),
             DynamicVariableNameChildren::_Expression(x) => x.get_php_value(state, emitter),
             DynamicVariableNameChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             DynamicVariableNameChildren::VariableName(x) => x.get_php_value(state, emitter),
@@ -139,9 +137,7 @@ impl DynamicVariableNameChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            DynamicVariableNameChildren::Comment(x) => x.read_from(state, emitter),
-            DynamicVariableNameChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            DynamicVariableNameChildren::Error(x) => x.read_from(state, emitter),
+            DynamicVariableNameChildren::Extra(x) => x.read_from(state, emitter),
             DynamicVariableNameChildren::_Expression(x) => x.read_from(state, emitter),
             DynamicVariableNameChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             DynamicVariableNameChildren::VariableName(x) => x.read_from(state, emitter),
@@ -152,15 +148,8 @@ impl DynamicVariableNameChildren {
 impl NodeAccess for DynamicVariableNameChildren {
     fn brief_desc(&self) -> String {
         match self {
-            DynamicVariableNameChildren::Comment(x) => {
-                format!("DynamicVariableNameChildren::comment({})", x.brief_desc())
-            }
-            DynamicVariableNameChildren::TextInterpolation(x) => format!(
-                "DynamicVariableNameChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            DynamicVariableNameChildren::Error(x) => {
-                format!("DynamicVariableNameChildren::ERROR({})", x.brief_desc())
+            DynamicVariableNameChildren::Extra(x) => {
+                format!("DynamicVariableNameChildren::extra({})", x.brief_desc())
             }
             DynamicVariableNameChildren::_Expression(x) => format!(
                 "DynamicVariableNameChildren::_expression({})",
@@ -179,9 +168,7 @@ impl NodeAccess for DynamicVariableNameChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            DynamicVariableNameChildren::Comment(x) => x.as_any(),
-            DynamicVariableNameChildren::TextInterpolation(x) => x.as_any(),
-            DynamicVariableNameChildren::Error(x) => x.as_any(),
+            DynamicVariableNameChildren::Extra(x) => x.as_any(),
             DynamicVariableNameChildren::_Expression(x) => x.as_any(),
             DynamicVariableNameChildren::DynamicVariableName(x) => x.as_any(),
             DynamicVariableNameChildren::VariableName(x) => x.as_any(),
@@ -190,9 +177,7 @@ impl NodeAccess for DynamicVariableNameChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            DynamicVariableNameChildren::Comment(x) => x.children_any(),
-            DynamicVariableNameChildren::TextInterpolation(x) => x.children_any(),
-            DynamicVariableNameChildren::Error(x) => x.children_any(),
+            DynamicVariableNameChildren::Extra(x) => x.children_any(),
             DynamicVariableNameChildren::_Expression(x) => x.children_any(),
             DynamicVariableNameChildren::DynamicVariableName(x) => x.children_any(),
             DynamicVariableNameChildren::VariableName(x) => x.children_any(),
@@ -201,9 +186,7 @@ impl NodeAccess for DynamicVariableNameChildren {
 
     fn range(&self) -> Range {
         match self {
-            DynamicVariableNameChildren::Comment(x) => x.range(),
-            DynamicVariableNameChildren::TextInterpolation(x) => x.range(),
-            DynamicVariableNameChildren::Error(x) => x.range(),
+            DynamicVariableNameChildren::Extra(x) => x.range(),
             DynamicVariableNameChildren::_Expression(x) => x.range(),
             DynamicVariableNameChildren::DynamicVariableName(x) => x.range(),
             DynamicVariableNameChildren::VariableName(x) => x.range(),

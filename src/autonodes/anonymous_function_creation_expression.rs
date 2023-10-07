@@ -23,24 +23,22 @@ use tree_sitter::Range;
 pub enum AnonymousFunctionCreationExpressionReturnType {
     _Type(Box<_TypeNode>),
     BottomType(Box<BottomTypeNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl AnonymousFunctionCreationExpressionReturnType {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => AnonymousFunctionCreationExpressionReturnType::Comment(Box::new(
-                CommentNode::parse(node, source)?,
+            "comment" => AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::Comment(
+                Box::new(CommentNode::parse(node, source)?),
             )),
             "text_interpolation" => {
-                AnonymousFunctionCreationExpressionReturnType::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
+                AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
                 ))
             }
-            "ERROR" => AnonymousFunctionCreationExpressionReturnType::Error(Box::new(
-                ErrorNode::parse(node, source)?,
+            "ERROR" => AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::Error(
+                Box::new(ErrorNode::parse(node, source)?),
             )),
             "bottom_type" => AnonymousFunctionCreationExpressionReturnType::BottomType(Box::new(
                 BottomTypeNode::parse(node, source)?,
@@ -64,16 +62,16 @@ impl AnonymousFunctionCreationExpressionReturnType {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => AnonymousFunctionCreationExpressionReturnType::Comment(Box::new(
-                CommentNode::parse(node, source)?,
+            "comment" => AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::Comment(
+                Box::new(CommentNode::parse(node, source)?),
             )),
             "text_interpolation" => {
-                AnonymousFunctionCreationExpressionReturnType::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
+                AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
                 ))
             }
-            "ERROR" => AnonymousFunctionCreationExpressionReturnType::Error(Box::new(
-                ErrorNode::parse(node, source)?,
+            "ERROR" => AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::Error(
+                Box::new(ErrorNode::parse(node, source)?),
             )),
             "bottom_type" => AnonymousFunctionCreationExpressionReturnType::BottomType(Box::new(
                 BottomTypeNode::parse(node, source)?,
@@ -115,13 +113,7 @@ impl AnonymousFunctionCreationExpressionReturnType {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            AnonymousFunctionCreationExpressionReturnType::Comment(x) => {
-                x.get_utype(state, emitter)
-            }
-            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => {
-                x.get_utype(state, emitter)
-            }
-            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.get_utype(state, emitter),
+            AnonymousFunctionCreationExpressionReturnType::Extra(x) => x.get_utype(state, emitter),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.get_utype(state, emitter),
             AnonymousFunctionCreationExpressionReturnType::BottomType(x) => {
                 x.get_utype(state, emitter)
@@ -135,13 +127,7 @@ impl AnonymousFunctionCreationExpressionReturnType {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            AnonymousFunctionCreationExpressionReturnType::Comment(x) => {
-                x.get_php_value(state, emitter)
-            }
-            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            AnonymousFunctionCreationExpressionReturnType::Error(x) => {
+            AnonymousFunctionCreationExpressionReturnType::Extra(x) => {
                 x.get_php_value(state, emitter)
             }
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => {
@@ -155,13 +141,7 @@ impl AnonymousFunctionCreationExpressionReturnType {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            AnonymousFunctionCreationExpressionReturnType::Comment(x) => {
-                x.read_from(state, emitter)
-            }
-            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => {
-                x.read_from(state, emitter)
-            }
-            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.read_from(state, emitter),
+            AnonymousFunctionCreationExpressionReturnType::Extra(x) => x.read_from(state, emitter),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.read_from(state, emitter),
             AnonymousFunctionCreationExpressionReturnType::BottomType(x) => {
                 x.read_from(state, emitter)
@@ -173,16 +153,8 @@ impl AnonymousFunctionCreationExpressionReturnType {
 impl NodeAccess for AnonymousFunctionCreationExpressionReturnType {
     fn brief_desc(&self) -> String {
         match self {
-            AnonymousFunctionCreationExpressionReturnType::Comment(x) => format!(
-                "AnonymousFunctionCreationExpressionReturnType::comment({})",
-                x.brief_desc()
-            ),
-            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => format!(
-                "AnonymousFunctionCreationExpressionReturnType::text_interpolation({})",
-                x.brief_desc()
-            ),
-            AnonymousFunctionCreationExpressionReturnType::Error(x) => format!(
-                "AnonymousFunctionCreationExpressionReturnType::ERROR({})",
+            AnonymousFunctionCreationExpressionReturnType::Extra(x) => format!(
+                "AnonymousFunctionCreationExpressionReturnType::extra({})",
                 x.brief_desc()
             ),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => format!(
@@ -198,9 +170,7 @@ impl NodeAccess for AnonymousFunctionCreationExpressionReturnType {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            AnonymousFunctionCreationExpressionReturnType::Comment(x) => x.as_any(),
-            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => x.as_any(),
-            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.as_any(),
+            AnonymousFunctionCreationExpressionReturnType::Extra(x) => x.as_any(),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.as_any(),
             AnonymousFunctionCreationExpressionReturnType::BottomType(x) => x.as_any(),
         }
@@ -208,9 +178,7 @@ impl NodeAccess for AnonymousFunctionCreationExpressionReturnType {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            AnonymousFunctionCreationExpressionReturnType::Comment(x) => x.children_any(),
-            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => x.children_any(),
-            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.children_any(),
+            AnonymousFunctionCreationExpressionReturnType::Extra(x) => x.children_any(),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.children_any(),
             AnonymousFunctionCreationExpressionReturnType::BottomType(x) => x.children_any(),
         }
@@ -218,9 +186,7 @@ impl NodeAccess for AnonymousFunctionCreationExpressionReturnType {
 
     fn range(&self) -> Range {
         match self {
-            AnonymousFunctionCreationExpressionReturnType::Comment(x) => x.range(),
-            AnonymousFunctionCreationExpressionReturnType::TextInterpolation(x) => x.range(),
-            AnonymousFunctionCreationExpressionReturnType::Error(x) => x.range(),
+            AnonymousFunctionCreationExpressionReturnType::Extra(x) => x.range(),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.range(),
             AnonymousFunctionCreationExpressionReturnType::BottomType(x) => x.range(),
         }

@@ -222,9 +222,7 @@ impl SubscriptExpressionDereferenceable {
                 crate::missing!("{}.write_to()", self.kind())
             }
 
-            SubscriptExpressionDereferenceable::Comment(_)
-            | SubscriptExpressionDereferenceable::TextInterpolation(_)
-            | SubscriptExpressionDereferenceable::Error(_) => (),
+            SubscriptExpressionDereferenceable::Extra(_) => (),
         }
     }
 }

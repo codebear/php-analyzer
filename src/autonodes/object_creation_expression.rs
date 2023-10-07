@@ -39,23 +39,23 @@ pub enum ObjectCreationExpressionChildren {
     ScopedPropertyAccessExpression(Box<ScopedPropertyAccessExpressionNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ObjectCreationExpressionChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ObjectCreationExpressionChildren::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => ObjectCreationExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ObjectCreationExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => ObjectCreationExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ObjectCreationExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => ObjectCreationExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "arguments" => ObjectCreationExpressionChildren::Arguments(Box::new(
                 ArgumentsNode::parse(node, source)?,
             )),
@@ -108,15 +108,17 @@ impl ObjectCreationExpressionChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ObjectCreationExpressionChildren::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => ObjectCreationExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ObjectCreationExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => ObjectCreationExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ObjectCreationExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => ObjectCreationExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "arguments" => ObjectCreationExpressionChildren::Arguments(Box::new(
                 ArgumentsNode::parse(node, source)?,
             )),
@@ -183,9 +185,7 @@ impl ObjectCreationExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ObjectCreationExpressionChildren::Comment(x) => x.get_utype(state, emitter),
-            ObjectCreationExpressionChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ObjectCreationExpressionChildren::Error(x) => x.get_utype(state, emitter),
+            ObjectCreationExpressionChildren::Extra(x) => x.get_utype(state, emitter),
             ObjectCreationExpressionChildren::Arguments(x) => x.get_utype(state, emitter),
             ObjectCreationExpressionChildren::BaseClause(x) => x.get_utype(state, emitter),
             ObjectCreationExpressionChildren::ClassInterfaceClause(x) => {
@@ -215,11 +215,7 @@ impl ObjectCreationExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ObjectCreationExpressionChildren::Comment(x) => x.get_php_value(state, emitter),
-            ObjectCreationExpressionChildren::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            ObjectCreationExpressionChildren::Error(x) => x.get_php_value(state, emitter),
+            ObjectCreationExpressionChildren::Extra(x) => x.get_php_value(state, emitter),
             ObjectCreationExpressionChildren::Arguments(x) => x.get_php_value(state, emitter),
             ObjectCreationExpressionChildren::BaseClause(x) => x.get_php_value(state, emitter),
             ObjectCreationExpressionChildren::ClassInterfaceClause(x) => {
@@ -249,9 +245,7 @@ impl ObjectCreationExpressionChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ObjectCreationExpressionChildren::Comment(x) => x.read_from(state, emitter),
-            ObjectCreationExpressionChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ObjectCreationExpressionChildren::Error(x) => x.read_from(state, emitter),
+            ObjectCreationExpressionChildren::Extra(x) => x.read_from(state, emitter),
             ObjectCreationExpressionChildren::Arguments(x) => x.read_from(state, emitter),
             ObjectCreationExpressionChildren::BaseClause(x) => x.read_from(state, emitter),
             ObjectCreationExpressionChildren::ClassInterfaceClause(x) => {
@@ -279,16 +273,8 @@ impl ObjectCreationExpressionChildren {
 impl NodeAccess for ObjectCreationExpressionChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ObjectCreationExpressionChildren::Comment(x) => format!(
-                "ObjectCreationExpressionChildren::comment({})",
-                x.brief_desc()
-            ),
-            ObjectCreationExpressionChildren::TextInterpolation(x) => format!(
-                "ObjectCreationExpressionChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ObjectCreationExpressionChildren::Error(x) => format!(
-                "ObjectCreationExpressionChildren::ERROR({})",
+            ObjectCreationExpressionChildren::Extra(x) => format!(
+                "ObjectCreationExpressionChildren::extra({})",
                 x.brief_desc()
             ),
             ObjectCreationExpressionChildren::Arguments(x) => format!(
@@ -343,9 +329,7 @@ impl NodeAccess for ObjectCreationExpressionChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ObjectCreationExpressionChildren::Comment(x) => x.as_any(),
-            ObjectCreationExpressionChildren::TextInterpolation(x) => x.as_any(),
-            ObjectCreationExpressionChildren::Error(x) => x.as_any(),
+            ObjectCreationExpressionChildren::Extra(x) => x.as_any(),
             ObjectCreationExpressionChildren::Arguments(x) => x.as_any(),
             ObjectCreationExpressionChildren::BaseClause(x) => x.as_any(),
             ObjectCreationExpressionChildren::ClassInterfaceClause(x) => x.as_any(),
@@ -363,9 +347,7 @@ impl NodeAccess for ObjectCreationExpressionChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ObjectCreationExpressionChildren::Comment(x) => x.children_any(),
-            ObjectCreationExpressionChildren::TextInterpolation(x) => x.children_any(),
-            ObjectCreationExpressionChildren::Error(x) => x.children_any(),
+            ObjectCreationExpressionChildren::Extra(x) => x.children_any(),
             ObjectCreationExpressionChildren::Arguments(x) => x.children_any(),
             ObjectCreationExpressionChildren::BaseClause(x) => x.children_any(),
             ObjectCreationExpressionChildren::ClassInterfaceClause(x) => x.children_any(),
@@ -383,9 +365,7 @@ impl NodeAccess for ObjectCreationExpressionChildren {
 
     fn range(&self) -> Range {
         match self {
-            ObjectCreationExpressionChildren::Comment(x) => x.range(),
-            ObjectCreationExpressionChildren::TextInterpolation(x) => x.range(),
-            ObjectCreationExpressionChildren::Error(x) => x.range(),
+            ObjectCreationExpressionChildren::Extra(x) => x.range(),
             ObjectCreationExpressionChildren::Arguments(x) => x.range(),
             ObjectCreationExpressionChildren::BaseClause(x) => x.range(),
             ObjectCreationExpressionChildren::ClassInterfaceClause(x) => x.range(),

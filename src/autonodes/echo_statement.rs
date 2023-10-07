@@ -18,21 +18,21 @@ use tree_sitter::Range;
 pub enum EchoStatementChildren {
     _Expression(Box<_ExpressionNode>),
     SequenceExpression(Box<SequenceExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl EchoStatementChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                EchoStatementChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => EchoStatementChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => EchoStatementChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => EchoStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => EchoStatementChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => EchoStatementChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "sequence_expression" => EchoStatementChildren::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -55,13 +55,15 @@ impl EchoStatementChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                EchoStatementChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => EchoStatementChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => EchoStatementChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => EchoStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => EchoStatementChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => EchoStatementChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "sequence_expression" => EchoStatementChildren::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -102,9 +104,7 @@ impl EchoStatementChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            EchoStatementChildren::Comment(x) => x.get_utype(state, emitter),
-            EchoStatementChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            EchoStatementChildren::Error(x) => x.get_utype(state, emitter),
+            EchoStatementChildren::Extra(x) => x.get_utype(state, emitter),
             EchoStatementChildren::_Expression(x) => x.get_utype(state, emitter),
             EchoStatementChildren::SequenceExpression(x) => x.get_utype(state, emitter),
         }
@@ -116,9 +116,7 @@ impl EchoStatementChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            EchoStatementChildren::Comment(x) => x.get_php_value(state, emitter),
-            EchoStatementChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            EchoStatementChildren::Error(x) => x.get_php_value(state, emitter),
+            EchoStatementChildren::Extra(x) => x.get_php_value(state, emitter),
             EchoStatementChildren::_Expression(x) => x.get_php_value(state, emitter),
             EchoStatementChildren::SequenceExpression(x) => x.get_php_value(state, emitter),
         }
@@ -126,9 +124,7 @@ impl EchoStatementChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            EchoStatementChildren::Comment(x) => x.read_from(state, emitter),
-            EchoStatementChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            EchoStatementChildren::Error(x) => x.read_from(state, emitter),
+            EchoStatementChildren::Extra(x) => x.read_from(state, emitter),
             EchoStatementChildren::_Expression(x) => x.read_from(state, emitter),
             EchoStatementChildren::SequenceExpression(x) => x.read_from(state, emitter),
         }
@@ -138,15 +134,8 @@ impl EchoStatementChildren {
 impl NodeAccess for EchoStatementChildren {
     fn brief_desc(&self) -> String {
         match self {
-            EchoStatementChildren::Comment(x) => {
-                format!("EchoStatementChildren::comment({})", x.brief_desc())
-            }
-            EchoStatementChildren::TextInterpolation(x) => format!(
-                "EchoStatementChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            EchoStatementChildren::Error(x) => {
-                format!("EchoStatementChildren::ERROR({})", x.brief_desc())
+            EchoStatementChildren::Extra(x) => {
+                format!("EchoStatementChildren::extra({})", x.brief_desc())
             }
             EchoStatementChildren::_Expression(x) => {
                 format!("EchoStatementChildren::_expression({})", x.brief_desc())
@@ -160,9 +149,7 @@ impl NodeAccess for EchoStatementChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            EchoStatementChildren::Comment(x) => x.as_any(),
-            EchoStatementChildren::TextInterpolation(x) => x.as_any(),
-            EchoStatementChildren::Error(x) => x.as_any(),
+            EchoStatementChildren::Extra(x) => x.as_any(),
             EchoStatementChildren::_Expression(x) => x.as_any(),
             EchoStatementChildren::SequenceExpression(x) => x.as_any(),
         }
@@ -170,9 +157,7 @@ impl NodeAccess for EchoStatementChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            EchoStatementChildren::Comment(x) => x.children_any(),
-            EchoStatementChildren::TextInterpolation(x) => x.children_any(),
-            EchoStatementChildren::Error(x) => x.children_any(),
+            EchoStatementChildren::Extra(x) => x.children_any(),
             EchoStatementChildren::_Expression(x) => x.children_any(),
             EchoStatementChildren::SequenceExpression(x) => x.children_any(),
         }
@@ -180,9 +165,7 @@ impl NodeAccess for EchoStatementChildren {
 
     fn range(&self) -> Range {
         match self {
-            EchoStatementChildren::Comment(x) => x.range(),
-            EchoStatementChildren::TextInterpolation(x) => x.range(),
-            EchoStatementChildren::Error(x) => x.range(),
+            EchoStatementChildren::Extra(x) => x.range(),
             EchoStatementChildren::_Expression(x) => x.range(),
             EchoStatementChildren::SequenceExpression(x) => x.range(),
         }

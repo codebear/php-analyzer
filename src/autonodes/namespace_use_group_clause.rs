@@ -18,23 +18,23 @@ use tree_sitter::Range;
 pub enum NamespaceUseGroupClauseChildren {
     NamespaceAliasingClause(Box<NamespaceAliasingClauseNode>),
     NamespaceName(Box<NamespaceNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl NamespaceUseGroupClauseChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => NamespaceUseGroupClauseChildren::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => NamespaceUseGroupClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                NamespaceUseGroupClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => NamespaceUseGroupClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NamespaceUseGroupClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => NamespaceUseGroupClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "namespace_aliasing_clause" => {
                 NamespaceUseGroupClauseChildren::NamespaceAliasingClause(Box::new(
                     NamespaceAliasingClauseNode::parse(node, source)?,
@@ -55,15 +55,17 @@ impl NamespaceUseGroupClauseChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => NamespaceUseGroupClauseChildren::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => NamespaceUseGroupClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                NamespaceUseGroupClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => NamespaceUseGroupClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NamespaceUseGroupClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => NamespaceUseGroupClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "namespace_aliasing_clause" => {
                 NamespaceUseGroupClauseChildren::NamespaceAliasingClause(Box::new(
                     NamespaceAliasingClauseNode::parse(node, source)?,
@@ -98,9 +100,7 @@ impl NamespaceUseGroupClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            NamespaceUseGroupClauseChildren::Comment(x) => x.get_utype(state, emitter),
-            NamespaceUseGroupClauseChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            NamespaceUseGroupClauseChildren::Error(x) => x.get_utype(state, emitter),
+            NamespaceUseGroupClauseChildren::Extra(x) => x.get_utype(state, emitter),
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => {
                 x.get_utype(state, emitter)
             }
@@ -114,11 +114,7 @@ impl NamespaceUseGroupClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            NamespaceUseGroupClauseChildren::Comment(x) => x.get_php_value(state, emitter),
-            NamespaceUseGroupClauseChildren::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            NamespaceUseGroupClauseChildren::Error(x) => x.get_php_value(state, emitter),
+            NamespaceUseGroupClauseChildren::Extra(x) => x.get_php_value(state, emitter),
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -128,9 +124,7 @@ impl NamespaceUseGroupClauseChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            NamespaceUseGroupClauseChildren::Comment(x) => x.read_from(state, emitter),
-            NamespaceUseGroupClauseChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            NamespaceUseGroupClauseChildren::Error(x) => x.read_from(state, emitter),
+            NamespaceUseGroupClauseChildren::Extra(x) => x.read_from(state, emitter),
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => {
                 x.read_from(state, emitter)
             }
@@ -142,16 +136,8 @@ impl NamespaceUseGroupClauseChildren {
 impl NodeAccess for NamespaceUseGroupClauseChildren {
     fn brief_desc(&self) -> String {
         match self {
-            NamespaceUseGroupClauseChildren::Comment(x) => format!(
-                "NamespaceUseGroupClauseChildren::comment({})",
-                x.brief_desc()
-            ),
-            NamespaceUseGroupClauseChildren::TextInterpolation(x) => format!(
-                "NamespaceUseGroupClauseChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            NamespaceUseGroupClauseChildren::Error(x) => {
-                format!("NamespaceUseGroupClauseChildren::ERROR({})", x.brief_desc())
+            NamespaceUseGroupClauseChildren::Extra(x) => {
+                format!("NamespaceUseGroupClauseChildren::extra({})", x.brief_desc())
             }
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => format!(
                 "NamespaceUseGroupClauseChildren::namespace_aliasing_clause({})",
@@ -166,9 +152,7 @@ impl NodeAccess for NamespaceUseGroupClauseChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            NamespaceUseGroupClauseChildren::Comment(x) => x.as_any(),
-            NamespaceUseGroupClauseChildren::TextInterpolation(x) => x.as_any(),
-            NamespaceUseGroupClauseChildren::Error(x) => x.as_any(),
+            NamespaceUseGroupClauseChildren::Extra(x) => x.as_any(),
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => x.as_any(),
             NamespaceUseGroupClauseChildren::NamespaceName(x) => x.as_any(),
         }
@@ -176,9 +160,7 @@ impl NodeAccess for NamespaceUseGroupClauseChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            NamespaceUseGroupClauseChildren::Comment(x) => x.children_any(),
-            NamespaceUseGroupClauseChildren::TextInterpolation(x) => x.children_any(),
-            NamespaceUseGroupClauseChildren::Error(x) => x.children_any(),
+            NamespaceUseGroupClauseChildren::Extra(x) => x.children_any(),
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => x.children_any(),
             NamespaceUseGroupClauseChildren::NamespaceName(x) => x.children_any(),
         }
@@ -186,9 +168,7 @@ impl NodeAccess for NamespaceUseGroupClauseChildren {
 
     fn range(&self) -> Range {
         match self {
-            NamespaceUseGroupClauseChildren::Comment(x) => x.range(),
-            NamespaceUseGroupClauseChildren::TextInterpolation(x) => x.range(),
-            NamespaceUseGroupClauseChildren::Error(x) => x.range(),
+            NamespaceUseGroupClauseChildren::Extra(x) => x.range(),
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => x.range(),
             NamespaceUseGroupClauseChildren::NamespaceName(x) => x.range(),
         }

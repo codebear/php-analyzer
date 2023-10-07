@@ -96,9 +96,7 @@ impl BranchTypeHardening for _ExpressionNode {
                 );
             }
             _ExpressionNode::YieldExpression(_) => crate::missing!(),
-            _ExpressionNode::Comment(_) => crate::missing!(),
-            _ExpressionNode::TextInterpolation(_) => crate::missing!(),
-            _ExpressionNode::Error(_) => crate::missing!(),
+            _ExpressionNode::Extra(_) => crate::missing!(),
         }
 
         scope.branch()
@@ -157,9 +155,7 @@ impl BranchTypeHardening for _PrimaryExpressionNode {
                 );
             }
 
-            _PrimaryExpressionNode::Comment(_) => crate::missing!(),
-            _PrimaryExpressionNode::TextInterpolation(_) => crate::missing!(),
-            _PrimaryExpressionNode::Error(_) => crate::missing!(),
+            _PrimaryExpressionNode::Extra(_) => crate::missing!(),
         }
         return scope.branch();
     }
@@ -253,11 +249,7 @@ impl BranchTypeHardening for BinaryExpressionNode {
                                 crate::missing_none!()
                             }
                             BinaryExpressionRight::VariableName(_) => crate::missing_none!(),
-                            BinaryExpressionRight::Comment(_) => crate::missing_none!(),
-                            BinaryExpressionRight::TextInterpolation(_) => {
-                                crate::missing_none!()
-                            }
-                            BinaryExpressionRight::Error(_) => crate::missing_none!(),
+                            BinaryExpressionRight::Extra(_) => crate::missing_none!(),
                         };
                         match (&**left, cname) {
                             (_PrimaryExpressionNode::VariableName(var_name), Some(cname)) => {
@@ -324,9 +316,7 @@ impl BranchTypeHardening for BinaryExpressionNode {
                 crate::missing!("BinaryExpressionOperator::NullCoalescing")
             }
 
-            BinaryExpressionOperator::Comment(_)
-            | BinaryExpressionOperator::TextInterpolation(_)
-            | BinaryExpressionOperator::Error(_) => (),
+            BinaryExpressionOperator::Extra(_) => (),
         }
 
         scope.branch()
@@ -355,9 +345,7 @@ impl BranchTypeHardening for UnaryOpExpressionNode {
                 UnaryOpExpressionOperator::Sub(_, _) => crate::missing!(),
                 UnaryOpExpressionOperator::BinaryNot(_, _) => crate::missing!(),
 
-                UnaryOpExpressionOperator::Comment(_) => crate::missing!(),
-                UnaryOpExpressionOperator::TextInterpolation(_) => crate::missing!(),
-                UnaryOpExpressionOperator::Error(_) => crate::missing!(),
+                UnaryOpExpressionOperator::Extra(_) => crate::missing!(),
             }
         }
         scope.branch()
@@ -471,9 +459,7 @@ impl BranchTypeHardening for AssignmentExpressionNode {
                     state,
                 )
             }
-            AssignmentExpressionLeft::Comment(_) => crate::missing!(),
-            AssignmentExpressionLeft::TextInterpolation(_) => crate::missing!(),
-            AssignmentExpressionLeft::Error(_) => crate::missing!(),
+            AssignmentExpressionLeft::Extra(_) => crate::missing!(),
         }
         return scope.branch();
     }

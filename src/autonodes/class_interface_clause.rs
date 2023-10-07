@@ -18,23 +18,23 @@ use tree_sitter::Range;
 pub enum ClassInterfaceClauseChildren {
     Name(Box<NameNode>),
     QualifiedName(Box<QualifiedNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ClassInterfaceClauseChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ClassInterfaceClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ClassInterfaceClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ClassInterfaceClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ClassInterfaceClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ClassInterfaceClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ClassInterfaceClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "name" => ClassInterfaceClauseChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => ClassInterfaceClauseChildren::QualifiedName(Box::new(
                 QualifiedNameNode::parse(node, source)?,
@@ -51,15 +51,17 @@ impl ClassInterfaceClauseChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ClassInterfaceClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ClassInterfaceClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ClassInterfaceClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ClassInterfaceClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ClassInterfaceClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ClassInterfaceClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "name" => ClassInterfaceClauseChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => ClassInterfaceClauseChildren::QualifiedName(Box::new(
                 QualifiedNameNode::parse(node, source)?,
@@ -90,9 +92,7 @@ impl ClassInterfaceClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ClassInterfaceClauseChildren::Comment(x) => x.get_utype(state, emitter),
-            ClassInterfaceClauseChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ClassInterfaceClauseChildren::Error(x) => x.get_utype(state, emitter),
+            ClassInterfaceClauseChildren::Extra(x) => x.get_utype(state, emitter),
             ClassInterfaceClauseChildren::Name(x) => x.get_utype(state, emitter),
             ClassInterfaceClauseChildren::QualifiedName(x) => x.get_utype(state, emitter),
         }
@@ -104,9 +104,7 @@ impl ClassInterfaceClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ClassInterfaceClauseChildren::Comment(x) => x.get_php_value(state, emitter),
-            ClassInterfaceClauseChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ClassInterfaceClauseChildren::Error(x) => x.get_php_value(state, emitter),
+            ClassInterfaceClauseChildren::Extra(x) => x.get_php_value(state, emitter),
             ClassInterfaceClauseChildren::Name(x) => x.get_php_value(state, emitter),
             ClassInterfaceClauseChildren::QualifiedName(x) => x.get_php_value(state, emitter),
         }
@@ -114,9 +112,7 @@ impl ClassInterfaceClauseChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ClassInterfaceClauseChildren::Comment(x) => x.read_from(state, emitter),
-            ClassInterfaceClauseChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ClassInterfaceClauseChildren::Error(x) => x.read_from(state, emitter),
+            ClassInterfaceClauseChildren::Extra(x) => x.read_from(state, emitter),
             ClassInterfaceClauseChildren::Name(x) => x.read_from(state, emitter),
             ClassInterfaceClauseChildren::QualifiedName(x) => x.read_from(state, emitter),
         }
@@ -126,15 +122,8 @@ impl ClassInterfaceClauseChildren {
 impl NodeAccess for ClassInterfaceClauseChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ClassInterfaceClauseChildren::Comment(x) => {
-                format!("ClassInterfaceClauseChildren::comment({})", x.brief_desc())
-            }
-            ClassInterfaceClauseChildren::TextInterpolation(x) => format!(
-                "ClassInterfaceClauseChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ClassInterfaceClauseChildren::Error(x) => {
-                format!("ClassInterfaceClauseChildren::ERROR({})", x.brief_desc())
+            ClassInterfaceClauseChildren::Extra(x) => {
+                format!("ClassInterfaceClauseChildren::extra({})", x.brief_desc())
             }
             ClassInterfaceClauseChildren::Name(x) => {
                 format!("ClassInterfaceClauseChildren::name({})", x.brief_desc())
@@ -148,9 +137,7 @@ impl NodeAccess for ClassInterfaceClauseChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ClassInterfaceClauseChildren::Comment(x) => x.as_any(),
-            ClassInterfaceClauseChildren::TextInterpolation(x) => x.as_any(),
-            ClassInterfaceClauseChildren::Error(x) => x.as_any(),
+            ClassInterfaceClauseChildren::Extra(x) => x.as_any(),
             ClassInterfaceClauseChildren::Name(x) => x.as_any(),
             ClassInterfaceClauseChildren::QualifiedName(x) => x.as_any(),
         }
@@ -158,9 +145,7 @@ impl NodeAccess for ClassInterfaceClauseChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ClassInterfaceClauseChildren::Comment(x) => x.children_any(),
-            ClassInterfaceClauseChildren::TextInterpolation(x) => x.children_any(),
-            ClassInterfaceClauseChildren::Error(x) => x.children_any(),
+            ClassInterfaceClauseChildren::Extra(x) => x.children_any(),
             ClassInterfaceClauseChildren::Name(x) => x.children_any(),
             ClassInterfaceClauseChildren::QualifiedName(x) => x.children_any(),
         }
@@ -168,9 +153,7 @@ impl NodeAccess for ClassInterfaceClauseChildren {
 
     fn range(&self) -> Range {
         match self {
-            ClassInterfaceClauseChildren::Comment(x) => x.range(),
-            ClassInterfaceClauseChildren::TextInterpolation(x) => x.range(),
-            ClassInterfaceClauseChildren::Error(x) => x.range(),
+            ClassInterfaceClauseChildren::Extra(x) => x.range(),
             ClassInterfaceClauseChildren::Name(x) => x.range(),
             ClassInterfaceClauseChildren::QualifiedName(x) => x.range(),
         }

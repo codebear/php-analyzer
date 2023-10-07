@@ -18,19 +18,21 @@ use tree_sitter::Range;
 pub enum ArgumentsChildren {
     Argument(Box<ArgumentNode>),
     VariadicPlaceholder(Box<VariadicPlaceholderNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ArgumentsChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ArgumentsChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ArgumentsChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ArgumentsChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ArgumentsChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ArgumentsChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ArgumentsChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "argument" => ArgumentsChildren::Argument(Box::new(ArgumentNode::parse(node, source)?)),
             "variadic_placeholder" => ArgumentsChildren::VariadicPlaceholder(Box::new(
                 VariadicPlaceholderNode::parse(node, source)?,
@@ -47,11 +49,15 @@ impl ArgumentsChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ArgumentsChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ArgumentsChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ArgumentsChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ArgumentsChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ArgumentsChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ArgumentsChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "argument" => ArgumentsChildren::Argument(Box::new(ArgumentNode::parse(node, source)?)),
             "variadic_placeholder" => ArgumentsChildren::VariadicPlaceholder(Box::new(
                 VariadicPlaceholderNode::parse(node, source)?,
@@ -82,9 +88,7 @@ impl ArgumentsChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ArgumentsChildren::Comment(x) => x.get_utype(state, emitter),
-            ArgumentsChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ArgumentsChildren::Error(x) => x.get_utype(state, emitter),
+            ArgumentsChildren::Extra(x) => x.get_utype(state, emitter),
             ArgumentsChildren::Argument(x) => x.get_utype(state, emitter),
             ArgumentsChildren::VariadicPlaceholder(x) => x.get_utype(state, emitter),
         }
@@ -96,9 +100,7 @@ impl ArgumentsChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ArgumentsChildren::Comment(x) => x.get_php_value(state, emitter),
-            ArgumentsChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ArgumentsChildren::Error(x) => x.get_php_value(state, emitter),
+            ArgumentsChildren::Extra(x) => x.get_php_value(state, emitter),
             ArgumentsChildren::Argument(x) => x.get_php_value(state, emitter),
             ArgumentsChildren::VariadicPlaceholder(x) => x.get_php_value(state, emitter),
         }
@@ -106,9 +108,7 @@ impl ArgumentsChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ArgumentsChildren::Comment(x) => x.read_from(state, emitter),
-            ArgumentsChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ArgumentsChildren::Error(x) => x.read_from(state, emitter),
+            ArgumentsChildren::Extra(x) => x.read_from(state, emitter),
             ArgumentsChildren::Argument(x) => x.read_from(state, emitter),
             ArgumentsChildren::VariadicPlaceholder(x) => x.read_from(state, emitter),
         }
@@ -118,13 +118,7 @@ impl ArgumentsChildren {
 impl NodeAccess for ArgumentsChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ArgumentsChildren::Comment(x) => {
-                format!("ArgumentsChildren::comment({})", x.brief_desc())
-            }
-            ArgumentsChildren::TextInterpolation(x) => {
-                format!("ArgumentsChildren::text_interpolation({})", x.brief_desc())
-            }
-            ArgumentsChildren::Error(x) => format!("ArgumentsChildren::ERROR({})", x.brief_desc()),
+            ArgumentsChildren::Extra(x) => format!("ArgumentsChildren::extra({})", x.brief_desc()),
             ArgumentsChildren::Argument(x) => {
                 format!("ArgumentsChildren::argument({})", x.brief_desc())
             }
@@ -137,9 +131,7 @@ impl NodeAccess for ArgumentsChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ArgumentsChildren::Comment(x) => x.as_any(),
-            ArgumentsChildren::TextInterpolation(x) => x.as_any(),
-            ArgumentsChildren::Error(x) => x.as_any(),
+            ArgumentsChildren::Extra(x) => x.as_any(),
             ArgumentsChildren::Argument(x) => x.as_any(),
             ArgumentsChildren::VariadicPlaceholder(x) => x.as_any(),
         }
@@ -147,9 +139,7 @@ impl NodeAccess for ArgumentsChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ArgumentsChildren::Comment(x) => x.children_any(),
-            ArgumentsChildren::TextInterpolation(x) => x.children_any(),
-            ArgumentsChildren::Error(x) => x.children_any(),
+            ArgumentsChildren::Extra(x) => x.children_any(),
             ArgumentsChildren::Argument(x) => x.children_any(),
             ArgumentsChildren::VariadicPlaceholder(x) => x.children_any(),
         }
@@ -157,9 +147,7 @@ impl NodeAccess for ArgumentsChildren {
 
     fn range(&self) -> Range {
         match self {
-            ArgumentsChildren::Comment(x) => x.range(),
-            ArgumentsChildren::TextInterpolation(x) => x.range(),
-            ArgumentsChildren::Error(x) => x.range(),
+            ArgumentsChildren::Extra(x) => x.range(),
             ArgumentsChildren::Argument(x) => x.range(),
             ArgumentsChildren::VariadicPlaceholder(x) => x.range(),
         }

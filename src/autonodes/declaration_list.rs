@@ -22,21 +22,21 @@ pub enum DeclarationListChildren {
     MethodDeclaration(Box<MethodDeclarationNode>),
     PropertyDeclaration(Box<PropertyDeclarationNode>),
     UseDeclaration(Box<UseDeclarationNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl DeclarationListChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                DeclarationListChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => DeclarationListChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => DeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => DeclarationListChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => DeclarationListChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => DeclarationListChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "const_declaration" => DeclarationListChildren::ConstDeclaration(Box::new(
                 ConstDeclarationNode::parse(node, source)?,
             )),
@@ -61,13 +61,15 @@ impl DeclarationListChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                DeclarationListChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => DeclarationListChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => DeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => DeclarationListChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => DeclarationListChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => DeclarationListChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "const_declaration" => DeclarationListChildren::ConstDeclaration(Box::new(
                 ConstDeclarationNode::parse(node, source)?,
             )),
@@ -106,9 +108,7 @@ impl DeclarationListChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            DeclarationListChildren::Comment(x) => x.get_utype(state, emitter),
-            DeclarationListChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            DeclarationListChildren::Error(x) => x.get_utype(state, emitter),
+            DeclarationListChildren::Extra(x) => x.get_utype(state, emitter),
             DeclarationListChildren::ConstDeclaration(x) => x.get_utype(state, emitter),
             DeclarationListChildren::MethodDeclaration(x) => x.get_utype(state, emitter),
             DeclarationListChildren::PropertyDeclaration(x) => x.get_utype(state, emitter),
@@ -122,9 +122,7 @@ impl DeclarationListChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            DeclarationListChildren::Comment(x) => x.get_php_value(state, emitter),
-            DeclarationListChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            DeclarationListChildren::Error(x) => x.get_php_value(state, emitter),
+            DeclarationListChildren::Extra(x) => x.get_php_value(state, emitter),
             DeclarationListChildren::ConstDeclaration(x) => x.get_php_value(state, emitter),
             DeclarationListChildren::MethodDeclaration(x) => x.get_php_value(state, emitter),
             DeclarationListChildren::PropertyDeclaration(x) => x.get_php_value(state, emitter),
@@ -134,9 +132,7 @@ impl DeclarationListChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            DeclarationListChildren::Comment(x) => x.read_from(state, emitter),
-            DeclarationListChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            DeclarationListChildren::Error(x) => x.read_from(state, emitter),
+            DeclarationListChildren::Extra(x) => x.read_from(state, emitter),
             DeclarationListChildren::ConstDeclaration(x) => x.read_from(state, emitter),
             DeclarationListChildren::MethodDeclaration(x) => x.read_from(state, emitter),
             DeclarationListChildren::PropertyDeclaration(x) => x.read_from(state, emitter),
@@ -148,15 +144,8 @@ impl DeclarationListChildren {
 impl NodeAccess for DeclarationListChildren {
     fn brief_desc(&self) -> String {
         match self {
-            DeclarationListChildren::Comment(x) => {
-                format!("DeclarationListChildren::comment({})", x.brief_desc())
-            }
-            DeclarationListChildren::TextInterpolation(x) => format!(
-                "DeclarationListChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            DeclarationListChildren::Error(x) => {
-                format!("DeclarationListChildren::ERROR({})", x.brief_desc())
+            DeclarationListChildren::Extra(x) => {
+                format!("DeclarationListChildren::extra({})", x.brief_desc())
             }
             DeclarationListChildren::ConstDeclaration(x) => format!(
                 "DeclarationListChildren::const_declaration({})",
@@ -179,9 +168,7 @@ impl NodeAccess for DeclarationListChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            DeclarationListChildren::Comment(x) => x.as_any(),
-            DeclarationListChildren::TextInterpolation(x) => x.as_any(),
-            DeclarationListChildren::Error(x) => x.as_any(),
+            DeclarationListChildren::Extra(x) => x.as_any(),
             DeclarationListChildren::ConstDeclaration(x) => x.as_any(),
             DeclarationListChildren::MethodDeclaration(x) => x.as_any(),
             DeclarationListChildren::PropertyDeclaration(x) => x.as_any(),
@@ -191,9 +178,7 @@ impl NodeAccess for DeclarationListChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            DeclarationListChildren::Comment(x) => x.children_any(),
-            DeclarationListChildren::TextInterpolation(x) => x.children_any(),
-            DeclarationListChildren::Error(x) => x.children_any(),
+            DeclarationListChildren::Extra(x) => x.children_any(),
             DeclarationListChildren::ConstDeclaration(x) => x.children_any(),
             DeclarationListChildren::MethodDeclaration(x) => x.children_any(),
             DeclarationListChildren::PropertyDeclaration(x) => x.children_any(),
@@ -203,9 +188,7 @@ impl NodeAccess for DeclarationListChildren {
 
     fn range(&self) -> Range {
         match self {
-            DeclarationListChildren::Comment(x) => x.range(),
-            DeclarationListChildren::TextInterpolation(x) => x.range(),
-            DeclarationListChildren::Error(x) => x.range(),
+            DeclarationListChildren::Extra(x) => x.range(),
             DeclarationListChildren::ConstDeclaration(x) => x.range(),
             DeclarationListChildren::MethodDeclaration(x) => x.range(),
             DeclarationListChildren::PropertyDeclaration(x) => x.range(),

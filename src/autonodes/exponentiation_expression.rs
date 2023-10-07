@@ -24,23 +24,23 @@ pub enum ExponentiationExpressionLeft {
     CloneExpression(Box<CloneExpressionNode>),
     MatchExpression(Box<MatchExpressionNode>),
     UnaryOpExpression(Box<UnaryOpExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ExponentiationExpressionLeft {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ExponentiationExpressionLeft::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ExponentiationExpressionLeft::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ExponentiationExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ExponentiationExpressionLeft::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ExponentiationExpressionLeft::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ExponentiationExpressionLeft::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "clone_expression" => ExponentiationExpressionLeft::CloneExpression(Box::new(
                 CloneExpressionNode::parse(node, source)?,
             )),
@@ -69,15 +69,17 @@ impl ExponentiationExpressionLeft {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ExponentiationExpressionLeft::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ExponentiationExpressionLeft::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ExponentiationExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ExponentiationExpressionLeft::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ExponentiationExpressionLeft::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ExponentiationExpressionLeft::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "clone_expression" => ExponentiationExpressionLeft::CloneExpression(Box::new(
                 CloneExpressionNode::parse(node, source)?,
             )),
@@ -124,9 +126,7 @@ impl ExponentiationExpressionLeft {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ExponentiationExpressionLeft::Comment(x) => x.get_utype(state, emitter),
-            ExponentiationExpressionLeft::TextInterpolation(x) => x.get_utype(state, emitter),
-            ExponentiationExpressionLeft::Error(x) => x.get_utype(state, emitter),
+            ExponentiationExpressionLeft::Extra(x) => x.get_utype(state, emitter),
             ExponentiationExpressionLeft::_PrimaryExpression(x) => x.get_utype(state, emitter),
             ExponentiationExpressionLeft::CloneExpression(x) => x.get_utype(state, emitter),
             ExponentiationExpressionLeft::MatchExpression(x) => x.get_utype(state, emitter),
@@ -140,9 +140,7 @@ impl ExponentiationExpressionLeft {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ExponentiationExpressionLeft::Comment(x) => x.get_php_value(state, emitter),
-            ExponentiationExpressionLeft::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ExponentiationExpressionLeft::Error(x) => x.get_php_value(state, emitter),
+            ExponentiationExpressionLeft::Extra(x) => x.get_php_value(state, emitter),
             ExponentiationExpressionLeft::_PrimaryExpression(x) => x.get_php_value(state, emitter),
             ExponentiationExpressionLeft::CloneExpression(x) => x.get_php_value(state, emitter),
             ExponentiationExpressionLeft::MatchExpression(x) => x.get_php_value(state, emitter),
@@ -152,9 +150,7 @@ impl ExponentiationExpressionLeft {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ExponentiationExpressionLeft::Comment(x) => x.read_from(state, emitter),
-            ExponentiationExpressionLeft::TextInterpolation(x) => x.read_from(state, emitter),
-            ExponentiationExpressionLeft::Error(x) => x.read_from(state, emitter),
+            ExponentiationExpressionLeft::Extra(x) => x.read_from(state, emitter),
             ExponentiationExpressionLeft::_PrimaryExpression(x) => x.read_from(state, emitter),
             ExponentiationExpressionLeft::CloneExpression(x) => x.read_from(state, emitter),
             ExponentiationExpressionLeft::MatchExpression(x) => x.read_from(state, emitter),
@@ -166,15 +162,8 @@ impl ExponentiationExpressionLeft {
 impl NodeAccess for ExponentiationExpressionLeft {
     fn brief_desc(&self) -> String {
         match self {
-            ExponentiationExpressionLeft::Comment(x) => {
-                format!("ExponentiationExpressionLeft::comment({})", x.brief_desc())
-            }
-            ExponentiationExpressionLeft::TextInterpolation(x) => format!(
-                "ExponentiationExpressionLeft::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ExponentiationExpressionLeft::Error(x) => {
-                format!("ExponentiationExpressionLeft::ERROR({})", x.brief_desc())
+            ExponentiationExpressionLeft::Extra(x) => {
+                format!("ExponentiationExpressionLeft::extra({})", x.brief_desc())
             }
             ExponentiationExpressionLeft::_PrimaryExpression(x) => format!(
                 "ExponentiationExpressionLeft::_primary_expression({})",
@@ -197,9 +186,7 @@ impl NodeAccess for ExponentiationExpressionLeft {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ExponentiationExpressionLeft::Comment(x) => x.as_any(),
-            ExponentiationExpressionLeft::TextInterpolation(x) => x.as_any(),
-            ExponentiationExpressionLeft::Error(x) => x.as_any(),
+            ExponentiationExpressionLeft::Extra(x) => x.as_any(),
             ExponentiationExpressionLeft::_PrimaryExpression(x) => x.as_any(),
             ExponentiationExpressionLeft::CloneExpression(x) => x.as_any(),
             ExponentiationExpressionLeft::MatchExpression(x) => x.as_any(),
@@ -209,9 +196,7 @@ impl NodeAccess for ExponentiationExpressionLeft {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ExponentiationExpressionLeft::Comment(x) => x.children_any(),
-            ExponentiationExpressionLeft::TextInterpolation(x) => x.children_any(),
-            ExponentiationExpressionLeft::Error(x) => x.children_any(),
+            ExponentiationExpressionLeft::Extra(x) => x.children_any(),
             ExponentiationExpressionLeft::_PrimaryExpression(x) => x.children_any(),
             ExponentiationExpressionLeft::CloneExpression(x) => x.children_any(),
             ExponentiationExpressionLeft::MatchExpression(x) => x.children_any(),
@@ -221,9 +206,7 @@ impl NodeAccess for ExponentiationExpressionLeft {
 
     fn range(&self) -> Range {
         match self {
-            ExponentiationExpressionLeft::Comment(x) => x.range(),
-            ExponentiationExpressionLeft::TextInterpolation(x) => x.range(),
-            ExponentiationExpressionLeft::Error(x) => x.range(),
+            ExponentiationExpressionLeft::Extra(x) => x.range(),
             ExponentiationExpressionLeft::_PrimaryExpression(x) => x.range(),
             ExponentiationExpressionLeft::CloneExpression(x) => x.range(),
             ExponentiationExpressionLeft::MatchExpression(x) => x.range(),
@@ -240,23 +223,23 @@ pub enum ExponentiationExpressionRight {
     ExponentiationExpression(Box<ExponentiationExpressionNode>),
     MatchExpression(Box<MatchExpressionNode>),
     UnaryOpExpression(Box<UnaryOpExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ExponentiationExpressionRight {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ExponentiationExpressionRight::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ExponentiationExpressionRight::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ExponentiationExpressionRight::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ExponentiationExpressionRight::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ExponentiationExpressionRight::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ExponentiationExpressionRight::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "assignment_expression" => ExponentiationExpressionRight::AssignmentExpression(
                 Box::new(AssignmentExpressionNode::parse(node, source)?),
             ),
@@ -296,15 +279,17 @@ impl ExponentiationExpressionRight {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ExponentiationExpressionRight::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ExponentiationExpressionRight::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ExponentiationExpressionRight::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ExponentiationExpressionRight::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                ExponentiationExpressionRight::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => ExponentiationExpressionRight::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "assignment_expression" => ExponentiationExpressionRight::AssignmentExpression(
                 Box::new(AssignmentExpressionNode::parse(node, source)?),
             ),
@@ -362,9 +347,7 @@ impl ExponentiationExpressionRight {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ExponentiationExpressionRight::Comment(x) => x.get_utype(state, emitter),
-            ExponentiationExpressionRight::TextInterpolation(x) => x.get_utype(state, emitter),
-            ExponentiationExpressionRight::Error(x) => x.get_utype(state, emitter),
+            ExponentiationExpressionRight::Extra(x) => x.get_utype(state, emitter),
             ExponentiationExpressionRight::_PrimaryExpression(x) => x.get_utype(state, emitter),
             ExponentiationExpressionRight::AssignmentExpression(x) => x.get_utype(state, emitter),
             ExponentiationExpressionRight::AugmentedAssignmentExpression(x) => {
@@ -385,9 +368,7 @@ impl ExponentiationExpressionRight {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ExponentiationExpressionRight::Comment(x) => x.get_php_value(state, emitter),
-            ExponentiationExpressionRight::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ExponentiationExpressionRight::Error(x) => x.get_php_value(state, emitter),
+            ExponentiationExpressionRight::Extra(x) => x.get_php_value(state, emitter),
             ExponentiationExpressionRight::_PrimaryExpression(x) => x.get_php_value(state, emitter),
             ExponentiationExpressionRight::AssignmentExpression(x) => {
                 x.get_php_value(state, emitter)
@@ -406,9 +387,7 @@ impl ExponentiationExpressionRight {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ExponentiationExpressionRight::Comment(x) => x.read_from(state, emitter),
-            ExponentiationExpressionRight::TextInterpolation(x) => x.read_from(state, emitter),
-            ExponentiationExpressionRight::Error(x) => x.read_from(state, emitter),
+            ExponentiationExpressionRight::Extra(x) => x.read_from(state, emitter),
             ExponentiationExpressionRight::_PrimaryExpression(x) => x.read_from(state, emitter),
             ExponentiationExpressionRight::AssignmentExpression(x) => x.read_from(state, emitter),
             ExponentiationExpressionRight::AugmentedAssignmentExpression(x) => {
@@ -427,15 +406,8 @@ impl ExponentiationExpressionRight {
 impl NodeAccess for ExponentiationExpressionRight {
     fn brief_desc(&self) -> String {
         match self {
-            ExponentiationExpressionRight::Comment(x) => {
-                format!("ExponentiationExpressionRight::comment({})", x.brief_desc())
-            }
-            ExponentiationExpressionRight::TextInterpolation(x) => format!(
-                "ExponentiationExpressionRight::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ExponentiationExpressionRight::Error(x) => {
-                format!("ExponentiationExpressionRight::ERROR({})", x.brief_desc())
+            ExponentiationExpressionRight::Extra(x) => {
+                format!("ExponentiationExpressionRight::extra({})", x.brief_desc())
             }
             ExponentiationExpressionRight::_PrimaryExpression(x) => format!(
                 "ExponentiationExpressionRight::_primary_expression({})",
@@ -470,9 +442,7 @@ impl NodeAccess for ExponentiationExpressionRight {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ExponentiationExpressionRight::Comment(x) => x.as_any(),
-            ExponentiationExpressionRight::TextInterpolation(x) => x.as_any(),
-            ExponentiationExpressionRight::Error(x) => x.as_any(),
+            ExponentiationExpressionRight::Extra(x) => x.as_any(),
             ExponentiationExpressionRight::_PrimaryExpression(x) => x.as_any(),
             ExponentiationExpressionRight::AssignmentExpression(x) => x.as_any(),
             ExponentiationExpressionRight::AugmentedAssignmentExpression(x) => x.as_any(),
@@ -485,9 +455,7 @@ impl NodeAccess for ExponentiationExpressionRight {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ExponentiationExpressionRight::Comment(x) => x.children_any(),
-            ExponentiationExpressionRight::TextInterpolation(x) => x.children_any(),
-            ExponentiationExpressionRight::Error(x) => x.children_any(),
+            ExponentiationExpressionRight::Extra(x) => x.children_any(),
             ExponentiationExpressionRight::_PrimaryExpression(x) => x.children_any(),
             ExponentiationExpressionRight::AssignmentExpression(x) => x.children_any(),
             ExponentiationExpressionRight::AugmentedAssignmentExpression(x) => x.children_any(),
@@ -500,9 +468,7 @@ impl NodeAccess for ExponentiationExpressionRight {
 
     fn range(&self) -> Range {
         match self {
-            ExponentiationExpressionRight::Comment(x) => x.range(),
-            ExponentiationExpressionRight::TextInterpolation(x) => x.range(),
-            ExponentiationExpressionRight::Error(x) => x.range(),
+            ExponentiationExpressionRight::Extra(x) => x.range(),
             ExponentiationExpressionRight::_PrimaryExpression(x) => x.range(),
             ExponentiationExpressionRight::AssignmentExpression(x) => x.range(),
             ExponentiationExpressionRight::AugmentedAssignmentExpression(x) => x.range(),

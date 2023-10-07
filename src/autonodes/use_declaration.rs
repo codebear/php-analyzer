@@ -20,21 +20,21 @@ pub enum UseDeclarationChildren {
     Name(Box<NameNode>),
     QualifiedName(Box<QualifiedNameNode>),
     UseList(Box<UseListNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl UseDeclarationChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                UseDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => UseDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UseDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => UseDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UseDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UseDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "name" => UseDeclarationChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => UseDeclarationChildren::QualifiedName(Box::new(
                 QualifiedNameNode::parse(node, source)?,
@@ -54,13 +54,15 @@ impl UseDeclarationChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                UseDeclarationChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => UseDeclarationChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UseDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => UseDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UseDeclarationChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => UseDeclarationChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "name" => UseDeclarationChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => UseDeclarationChildren::QualifiedName(Box::new(
                 QualifiedNameNode::parse(node, source)?,
@@ -94,9 +96,7 @@ impl UseDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            UseDeclarationChildren::Comment(x) => x.get_utype(state, emitter),
-            UseDeclarationChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            UseDeclarationChildren::Error(x) => x.get_utype(state, emitter),
+            UseDeclarationChildren::Extra(x) => x.get_utype(state, emitter),
             UseDeclarationChildren::Name(x) => x.get_utype(state, emitter),
             UseDeclarationChildren::QualifiedName(x) => x.get_utype(state, emitter),
             UseDeclarationChildren::UseList(x) => x.get_utype(state, emitter),
@@ -109,9 +109,7 @@ impl UseDeclarationChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            UseDeclarationChildren::Comment(x) => x.get_php_value(state, emitter),
-            UseDeclarationChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            UseDeclarationChildren::Error(x) => x.get_php_value(state, emitter),
+            UseDeclarationChildren::Extra(x) => x.get_php_value(state, emitter),
             UseDeclarationChildren::Name(x) => x.get_php_value(state, emitter),
             UseDeclarationChildren::QualifiedName(x) => x.get_php_value(state, emitter),
             UseDeclarationChildren::UseList(x) => x.get_php_value(state, emitter),
@@ -120,9 +118,7 @@ impl UseDeclarationChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            UseDeclarationChildren::Comment(x) => x.read_from(state, emitter),
-            UseDeclarationChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            UseDeclarationChildren::Error(x) => x.read_from(state, emitter),
+            UseDeclarationChildren::Extra(x) => x.read_from(state, emitter),
             UseDeclarationChildren::Name(x) => x.read_from(state, emitter),
             UseDeclarationChildren::QualifiedName(x) => x.read_from(state, emitter),
             UseDeclarationChildren::UseList(x) => x.read_from(state, emitter),
@@ -133,15 +129,8 @@ impl UseDeclarationChildren {
 impl NodeAccess for UseDeclarationChildren {
     fn brief_desc(&self) -> String {
         match self {
-            UseDeclarationChildren::Comment(x) => {
-                format!("UseDeclarationChildren::comment({})", x.brief_desc())
-            }
-            UseDeclarationChildren::TextInterpolation(x) => format!(
-                "UseDeclarationChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            UseDeclarationChildren::Error(x) => {
-                format!("UseDeclarationChildren::ERROR({})", x.brief_desc())
+            UseDeclarationChildren::Extra(x) => {
+                format!("UseDeclarationChildren::extra({})", x.brief_desc())
             }
             UseDeclarationChildren::Name(x) => {
                 format!("UseDeclarationChildren::name({})", x.brief_desc())
@@ -157,9 +146,7 @@ impl NodeAccess for UseDeclarationChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            UseDeclarationChildren::Comment(x) => x.as_any(),
-            UseDeclarationChildren::TextInterpolation(x) => x.as_any(),
-            UseDeclarationChildren::Error(x) => x.as_any(),
+            UseDeclarationChildren::Extra(x) => x.as_any(),
             UseDeclarationChildren::Name(x) => x.as_any(),
             UseDeclarationChildren::QualifiedName(x) => x.as_any(),
             UseDeclarationChildren::UseList(x) => x.as_any(),
@@ -168,9 +155,7 @@ impl NodeAccess for UseDeclarationChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            UseDeclarationChildren::Comment(x) => x.children_any(),
-            UseDeclarationChildren::TextInterpolation(x) => x.children_any(),
-            UseDeclarationChildren::Error(x) => x.children_any(),
+            UseDeclarationChildren::Extra(x) => x.children_any(),
             UseDeclarationChildren::Name(x) => x.children_any(),
             UseDeclarationChildren::QualifiedName(x) => x.children_any(),
             UseDeclarationChildren::UseList(x) => x.children_any(),
@@ -179,9 +164,7 @@ impl NodeAccess for UseDeclarationChildren {
 
     fn range(&self) -> Range {
         match self {
-            UseDeclarationChildren::Comment(x) => x.range(),
-            UseDeclarationChildren::TextInterpolation(x) => x.range(),
-            UseDeclarationChildren::Error(x) => x.range(),
+            UseDeclarationChildren::Extra(x) => x.range(),
             UseDeclarationChildren::Name(x) => x.range(),
             UseDeclarationChildren::QualifiedName(x) => x.range(),
             UseDeclarationChildren::UseList(x) => x.range(),

@@ -56,23 +56,23 @@ pub enum SubscriptExpressionDereferenceable {
     String(Box<StringNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl SubscriptExpressionDereferenceable {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => SubscriptExpressionDereferenceable::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => SubscriptExpressionDereferenceable::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                SubscriptExpressionDereferenceable::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                SubscriptExpressionDereferenceable::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => {
                 SubscriptExpressionDereferenceable::ArrayCreationExpression(Box::new(
                     ArrayCreationExpressionNode::parse(node, source)?,
@@ -161,15 +161,17 @@ impl SubscriptExpressionDereferenceable {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => SubscriptExpressionDereferenceable::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => SubscriptExpressionDereferenceable::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                SubscriptExpressionDereferenceable::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                SubscriptExpressionDereferenceable::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => {
                 SubscriptExpressionDereferenceable::ArrayCreationExpression(Box::new(
                     ArrayCreationExpressionNode::parse(node, source)?,
@@ -272,9 +274,7 @@ impl SubscriptExpressionDereferenceable {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            SubscriptExpressionDereferenceable::Comment(x) => x.get_utype(state, emitter),
-            SubscriptExpressionDereferenceable::TextInterpolation(x) => x.get_utype(state, emitter),
-            SubscriptExpressionDereferenceable::Error(x) => x.get_utype(state, emitter),
+            SubscriptExpressionDereferenceable::Extra(x) => x.get_utype(state, emitter),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -328,11 +328,7 @@ impl SubscriptExpressionDereferenceable {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            SubscriptExpressionDereferenceable::Comment(x) => x.get_php_value(state, emitter),
-            SubscriptExpressionDereferenceable::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            SubscriptExpressionDereferenceable::Error(x) => x.get_php_value(state, emitter),
+            SubscriptExpressionDereferenceable::Extra(x) => x.get_php_value(state, emitter),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -386,9 +382,7 @@ impl SubscriptExpressionDereferenceable {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            SubscriptExpressionDereferenceable::Comment(x) => x.read_from(state, emitter),
-            SubscriptExpressionDereferenceable::TextInterpolation(x) => x.read_from(state, emitter),
-            SubscriptExpressionDereferenceable::Error(x) => x.read_from(state, emitter),
+            SubscriptExpressionDereferenceable::Extra(x) => x.read_from(state, emitter),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -440,16 +434,8 @@ impl SubscriptExpressionDereferenceable {
 impl NodeAccess for SubscriptExpressionDereferenceable {
     fn brief_desc(&self) -> String {
         match self {
-            SubscriptExpressionDereferenceable::Comment(x) => format!(
-                "SubscriptExpressionDereferenceable::comment({})",
-                x.brief_desc()
-            ),
-            SubscriptExpressionDereferenceable::TextInterpolation(x) => format!(
-                "SubscriptExpressionDereferenceable::text_interpolation({})",
-                x.brief_desc()
-            ),
-            SubscriptExpressionDereferenceable::Error(x) => format!(
-                "SubscriptExpressionDereferenceable::ERROR({})",
+            SubscriptExpressionDereferenceable::Extra(x) => format!(
+                "SubscriptExpressionDereferenceable::extra({})",
                 x.brief_desc()
             ),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => format!(
@@ -537,9 +523,7 @@ impl NodeAccess for SubscriptExpressionDereferenceable {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            SubscriptExpressionDereferenceable::Comment(x) => x.as_any(),
-            SubscriptExpressionDereferenceable::TextInterpolation(x) => x.as_any(),
-            SubscriptExpressionDereferenceable::Error(x) => x.as_any(),
+            SubscriptExpressionDereferenceable::Extra(x) => x.as_any(),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => x.as_any(),
             SubscriptExpressionDereferenceable::CastExpression(x) => x.as_any(),
             SubscriptExpressionDereferenceable::ClassConstantAccessExpression(x) => x.as_any(),
@@ -565,9 +549,7 @@ impl NodeAccess for SubscriptExpressionDereferenceable {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            SubscriptExpressionDereferenceable::Comment(x) => x.children_any(),
-            SubscriptExpressionDereferenceable::TextInterpolation(x) => x.children_any(),
-            SubscriptExpressionDereferenceable::Error(x) => x.children_any(),
+            SubscriptExpressionDereferenceable::Extra(x) => x.children_any(),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => x.children_any(),
             SubscriptExpressionDereferenceable::CastExpression(x) => x.children_any(),
             SubscriptExpressionDereferenceable::ClassConstantAccessExpression(x) => {
@@ -599,9 +581,7 @@ impl NodeAccess for SubscriptExpressionDereferenceable {
 
     fn range(&self) -> Range {
         match self {
-            SubscriptExpressionDereferenceable::Comment(x) => x.range(),
-            SubscriptExpressionDereferenceable::TextInterpolation(x) => x.range(),
-            SubscriptExpressionDereferenceable::Error(x) => x.range(),
+            SubscriptExpressionDereferenceable::Extra(x) => x.range(),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => x.range(),
             SubscriptExpressionDereferenceable::CastExpression(x) => x.range(),
             SubscriptExpressionDereferenceable::ClassConstantAccessExpression(x) => x.range(),
@@ -631,23 +611,23 @@ pub enum SubscriptExpressionChildren {
     Name(Box<NameNode>),
     UnaryOpExpression(Box<UnaryOpExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl SubscriptExpressionChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                SubscriptExpressionChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => SubscriptExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                SubscriptExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => SubscriptExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                SubscriptExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => SubscriptExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "integer" => {
                 SubscriptExpressionChildren::Integer(Box::new(IntegerNode::parse(node, source)?))
             }
@@ -670,15 +650,17 @@ impl SubscriptExpressionChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                SubscriptExpressionChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => SubscriptExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                SubscriptExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => SubscriptExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                SubscriptExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => SubscriptExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "integer" => {
                 SubscriptExpressionChildren::Integer(Box::new(IntegerNode::parse(node, source)?))
             }
@@ -715,9 +697,7 @@ impl SubscriptExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            SubscriptExpressionChildren::Comment(x) => x.get_utype(state, emitter),
-            SubscriptExpressionChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            SubscriptExpressionChildren::Error(x) => x.get_utype(state, emitter),
+            SubscriptExpressionChildren::Extra(x) => x.get_utype(state, emitter),
             SubscriptExpressionChildren::Integer(x) => x.get_utype(state, emitter),
             SubscriptExpressionChildren::Name(x) => x.get_utype(state, emitter),
             SubscriptExpressionChildren::UnaryOpExpression(x) => x.get_utype(state, emitter),
@@ -731,9 +711,7 @@ impl SubscriptExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            SubscriptExpressionChildren::Comment(x) => x.get_php_value(state, emitter),
-            SubscriptExpressionChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            SubscriptExpressionChildren::Error(x) => x.get_php_value(state, emitter),
+            SubscriptExpressionChildren::Extra(x) => x.get_php_value(state, emitter),
             SubscriptExpressionChildren::Integer(x) => x.get_php_value(state, emitter),
             SubscriptExpressionChildren::Name(x) => x.get_php_value(state, emitter),
             SubscriptExpressionChildren::UnaryOpExpression(x) => x.get_php_value(state, emitter),
@@ -743,9 +721,7 @@ impl SubscriptExpressionChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            SubscriptExpressionChildren::Comment(x) => x.read_from(state, emitter),
-            SubscriptExpressionChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            SubscriptExpressionChildren::Error(x) => x.read_from(state, emitter),
+            SubscriptExpressionChildren::Extra(x) => x.read_from(state, emitter),
             SubscriptExpressionChildren::Integer(x) => x.read_from(state, emitter),
             SubscriptExpressionChildren::Name(x) => x.read_from(state, emitter),
             SubscriptExpressionChildren::UnaryOpExpression(x) => x.read_from(state, emitter),
@@ -757,15 +733,8 @@ impl SubscriptExpressionChildren {
 impl NodeAccess for SubscriptExpressionChildren {
     fn brief_desc(&self) -> String {
         match self {
-            SubscriptExpressionChildren::Comment(x) => {
-                format!("SubscriptExpressionChildren::comment({})", x.brief_desc())
-            }
-            SubscriptExpressionChildren::TextInterpolation(x) => format!(
-                "SubscriptExpressionChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            SubscriptExpressionChildren::Error(x) => {
-                format!("SubscriptExpressionChildren::ERROR({})", x.brief_desc())
+            SubscriptExpressionChildren::Extra(x) => {
+                format!("SubscriptExpressionChildren::extra({})", x.brief_desc())
             }
             SubscriptExpressionChildren::Integer(x) => {
                 format!("SubscriptExpressionChildren::integer({})", x.brief_desc())
@@ -786,9 +755,7 @@ impl NodeAccess for SubscriptExpressionChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            SubscriptExpressionChildren::Comment(x) => x.as_any(),
-            SubscriptExpressionChildren::TextInterpolation(x) => x.as_any(),
-            SubscriptExpressionChildren::Error(x) => x.as_any(),
+            SubscriptExpressionChildren::Extra(x) => x.as_any(),
             SubscriptExpressionChildren::Integer(x) => x.as_any(),
             SubscriptExpressionChildren::Name(x) => x.as_any(),
             SubscriptExpressionChildren::UnaryOpExpression(x) => x.as_any(),
@@ -798,9 +765,7 @@ impl NodeAccess for SubscriptExpressionChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            SubscriptExpressionChildren::Comment(x) => x.children_any(),
-            SubscriptExpressionChildren::TextInterpolation(x) => x.children_any(),
-            SubscriptExpressionChildren::Error(x) => x.children_any(),
+            SubscriptExpressionChildren::Extra(x) => x.children_any(),
             SubscriptExpressionChildren::Integer(x) => x.children_any(),
             SubscriptExpressionChildren::Name(x) => x.children_any(),
             SubscriptExpressionChildren::UnaryOpExpression(x) => x.children_any(),
@@ -810,9 +775,7 @@ impl NodeAccess for SubscriptExpressionChildren {
 
     fn range(&self) -> Range {
         match self {
-            SubscriptExpressionChildren::Comment(x) => x.range(),
-            SubscriptExpressionChildren::TextInterpolation(x) => x.range(),
-            SubscriptExpressionChildren::Error(x) => x.range(),
+            SubscriptExpressionChildren::Extra(x) => x.range(),
             SubscriptExpressionChildren::Integer(x) => x.range(),
             SubscriptExpressionChildren::Name(x) => x.range(),
             SubscriptExpressionChildren::UnaryOpExpression(x) => x.range(),

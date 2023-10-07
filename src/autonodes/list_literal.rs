@@ -39,19 +39,21 @@ pub enum ListLiteralChildren {
     ScopedPropertyAccessExpression(Box<ScopedPropertyAccessExpressionNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ListLiteralChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ListLiteralChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ListLiteralChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ListLiteralChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ListLiteralChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ListLiteralChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ListLiteralChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "by_ref" => ListLiteralChildren::ByRef(Box::new(ByRefNode::parse(node, source)?)),
             "dynamic_variable_name" => ListLiteralChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
@@ -109,11 +111,15 @@ impl ListLiteralChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ListLiteralChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => ListLiteralChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ListLiteralChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ListLiteralChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ListLiteralChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ListLiteralChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "by_ref" => ListLiteralChildren::ByRef(Box::new(ByRefNode::parse(node, source)?)),
             "dynamic_variable_name" => ListLiteralChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
@@ -189,9 +195,7 @@ impl ListLiteralChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ListLiteralChildren::Comment(x) => x.get_utype(state, emitter),
-            ListLiteralChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            ListLiteralChildren::Error(x) => x.get_utype(state, emitter),
+            ListLiteralChildren::Extra(x) => x.get_utype(state, emitter),
             ListLiteralChildren::_Expression(x) => x.get_utype(state, emitter),
             ListLiteralChildren::ByRef(x) => x.get_utype(state, emitter),
             ListLiteralChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
@@ -214,9 +218,7 @@ impl ListLiteralChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ListLiteralChildren::Comment(x) => x.get_php_value(state, emitter),
-            ListLiteralChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ListLiteralChildren::Error(x) => x.get_php_value(state, emitter),
+            ListLiteralChildren::Extra(x) => x.get_php_value(state, emitter),
             ListLiteralChildren::_Expression(x) => x.get_php_value(state, emitter),
             ListLiteralChildren::ByRef(x) => x.get_php_value(state, emitter),
             ListLiteralChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
@@ -239,9 +241,7 @@ impl ListLiteralChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ListLiteralChildren::Comment(x) => x.read_from(state, emitter),
-            ListLiteralChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            ListLiteralChildren::Error(x) => x.read_from(state, emitter),
+            ListLiteralChildren::Extra(x) => x.read_from(state, emitter),
             ListLiteralChildren::_Expression(x) => x.read_from(state, emitter),
             ListLiteralChildren::ByRef(x) => x.read_from(state, emitter),
             ListLiteralChildren::DynamicVariableName(x) => x.read_from(state, emitter),
@@ -262,15 +262,8 @@ impl ListLiteralChildren {
 impl NodeAccess for ListLiteralChildren {
     fn brief_desc(&self) -> String {
         match self {
-            ListLiteralChildren::Comment(x) => {
-                format!("ListLiteralChildren::comment({})", x.brief_desc())
-            }
-            ListLiteralChildren::TextInterpolation(x) => format!(
-                "ListLiteralChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ListLiteralChildren::Error(x) => {
-                format!("ListLiteralChildren::ERROR({})", x.brief_desc())
+            ListLiteralChildren::Extra(x) => {
+                format!("ListLiteralChildren::extra({})", x.brief_desc())
             }
             ListLiteralChildren::_Expression(x) => {
                 format!("ListLiteralChildren::_expression({})", x.brief_desc())
@@ -325,9 +318,7 @@ impl NodeAccess for ListLiteralChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ListLiteralChildren::Comment(x) => x.as_any(),
-            ListLiteralChildren::TextInterpolation(x) => x.as_any(),
-            ListLiteralChildren::Error(x) => x.as_any(),
+            ListLiteralChildren::Extra(x) => x.as_any(),
             ListLiteralChildren::_Expression(x) => x.as_any(),
             ListLiteralChildren::ByRef(x) => x.as_any(),
             ListLiteralChildren::DynamicVariableName(x) => x.as_any(),
@@ -346,9 +337,7 @@ impl NodeAccess for ListLiteralChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ListLiteralChildren::Comment(x) => x.children_any(),
-            ListLiteralChildren::TextInterpolation(x) => x.children_any(),
-            ListLiteralChildren::Error(x) => x.children_any(),
+            ListLiteralChildren::Extra(x) => x.children_any(),
             ListLiteralChildren::_Expression(x) => x.children_any(),
             ListLiteralChildren::ByRef(x) => x.children_any(),
             ListLiteralChildren::DynamicVariableName(x) => x.children_any(),
@@ -367,9 +356,7 @@ impl NodeAccess for ListLiteralChildren {
 
     fn range(&self) -> Range {
         match self {
-            ListLiteralChildren::Comment(x) => x.range(),
-            ListLiteralChildren::TextInterpolation(x) => x.range(),
-            ListLiteralChildren::Error(x) => x.range(),
+            ListLiteralChildren::Extra(x) => x.range(),
             ListLiteralChildren::_Expression(x) => x.range(),
             ListLiteralChildren::ByRef(x) => x.range(),
             ListLiteralChildren::DynamicVariableName(x) => x.range(),

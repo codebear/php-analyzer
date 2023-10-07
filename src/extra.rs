@@ -1,9 +1,13 @@
 use tree_sitter::Node;
 
 use crate::{
+    analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, comment::CommentNode, text_interpolation::TextInterpolationNode},
     autotree::{NodeAccess, ParseError},
     errornode::ErrorNode,
+    issue::IssueEmitter,
+    types::union::UnionType,
+    value::PHPValue,
 };
 
 #[derive(Debug, Clone)]
@@ -71,6 +75,40 @@ impl NodeAccess for ExtraChild {
             ExtraChild::Comment(c) => c.children_any(),
             ExtraChild::TextInterpolation(t) => t.children_any(),
             ExtraChild::Error(e) => e.children_any(),
+        }
+    }
+}
+
+impl ExtraChild {
+    pub fn get_utype(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        match self {
+            ExtraChild::Comment(c) => c.get_utype(state, emitter),
+            ExtraChild::TextInterpolation(t) => t.get_utype(state, emitter),
+            ExtraChild::Error(e) => e.get_utype(state, emitter),
+        }
+    }
+
+    pub fn get_php_value(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<PHPValue> {
+        match self {
+            ExtraChild::Comment(c) => c.get_php_value(state, emitter),
+            ExtraChild::TextInterpolation(t) => t.get_php_value(state, emitter),
+            ExtraChild::Error(e) => e.get_php_value(state, emitter),
+        }
+    }
+
+    pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        match self {
+            ExtraChild::Comment(c) => c.read_from(state, emitter),
+            ExtraChild::TextInterpolation(t) => t.read_from(state, emitter),
+            ExtraChild::Error(e) => e.read_from(state, emitter),
         }
     }
 }

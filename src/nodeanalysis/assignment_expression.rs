@@ -71,9 +71,7 @@ impl AssignmentExpressionLeft {
                 vn.write_to(state, emitter, val_type, value)
             }
 
-            AssignmentExpressionLeft::Comment(_)
-            | AssignmentExpressionLeft::TextInterpolation(_)
-            | AssignmentExpressionLeft::Error(_) => (),
+            AssignmentExpressionLeft::Extra(_) => (),
         }
     }
 }

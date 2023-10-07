@@ -52,21 +52,21 @@ pub enum BinaryExpressionOperator {
     Xor(&'static str, Range),
     BinaryOr(&'static str, Range),
     BooleanOr(&'static str, Range),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl BinaryExpressionOperator {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                BinaryExpressionOperator::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => BinaryExpressionOperator::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => BinaryExpressionOperator::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => BinaryExpressionOperator::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => BinaryExpressionOperator::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => BinaryExpressionOperator::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "!=" => BinaryExpressionOperator::NotEqual("!=", node.range()),
             "!==" => BinaryExpressionOperator::NotIdentical("!==", node.range()),
             "%" => BinaryExpressionOperator::Mod("%", node.range()),
@@ -107,13 +107,15 @@ impl BinaryExpressionOperator {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                BinaryExpressionOperator::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => BinaryExpressionOperator::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => BinaryExpressionOperator::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => BinaryExpressionOperator::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => BinaryExpressionOperator::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => BinaryExpressionOperator::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "!=" => BinaryExpressionOperator::NotEqual("!=", node.range()),
             "!==" => BinaryExpressionOperator::NotIdentical("!==", node.range()),
             "%" => BinaryExpressionOperator::Mod("%", node.range()),
@@ -168,9 +170,7 @@ impl BinaryExpressionOperator {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            BinaryExpressionOperator::Comment(x) => x.get_utype(state, emitter),
-            BinaryExpressionOperator::TextInterpolation(x) => x.get_utype(state, emitter),
-            BinaryExpressionOperator::Error(x) => x.get_utype(state, emitter),
+            BinaryExpressionOperator::Extra(x) => x.get_utype(state, emitter),
             BinaryExpressionOperator::NotEqual(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::NotIdentical(_, _) => Some(DiscreteType::String.into()),
             BinaryExpressionOperator::Mod(_, _) => Some(DiscreteType::String.into()),
@@ -207,9 +207,7 @@ impl BinaryExpressionOperator {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            BinaryExpressionOperator::Comment(x) => x.get_php_value(state, emitter),
-            BinaryExpressionOperator::TextInterpolation(x) => x.get_php_value(state, emitter),
-            BinaryExpressionOperator::Error(x) => x.get_php_value(state, emitter),
+            BinaryExpressionOperator::Extra(x) => x.get_php_value(state, emitter),
             BinaryExpressionOperator::NotEqual(a, _) => {
                 Some(PHPValue::String(OsStr::new(a).to_os_string()))
             }
@@ -296,9 +294,7 @@ impl BinaryExpressionOperator {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            BinaryExpressionOperator::Comment(x) => x.read_from(state, emitter),
-            BinaryExpressionOperator::TextInterpolation(x) => x.read_from(state, emitter),
-            BinaryExpressionOperator::Error(x) => x.read_from(state, emitter),
+            BinaryExpressionOperator::Extra(x) => x.read_from(state, emitter),
             BinaryExpressionOperator::NotEqual(_, _) => (),
             BinaryExpressionOperator::NotIdentical(_, _) => (),
             BinaryExpressionOperator::Mod(_, _) => (),
@@ -333,15 +329,8 @@ impl BinaryExpressionOperator {
 impl NodeAccess for BinaryExpressionOperator {
     fn brief_desc(&self) -> String {
         match self {
-            BinaryExpressionOperator::Comment(x) => {
-                format!("BinaryExpressionOperator::comment({})", x.brief_desc())
-            }
-            BinaryExpressionOperator::TextInterpolation(x) => format!(
-                "BinaryExpressionOperator::text_interpolation({})",
-                x.brief_desc()
-            ),
-            BinaryExpressionOperator::Error(x) => {
-                format!("BinaryExpressionOperator::ERROR({})", x.brief_desc())
+            BinaryExpressionOperator::Extra(x) => {
+                format!("BinaryExpressionOperator::extra({})", x.brief_desc())
             }
             BinaryExpressionOperator::NotEqual(a, _) => a.to_string(),
             BinaryExpressionOperator::NotIdentical(a, _) => a.to_string(),
@@ -375,9 +364,7 @@ impl NodeAccess for BinaryExpressionOperator {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            BinaryExpressionOperator::Comment(x) => x.as_any(),
-            BinaryExpressionOperator::TextInterpolation(x) => x.as_any(),
-            BinaryExpressionOperator::Error(x) => x.as_any(),
+            BinaryExpressionOperator::Extra(x) => x.as_any(),
             BinaryExpressionOperator::NotEqual(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::NotIdentical(a, b) => AnyNodeRef::StaticExpr(a, *b),
             BinaryExpressionOperator::Mod(a, b) => AnyNodeRef::StaticExpr(a, *b),
@@ -410,9 +397,7 @@ impl NodeAccess for BinaryExpressionOperator {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            BinaryExpressionOperator::Comment(x) => x.children_any(),
-            BinaryExpressionOperator::TextInterpolation(x) => x.children_any(),
-            BinaryExpressionOperator::Error(x) => x.children_any(),
+            BinaryExpressionOperator::Extra(x) => x.children_any(),
             BinaryExpressionOperator::NotEqual(_, _) => todo!("Crap"),
             BinaryExpressionOperator::NotIdentical(_, _) => todo!("Crap"),
             BinaryExpressionOperator::Mod(_, _) => todo!("Crap"),
@@ -445,9 +430,7 @@ impl NodeAccess for BinaryExpressionOperator {
 
     fn range(&self) -> Range {
         match self {
-            BinaryExpressionOperator::Comment(x) => x.range(),
-            BinaryExpressionOperator::TextInterpolation(x) => x.range(),
-            BinaryExpressionOperator::Error(x) => x.range(),
+            BinaryExpressionOperator::Extra(x) => x.range(),
             BinaryExpressionOperator::NotEqual(_, r) => *r,
             BinaryExpressionOperator::NotIdentical(_, r) => *r,
             BinaryExpressionOperator::Mod(_, r) => *r,
@@ -489,21 +472,21 @@ pub enum BinaryExpressionRight {
     ScopedPropertyAccessExpression(Box<ScopedPropertyAccessExpressionNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl BinaryExpressionRight {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                BinaryExpressionRight::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => BinaryExpressionRight::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => BinaryExpressionRight::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => BinaryExpressionRight::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => BinaryExpressionRight::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => BinaryExpressionRight::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "dynamic_variable_name" => BinaryExpressionRight::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -549,13 +532,15 @@ impl BinaryExpressionRight {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                BinaryExpressionRight::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => BinaryExpressionRight::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => BinaryExpressionRight::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => BinaryExpressionRight::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => BinaryExpressionRight::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => BinaryExpressionRight::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "dynamic_variable_name" => BinaryExpressionRight::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -619,9 +604,7 @@ impl BinaryExpressionRight {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            BinaryExpressionRight::Comment(x) => x.get_utype(state, emitter),
-            BinaryExpressionRight::TextInterpolation(x) => x.get_utype(state, emitter),
-            BinaryExpressionRight::Error(x) => x.get_utype(state, emitter),
+            BinaryExpressionRight::Extra(x) => x.get_utype(state, emitter),
             BinaryExpressionRight::_Expression(x) => x.get_utype(state, emitter),
             BinaryExpressionRight::DynamicVariableName(x) => x.get_utype(state, emitter),
             BinaryExpressionRight::MemberAccessExpression(x) => x.get_utype(state, emitter),
@@ -640,9 +623,7 @@ impl BinaryExpressionRight {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            BinaryExpressionRight::Comment(x) => x.get_php_value(state, emitter),
-            BinaryExpressionRight::TextInterpolation(x) => x.get_php_value(state, emitter),
-            BinaryExpressionRight::Error(x) => x.get_php_value(state, emitter),
+            BinaryExpressionRight::Extra(x) => x.get_php_value(state, emitter),
             BinaryExpressionRight::_Expression(x) => x.get_php_value(state, emitter),
             BinaryExpressionRight::DynamicVariableName(x) => x.get_php_value(state, emitter),
             BinaryExpressionRight::MemberAccessExpression(x) => x.get_php_value(state, emitter),
@@ -661,9 +642,7 @@ impl BinaryExpressionRight {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            BinaryExpressionRight::Comment(x) => x.read_from(state, emitter),
-            BinaryExpressionRight::TextInterpolation(x) => x.read_from(state, emitter),
-            BinaryExpressionRight::Error(x) => x.read_from(state, emitter),
+            BinaryExpressionRight::Extra(x) => x.read_from(state, emitter),
             BinaryExpressionRight::_Expression(x) => x.read_from(state, emitter),
             BinaryExpressionRight::DynamicVariableName(x) => x.read_from(state, emitter),
             BinaryExpressionRight::MemberAccessExpression(x) => x.read_from(state, emitter),
@@ -680,15 +659,8 @@ impl BinaryExpressionRight {
 impl NodeAccess for BinaryExpressionRight {
     fn brief_desc(&self) -> String {
         match self {
-            BinaryExpressionRight::Comment(x) => {
-                format!("BinaryExpressionRight::comment({})", x.brief_desc())
-            }
-            BinaryExpressionRight::TextInterpolation(x) => format!(
-                "BinaryExpressionRight::text_interpolation({})",
-                x.brief_desc()
-            ),
-            BinaryExpressionRight::Error(x) => {
-                format!("BinaryExpressionRight::ERROR({})", x.brief_desc())
+            BinaryExpressionRight::Extra(x) => {
+                format!("BinaryExpressionRight::extra({})", x.brief_desc())
             }
             BinaryExpressionRight::_Expression(x) => {
                 format!("BinaryExpressionRight::_expression({})", x.brief_desc())
@@ -727,9 +699,7 @@ impl NodeAccess for BinaryExpressionRight {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            BinaryExpressionRight::Comment(x) => x.as_any(),
-            BinaryExpressionRight::TextInterpolation(x) => x.as_any(),
-            BinaryExpressionRight::Error(x) => x.as_any(),
+            BinaryExpressionRight::Extra(x) => x.as_any(),
             BinaryExpressionRight::_Expression(x) => x.as_any(),
             BinaryExpressionRight::DynamicVariableName(x) => x.as_any(),
             BinaryExpressionRight::MemberAccessExpression(x) => x.as_any(),
@@ -744,9 +714,7 @@ impl NodeAccess for BinaryExpressionRight {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            BinaryExpressionRight::Comment(x) => x.children_any(),
-            BinaryExpressionRight::TextInterpolation(x) => x.children_any(),
-            BinaryExpressionRight::Error(x) => x.children_any(),
+            BinaryExpressionRight::Extra(x) => x.children_any(),
             BinaryExpressionRight::_Expression(x) => x.children_any(),
             BinaryExpressionRight::DynamicVariableName(x) => x.children_any(),
             BinaryExpressionRight::MemberAccessExpression(x) => x.children_any(),
@@ -761,9 +729,7 @@ impl NodeAccess for BinaryExpressionRight {
 
     fn range(&self) -> Range {
         match self {
-            BinaryExpressionRight::Comment(x) => x.range(),
-            BinaryExpressionRight::TextInterpolation(x) => x.range(),
-            BinaryExpressionRight::Error(x) => x.range(),
+            BinaryExpressionRight::Extra(x) => x.range(),
             BinaryExpressionRight::_Expression(x) => x.range(),
             BinaryExpressionRight::DynamicVariableName(x) => x.range(),
             BinaryExpressionRight::MemberAccessExpression(x) => x.range(),

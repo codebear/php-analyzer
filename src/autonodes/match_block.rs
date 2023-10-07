@@ -18,19 +18,21 @@ use tree_sitter::Range;
 pub enum MatchBlockChildren {
     MatchConditionalExpression(Box<MatchConditionalExpressionNode>),
     MatchDefaultExpression(Box<MatchDefaultExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl MatchBlockChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => MatchBlockChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => MatchBlockChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => MatchBlockChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => MatchBlockChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => MatchBlockChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => MatchBlockChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "match_conditional_expression" => MatchBlockChildren::MatchConditionalExpression(
                 Box::new(MatchConditionalExpressionNode::parse(node, source)?),
             ),
@@ -49,11 +51,15 @@ impl MatchBlockChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => MatchBlockChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => MatchBlockChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => MatchBlockChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => MatchBlockChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => MatchBlockChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => MatchBlockChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "match_conditional_expression" => MatchBlockChildren::MatchConditionalExpression(
                 Box::new(MatchConditionalExpressionNode::parse(node, source)?),
             ),
@@ -86,9 +92,7 @@ impl MatchBlockChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            MatchBlockChildren::Comment(x) => x.get_utype(state, emitter),
-            MatchBlockChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            MatchBlockChildren::Error(x) => x.get_utype(state, emitter),
+            MatchBlockChildren::Extra(x) => x.get_utype(state, emitter),
             MatchBlockChildren::MatchConditionalExpression(x) => x.get_utype(state, emitter),
             MatchBlockChildren::MatchDefaultExpression(x) => x.get_utype(state, emitter),
         }
@@ -100,9 +104,7 @@ impl MatchBlockChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            MatchBlockChildren::Comment(x) => x.get_php_value(state, emitter),
-            MatchBlockChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            MatchBlockChildren::Error(x) => x.get_php_value(state, emitter),
+            MatchBlockChildren::Extra(x) => x.get_php_value(state, emitter),
             MatchBlockChildren::MatchConditionalExpression(x) => x.get_php_value(state, emitter),
             MatchBlockChildren::MatchDefaultExpression(x) => x.get_php_value(state, emitter),
         }
@@ -110,9 +112,7 @@ impl MatchBlockChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            MatchBlockChildren::Comment(x) => x.read_from(state, emitter),
-            MatchBlockChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            MatchBlockChildren::Error(x) => x.read_from(state, emitter),
+            MatchBlockChildren::Extra(x) => x.read_from(state, emitter),
             MatchBlockChildren::MatchConditionalExpression(x) => x.read_from(state, emitter),
             MatchBlockChildren::MatchDefaultExpression(x) => x.read_from(state, emitter),
         }
@@ -122,14 +122,8 @@ impl MatchBlockChildren {
 impl NodeAccess for MatchBlockChildren {
     fn brief_desc(&self) -> String {
         match self {
-            MatchBlockChildren::Comment(x) => {
-                format!("MatchBlockChildren::comment({})", x.brief_desc())
-            }
-            MatchBlockChildren::TextInterpolation(x) => {
-                format!("MatchBlockChildren::text_interpolation({})", x.brief_desc())
-            }
-            MatchBlockChildren::Error(x) => {
-                format!("MatchBlockChildren::ERROR({})", x.brief_desc())
+            MatchBlockChildren::Extra(x) => {
+                format!("MatchBlockChildren::extra({})", x.brief_desc())
             }
             MatchBlockChildren::MatchConditionalExpression(x) => format!(
                 "MatchBlockChildren::match_conditional_expression({})",
@@ -144,9 +138,7 @@ impl NodeAccess for MatchBlockChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            MatchBlockChildren::Comment(x) => x.as_any(),
-            MatchBlockChildren::TextInterpolation(x) => x.as_any(),
-            MatchBlockChildren::Error(x) => x.as_any(),
+            MatchBlockChildren::Extra(x) => x.as_any(),
             MatchBlockChildren::MatchConditionalExpression(x) => x.as_any(),
             MatchBlockChildren::MatchDefaultExpression(x) => x.as_any(),
         }
@@ -154,9 +146,7 @@ impl NodeAccess for MatchBlockChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            MatchBlockChildren::Comment(x) => x.children_any(),
-            MatchBlockChildren::TextInterpolation(x) => x.children_any(),
-            MatchBlockChildren::Error(x) => x.children_any(),
+            MatchBlockChildren::Extra(x) => x.children_any(),
             MatchBlockChildren::MatchConditionalExpression(x) => x.children_any(),
             MatchBlockChildren::MatchDefaultExpression(x) => x.children_any(),
         }
@@ -164,9 +154,7 @@ impl NodeAccess for MatchBlockChildren {
 
     fn range(&self) -> Range {
         match self {
-            MatchBlockChildren::Comment(x) => x.range(),
-            MatchBlockChildren::TextInterpolation(x) => x.range(),
-            MatchBlockChildren::Error(x) => x.range(),
+            MatchBlockChildren::Extra(x) => x.range(),
             MatchBlockChildren::MatchConditionalExpression(x) => x.range(),
             MatchBlockChildren::MatchDefaultExpression(x) => x.range(),
         }

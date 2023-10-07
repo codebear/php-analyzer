@@ -32,9 +32,7 @@ impl QualifiedNameNode {
                 QualifiedNameChildren::NamespaceNameAsPrefix(nn) => {
                     return nn.is_root_anchored();
                 }
-                QualifiedNameChildren::Comment(_)
-                | QualifiedNameChildren::TextInterpolation(_)
-                | QualifiedNameChildren::Error(_) => (),
+                QualifiedNameChildren::Extra(_) => (),
             }
         }
         false

@@ -18,23 +18,23 @@ use tree_sitter::Range;
 pub enum AnonymousFunctionUseClauseChildren {
     ByRef(Box<ByRefNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl AnonymousFunctionUseClauseChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => AnonymousFunctionUseClauseChildren::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => AnonymousFunctionUseClauseChildren::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                AnonymousFunctionUseClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                AnonymousFunctionUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "by_ref" => {
                 AnonymousFunctionUseClauseChildren::ByRef(Box::new(ByRefNode::parse(node, source)?))
             }
@@ -53,15 +53,17 @@ impl AnonymousFunctionUseClauseChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => AnonymousFunctionUseClauseChildren::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => AnonymousFunctionUseClauseChildren::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                AnonymousFunctionUseClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                AnonymousFunctionUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "by_ref" => {
                 AnonymousFunctionUseClauseChildren::ByRef(Box::new(ByRefNode::parse(node, source)?))
             }
@@ -94,9 +96,7 @@ impl AnonymousFunctionUseClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            AnonymousFunctionUseClauseChildren::Comment(x) => x.get_utype(state, emitter),
-            AnonymousFunctionUseClauseChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            AnonymousFunctionUseClauseChildren::Error(x) => x.get_utype(state, emitter),
+            AnonymousFunctionUseClauseChildren::Extra(x) => x.get_utype(state, emitter),
             AnonymousFunctionUseClauseChildren::ByRef(x) => x.get_utype(state, emitter),
             AnonymousFunctionUseClauseChildren::VariableName(x) => x.get_utype(state, emitter),
         }
@@ -108,11 +108,7 @@ impl AnonymousFunctionUseClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            AnonymousFunctionUseClauseChildren::Comment(x) => x.get_php_value(state, emitter),
-            AnonymousFunctionUseClauseChildren::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            AnonymousFunctionUseClauseChildren::Error(x) => x.get_php_value(state, emitter),
+            AnonymousFunctionUseClauseChildren::Extra(x) => x.get_php_value(state, emitter),
             AnonymousFunctionUseClauseChildren::ByRef(x) => x.get_php_value(state, emitter),
             AnonymousFunctionUseClauseChildren::VariableName(x) => x.get_php_value(state, emitter),
         }
@@ -120,9 +116,7 @@ impl AnonymousFunctionUseClauseChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            AnonymousFunctionUseClauseChildren::Comment(x) => x.read_from(state, emitter),
-            AnonymousFunctionUseClauseChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            AnonymousFunctionUseClauseChildren::Error(x) => x.read_from(state, emitter),
+            AnonymousFunctionUseClauseChildren::Extra(x) => x.read_from(state, emitter),
             AnonymousFunctionUseClauseChildren::ByRef(x) => x.read_from(state, emitter),
             AnonymousFunctionUseClauseChildren::VariableName(x) => x.read_from(state, emitter),
         }
@@ -132,16 +126,8 @@ impl AnonymousFunctionUseClauseChildren {
 impl NodeAccess for AnonymousFunctionUseClauseChildren {
     fn brief_desc(&self) -> String {
         match self {
-            AnonymousFunctionUseClauseChildren::Comment(x) => format!(
-                "AnonymousFunctionUseClauseChildren::comment({})",
-                x.brief_desc()
-            ),
-            AnonymousFunctionUseClauseChildren::TextInterpolation(x) => format!(
-                "AnonymousFunctionUseClauseChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            AnonymousFunctionUseClauseChildren::Error(x) => format!(
-                "AnonymousFunctionUseClauseChildren::ERROR({})",
+            AnonymousFunctionUseClauseChildren::Extra(x) => format!(
+                "AnonymousFunctionUseClauseChildren::extra({})",
                 x.brief_desc()
             ),
             AnonymousFunctionUseClauseChildren::ByRef(x) => format!(
@@ -157,9 +143,7 @@ impl NodeAccess for AnonymousFunctionUseClauseChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            AnonymousFunctionUseClauseChildren::Comment(x) => x.as_any(),
-            AnonymousFunctionUseClauseChildren::TextInterpolation(x) => x.as_any(),
-            AnonymousFunctionUseClauseChildren::Error(x) => x.as_any(),
+            AnonymousFunctionUseClauseChildren::Extra(x) => x.as_any(),
             AnonymousFunctionUseClauseChildren::ByRef(x) => x.as_any(),
             AnonymousFunctionUseClauseChildren::VariableName(x) => x.as_any(),
         }
@@ -167,9 +151,7 @@ impl NodeAccess for AnonymousFunctionUseClauseChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            AnonymousFunctionUseClauseChildren::Comment(x) => x.children_any(),
-            AnonymousFunctionUseClauseChildren::TextInterpolation(x) => x.children_any(),
-            AnonymousFunctionUseClauseChildren::Error(x) => x.children_any(),
+            AnonymousFunctionUseClauseChildren::Extra(x) => x.children_any(),
             AnonymousFunctionUseClauseChildren::ByRef(x) => x.children_any(),
             AnonymousFunctionUseClauseChildren::VariableName(x) => x.children_any(),
         }
@@ -177,9 +159,7 @@ impl NodeAccess for AnonymousFunctionUseClauseChildren {
 
     fn range(&self) -> Range {
         match self {
-            AnonymousFunctionUseClauseChildren::Comment(x) => x.range(),
-            AnonymousFunctionUseClauseChildren::TextInterpolation(x) => x.range(),
-            AnonymousFunctionUseClauseChildren::Error(x) => x.range(),
+            AnonymousFunctionUseClauseChildren::Extra(x) => x.range(),
             AnonymousFunctionUseClauseChildren::ByRef(x) => x.range(),
             AnonymousFunctionUseClauseChildren::VariableName(x) => x.range(),
         }

@@ -18,19 +18,21 @@ use tree_sitter::Range;
 pub enum UseListChildren {
     UseAsClause(Box<UseAsClauseNode>),
     UseInsteadOfClause(Box<UseInsteadOfClauseNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl UseListChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => UseListChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => UseListChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UseListChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => UseListChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UseListChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => {
+                UseListChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "use_as_clause" => {
                 UseListChildren::UseAsClause(Box::new(UseAsClauseNode::parse(node, source)?))
             }
@@ -49,11 +51,15 @@ impl UseListChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => UseListChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => UseListChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => UseListChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
+                node, source,
+            )?))),
+            "text_interpolation" => UseListChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => UseListChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => {
+                UseListChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
+            }
             "use_as_clause" => {
                 UseListChildren::UseAsClause(Box::new(UseAsClauseNode::parse(node, source)?))
             }
@@ -86,9 +92,7 @@ impl UseListChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            UseListChildren::Comment(x) => x.get_utype(state, emitter),
-            UseListChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            UseListChildren::Error(x) => x.get_utype(state, emitter),
+            UseListChildren::Extra(x) => x.get_utype(state, emitter),
             UseListChildren::UseAsClause(x) => x.get_utype(state, emitter),
             UseListChildren::UseInsteadOfClause(x) => x.get_utype(state, emitter),
         }
@@ -100,9 +104,7 @@ impl UseListChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            UseListChildren::Comment(x) => x.get_php_value(state, emitter),
-            UseListChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            UseListChildren::Error(x) => x.get_php_value(state, emitter),
+            UseListChildren::Extra(x) => x.get_php_value(state, emitter),
             UseListChildren::UseAsClause(x) => x.get_php_value(state, emitter),
             UseListChildren::UseInsteadOfClause(x) => x.get_php_value(state, emitter),
         }
@@ -110,9 +112,7 @@ impl UseListChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            UseListChildren::Comment(x) => x.read_from(state, emitter),
-            UseListChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            UseListChildren::Error(x) => x.read_from(state, emitter),
+            UseListChildren::Extra(x) => x.read_from(state, emitter),
             UseListChildren::UseAsClause(x) => x.read_from(state, emitter),
             UseListChildren::UseInsteadOfClause(x) => x.read_from(state, emitter),
         }
@@ -122,11 +122,7 @@ impl UseListChildren {
 impl NodeAccess for UseListChildren {
     fn brief_desc(&self) -> String {
         match self {
-            UseListChildren::Comment(x) => format!("UseListChildren::comment({})", x.brief_desc()),
-            UseListChildren::TextInterpolation(x) => {
-                format!("UseListChildren::text_interpolation({})", x.brief_desc())
-            }
-            UseListChildren::Error(x) => format!("UseListChildren::ERROR({})", x.brief_desc()),
+            UseListChildren::Extra(x) => format!("UseListChildren::extra({})", x.brief_desc()),
             UseListChildren::UseAsClause(x) => {
                 format!("UseListChildren::use_as_clause({})", x.brief_desc())
             }
@@ -138,9 +134,7 @@ impl NodeAccess for UseListChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            UseListChildren::Comment(x) => x.as_any(),
-            UseListChildren::TextInterpolation(x) => x.as_any(),
-            UseListChildren::Error(x) => x.as_any(),
+            UseListChildren::Extra(x) => x.as_any(),
             UseListChildren::UseAsClause(x) => x.as_any(),
             UseListChildren::UseInsteadOfClause(x) => x.as_any(),
         }
@@ -148,9 +142,7 @@ impl NodeAccess for UseListChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            UseListChildren::Comment(x) => x.children_any(),
-            UseListChildren::TextInterpolation(x) => x.children_any(),
-            UseListChildren::Error(x) => x.children_any(),
+            UseListChildren::Extra(x) => x.children_any(),
             UseListChildren::UseAsClause(x) => x.children_any(),
             UseListChildren::UseInsteadOfClause(x) => x.children_any(),
         }
@@ -158,9 +150,7 @@ impl NodeAccess for UseListChildren {
 
     fn range(&self) -> Range {
         match self {
-            UseListChildren::Comment(x) => x.range(),
-            UseListChildren::TextInterpolation(x) => x.range(),
-            UseListChildren::Error(x) => x.range(),
+            UseListChildren::Extra(x) => x.range(),
             UseListChildren::UseAsClause(x) => x.range(),
             UseListChildren::UseInsteadOfClause(x) => x.range(),
         }

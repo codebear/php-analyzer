@@ -313,9 +313,7 @@ impl BinaryExpressionNode {
             }
 
             // void
-            BinaryExpressionOperator::Comment(_)
-            | BinaryExpressionOperator::TextInterpolation(_)
-            | BinaryExpressionOperator::Error(_) => None,
+            BinaryExpressionOperator::Extra(_) => None,
         }
         // crate::missing_none!("{}.get_php_value(..)", self.kind())
     }
@@ -440,9 +438,7 @@ impl BinaryExpressionNode {
                 crate::missing_none!("Handle {:?} ?? {:?}", ltype, rtype)
             }
 
-            BinaryExpressionOperator::Comment(_)
-            | BinaryExpressionOperator::TextInterpolation(_)
-            | BinaryExpressionOperator::Error(_) => None,
+            BinaryExpressionOperator::Extra(_) => None,
         }
     }
 }
@@ -465,9 +461,7 @@ impl BinaryExpressionRight {
             }
             // BinaryExpressionRight::SubscriptExpression(_) => todo!(),
             // BinaryExpressionRight::VariableName(_) => todo!(),
-            BinaryExpressionRight::Comment(_)
-            | BinaryExpressionRight::TextInterpolation(_)
-            | BinaryExpressionRight::Error(_) => (),
+            BinaryExpressionRight::Extra(_) => (),
 
             _ => missing!("BinaryExpressionRight.read_from({})", self.brief_desc()),
         }

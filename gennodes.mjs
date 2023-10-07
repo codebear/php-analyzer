@@ -114,12 +114,12 @@ for (const node_def of node_defs) {
 
 function get_enum_matches(enum_name, types, callback) {
     let buf = "";
-    let [capture, closure] = callback("comment", get_rust_type_name("comment"));
-    buf += `${enum_name}::Comment(${capture}) => ${closure},` + "\n";
-    [capture, closure] = callback("text_interpolation", get_rust_type_name("text_interpolation"));
-    buf += `${enum_name}::TextInterpolation(${capture}) => ${closure},` + "\n";
-    [capture, closure] = callback("ERROR", get_rust_type_name("ERROR"));
-    buf += `${enum_name}::Error(${capture}) => ${closure},` + "\n";
+    let [capture, closure] = callback("extra", get_rust_type_name("extra"));
+    buf += `${enum_name}::Extra(${capture}) => ${closure},` + "\n";
+    // [capture, closure] = callback("text_interpolation", get_rust_type_name("text_interpolation"));
+    // buf += `${enum_name}::TextInterpolation(${capture}) => ${closure},` + "\n";
+    // [capture, closure] = callback("ERROR", get_rust_type_name("ERROR"));
+    // buf += `${enum_name}::Error(${capture}) => ${closure},` + "\n";
 
     let map = {};
     for (let enum_type of types) {
@@ -140,6 +140,7 @@ function create_enum_for_types(name, types) {
         "crate::autotree::NodeAccess",
         "crate::autotree::ParseError",
         "crate::autonodes::any::AnyNodeRef",
+        "crate::extra::ExtraChild",
     ];
     let enum_entries = new Set();
     for (const enum_type of types) {
@@ -166,16 +167,18 @@ function create_enum_for_types(name, types) {
     uses.push("crate::errornode::ErrorNode");
     uses.push("crate::autonodes::text_interpolation::TextInterpolationNode");
     // child_enum_buffer += "   Unknown(Box<AnyNode>),\n";
-    child_enum_buffer += "   Comment(Box<CommentNode>),\n";
-    child_enum_buffer += "   TextInterpolation(Box<TextInterpolationNode>),\n";
-    child_enum_buffer += "   Error(Box<ErrorNode>),\n";
+    child_enum_buffer += "  Extra(ExtraChild),\n";
+
+    // child_enum_buffer += "   Comment(Box<CommentNode>),\n";
+    // child_enum_buffer += "   TextInterpolation(Box<TextInterpolationNode>),\n";
+    // child_enum_buffer += "   Error(Box<ErrorNode>),\n";
     child_enum_buffer += "}\n\n";
 
 
     let match_enum_buffer = "";
-    match_enum_buffer += `      "comment" => ${name}::Comment(Box::new(CommentNode::parse(node, source)?)),` + "\n";
-    match_enum_buffer += `      "text_interpolation" => ${name}::TextInterpolation(Box::new(TextInterpolationNode::parse(node, source)?)),` + "\n";
-    match_enum_buffer += `      "ERROR" => ${name}::Error(Box::new(ErrorNode::parse(node, source)?)),` + "\n";
+    match_enum_buffer += `      "comment" => ${name}::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(node, source)?))),` + "\n";
+    match_enum_buffer += `      "text_interpolation" => ${name}::Extra(ExtraChild::TextInterpolation(Box::new(TextInterpolationNode::parse(node, source)?))),` + "\n";
+    match_enum_buffer += `      "ERROR" => ${name}::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?))),` + "\n";
     let opt_wildcard = "";
     let new_wildcard = "";
     for (let type of types) {

@@ -36,23 +36,23 @@ use tree_sitter::Range;
 pub enum ScopedPropertyAccessExpressionName {
     DynamicVariableName(Box<DynamicVariableNameNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ScopedPropertyAccessExpressionName {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ScopedPropertyAccessExpressionName::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => ScopedPropertyAccessExpressionName::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                ScopedPropertyAccessExpressionName::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ScopedPropertyAccessExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => ScopedPropertyAccessExpressionName::DynamicVariableName(
                 Box::new(DynamicVariableNameNode::parse(node, source)?),
             ),
@@ -71,15 +71,17 @@ impl ScopedPropertyAccessExpressionName {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ScopedPropertyAccessExpressionName::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => ScopedPropertyAccessExpressionName::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                ScopedPropertyAccessExpressionName::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ScopedPropertyAccessExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => ScopedPropertyAccessExpressionName::DynamicVariableName(
                 Box::new(DynamicVariableNameNode::parse(node, source)?),
             ),
@@ -112,9 +114,7 @@ impl ScopedPropertyAccessExpressionName {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ScopedPropertyAccessExpressionName::Comment(x) => x.get_utype(state, emitter),
-            ScopedPropertyAccessExpressionName::TextInterpolation(x) => x.get_utype(state, emitter),
-            ScopedPropertyAccessExpressionName::Error(x) => x.get_utype(state, emitter),
+            ScopedPropertyAccessExpressionName::Extra(x) => x.get_utype(state, emitter),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => {
                 x.get_utype(state, emitter)
             }
@@ -128,11 +128,7 @@ impl ScopedPropertyAccessExpressionName {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ScopedPropertyAccessExpressionName::Comment(x) => x.get_php_value(state, emitter),
-            ScopedPropertyAccessExpressionName::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            ScopedPropertyAccessExpressionName::Error(x) => x.get_php_value(state, emitter),
+            ScopedPropertyAccessExpressionName::Extra(x) => x.get_php_value(state, emitter),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -142,9 +138,7 @@ impl ScopedPropertyAccessExpressionName {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ScopedPropertyAccessExpressionName::Comment(x) => x.read_from(state, emitter),
-            ScopedPropertyAccessExpressionName::TextInterpolation(x) => x.read_from(state, emitter),
-            ScopedPropertyAccessExpressionName::Error(x) => x.read_from(state, emitter),
+            ScopedPropertyAccessExpressionName::Extra(x) => x.read_from(state, emitter),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => {
                 x.read_from(state, emitter)
             }
@@ -156,16 +150,8 @@ impl ScopedPropertyAccessExpressionName {
 impl NodeAccess for ScopedPropertyAccessExpressionName {
     fn brief_desc(&self) -> String {
         match self {
-            ScopedPropertyAccessExpressionName::Comment(x) => format!(
-                "ScopedPropertyAccessExpressionName::comment({})",
-                x.brief_desc()
-            ),
-            ScopedPropertyAccessExpressionName::TextInterpolation(x) => format!(
-                "ScopedPropertyAccessExpressionName::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ScopedPropertyAccessExpressionName::Error(x) => format!(
-                "ScopedPropertyAccessExpressionName::ERROR({})",
+            ScopedPropertyAccessExpressionName::Extra(x) => format!(
+                "ScopedPropertyAccessExpressionName::extra({})",
                 x.brief_desc()
             ),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => format!(
@@ -181,9 +167,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionName {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ScopedPropertyAccessExpressionName::Comment(x) => x.as_any(),
-            ScopedPropertyAccessExpressionName::TextInterpolation(x) => x.as_any(),
-            ScopedPropertyAccessExpressionName::Error(x) => x.as_any(),
+            ScopedPropertyAccessExpressionName::Extra(x) => x.as_any(),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => x.as_any(),
             ScopedPropertyAccessExpressionName::VariableName(x) => x.as_any(),
         }
@@ -191,9 +175,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionName {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ScopedPropertyAccessExpressionName::Comment(x) => x.children_any(),
-            ScopedPropertyAccessExpressionName::TextInterpolation(x) => x.children_any(),
-            ScopedPropertyAccessExpressionName::Error(x) => x.children_any(),
+            ScopedPropertyAccessExpressionName::Extra(x) => x.children_any(),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => x.children_any(),
             ScopedPropertyAccessExpressionName::VariableName(x) => x.children_any(),
         }
@@ -201,9 +183,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionName {
 
     fn range(&self) -> Range {
         match self {
-            ScopedPropertyAccessExpressionName::Comment(x) => x.range(),
-            ScopedPropertyAccessExpressionName::TextInterpolation(x) => x.range(),
-            ScopedPropertyAccessExpressionName::Error(x) => x.range(),
+            ScopedPropertyAccessExpressionName::Extra(x) => x.range(),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => x.range(),
             ScopedPropertyAccessExpressionName::VariableName(x) => x.range(),
         }
@@ -232,23 +212,23 @@ pub enum ScopedPropertyAccessExpressionScope {
     String(Box<StringNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ScopedPropertyAccessExpressionScope {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ScopedPropertyAccessExpressionScope::Comment(Box::new(
+            "comment" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
-            )),
-            "text_interpolation" => ScopedPropertyAccessExpressionScope::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => ScopedPropertyAccessExpressionScope::Error(Box::new(ErrorNode::parse(
-                node, source,
-            )?)),
+            ))),
+            "text_interpolation" => {
+                ScopedPropertyAccessExpressionScope::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
+            "ERROR" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => {
                 ScopedPropertyAccessExpressionScope::ArrayCreationExpression(Box::new(
                     ArrayCreationExpressionNode::parse(node, source)?,
@@ -340,15 +320,17 @@ impl ScopedPropertyAccessExpressionScope {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ScopedPropertyAccessExpressionScope::Comment(Box::new(
+            "comment" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
-            )),
-            "text_interpolation" => ScopedPropertyAccessExpressionScope::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => ScopedPropertyAccessExpressionScope::Error(Box::new(ErrorNode::parse(
-                node, source,
-            )?)),
+            ))),
+            "text_interpolation" => {
+                ScopedPropertyAccessExpressionScope::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
+            "ERROR" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => {
                 ScopedPropertyAccessExpressionScope::ArrayCreationExpression(Box::new(
                     ArrayCreationExpressionNode::parse(node, source)?,
@@ -454,11 +436,7 @@ impl ScopedPropertyAccessExpressionScope {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ScopedPropertyAccessExpressionScope::Comment(x) => x.get_utype(state, emitter),
-            ScopedPropertyAccessExpressionScope::TextInterpolation(x) => {
-                x.get_utype(state, emitter)
-            }
-            ScopedPropertyAccessExpressionScope::Error(x) => x.get_utype(state, emitter),
+            ScopedPropertyAccessExpressionScope::Extra(x) => x.get_utype(state, emitter),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -513,11 +491,7 @@ impl ScopedPropertyAccessExpressionScope {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ScopedPropertyAccessExpressionScope::Comment(x) => x.get_php_value(state, emitter),
-            ScopedPropertyAccessExpressionScope::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            ScopedPropertyAccessExpressionScope::Error(x) => x.get_php_value(state, emitter),
+            ScopedPropertyAccessExpressionScope::Extra(x) => x.get_php_value(state, emitter),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -576,11 +550,7 @@ impl ScopedPropertyAccessExpressionScope {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ScopedPropertyAccessExpressionScope::Comment(x) => x.read_from(state, emitter),
-            ScopedPropertyAccessExpressionScope::TextInterpolation(x) => {
-                x.read_from(state, emitter)
-            }
-            ScopedPropertyAccessExpressionScope::Error(x) => x.read_from(state, emitter),
+            ScopedPropertyAccessExpressionScope::Extra(x) => x.read_from(state, emitter),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -633,16 +603,8 @@ impl ScopedPropertyAccessExpressionScope {
 impl NodeAccess for ScopedPropertyAccessExpressionScope {
     fn brief_desc(&self) -> String {
         match self {
-            ScopedPropertyAccessExpressionScope::Comment(x) => format!(
-                "ScopedPropertyAccessExpressionScope::comment({})",
-                x.brief_desc()
-            ),
-            ScopedPropertyAccessExpressionScope::TextInterpolation(x) => format!(
-                "ScopedPropertyAccessExpressionScope::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ScopedPropertyAccessExpressionScope::Error(x) => format!(
-                "ScopedPropertyAccessExpressionScope::ERROR({})",
+            ScopedPropertyAccessExpressionScope::Extra(x) => format!(
+                "ScopedPropertyAccessExpressionScope::extra({})",
                 x.brief_desc()
             ),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => format!(
@@ -734,9 +696,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ScopedPropertyAccessExpressionScope::Comment(x) => x.as_any(),
-            ScopedPropertyAccessExpressionScope::TextInterpolation(x) => x.as_any(),
-            ScopedPropertyAccessExpressionScope::Error(x) => x.as_any(),
+            ScopedPropertyAccessExpressionScope::Extra(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::CastExpression(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::ClassConstantAccessExpression(x) => x.as_any(),
@@ -763,9 +723,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ScopedPropertyAccessExpressionScope::Comment(x) => x.children_any(),
-            ScopedPropertyAccessExpressionScope::TextInterpolation(x) => x.children_any(),
-            ScopedPropertyAccessExpressionScope::Error(x) => x.children_any(),
+            ScopedPropertyAccessExpressionScope::Extra(x) => x.children_any(),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => x.children_any(),
             ScopedPropertyAccessExpressionScope::CastExpression(x) => x.children_any(),
             ScopedPropertyAccessExpressionScope::ClassConstantAccessExpression(x) => {
@@ -800,9 +758,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
 
     fn range(&self) -> Range {
         match self {
-            ScopedPropertyAccessExpressionScope::Comment(x) => x.range(),
-            ScopedPropertyAccessExpressionScope::TextInterpolation(x) => x.range(),
-            ScopedPropertyAccessExpressionScope::Error(x) => x.range(),
+            ScopedPropertyAccessExpressionScope::Extra(x) => x.range(),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => x.range(),
             ScopedPropertyAccessExpressionScope::CastExpression(x) => x.range(),
             ScopedPropertyAccessExpressionScope::ClassConstantAccessExpression(x) => x.range(),

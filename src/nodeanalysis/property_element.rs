@@ -101,9 +101,7 @@ impl PropertyElementNode {
                     readonly = true;
                 }
 
-                PropertyDeclarationModifiers::Comment(_)
-                | PropertyDeclarationModifiers::TextInterpolation(_)
-                | PropertyDeclarationModifiers::Error(_) => (),
+                PropertyDeclarationModifiers::Extra(_) => (),
             }
         }
         /*eprintln!(

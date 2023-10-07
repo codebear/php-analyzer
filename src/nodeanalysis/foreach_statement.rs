@@ -84,9 +84,7 @@ impl ForeachStatementValue {
             ForeachStatementValue::ByRef(br) => br.write_to(state, emitter, val_type, value),
             ForeachStatementValue::ListLiteral(ll) => ll.write_to(state, emitter, val_type, value),
 
-            ForeachStatementValue::Comment(_)
-            | ForeachStatementValue::TextInterpolation(_)
-            | ForeachStatementValue::Error(_) => crate::missing!(),
+            ForeachStatementValue::Extra(_) => crate::missing!(),
         }
     }
 }

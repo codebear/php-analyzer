@@ -18,19 +18,21 @@ use tree_sitter::Range;
 pub enum SwitchBlockChildren {
     CaseStatement(Box<CaseStatementNode>),
     DefaultStatement(Box<DefaultStatementNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl SwitchBlockChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => SwitchBlockChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => SwitchBlockChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => SwitchBlockChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => SwitchBlockChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => SwitchBlockChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => SwitchBlockChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "case_statement" => SwitchBlockChildren::CaseStatement(Box::new(
                 CaseStatementNode::parse(node, source)?,
             )),
@@ -49,11 +51,15 @@ impl SwitchBlockChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => SwitchBlockChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => SwitchBlockChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => SwitchBlockChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => SwitchBlockChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => SwitchBlockChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => SwitchBlockChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "case_statement" => SwitchBlockChildren::CaseStatement(Box::new(
                 CaseStatementNode::parse(node, source)?,
             )),
@@ -86,9 +92,7 @@ impl SwitchBlockChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            SwitchBlockChildren::Comment(x) => x.get_utype(state, emitter),
-            SwitchBlockChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            SwitchBlockChildren::Error(x) => x.get_utype(state, emitter),
+            SwitchBlockChildren::Extra(x) => x.get_utype(state, emitter),
             SwitchBlockChildren::CaseStatement(x) => x.get_utype(state, emitter),
             SwitchBlockChildren::DefaultStatement(x) => x.get_utype(state, emitter),
         }
@@ -100,9 +104,7 @@ impl SwitchBlockChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            SwitchBlockChildren::Comment(x) => x.get_php_value(state, emitter),
-            SwitchBlockChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            SwitchBlockChildren::Error(x) => x.get_php_value(state, emitter),
+            SwitchBlockChildren::Extra(x) => x.get_php_value(state, emitter),
             SwitchBlockChildren::CaseStatement(x) => x.get_php_value(state, emitter),
             SwitchBlockChildren::DefaultStatement(x) => x.get_php_value(state, emitter),
         }
@@ -110,9 +112,7 @@ impl SwitchBlockChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            SwitchBlockChildren::Comment(x) => x.read_from(state, emitter),
-            SwitchBlockChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            SwitchBlockChildren::Error(x) => x.read_from(state, emitter),
+            SwitchBlockChildren::Extra(x) => x.read_from(state, emitter),
             SwitchBlockChildren::CaseStatement(x) => x.read_from(state, emitter),
             SwitchBlockChildren::DefaultStatement(x) => x.read_from(state, emitter),
         }
@@ -122,15 +122,8 @@ impl SwitchBlockChildren {
 impl NodeAccess for SwitchBlockChildren {
     fn brief_desc(&self) -> String {
         match self {
-            SwitchBlockChildren::Comment(x) => {
-                format!("SwitchBlockChildren::comment({})", x.brief_desc())
-            }
-            SwitchBlockChildren::TextInterpolation(x) => format!(
-                "SwitchBlockChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            SwitchBlockChildren::Error(x) => {
-                format!("SwitchBlockChildren::ERROR({})", x.brief_desc())
+            SwitchBlockChildren::Extra(x) => {
+                format!("SwitchBlockChildren::extra({})", x.brief_desc())
             }
             SwitchBlockChildren::CaseStatement(x) => {
                 format!("SwitchBlockChildren::case_statement({})", x.brief_desc())
@@ -143,9 +136,7 @@ impl NodeAccess for SwitchBlockChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            SwitchBlockChildren::Comment(x) => x.as_any(),
-            SwitchBlockChildren::TextInterpolation(x) => x.as_any(),
-            SwitchBlockChildren::Error(x) => x.as_any(),
+            SwitchBlockChildren::Extra(x) => x.as_any(),
             SwitchBlockChildren::CaseStatement(x) => x.as_any(),
             SwitchBlockChildren::DefaultStatement(x) => x.as_any(),
         }
@@ -153,9 +144,7 @@ impl NodeAccess for SwitchBlockChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            SwitchBlockChildren::Comment(x) => x.children_any(),
-            SwitchBlockChildren::TextInterpolation(x) => x.children_any(),
-            SwitchBlockChildren::Error(x) => x.children_any(),
+            SwitchBlockChildren::Extra(x) => x.children_any(),
             SwitchBlockChildren::CaseStatement(x) => x.children_any(),
             SwitchBlockChildren::DefaultStatement(x) => x.children_any(),
         }
@@ -163,9 +152,7 @@ impl NodeAccess for SwitchBlockChildren {
 
     fn range(&self) -> Range {
         match self {
-            SwitchBlockChildren::Comment(x) => x.range(),
-            SwitchBlockChildren::TextInterpolation(x) => x.range(),
-            SwitchBlockChildren::Error(x) => x.range(),
+            SwitchBlockChildren::Extra(x) => x.range(),
             SwitchBlockChildren::CaseStatement(x) => x.range(),
             SwitchBlockChildren::DefaultStatement(x) => x.range(),
         }

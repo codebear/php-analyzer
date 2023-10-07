@@ -18,19 +18,21 @@ use tree_sitter::Range;
 pub enum BaseClauseChildren {
     Name(Box<NameNode>),
     QualifiedName(Box<QualifiedNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl BaseClauseChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => BaseClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => BaseClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => BaseClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => BaseClauseChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => BaseClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => BaseClauseChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "name" => BaseClauseChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => {
                 BaseClauseChildren::QualifiedName(Box::new(QualifiedNameNode::parse(node, source)?))
@@ -47,11 +49,15 @@ impl BaseClauseChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => BaseClauseChildren::Comment(Box::new(CommentNode::parse(node, source)?)),
-            "text_interpolation" => BaseClauseChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => BaseClauseChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => BaseClauseChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => BaseClauseChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => BaseClauseChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+                node, source,
+            )?))),
             "name" => BaseClauseChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "qualified_name" => {
                 BaseClauseChildren::QualifiedName(Box::new(QualifiedNameNode::parse(node, source)?))
@@ -82,9 +88,7 @@ impl BaseClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            BaseClauseChildren::Comment(x) => x.get_utype(state, emitter),
-            BaseClauseChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            BaseClauseChildren::Error(x) => x.get_utype(state, emitter),
+            BaseClauseChildren::Extra(x) => x.get_utype(state, emitter),
             BaseClauseChildren::Name(x) => x.get_utype(state, emitter),
             BaseClauseChildren::QualifiedName(x) => x.get_utype(state, emitter),
         }
@@ -96,9 +100,7 @@ impl BaseClauseChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            BaseClauseChildren::Comment(x) => x.get_php_value(state, emitter),
-            BaseClauseChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            BaseClauseChildren::Error(x) => x.get_php_value(state, emitter),
+            BaseClauseChildren::Extra(x) => x.get_php_value(state, emitter),
             BaseClauseChildren::Name(x) => x.get_php_value(state, emitter),
             BaseClauseChildren::QualifiedName(x) => x.get_php_value(state, emitter),
         }
@@ -106,9 +108,7 @@ impl BaseClauseChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            BaseClauseChildren::Comment(x) => x.read_from(state, emitter),
-            BaseClauseChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            BaseClauseChildren::Error(x) => x.read_from(state, emitter),
+            BaseClauseChildren::Extra(x) => x.read_from(state, emitter),
             BaseClauseChildren::Name(x) => x.read_from(state, emitter),
             BaseClauseChildren::QualifiedName(x) => x.read_from(state, emitter),
         }
@@ -118,14 +118,8 @@ impl BaseClauseChildren {
 impl NodeAccess for BaseClauseChildren {
     fn brief_desc(&self) -> String {
         match self {
-            BaseClauseChildren::Comment(x) => {
-                format!("BaseClauseChildren::comment({})", x.brief_desc())
-            }
-            BaseClauseChildren::TextInterpolation(x) => {
-                format!("BaseClauseChildren::text_interpolation({})", x.brief_desc())
-            }
-            BaseClauseChildren::Error(x) => {
-                format!("BaseClauseChildren::ERROR({})", x.brief_desc())
+            BaseClauseChildren::Extra(x) => {
+                format!("BaseClauseChildren::extra({})", x.brief_desc())
             }
             BaseClauseChildren::Name(x) => format!("BaseClauseChildren::name({})", x.brief_desc()),
             BaseClauseChildren::QualifiedName(x) => {
@@ -136,9 +130,7 @@ impl NodeAccess for BaseClauseChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            BaseClauseChildren::Comment(x) => x.as_any(),
-            BaseClauseChildren::TextInterpolation(x) => x.as_any(),
-            BaseClauseChildren::Error(x) => x.as_any(),
+            BaseClauseChildren::Extra(x) => x.as_any(),
             BaseClauseChildren::Name(x) => x.as_any(),
             BaseClauseChildren::QualifiedName(x) => x.as_any(),
         }
@@ -146,9 +138,7 @@ impl NodeAccess for BaseClauseChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            BaseClauseChildren::Comment(x) => x.children_any(),
-            BaseClauseChildren::TextInterpolation(x) => x.children_any(),
-            BaseClauseChildren::Error(x) => x.children_any(),
+            BaseClauseChildren::Extra(x) => x.children_any(),
             BaseClauseChildren::Name(x) => x.children_any(),
             BaseClauseChildren::QualifiedName(x) => x.children_any(),
         }
@@ -156,9 +146,7 @@ impl NodeAccess for BaseClauseChildren {
 
     fn range(&self) -> Range {
         match self {
-            BaseClauseChildren::Comment(x) => x.range(),
-            BaseClauseChildren::TextInterpolation(x) => x.range(),
-            BaseClauseChildren::Error(x) => x.range(),
+            BaseClauseChildren::Extra(x) => x.range(),
             BaseClauseChildren::Name(x) => x.range(),
             BaseClauseChildren::QualifiedName(x) => x.range(),
         }

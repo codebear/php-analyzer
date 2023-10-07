@@ -20,21 +20,21 @@ pub enum FormalParametersChildren {
     PropertyPromotionParameter(Box<PropertyPromotionParameterNode>),
     SimpleParameter(Box<SimpleParameterNode>),
     VariadicParameter(Box<VariadicParameterNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl FormalParametersChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                FormalParametersChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => FormalParametersChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => FormalParametersChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => FormalParametersChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => FormalParametersChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => FormalParametersChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "property_promotion_parameter" => FormalParametersChildren::PropertyPromotionParameter(
                 Box::new(PropertyPromotionParameterNode::parse(node, source)?),
             ),
@@ -56,13 +56,15 @@ impl FormalParametersChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                FormalParametersChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => FormalParametersChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => FormalParametersChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => FormalParametersChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => FormalParametersChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => FormalParametersChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "property_promotion_parameter" => FormalParametersChildren::PropertyPromotionParameter(
                 Box::new(PropertyPromotionParameterNode::parse(node, source)?),
             ),
@@ -98,9 +100,7 @@ impl FormalParametersChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            FormalParametersChildren::Comment(x) => x.get_utype(state, emitter),
-            FormalParametersChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            FormalParametersChildren::Error(x) => x.get_utype(state, emitter),
+            FormalParametersChildren::Extra(x) => x.get_utype(state, emitter),
             FormalParametersChildren::PropertyPromotionParameter(x) => x.get_utype(state, emitter),
             FormalParametersChildren::SimpleParameter(x) => x.get_utype(state, emitter),
             FormalParametersChildren::VariadicParameter(x) => x.get_utype(state, emitter),
@@ -113,9 +113,7 @@ impl FormalParametersChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            FormalParametersChildren::Comment(x) => x.get_php_value(state, emitter),
-            FormalParametersChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            FormalParametersChildren::Error(x) => x.get_php_value(state, emitter),
+            FormalParametersChildren::Extra(x) => x.get_php_value(state, emitter),
             FormalParametersChildren::PropertyPromotionParameter(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -126,9 +124,7 @@ impl FormalParametersChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            FormalParametersChildren::Comment(x) => x.read_from(state, emitter),
-            FormalParametersChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            FormalParametersChildren::Error(x) => x.read_from(state, emitter),
+            FormalParametersChildren::Extra(x) => x.read_from(state, emitter),
             FormalParametersChildren::PropertyPromotionParameter(x) => x.read_from(state, emitter),
             FormalParametersChildren::SimpleParameter(x) => x.read_from(state, emitter),
             FormalParametersChildren::VariadicParameter(x) => x.read_from(state, emitter),
@@ -139,15 +135,8 @@ impl FormalParametersChildren {
 impl NodeAccess for FormalParametersChildren {
     fn brief_desc(&self) -> String {
         match self {
-            FormalParametersChildren::Comment(x) => {
-                format!("FormalParametersChildren::comment({})", x.brief_desc())
-            }
-            FormalParametersChildren::TextInterpolation(x) => format!(
-                "FormalParametersChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            FormalParametersChildren::Error(x) => {
-                format!("FormalParametersChildren::ERROR({})", x.brief_desc())
+            FormalParametersChildren::Extra(x) => {
+                format!("FormalParametersChildren::extra({})", x.brief_desc())
             }
             FormalParametersChildren::PropertyPromotionParameter(x) => format!(
                 "FormalParametersChildren::property_promotion_parameter({})",
@@ -166,9 +155,7 @@ impl NodeAccess for FormalParametersChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            FormalParametersChildren::Comment(x) => x.as_any(),
-            FormalParametersChildren::TextInterpolation(x) => x.as_any(),
-            FormalParametersChildren::Error(x) => x.as_any(),
+            FormalParametersChildren::Extra(x) => x.as_any(),
             FormalParametersChildren::PropertyPromotionParameter(x) => x.as_any(),
             FormalParametersChildren::SimpleParameter(x) => x.as_any(),
             FormalParametersChildren::VariadicParameter(x) => x.as_any(),
@@ -177,9 +164,7 @@ impl NodeAccess for FormalParametersChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            FormalParametersChildren::Comment(x) => x.children_any(),
-            FormalParametersChildren::TextInterpolation(x) => x.children_any(),
-            FormalParametersChildren::Error(x) => x.children_any(),
+            FormalParametersChildren::Extra(x) => x.children_any(),
             FormalParametersChildren::PropertyPromotionParameter(x) => x.children_any(),
             FormalParametersChildren::SimpleParameter(x) => x.children_any(),
             FormalParametersChildren::VariadicParameter(x) => x.children_any(),
@@ -188,9 +173,7 @@ impl NodeAccess for FormalParametersChildren {
 
     fn range(&self) -> Range {
         match self {
-            FormalParametersChildren::Comment(x) => x.range(),
-            FormalParametersChildren::TextInterpolation(x) => x.range(),
-            FormalParametersChildren::Error(x) => x.range(),
+            FormalParametersChildren::Extra(x) => x.range(),
             FormalParametersChildren::PropertyPromotionParameter(x) => x.range(),
             FormalParametersChildren::SimpleParameter(x) => x.range(),
             FormalParametersChildren::VariadicParameter(x) => x.range(),

@@ -40,21 +40,21 @@ pub enum ScopedCallExpressionName {
     DynamicVariableName(Box<DynamicVariableNameNode>),
     Name(Box<NameNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ScopedCallExpressionName {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ScopedCallExpressionName::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ScopedCallExpressionName::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ScopedCallExpressionName::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ScopedCallExpressionName::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ScopedCallExpressionName::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ScopedCallExpressionName::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => ScopedCallExpressionName::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -81,13 +81,15 @@ impl ScopedCallExpressionName {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ScopedCallExpressionName::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => ScopedCallExpressionName::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => ScopedCallExpressionName::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => ScopedCallExpressionName::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => ScopedCallExpressionName::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ScopedCallExpressionName::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => ScopedCallExpressionName::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -132,9 +134,7 @@ impl ScopedCallExpressionName {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ScopedCallExpressionName::Comment(x) => x.get_utype(state, emitter),
-            ScopedCallExpressionName::TextInterpolation(x) => x.get_utype(state, emitter),
-            ScopedCallExpressionName::Error(x) => x.get_utype(state, emitter),
+            ScopedCallExpressionName::Extra(x) => x.get_utype(state, emitter),
             ScopedCallExpressionName::_Expression(x) => x.get_utype(state, emitter),
             ScopedCallExpressionName::DynamicVariableName(x) => x.get_utype(state, emitter),
             ScopedCallExpressionName::Name(x) => x.get_utype(state, emitter),
@@ -148,9 +148,7 @@ impl ScopedCallExpressionName {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ScopedCallExpressionName::Comment(x) => x.get_php_value(state, emitter),
-            ScopedCallExpressionName::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ScopedCallExpressionName::Error(x) => x.get_php_value(state, emitter),
+            ScopedCallExpressionName::Extra(x) => x.get_php_value(state, emitter),
             ScopedCallExpressionName::_Expression(x) => x.get_php_value(state, emitter),
             ScopedCallExpressionName::DynamicVariableName(x) => x.get_php_value(state, emitter),
             ScopedCallExpressionName::Name(x) => x.get_php_value(state, emitter),
@@ -160,9 +158,7 @@ impl ScopedCallExpressionName {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ScopedCallExpressionName::Comment(x) => x.read_from(state, emitter),
-            ScopedCallExpressionName::TextInterpolation(x) => x.read_from(state, emitter),
-            ScopedCallExpressionName::Error(x) => x.read_from(state, emitter),
+            ScopedCallExpressionName::Extra(x) => x.read_from(state, emitter),
             ScopedCallExpressionName::_Expression(x) => x.read_from(state, emitter),
             ScopedCallExpressionName::DynamicVariableName(x) => x.read_from(state, emitter),
             ScopedCallExpressionName::Name(x) => x.read_from(state, emitter),
@@ -174,15 +170,8 @@ impl ScopedCallExpressionName {
 impl NodeAccess for ScopedCallExpressionName {
     fn brief_desc(&self) -> String {
         match self {
-            ScopedCallExpressionName::Comment(x) => {
-                format!("ScopedCallExpressionName::comment({})", x.brief_desc())
-            }
-            ScopedCallExpressionName::TextInterpolation(x) => format!(
-                "ScopedCallExpressionName::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ScopedCallExpressionName::Error(x) => {
-                format!("ScopedCallExpressionName::ERROR({})", x.brief_desc())
+            ScopedCallExpressionName::Extra(x) => {
+                format!("ScopedCallExpressionName::extra({})", x.brief_desc())
             }
             ScopedCallExpressionName::_Expression(x) => {
                 format!("ScopedCallExpressionName::_expression({})", x.brief_desc())
@@ -203,9 +192,7 @@ impl NodeAccess for ScopedCallExpressionName {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ScopedCallExpressionName::Comment(x) => x.as_any(),
-            ScopedCallExpressionName::TextInterpolation(x) => x.as_any(),
-            ScopedCallExpressionName::Error(x) => x.as_any(),
+            ScopedCallExpressionName::Extra(x) => x.as_any(),
             ScopedCallExpressionName::_Expression(x) => x.as_any(),
             ScopedCallExpressionName::DynamicVariableName(x) => x.as_any(),
             ScopedCallExpressionName::Name(x) => x.as_any(),
@@ -215,9 +202,7 @@ impl NodeAccess for ScopedCallExpressionName {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ScopedCallExpressionName::Comment(x) => x.children_any(),
-            ScopedCallExpressionName::TextInterpolation(x) => x.children_any(),
-            ScopedCallExpressionName::Error(x) => x.children_any(),
+            ScopedCallExpressionName::Extra(x) => x.children_any(),
             ScopedCallExpressionName::_Expression(x) => x.children_any(),
             ScopedCallExpressionName::DynamicVariableName(x) => x.children_any(),
             ScopedCallExpressionName::Name(x) => x.children_any(),
@@ -227,9 +212,7 @@ impl NodeAccess for ScopedCallExpressionName {
 
     fn range(&self) -> Range {
         match self {
-            ScopedCallExpressionName::Comment(x) => x.range(),
-            ScopedCallExpressionName::TextInterpolation(x) => x.range(),
-            ScopedCallExpressionName::Error(x) => x.range(),
+            ScopedCallExpressionName::Extra(x) => x.range(),
             ScopedCallExpressionName::_Expression(x) => x.range(),
             ScopedCallExpressionName::DynamicVariableName(x) => x.range(),
             ScopedCallExpressionName::Name(x) => x.range(),
@@ -260,21 +243,23 @@ pub enum ScopedCallExpressionScope {
     String(Box<StringNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl ScopedCallExpressionScope {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                ScopedCallExpressionScope::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ScopedCallExpressionScope::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ScopedCallExpressionScope::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ScopedCallExpressionScope::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => ScopedCallExpressionScope::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ScopedCallExpressionScope::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => ScopedCallExpressionScope::ArrayCreationExpression(
                 Box::new(ArrayCreationExpressionNode::parse(node, source)?),
             ),
@@ -356,13 +341,17 @@ impl ScopedCallExpressionScope {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                ScopedCallExpressionScope::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => ScopedCallExpressionScope::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                ScopedCallExpressionScope::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => ScopedCallExpressionScope::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => ScopedCallExpressionScope::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => ScopedCallExpressionScope::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => ScopedCallExpressionScope::ArrayCreationExpression(
                 Box::new(ArrayCreationExpressionNode::parse(node, source)?),
             ),
@@ -458,9 +447,7 @@ impl ScopedCallExpressionScope {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ScopedCallExpressionScope::Comment(x) => x.get_utype(state, emitter),
-            ScopedCallExpressionScope::TextInterpolation(x) => x.get_utype(state, emitter),
-            ScopedCallExpressionScope::Error(x) => x.get_utype(state, emitter),
+            ScopedCallExpressionScope::Extra(x) => x.get_utype(state, emitter),
             ScopedCallExpressionScope::ArrayCreationExpression(x) => x.get_utype(state, emitter),
             ScopedCallExpressionScope::CastExpression(x) => x.get_utype(state, emitter),
             ScopedCallExpressionScope::ClassConstantAccessExpression(x) => {
@@ -499,9 +486,7 @@ impl ScopedCallExpressionScope {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ScopedCallExpressionScope::Comment(x) => x.get_php_value(state, emitter),
-            ScopedCallExpressionScope::TextInterpolation(x) => x.get_php_value(state, emitter),
-            ScopedCallExpressionScope::Error(x) => x.get_php_value(state, emitter),
+            ScopedCallExpressionScope::Extra(x) => x.get_php_value(state, emitter),
             ScopedCallExpressionScope::ArrayCreationExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -540,9 +525,7 @@ impl ScopedCallExpressionScope {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ScopedCallExpressionScope::Comment(x) => x.read_from(state, emitter),
-            ScopedCallExpressionScope::TextInterpolation(x) => x.read_from(state, emitter),
-            ScopedCallExpressionScope::Error(x) => x.read_from(state, emitter),
+            ScopedCallExpressionScope::Extra(x) => x.read_from(state, emitter),
             ScopedCallExpressionScope::ArrayCreationExpression(x) => x.read_from(state, emitter),
             ScopedCallExpressionScope::CastExpression(x) => x.read_from(state, emitter),
             ScopedCallExpressionScope::ClassConstantAccessExpression(x) => {
@@ -579,15 +562,8 @@ impl ScopedCallExpressionScope {
 impl NodeAccess for ScopedCallExpressionScope {
     fn brief_desc(&self) -> String {
         match self {
-            ScopedCallExpressionScope::Comment(x) => {
-                format!("ScopedCallExpressionScope::comment({})", x.brief_desc())
-            }
-            ScopedCallExpressionScope::TextInterpolation(x) => format!(
-                "ScopedCallExpressionScope::text_interpolation({})",
-                x.brief_desc()
-            ),
-            ScopedCallExpressionScope::Error(x) => {
-                format!("ScopedCallExpressionScope::ERROR({})", x.brief_desc())
+            ScopedCallExpressionScope::Extra(x) => {
+                format!("ScopedCallExpressionScope::extra({})", x.brief_desc())
             }
             ScopedCallExpressionScope::ArrayCreationExpression(x) => format!(
                 "ScopedCallExpressionScope::array_creation_expression({})",
@@ -674,9 +650,7 @@ impl NodeAccess for ScopedCallExpressionScope {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ScopedCallExpressionScope::Comment(x) => x.as_any(),
-            ScopedCallExpressionScope::TextInterpolation(x) => x.as_any(),
-            ScopedCallExpressionScope::Error(x) => x.as_any(),
+            ScopedCallExpressionScope::Extra(x) => x.as_any(),
             ScopedCallExpressionScope::ArrayCreationExpression(x) => x.as_any(),
             ScopedCallExpressionScope::CastExpression(x) => x.as_any(),
             ScopedCallExpressionScope::ClassConstantAccessExpression(x) => x.as_any(),
@@ -703,9 +677,7 @@ impl NodeAccess for ScopedCallExpressionScope {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ScopedCallExpressionScope::Comment(x) => x.children_any(),
-            ScopedCallExpressionScope::TextInterpolation(x) => x.children_any(),
-            ScopedCallExpressionScope::Error(x) => x.children_any(),
+            ScopedCallExpressionScope::Extra(x) => x.children_any(),
             ScopedCallExpressionScope::ArrayCreationExpression(x) => x.children_any(),
             ScopedCallExpressionScope::CastExpression(x) => x.children_any(),
             ScopedCallExpressionScope::ClassConstantAccessExpression(x) => x.children_any(),
@@ -732,9 +704,7 @@ impl NodeAccess for ScopedCallExpressionScope {
 
     fn range(&self) -> Range {
         match self {
-            ScopedCallExpressionScope::Comment(x) => x.range(),
-            ScopedCallExpressionScope::TextInterpolation(x) => x.range(),
-            ScopedCallExpressionScope::Error(x) => x.range(),
+            ScopedCallExpressionScope::Extra(x) => x.range(),
             ScopedCallExpressionScope::ArrayCreationExpression(x) => x.range(),
             ScopedCallExpressionScope::CastExpression(x) => x.range(),
             ScopedCallExpressionScope::ClassConstantAccessExpression(x) => x.range(),

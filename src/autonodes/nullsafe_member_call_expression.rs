@@ -39,23 +39,23 @@ pub enum NullsafeMemberCallExpressionName {
     DynamicVariableName(Box<DynamicVariableNameNode>),
     Name(Box<NameNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl NullsafeMemberCallExpressionName {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => NullsafeMemberCallExpressionName::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => NullsafeMemberCallExpressionName::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                NullsafeMemberCallExpressionName::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NullsafeMemberCallExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => NullsafeMemberCallExpressionName::DynamicVariableName(
                 Box::new(DynamicVariableNameNode::parse(node, source)?),
             ),
@@ -84,15 +84,17 @@ impl NullsafeMemberCallExpressionName {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => NullsafeMemberCallExpressionName::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => NullsafeMemberCallExpressionName::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                NullsafeMemberCallExpressionName::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NullsafeMemberCallExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => NullsafeMemberCallExpressionName::DynamicVariableName(
                 Box::new(DynamicVariableNameNode::parse(node, source)?),
             ),
@@ -139,9 +141,7 @@ impl NullsafeMemberCallExpressionName {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            NullsafeMemberCallExpressionName::Comment(x) => x.get_utype(state, emitter),
-            NullsafeMemberCallExpressionName::TextInterpolation(x) => x.get_utype(state, emitter),
-            NullsafeMemberCallExpressionName::Error(x) => x.get_utype(state, emitter),
+            NullsafeMemberCallExpressionName::Extra(x) => x.get_utype(state, emitter),
             NullsafeMemberCallExpressionName::_Expression(x) => x.get_utype(state, emitter),
             NullsafeMemberCallExpressionName::DynamicVariableName(x) => x.get_utype(state, emitter),
             NullsafeMemberCallExpressionName::Name(x) => x.get_utype(state, emitter),
@@ -155,11 +155,7 @@ impl NullsafeMemberCallExpressionName {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            NullsafeMemberCallExpressionName::Comment(x) => x.get_php_value(state, emitter),
-            NullsafeMemberCallExpressionName::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            NullsafeMemberCallExpressionName::Error(x) => x.get_php_value(state, emitter),
+            NullsafeMemberCallExpressionName::Extra(x) => x.get_php_value(state, emitter),
             NullsafeMemberCallExpressionName::_Expression(x) => x.get_php_value(state, emitter),
             NullsafeMemberCallExpressionName::DynamicVariableName(x) => {
                 x.get_php_value(state, emitter)
@@ -171,9 +167,7 @@ impl NullsafeMemberCallExpressionName {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            NullsafeMemberCallExpressionName::Comment(x) => x.read_from(state, emitter),
-            NullsafeMemberCallExpressionName::TextInterpolation(x) => x.read_from(state, emitter),
-            NullsafeMemberCallExpressionName::Error(x) => x.read_from(state, emitter),
+            NullsafeMemberCallExpressionName::Extra(x) => x.read_from(state, emitter),
             NullsafeMemberCallExpressionName::_Expression(x) => x.read_from(state, emitter),
             NullsafeMemberCallExpressionName::DynamicVariableName(x) => x.read_from(state, emitter),
             NullsafeMemberCallExpressionName::Name(x) => x.read_from(state, emitter),
@@ -185,16 +179,8 @@ impl NullsafeMemberCallExpressionName {
 impl NodeAccess for NullsafeMemberCallExpressionName {
     fn brief_desc(&self) -> String {
         match self {
-            NullsafeMemberCallExpressionName::Comment(x) => format!(
-                "NullsafeMemberCallExpressionName::comment({})",
-                x.brief_desc()
-            ),
-            NullsafeMemberCallExpressionName::TextInterpolation(x) => format!(
-                "NullsafeMemberCallExpressionName::text_interpolation({})",
-                x.brief_desc()
-            ),
-            NullsafeMemberCallExpressionName::Error(x) => format!(
-                "NullsafeMemberCallExpressionName::ERROR({})",
+            NullsafeMemberCallExpressionName::Extra(x) => format!(
+                "NullsafeMemberCallExpressionName::extra({})",
                 x.brief_desc()
             ),
             NullsafeMemberCallExpressionName::_Expression(x) => format!(
@@ -217,9 +203,7 @@ impl NodeAccess for NullsafeMemberCallExpressionName {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            NullsafeMemberCallExpressionName::Comment(x) => x.as_any(),
-            NullsafeMemberCallExpressionName::TextInterpolation(x) => x.as_any(),
-            NullsafeMemberCallExpressionName::Error(x) => x.as_any(),
+            NullsafeMemberCallExpressionName::Extra(x) => x.as_any(),
             NullsafeMemberCallExpressionName::_Expression(x) => x.as_any(),
             NullsafeMemberCallExpressionName::DynamicVariableName(x) => x.as_any(),
             NullsafeMemberCallExpressionName::Name(x) => x.as_any(),
@@ -229,9 +213,7 @@ impl NodeAccess for NullsafeMemberCallExpressionName {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            NullsafeMemberCallExpressionName::Comment(x) => x.children_any(),
-            NullsafeMemberCallExpressionName::TextInterpolation(x) => x.children_any(),
-            NullsafeMemberCallExpressionName::Error(x) => x.children_any(),
+            NullsafeMemberCallExpressionName::Extra(x) => x.children_any(),
             NullsafeMemberCallExpressionName::_Expression(x) => x.children_any(),
             NullsafeMemberCallExpressionName::DynamicVariableName(x) => x.children_any(),
             NullsafeMemberCallExpressionName::Name(x) => x.children_any(),
@@ -241,9 +223,7 @@ impl NodeAccess for NullsafeMemberCallExpressionName {
 
     fn range(&self) -> Range {
         match self {
-            NullsafeMemberCallExpressionName::Comment(x) => x.range(),
-            NullsafeMemberCallExpressionName::TextInterpolation(x) => x.range(),
-            NullsafeMemberCallExpressionName::Error(x) => x.range(),
+            NullsafeMemberCallExpressionName::Extra(x) => x.range(),
             NullsafeMemberCallExpressionName::_Expression(x) => x.range(),
             NullsafeMemberCallExpressionName::DynamicVariableName(x) => x.range(),
             NullsafeMemberCallExpressionName::Name(x) => x.range(),
@@ -273,23 +253,23 @@ pub enum NullsafeMemberCallExpressionObject {
     String(Box<StringNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl NullsafeMemberCallExpressionObject {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => NullsafeMemberCallExpressionObject::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => NullsafeMemberCallExpressionObject::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                NullsafeMemberCallExpressionObject::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NullsafeMemberCallExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => {
                 NullsafeMemberCallExpressionObject::ArrayCreationExpression(Box::new(
                     ArrayCreationExpressionNode::parse(node, source)?,
@@ -378,15 +358,17 @@ impl NullsafeMemberCallExpressionObject {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => NullsafeMemberCallExpressionObject::Comment(Box::new(CommentNode::parse(
-                node, source,
-            )?)),
-            "text_interpolation" => NullsafeMemberCallExpressionObject::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            ),
-            "ERROR" => {
-                NullsafeMemberCallExpressionObject::Error(Box::new(ErrorNode::parse(node, source)?))
+            "comment" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                NullsafeMemberCallExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
+            "ERROR" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "array_creation_expression" => {
                 NullsafeMemberCallExpressionObject::ArrayCreationExpression(Box::new(
                     ArrayCreationExpressionNode::parse(node, source)?,
@@ -489,9 +471,7 @@ impl NullsafeMemberCallExpressionObject {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            NullsafeMemberCallExpressionObject::Comment(x) => x.get_utype(state, emitter),
-            NullsafeMemberCallExpressionObject::TextInterpolation(x) => x.get_utype(state, emitter),
-            NullsafeMemberCallExpressionObject::Error(x) => x.get_utype(state, emitter),
+            NullsafeMemberCallExpressionObject::Extra(x) => x.get_utype(state, emitter),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => {
                 x.get_utype(state, emitter)
             }
@@ -545,11 +525,7 @@ impl NullsafeMemberCallExpressionObject {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            NullsafeMemberCallExpressionObject::Comment(x) => x.get_php_value(state, emitter),
-            NullsafeMemberCallExpressionObject::TextInterpolation(x) => {
-                x.get_php_value(state, emitter)
-            }
-            NullsafeMemberCallExpressionObject::Error(x) => x.get_php_value(state, emitter),
+            NullsafeMemberCallExpressionObject::Extra(x) => x.get_php_value(state, emitter),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => {
                 x.get_php_value(state, emitter)
             }
@@ -603,9 +579,7 @@ impl NullsafeMemberCallExpressionObject {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            NullsafeMemberCallExpressionObject::Comment(x) => x.read_from(state, emitter),
-            NullsafeMemberCallExpressionObject::TextInterpolation(x) => x.read_from(state, emitter),
-            NullsafeMemberCallExpressionObject::Error(x) => x.read_from(state, emitter),
+            NullsafeMemberCallExpressionObject::Extra(x) => x.read_from(state, emitter),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => {
                 x.read_from(state, emitter)
             }
@@ -657,16 +631,8 @@ impl NullsafeMemberCallExpressionObject {
 impl NodeAccess for NullsafeMemberCallExpressionObject {
     fn brief_desc(&self) -> String {
         match self {
-            NullsafeMemberCallExpressionObject::Comment(x) => format!(
-                "NullsafeMemberCallExpressionObject::comment({})",
-                x.brief_desc()
-            ),
-            NullsafeMemberCallExpressionObject::TextInterpolation(x) => format!(
-                "NullsafeMemberCallExpressionObject::text_interpolation({})",
-                x.brief_desc()
-            ),
-            NullsafeMemberCallExpressionObject::Error(x) => format!(
-                "NullsafeMemberCallExpressionObject::ERROR({})",
+            NullsafeMemberCallExpressionObject::Extra(x) => format!(
+                "NullsafeMemberCallExpressionObject::extra({})",
                 x.brief_desc()
             ),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => format!(
@@ -754,9 +720,7 @@ impl NodeAccess for NullsafeMemberCallExpressionObject {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            NullsafeMemberCallExpressionObject::Comment(x) => x.as_any(),
-            NullsafeMemberCallExpressionObject::TextInterpolation(x) => x.as_any(),
-            NullsafeMemberCallExpressionObject::Error(x) => x.as_any(),
+            NullsafeMemberCallExpressionObject::Extra(x) => x.as_any(),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => x.as_any(),
             NullsafeMemberCallExpressionObject::CastExpression(x) => x.as_any(),
             NullsafeMemberCallExpressionObject::ClassConstantAccessExpression(x) => x.as_any(),
@@ -782,9 +746,7 @@ impl NodeAccess for NullsafeMemberCallExpressionObject {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            NullsafeMemberCallExpressionObject::Comment(x) => x.children_any(),
-            NullsafeMemberCallExpressionObject::TextInterpolation(x) => x.children_any(),
-            NullsafeMemberCallExpressionObject::Error(x) => x.children_any(),
+            NullsafeMemberCallExpressionObject::Extra(x) => x.children_any(),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => x.children_any(),
             NullsafeMemberCallExpressionObject::CastExpression(x) => x.children_any(),
             NullsafeMemberCallExpressionObject::ClassConstantAccessExpression(x) => {
@@ -816,9 +778,7 @@ impl NodeAccess for NullsafeMemberCallExpressionObject {
 
     fn range(&self) -> Range {
         match self {
-            NullsafeMemberCallExpressionObject::Comment(x) => x.range(),
-            NullsafeMemberCallExpressionObject::TextInterpolation(x) => x.range(),
-            NullsafeMemberCallExpressionObject::Error(x) => x.range(),
+            NullsafeMemberCallExpressionObject::Extra(x) => x.range(),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => x.range(),
             NullsafeMemberCallExpressionObject::CastExpression(x) => x.range(),
             NullsafeMemberCallExpressionObject::ClassConstantAccessExpression(x) => x.range(),

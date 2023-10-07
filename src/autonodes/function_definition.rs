@@ -23,23 +23,23 @@ use tree_sitter::Range;
 pub enum FunctionDefinitionReturnType {
     _Type(Box<_TypeNode>),
     BottomType(Box<BottomTypeNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl FunctionDefinitionReturnType {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                FunctionDefinitionReturnType::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => FunctionDefinitionReturnType::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                FunctionDefinitionReturnType::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => FunctionDefinitionReturnType::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                FunctionDefinitionReturnType::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => FunctionDefinitionReturnType::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "bottom_type" => FunctionDefinitionReturnType::BottomType(Box::new(
                 BottomTypeNode::parse(node, source)?,
             )),
@@ -62,15 +62,17 @@ impl FunctionDefinitionReturnType {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                FunctionDefinitionReturnType::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => FunctionDefinitionReturnType::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                FunctionDefinitionReturnType::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => FunctionDefinitionReturnType::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => {
-                FunctionDefinitionReturnType::Error(Box::new(ErrorNode::parse(node, source)?))
-            }
+            "ERROR" => FunctionDefinitionReturnType::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "bottom_type" => FunctionDefinitionReturnType::BottomType(Box::new(
                 BottomTypeNode::parse(node, source)?,
             )),
@@ -111,9 +113,7 @@ impl FunctionDefinitionReturnType {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            FunctionDefinitionReturnType::Comment(x) => x.get_utype(state, emitter),
-            FunctionDefinitionReturnType::TextInterpolation(x) => x.get_utype(state, emitter),
-            FunctionDefinitionReturnType::Error(x) => x.get_utype(state, emitter),
+            FunctionDefinitionReturnType::Extra(x) => x.get_utype(state, emitter),
             FunctionDefinitionReturnType::_Type(x) => x.get_utype(state, emitter),
             FunctionDefinitionReturnType::BottomType(x) => x.get_utype(state, emitter),
         }
@@ -125,9 +125,7 @@ impl FunctionDefinitionReturnType {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            FunctionDefinitionReturnType::Comment(x) => x.get_php_value(state, emitter),
-            FunctionDefinitionReturnType::TextInterpolation(x) => x.get_php_value(state, emitter),
-            FunctionDefinitionReturnType::Error(x) => x.get_php_value(state, emitter),
+            FunctionDefinitionReturnType::Extra(x) => x.get_php_value(state, emitter),
             FunctionDefinitionReturnType::_Type(x) => x.get_php_value(state, emitter),
             FunctionDefinitionReturnType::BottomType(x) => x.get_php_value(state, emitter),
         }
@@ -135,9 +133,7 @@ impl FunctionDefinitionReturnType {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            FunctionDefinitionReturnType::Comment(x) => x.read_from(state, emitter),
-            FunctionDefinitionReturnType::TextInterpolation(x) => x.read_from(state, emitter),
-            FunctionDefinitionReturnType::Error(x) => x.read_from(state, emitter),
+            FunctionDefinitionReturnType::Extra(x) => x.read_from(state, emitter),
             FunctionDefinitionReturnType::_Type(x) => x.read_from(state, emitter),
             FunctionDefinitionReturnType::BottomType(x) => x.read_from(state, emitter),
         }
@@ -147,15 +143,8 @@ impl FunctionDefinitionReturnType {
 impl NodeAccess for FunctionDefinitionReturnType {
     fn brief_desc(&self) -> String {
         match self {
-            FunctionDefinitionReturnType::Comment(x) => {
-                format!("FunctionDefinitionReturnType::comment({})", x.brief_desc())
-            }
-            FunctionDefinitionReturnType::TextInterpolation(x) => format!(
-                "FunctionDefinitionReturnType::text_interpolation({})",
-                x.brief_desc()
-            ),
-            FunctionDefinitionReturnType::Error(x) => {
-                format!("FunctionDefinitionReturnType::ERROR({})", x.brief_desc())
+            FunctionDefinitionReturnType::Extra(x) => {
+                format!("FunctionDefinitionReturnType::extra({})", x.brief_desc())
             }
             FunctionDefinitionReturnType::_Type(x) => {
                 format!("FunctionDefinitionReturnType::_type({})", x.brief_desc())
@@ -169,9 +158,7 @@ impl NodeAccess for FunctionDefinitionReturnType {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            FunctionDefinitionReturnType::Comment(x) => x.as_any(),
-            FunctionDefinitionReturnType::TextInterpolation(x) => x.as_any(),
-            FunctionDefinitionReturnType::Error(x) => x.as_any(),
+            FunctionDefinitionReturnType::Extra(x) => x.as_any(),
             FunctionDefinitionReturnType::_Type(x) => x.as_any(),
             FunctionDefinitionReturnType::BottomType(x) => x.as_any(),
         }
@@ -179,9 +166,7 @@ impl NodeAccess for FunctionDefinitionReturnType {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            FunctionDefinitionReturnType::Comment(x) => x.children_any(),
-            FunctionDefinitionReturnType::TextInterpolation(x) => x.children_any(),
-            FunctionDefinitionReturnType::Error(x) => x.children_any(),
+            FunctionDefinitionReturnType::Extra(x) => x.children_any(),
             FunctionDefinitionReturnType::_Type(x) => x.children_any(),
             FunctionDefinitionReturnType::BottomType(x) => x.children_any(),
         }
@@ -189,9 +174,7 @@ impl NodeAccess for FunctionDefinitionReturnType {
 
     fn range(&self) -> Range {
         match self {
-            FunctionDefinitionReturnType::Comment(x) => x.range(),
-            FunctionDefinitionReturnType::TextInterpolation(x) => x.range(),
-            FunctionDefinitionReturnType::Error(x) => x.range(),
+            FunctionDefinitionReturnType::Extra(x) => x.range(),
             FunctionDefinitionReturnType::_Type(x) => x.range(),
             FunctionDefinitionReturnType::BottomType(x) => x.range(),
         }

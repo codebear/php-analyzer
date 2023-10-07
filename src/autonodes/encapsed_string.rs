@@ -28,21 +28,21 @@ pub enum EncapsedStringChildren {
     StringValue(Box<StringValueNode>),
     SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl EncapsedStringChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                EncapsedStringChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => EncapsedStringChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => EncapsedStringChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => EncapsedStringChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => EncapsedStringChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => EncapsedStringChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => EncapsedStringChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -80,13 +80,15 @@ impl EncapsedStringChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                EncapsedStringChildren::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => EncapsedStringChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => EncapsedStringChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => EncapsedStringChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => EncapsedStringChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => EncapsedStringChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "dynamic_variable_name" => EncapsedStringChildren::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
@@ -142,9 +144,7 @@ impl EncapsedStringChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            EncapsedStringChildren::Comment(x) => x.get_utype(state, emitter),
-            EncapsedStringChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            EncapsedStringChildren::Error(x) => x.get_utype(state, emitter),
+            EncapsedStringChildren::Extra(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::_Expression(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.get_utype(state, emitter),
@@ -161,9 +161,7 @@ impl EncapsedStringChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            EncapsedStringChildren::Comment(x) => x.get_php_value(state, emitter),
-            EncapsedStringChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            EncapsedStringChildren::Error(x) => x.get_php_value(state, emitter),
+            EncapsedStringChildren::Extra(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::_Expression(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.get_php_value(state, emitter),
@@ -176,9 +174,7 @@ impl EncapsedStringChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            EncapsedStringChildren::Comment(x) => x.read_from(state, emitter),
-            EncapsedStringChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            EncapsedStringChildren::Error(x) => x.read_from(state, emitter),
+            EncapsedStringChildren::Extra(x) => x.read_from(state, emitter),
             EncapsedStringChildren::_Expression(x) => x.read_from(state, emitter),
             EncapsedStringChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.read_from(state, emitter),
@@ -193,15 +189,8 @@ impl EncapsedStringChildren {
 impl NodeAccess for EncapsedStringChildren {
     fn brief_desc(&self) -> String {
         match self {
-            EncapsedStringChildren::Comment(x) => {
-                format!("EncapsedStringChildren::comment({})", x.brief_desc())
-            }
-            EncapsedStringChildren::TextInterpolation(x) => format!(
-                "EncapsedStringChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            EncapsedStringChildren::Error(x) => {
-                format!("EncapsedStringChildren::ERROR({})", x.brief_desc())
+            EncapsedStringChildren::Extra(x) => {
+                format!("EncapsedStringChildren::extra({})", x.brief_desc())
             }
             EncapsedStringChildren::_Expression(x) => {
                 format!("EncapsedStringChildren::_expression({})", x.brief_desc())
@@ -233,9 +222,7 @@ impl NodeAccess for EncapsedStringChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            EncapsedStringChildren::Comment(x) => x.as_any(),
-            EncapsedStringChildren::TextInterpolation(x) => x.as_any(),
-            EncapsedStringChildren::Error(x) => x.as_any(),
+            EncapsedStringChildren::Extra(x) => x.as_any(),
             EncapsedStringChildren::_Expression(x) => x.as_any(),
             EncapsedStringChildren::DynamicVariableName(x) => x.as_any(),
             EncapsedStringChildren::EscapeSequence(x) => x.as_any(),
@@ -248,9 +235,7 @@ impl NodeAccess for EncapsedStringChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            EncapsedStringChildren::Comment(x) => x.children_any(),
-            EncapsedStringChildren::TextInterpolation(x) => x.children_any(),
-            EncapsedStringChildren::Error(x) => x.children_any(),
+            EncapsedStringChildren::Extra(x) => x.children_any(),
             EncapsedStringChildren::_Expression(x) => x.children_any(),
             EncapsedStringChildren::DynamicVariableName(x) => x.children_any(),
             EncapsedStringChildren::EscapeSequence(x) => x.children_any(),
@@ -263,9 +248,7 @@ impl NodeAccess for EncapsedStringChildren {
 
     fn range(&self) -> Range {
         match self {
-            EncapsedStringChildren::Comment(x) => x.range(),
-            EncapsedStringChildren::TextInterpolation(x) => x.range(),
-            EncapsedStringChildren::Error(x) => x.range(),
+            EncapsedStringChildren::Extra(x) => x.range(),
             EncapsedStringChildren::_Expression(x) => x.range(),
             EncapsedStringChildren::DynamicVariableName(x) => x.range(),
             EncapsedStringChildren::EscapeSequence(x) => x.range(),

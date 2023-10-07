@@ -17,21 +17,23 @@ use tree_sitter::Range;
 pub enum SequenceExpressionChildren {
     _Expression(Box<_ExpressionNode>),
     SequenceExpression(Box<SequenceExpressionNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl SequenceExpressionChildren {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                SequenceExpressionChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => SequenceExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                SequenceExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => SequenceExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => SequenceExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => SequenceExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "sequence_expression" => SequenceExpressionChildren::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -54,13 +56,17 @@ impl SequenceExpressionChildren {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                SequenceExpressionChildren::Comment(Box::new(CommentNode::parse(node, source)?))
+            "comment" => SequenceExpressionChildren::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => {
+                SequenceExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
             }
-            "text_interpolation" => SequenceExpressionChildren::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            )),
-            "ERROR" => SequenceExpressionChildren::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => SequenceExpressionChildren::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "sequence_expression" => SequenceExpressionChildren::SequenceExpression(Box::new(
                 SequenceExpressionNode::parse(node, source)?,
             )),
@@ -101,9 +107,7 @@ impl SequenceExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            SequenceExpressionChildren::Comment(x) => x.get_utype(state, emitter),
-            SequenceExpressionChildren::TextInterpolation(x) => x.get_utype(state, emitter),
-            SequenceExpressionChildren::Error(x) => x.get_utype(state, emitter),
+            SequenceExpressionChildren::Extra(x) => x.get_utype(state, emitter),
             SequenceExpressionChildren::_Expression(x) => x.get_utype(state, emitter),
             SequenceExpressionChildren::SequenceExpression(x) => x.get_utype(state, emitter),
         }
@@ -115,9 +119,7 @@ impl SequenceExpressionChildren {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            SequenceExpressionChildren::Comment(x) => x.get_php_value(state, emitter),
-            SequenceExpressionChildren::TextInterpolation(x) => x.get_php_value(state, emitter),
-            SequenceExpressionChildren::Error(x) => x.get_php_value(state, emitter),
+            SequenceExpressionChildren::Extra(x) => x.get_php_value(state, emitter),
             SequenceExpressionChildren::_Expression(x) => x.get_php_value(state, emitter),
             SequenceExpressionChildren::SequenceExpression(x) => x.get_php_value(state, emitter),
         }
@@ -125,9 +127,7 @@ impl SequenceExpressionChildren {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            SequenceExpressionChildren::Comment(x) => x.read_from(state, emitter),
-            SequenceExpressionChildren::TextInterpolation(x) => x.read_from(state, emitter),
-            SequenceExpressionChildren::Error(x) => x.read_from(state, emitter),
+            SequenceExpressionChildren::Extra(x) => x.read_from(state, emitter),
             SequenceExpressionChildren::_Expression(x) => x.read_from(state, emitter),
             SequenceExpressionChildren::SequenceExpression(x) => x.read_from(state, emitter),
         }
@@ -137,15 +137,8 @@ impl SequenceExpressionChildren {
 impl NodeAccess for SequenceExpressionChildren {
     fn brief_desc(&self) -> String {
         match self {
-            SequenceExpressionChildren::Comment(x) => {
-                format!("SequenceExpressionChildren::comment({})", x.brief_desc())
-            }
-            SequenceExpressionChildren::TextInterpolation(x) => format!(
-                "SequenceExpressionChildren::text_interpolation({})",
-                x.brief_desc()
-            ),
-            SequenceExpressionChildren::Error(x) => {
-                format!("SequenceExpressionChildren::ERROR({})", x.brief_desc())
+            SequenceExpressionChildren::Extra(x) => {
+                format!("SequenceExpressionChildren::extra({})", x.brief_desc())
             }
             SequenceExpressionChildren::_Expression(x) => format!(
                 "SequenceExpressionChildren::_expression({})",
@@ -160,9 +153,7 @@ impl NodeAccess for SequenceExpressionChildren {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            SequenceExpressionChildren::Comment(x) => x.as_any(),
-            SequenceExpressionChildren::TextInterpolation(x) => x.as_any(),
-            SequenceExpressionChildren::Error(x) => x.as_any(),
+            SequenceExpressionChildren::Extra(x) => x.as_any(),
             SequenceExpressionChildren::_Expression(x) => x.as_any(),
             SequenceExpressionChildren::SequenceExpression(x) => x.as_any(),
         }
@@ -170,9 +161,7 @@ impl NodeAccess for SequenceExpressionChildren {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            SequenceExpressionChildren::Comment(x) => x.children_any(),
-            SequenceExpressionChildren::TextInterpolation(x) => x.children_any(),
-            SequenceExpressionChildren::Error(x) => x.children_any(),
+            SequenceExpressionChildren::Extra(x) => x.children_any(),
             SequenceExpressionChildren::_Expression(x) => x.children_any(),
             SequenceExpressionChildren::SequenceExpression(x) => x.children_any(),
         }
@@ -180,9 +169,7 @@ impl NodeAccess for SequenceExpressionChildren {
 
     fn range(&self) -> Range {
         match self {
-            SequenceExpressionChildren::Comment(x) => x.range(),
-            SequenceExpressionChildren::TextInterpolation(x) => x.range(),
-            SequenceExpressionChildren::Error(x) => x.range(),
+            SequenceExpressionChildren::Extra(x) => x.range(),
             SequenceExpressionChildren::_Expression(x) => x.range(),
             SequenceExpressionChildren::SequenceExpression(x) => x.range(),
         }

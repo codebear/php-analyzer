@@ -92,9 +92,7 @@ impl ScopedCallExpressionNode {
             ScopedCallExpressionScope::VariableName(_) => crate::missing_none!("{}", self.kind()),
             ScopedCallExpressionScope::Nowdoc(_) => crate::missing_none!("{}", self.kind()),
 
-            ScopedCallExpressionScope::Comment(_)
-            | ScopedCallExpressionScope::TextInterpolation(_)
-            | ScopedCallExpressionScope::Error(_) => None,
+            ScopedCallExpressionScope::Extra(_) => None,
         }
     }
 
@@ -126,9 +124,7 @@ impl ScopedCallExpressionNode {
                 }
                 crate::missing_none!("{}.get_method_name(..)", self.kind())
             }
-            ScopedCallExpressionName::Comment(_)
-            | ScopedCallExpressionName::TextInterpolation(_)
-            | ScopedCallExpressionName::Error(_) => None,
+            ScopedCallExpressionName::Extra(_) => None,
         }
     }
 

@@ -234,9 +234,7 @@ impl ClassConstantAccessExpressionNode {
                 state.pos_as_string(self.range())
             ),
 
-            ClassConstantAccessExpressionClass::Comment(_)
-            | ClassConstantAccessExpressionClass::TextInterpolation(_)
-            | ClassConstantAccessExpressionClass::Error(_) => None,
+            ClassConstantAccessExpressionClass::Extra(_) => None,
         }
     }
 

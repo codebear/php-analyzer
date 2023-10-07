@@ -29,6 +29,7 @@ use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
+use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
@@ -61,21 +62,21 @@ pub enum _PrimaryExpressionNode {
     ThrowExpression(Box<ThrowExpressionNode>),
     UpdateExpression(Box<UpdateExpressionNode>),
     VariableName(Box<VariableNameNode>),
-    Comment(Box<CommentNode>),
-    TextInterpolation(Box<TextInterpolationNode>),
-    Error(Box<ErrorNode>),
+    Extra(ExtraChild),
 }
 
 impl _PrimaryExpressionNode {
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => {
-                _PrimaryExpressionNode::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => _PrimaryExpressionNode::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => _PrimaryExpressionNode::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => _PrimaryExpressionNode::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => _PrimaryExpressionNode::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => _PrimaryExpressionNode::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "anonymous_function_creation_expression" => {
                 _PrimaryExpressionNode::AnonymousFunctionCreationExpression(Box::new(
                     AnonymousFunctionCreationExpressionNode::parse(node, source)?,
@@ -172,13 +173,15 @@ impl _PrimaryExpressionNode {
 
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => {
-                _PrimaryExpressionNode::Comment(Box::new(CommentNode::parse(node, source)?))
-            }
-            "text_interpolation" => _PrimaryExpressionNode::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
+            "comment" => _PrimaryExpressionNode::Extra(ExtraChild::Comment(Box::new(
+                CommentNode::parse(node, source)?,
+            ))),
+            "text_interpolation" => _PrimaryExpressionNode::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
             )),
-            "ERROR" => _PrimaryExpressionNode::Error(Box::new(ErrorNode::parse(node, source)?)),
+            "ERROR" => _PrimaryExpressionNode::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
             "anonymous_function_creation_expression" => {
                 _PrimaryExpressionNode::AnonymousFunctionCreationExpression(Box::new(
                     AnonymousFunctionCreationExpressionNode::parse(node, source)?,
@@ -293,9 +296,7 @@ impl _PrimaryExpressionNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            _PrimaryExpressionNode::Comment(x) => x.get_utype(state, emitter),
-            _PrimaryExpressionNode::TextInterpolation(x) => x.get_utype(state, emitter),
-            _PrimaryExpressionNode::Error(x) => x.get_utype(state, emitter),
+            _PrimaryExpressionNode::Extra(x) => x.get_utype(state, emitter),
             _PrimaryExpressionNode::_Literal(x) => x.get_utype(state, emitter),
             _PrimaryExpressionNode::AnonymousFunctionCreationExpression(x) => {
                 x.get_utype(state, emitter)
@@ -335,9 +336,7 @@ impl _PrimaryExpressionNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            _PrimaryExpressionNode::Comment(x) => x.get_php_value(state, emitter),
-            _PrimaryExpressionNode::TextInterpolation(x) => x.get_php_value(state, emitter),
-            _PrimaryExpressionNode::Error(x) => x.get_php_value(state, emitter),
+            _PrimaryExpressionNode::Extra(x) => x.get_php_value(state, emitter),
             _PrimaryExpressionNode::_Literal(x) => x.get_php_value(state, emitter),
             _PrimaryExpressionNode::AnonymousFunctionCreationExpression(x) => {
                 x.get_php_value(state, emitter)
@@ -377,9 +376,7 @@ impl _PrimaryExpressionNode {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            _PrimaryExpressionNode::Comment(x) => x.read_from(state, emitter),
-            _PrimaryExpressionNode::TextInterpolation(x) => x.read_from(state, emitter),
-            _PrimaryExpressionNode::Error(x) => x.read_from(state, emitter),
+            _PrimaryExpressionNode::Extra(x) => x.read_from(state, emitter),
             _PrimaryExpressionNode::_Literal(x) => x.read_from(state, emitter),
             _PrimaryExpressionNode::AnonymousFunctionCreationExpression(x) => {
                 x.read_from(state, emitter)
@@ -417,15 +414,8 @@ impl _PrimaryExpressionNode {
 impl NodeAccess for _PrimaryExpressionNode {
     fn brief_desc(&self) -> String {
         match self {
-            _PrimaryExpressionNode::Comment(x) => {
-                format!("_PrimaryExpressionNode::comment({})", x.brief_desc())
-            }
-            _PrimaryExpressionNode::TextInterpolation(x) => format!(
-                "_PrimaryExpressionNode::text_interpolation({})",
-                x.brief_desc()
-            ),
-            _PrimaryExpressionNode::Error(x) => {
-                format!("_PrimaryExpressionNode::ERROR({})", x.brief_desc())
+            _PrimaryExpressionNode::Extra(x) => {
+                format!("_PrimaryExpressionNode::extra({})", x.brief_desc())
             }
             _PrimaryExpressionNode::_Literal(x) => {
                 format!("_PrimaryExpressionNode::_literal({})", x.brief_desc())
@@ -523,9 +513,7 @@ impl NodeAccess for _PrimaryExpressionNode {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            _PrimaryExpressionNode::Comment(x) => x.as_any(),
-            _PrimaryExpressionNode::TextInterpolation(x) => x.as_any(),
-            _PrimaryExpressionNode::Error(x) => x.as_any(),
+            _PrimaryExpressionNode::Extra(x) => x.as_any(),
             _PrimaryExpressionNode::_Literal(x) => x.as_any(),
             _PrimaryExpressionNode::AnonymousFunctionCreationExpression(x) => x.as_any(),
             _PrimaryExpressionNode::ArrayCreationExpression(x) => x.as_any(),
@@ -555,9 +543,7 @@ impl NodeAccess for _PrimaryExpressionNode {
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            _PrimaryExpressionNode::Comment(x) => x.children_any(),
-            _PrimaryExpressionNode::TextInterpolation(x) => x.children_any(),
-            _PrimaryExpressionNode::Error(x) => x.children_any(),
+            _PrimaryExpressionNode::Extra(x) => x.children_any(),
             _PrimaryExpressionNode::_Literal(x) => x.children_any(),
             _PrimaryExpressionNode::AnonymousFunctionCreationExpression(x) => x.children_any(),
             _PrimaryExpressionNode::ArrayCreationExpression(x) => x.children_any(),
@@ -587,9 +573,7 @@ impl NodeAccess for _PrimaryExpressionNode {
 
     fn range(&self) -> Range {
         match self {
-            _PrimaryExpressionNode::Comment(x) => x.range(),
-            _PrimaryExpressionNode::TextInterpolation(x) => x.range(),
-            _PrimaryExpressionNode::Error(x) => x.range(),
+            _PrimaryExpressionNode::Extra(x) => x.range(),
             _PrimaryExpressionNode::_Literal(x) => x.range(),
             _PrimaryExpressionNode::AnonymousFunctionCreationExpression(x) => x.range(),
             _PrimaryExpressionNode::ArrayCreationExpression(x) => x.range(),
