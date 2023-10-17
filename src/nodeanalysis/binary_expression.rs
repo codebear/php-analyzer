@@ -6,10 +6,11 @@ use crate::{
             BinaryExpressionNode, BinaryExpressionOperator, BinaryExpressionRight,
         },
     },
-    issue::IssueEmitter,
+    issue::{IssueEmitter, VoidEmitter},
     missing,
-    types::union::{DiscreteType, UnionType},
-    value::{PHPFloat, PHPValue},
+    operators::binary::{BinaryOperator, BinaryOperatorOperandAccess},
+    types::union::UnionType,
+    value::PHPValue,
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -33,287 +34,14 @@ impl BinaryExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
-        let lval = self.left.get_php_value(state, emitter)?;
-        let rval = self.right.get_php_value(state, emitter)?;
-
-        let ltype = lval.get_utype();
-        let rtype = rval.get_utype();
-
         match &*self.operator {
-            // comparison
-            BinaryExpressionOperator::NotEqual(_, _) => {
-                Some(PHPValue::Boolean(!lval.equal_to(&rval)?))
-            }
-            BinaryExpressionOperator::NotIdentical(_, _) => {
-                Some(PHPValue::Boolean(!lval.identical_to(&rval)?))
-            }
-            BinaryExpressionOperator::LessThan(be, _) => match (&lval, &rval) {
-                (PHPValue::Int(lint), PHPValue::Int(rint)) => Some(PHPValue::Boolean(lint < rint)),
-                (PHPValue::Float(lint), PHPValue::Float(rint)) => {
-                    Some(PHPValue::Boolean(lint < rint))
-                }
-                _ => crate::missing_none!(
-                    "{}[{:?} {} {:?}].get_php_value(..)",
-                    self.brief_desc(),
-                    ltype,
-                    be,
-                    rtype
-                ),
-            },
-            BinaryExpressionOperator::LessThanOrEqual(be, _) => match (&lval, &rval) {
-                (PHPValue::Int(lint), PHPValue::Int(rint)) => Some(PHPValue::Boolean(lint <= rint)),
-                (PHPValue::Float(lint), PHPValue::Float(rint)) => {
-                    Some(PHPValue::Boolean(lint <= rint))
-                }
-                _ => crate::missing_none!(
-                    "{}[{:?} {} {:?}].get_php_value(..)",
-                    self.brief_desc(),
-                    ltype,
-                    be,
-                    rtype
-                ),
-            },
-            BinaryExpressionOperator::GreaterThan(be, _) => match (&lval, &rval) {
-                (PHPValue::Int(lint), PHPValue::Int(rint)) => Some(PHPValue::Boolean(lint > rint)),
-                (PHPValue::Float(lint), PHPValue::Float(rint)) => {
-                    Some(PHPValue::Boolean(lint > rint))
-                }
-                _ => crate::missing_none!(
-                    "{}[{:?} {} {:?}].get_php_value(..)",
-                    self.brief_desc(),
-                    ltype,
-                    be,
-                    rtype
-                ),
-            },
-            BinaryExpressionOperator::GreaterThanOrEqual(be, _) => match (&lval, &rval) {
-                (PHPValue::Int(lint), PHPValue::Int(rint)) => Some(PHPValue::Boolean(lint >= rint)),
-                (PHPValue::Float(lint), PHPValue::Float(rint)) => {
-                    Some(PHPValue::Boolean(lint >= rint))
-                }
-                _ => crate::missing_none!(
-                    "{}[{:?} {} {:?}].get_php_value(..)",
-                    self.brief_desc(),
-                    ltype,
-                    be,
-                    rtype
-                ),
-            },
-            BinaryExpressionOperator::Spaceship(be, _) => {
-                crate::missing_none!("{}[{}].get_php_value(..)", self.brief_desc(), be)
-            }
-            BinaryExpressionOperator::Equal(_, _) => Some(PHPValue::Boolean(lval.equal_to(&rval)?)),
-            BinaryExpressionOperator::Identical(_, _) => {
-                Some(PHPValue::Boolean(lval.identical_to(&rval)?))
-            }
-
-            // class
-            BinaryExpressionOperator::Instanceof(be, _) => {
-                crate::missing_none!("{}[{}].get_php_value(..)", self.brief_desc(), be)
-            }
-
-            // boolean
-            BinaryExpressionOperator::And(_, _) | BinaryExpressionOperator::BooleanAnd(_, _) => {
-                let left = lval.as_bool()?;
-                let right = rval.as_bool()?;
-                // FIXME overflow og sånt her bør trigg emitting
-                Some(PHPValue::Boolean(left && right))
-            }
-
-            BinaryExpressionOperator::Or(_, _) | BinaryExpressionOperator::BooleanOr(_, _) => {
-                let left = lval.as_bool()?;
-                let right = rval.as_bool()?;
-
-                Some(PHPValue::Boolean(left || right))
-            }
-
             // numerical
-            BinaryExpressionOperator::Mod(_, _) => {
-                let left = lval.as_i64()?;
-                let right = rval.as_i64()?;
-                // FIXME overflow og sånt her bør trigg emitting
-                Some(PHPValue::Int(left % right))
-            }
-            BinaryExpressionOperator::BinaryAnd(_, _) => {
-                let left = lval.as_i64()?;
-                let right = rval.as_i64()?;
-
-                Some(PHPValue::Int(left & right))
-            }
-            BinaryExpressionOperator::BinaryXor(_, _) => {
-                let left = lval.as_i64()?;
-                let right = rval.as_i64()?;
-
-                Some(PHPValue::Int(left ^ right))
-            }
-            BinaryExpressionOperator::Xor(_, _) => {
-                let left = lval.as_bool()?;
-                let right = rval.as_bool()?;
-
-                Some(PHPValue::Boolean(left ^ right))
-            }
-
-            BinaryExpressionOperator::BinaryOr(_, _) => {
-                let left = lval.as_i64()?;
-                let right = rval.as_i64()?;
-
-                Some(PHPValue::Int(left | right))
-            }
 
             // operator
-            BinaryExpressionOperator::Div(_, _) => {
-                let left = lval.as_php_num()?;
-                let right = rval.as_php_num()?;
-                match (left, right) {
-                    (PHPValue::Int(a), PHPValue::Int(b)) => {
-                        if b == 0 {
-                            // FIXME Emit div by zero, men i analyze-pass?
-                            return None;
-                        }
-                        if a % b == 0 && b != 0 {
-                            // int result
-                            Some(PHPValue::Int(a / b))
-                        } else {
-                            let lfloat = lval.as_php_float()?.as_f64()?;
-                            let rfloat = lval.as_php_float()?.as_f64()?;
-
-                            if rfloat == 0.0 {
-                                // FIXME Emit div by zero, men i analyze-pass?
-                                // Eventuelt return en Some(...::NaN)??
-                                return None;
-                            }
-                            Some(PHPValue::Float(PHPFloat::new(lfloat / rfloat)))
-                        }
-                    }
-                    (PHPValue::Int(_), PHPValue::Float(b)) => {
-                        let fval = match b {
-                            PHPFloat::Real(f) => f,
-                            PHPFloat::NaN | PHPFloat::Infinite => return None,
-                        };
-                        if fval == 0.0 {
-                            // FIXME Emit div by zero, men i analyze-pass?
-                            return None;
-                        }
-                        let lfloat = lval.as_php_float()?.as_f64()?;
-                        Some(PHPValue::Float(PHPFloat::new(lfloat / fval)))
-                    }
-                    (PHPValue::Float(a), PHPValue::Int(b)) => {
-                        let a = match a {
-                            PHPFloat::Real(f) => f,
-                            PHPFloat::NaN | PHPFloat::Infinite => return None,
-                        };
-                        if b == 0 {
-                            // FIXME Emit div by zero, men i analyze-pass?
-                            return None;
-                        }
-                        let rfloat = rval.as_php_float()?.as_f64()?;
-                        if rfloat == 0.0 {
-                            // FIXME Emit div by zero, men i analyze-pass?
-                            return None;
-                        }
-                        Some(PHPValue::Float(PHPFloat::Real(a / rfloat)))
-                    }
-                    (PHPValue::Float(PHPFloat::NaN), PHPValue::Float(_))
-                    | (PHPValue::Float(_), PHPValue::Float(PHPFloat::NaN)) => None,
-
-                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
-                        if b == 0.0 {
-                            // FIXME emit div by zero, men gjør det i analyze pass
-                            None
-                        } else {
-                            Some(PHPValue::Float(PHPFloat::new(a / b)))
-                        }
-                    }
-                    _ => None,
-                }
-            }
-            BinaryExpressionOperator::Add(_, _) => {
-                let left = lval.as_php_num()?;
-                let right = rval.as_php_num()?;
-                match (left, right) {
-                    (PHPValue::Int(a), PHPValue::Int(b)) => Some(PHPValue::Int(a + b)),
-                    (PHPValue::Int(_a), PHPValue::Float(_b)) => {
-                        crate::missing_none!("i64 to f64 conversion")
-                    } // Some(PHPValue::Float(b+a.into())),
-                    (PHPValue::Float(_a), PHPValue::Int(_b)) => {
-                        crate::missing_none!("i64 to f64 conversion")
-                    } // Some(PHPValue::Float(a+b.into())),
-                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
-                        Some(PHPValue::Float(PHPFloat::new(a + b)))
-                    }
-                    _ => None,
-                }
-            }
-            BinaryExpressionOperator::Sub(_, _) => {
-                let left = lval.as_php_num()?;
-                let right = rval.as_php_num()?;
-                match (left, right) {
-                    (PHPValue::Int(a), PHPValue::Int(b)) => Some(PHPValue::Int(a - b)),
-                    (PHPValue::Int(_a), PHPValue::Float(_b)) => {
-                        crate::missing_none!("i64 to f64 conversion")
-                    } // Some(PHPValue::Float(a.into()-b)),
-                    (PHPValue::Float(_a), PHPValue::Int(_b)) => {
-                        crate::missing_none!("i64 to f64 conversion")
-                    } // Some(PHPValue::Float(a-b.into())),
-                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
-                        Some(PHPValue::Float(PHPFloat::new(a - b)))
-                    }
-                    _ => None,
-                }
-            }
-            BinaryExpressionOperator::Mult(_, _) => {
-                let left = lval.as_php_num()?;
-                let right = rval.as_php_num()?;
-                match (left, right) {
-                    (PHPValue::Int(a), PHPValue::Int(b)) => Some(PHPValue::Int(a * b)),
-                    (PHPValue::Int(_a), PHPValue::Float(_b)) => {
-                        crate::missing_none!("i64 to f64 conversion")
-                    } // Some(PHPValue::Float(b*a.into())),
-                    (PHPValue::Float(_a), PHPValue::Int(_b)) => {
-                        crate::missing_none!("i64 to f64 conversion")
-                    } // Some(PHPValue::Float(a*b.into())),
-                    (PHPValue::Float(PHPFloat::Real(a)), PHPValue::Float(PHPFloat::Real(b))) => {
-                        Some(PHPValue::Float(PHPFloat::new(a * b)))
-                    }
-                    _ => None,
-                }
-            }
-
-            BinaryExpressionOperator::RightShift(_, _) => {
-                let left = lval.as_i64()?;
-                let right = rval.as_i64()?;
-                // FIXME overflow og sånt her bør trigg emitting
-                Some(PHPValue::Int(left >> right))
-            }
-            BinaryExpressionOperator::LeftShift(_, _) => {
-                let left = lval.as_i64()?;
-                let right = rval.as_i64()?;
-                // FIXME overflow og sånt her bør trigg emitting
-
-                /*eprintln!(
-                    "Attempting left-shift: {} << {} fra {}",
-                    left,
-                    right,
-                    state.pos_as_string(self.range)
-                );*/
-                Some(PHPValue::Int(left << right))
-            }
-            BinaryExpressionOperator::Concat(_, _) => {
-                let mut left = lval.as_os_string()?;
-                let right = rval.as_os_string()?;
-                left.push(right);
-                Some(PHPValue::String(left))
-            }
-            BinaryExpressionOperator::NullCoalesce(_, _) => {
-                if lval.is_null() {
-                    Some(rval)
-                } else {
-                    Some(lval)
-                }
-            }
 
             // void
             BinaryExpressionOperator::Extra(_) => None,
+            _ => self.operator.get_operator_php_value(self, state, emitter),
         }
         // crate::missing_none!("{}.get_php_value(..)", self.kind())
     }
@@ -331,113 +59,198 @@ impl BinaryExpressionNode {
          * Therefor the strategy here is to only make promises we can keep. Only return the correct type if we can
          * be certain of the type of the arguments
          */
-        let operator = &self.operator;
-        if let BinaryExpressionOperator::Instanceof(_, _) = &**operator {
-            // FIXME verify that instanceof is valid for all types
-            return Some(DiscreteType::Bool.into());
-        }
 
-        // For all other operators, ensure that we have known types on both sides
-        let ltype = self
-            .left
-            .get_utype(state, emitter)
-            .and_then(|x| x.single_type())?;
-        let rtype = self
-            .right
-            .as_ref()
-            .get_utype(state, emitter)
-            .and_then(|x| x.single_type())?;
-        match &**operator {
-            BinaryExpressionOperator::NotEqual(_, _)
-            | BinaryExpressionOperator::NotIdentical(_, _)
-            | BinaryExpressionOperator::LessThan(_, _)
-            | BinaryExpressionOperator::LessThanOrEqual(_, _)
-            | BinaryExpressionOperator::Identical(_, _)
-            | BinaryExpressionOperator::GreaterThan(_, _)
-            | BinaryExpressionOperator::GreaterThanOrEqual(_, _)
-            | BinaryExpressionOperator::BooleanAnd(_, _)
-            | BinaryExpressionOperator::Instanceof(_, _)
-            | BinaryExpressionOperator::BooleanOr(_, _)
-            | BinaryExpressionOperator::Equal(_, _)
-            | BinaryExpressionOperator::And(_, _)
-            | BinaryExpressionOperator::Or(_, _)
-            | BinaryExpressionOperator::Xor(_, _) => Some(DiscreteType::Bool.into()), // FIXME ensure that this is valid for all types
-
-            // Int
-            BinaryExpressionOperator::Mod(_, _)
-            | BinaryExpressionOperator::BinaryAnd(_, _)
-            | BinaryExpressionOperator::LeftShift(_, _)
-            | BinaryExpressionOperator::Spaceship(_, _)
-            | BinaryExpressionOperator::RightShift(_, _)
-            | BinaryExpressionOperator::BinaryXor(_, _)
-            | BinaryExpressionOperator::BinaryOr(_, _) => Some(DiscreteType::Int.into()), // FIXME ensure that this is valid for all types
-
-            // Num
-            BinaryExpressionOperator::Mult(op, _) => match (&ltype, &rtype) {
-                (DiscreteType::Int, DiscreteType::Int) => Some(DiscreteType::Int.into()),
-                (DiscreteType::Float, DiscreteType::Int) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Int, DiscreteType::Float) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Float, DiscreteType::Float) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Unknown, _) | (_, DiscreteType::Unknown) => None,
-
-                _ => crate::missing_none!("{:?} {} {:?}", ltype, op, rtype),
-            },
-            BinaryExpressionOperator::Add(op, _) => match (&ltype, &rtype) {
-                (DiscreteType::Int, DiscreteType::Int) => Some(DiscreteType::Int.into()),
-                (DiscreteType::Float, DiscreteType::Int)
-                | (DiscreteType::Int, DiscreteType::Float)
-                | (DiscreteType::Float, DiscreteType::Float) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Int, DiscreteType::Bool)
-                | (DiscreteType::Bool, DiscreteType::Bool)
-                | (DiscreteType::Bool, DiscreteType::Int) => Some(DiscreteType::Int.into()),
-                (DiscreteType::Unknown, _) | (_, DiscreteType::Unknown) => None,
-                _ => crate::missing_none!("{:?} {} {:?}", ltype, op, rtype),
-            },
-            BinaryExpressionOperator::Sub(op, _) => match (&ltype, &rtype) {
-                (DiscreteType::Int, DiscreteType::Int) => Some(DiscreteType::Int.into()),
-                (DiscreteType::Float, DiscreteType::Int) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Int, DiscreteType::Float) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Float, DiscreteType::Float) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Unknown, _) | (_, DiscreteType::Unknown) => None,
-
-                // These are failures in PHP8
-                (DiscreteType::String, DiscreteType::Int)
-                | (DiscreteType::Int, DiscreteType::String) => Some(UnionType::from(vec![
-                    DiscreteType::Int,
-                    DiscreteType::Float,
-                ])),
-                (DiscreteType::String, DiscreteType::Float)
-                | (DiscreteType::Float, DiscreteType::String) => Some(DiscreteType::Float.into()),
-
-                _ => crate::missing_none!("{:?} {} {:?}", ltype, op, rtype),
-            },
-            BinaryExpressionOperator::Div(op, _) => match (&ltype, &rtype) {
-                (DiscreteType::Int, DiscreteType::Int) => {
-                    let lval = self.left.get_php_value(state, emitter);
-                    let rval = self.right.get_php_value(state, emitter);
-                    if let (Some(PHPValue::Int(lint)), Some(PHPValue::Int(rint))) = (lval, rval) {
-                        if (lint % rint) == 0 {
-                            return Some(DiscreteType::Int.into());
-                        }
-                    }
-                    Some(DiscreteType::Float.into())
-                }
-                (DiscreteType::Float, DiscreteType::Int) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Int, DiscreteType::Float) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Float, DiscreteType::Float) => Some(DiscreteType::Float.into()),
-                (DiscreteType::Unknown, _) | (_, DiscreteType::Unknown) => None,
-                _ => crate::missing_none!("{:?} {} {:?}", ltype, op, rtype),
-            },
-
+        match &*self.operator {
             // String
-            BinaryExpressionOperator::Concat(_, _) => Some(DiscreteType::String.into()),
-            BinaryExpressionOperator::NullCoalesce(_, _) => {
-                if let Some(val) = self.get_php_value(state, emitter) {
-                    return val.get_utype();
-                }
-                crate::missing_none!("Handle {:?} ?? {:?}", ltype, rtype)
-            }
+            BinaryExpressionOperator::Extra(_) => None,
+            // Mulig denne bør få Option<UnionType> her for å få
+            // bedre sluttresultat
+            op @ _ => op.get_operator_utype(self, state, emitter),
+        }
+    }
+}
 
+impl BinaryOperator for BinaryExpressionOperator {
+    fn get_operator_utype(
+        &self,
+        operands: &impl BinaryOperatorOperandAccess,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        match self {
+            BinaryExpressionOperator::NotEqual(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::NotIdentical(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Mod(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BinaryAnd(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BooleanAnd(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Mult(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Add(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Sub(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Concat(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Div(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LessThan(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LeftShift(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LessThanOrEqual(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Spaceship(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Equal(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Identical(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::GreaterThan(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::GreaterThanOrEqual(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::RightShift(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::NullCoalesce(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BinaryXor(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LogicalAnd(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Instanceof(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LogicalOr(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LogicalXor(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BinaryOr(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BooleanOr(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Extra(_) => None,
+        }
+    }
+
+    fn get_operator_php_value(
+        &self,
+        operands: &impl BinaryOperatorOperandAccess,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<PHPValue> {
+        match self {
+            BinaryExpressionOperator::NotEqual(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::NotIdentical(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Mod(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BinaryAnd(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BooleanAnd(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Mult(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Add(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Sub(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Concat(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Div(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LessThan(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LeftShift(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LessThanOrEqual(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Spaceship(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Equal(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Identical(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::GreaterThan(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::GreaterThanOrEqual(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::RightShift(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::NullCoalesce(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BinaryXor(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LogicalAnd(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::Instanceof(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LogicalOr(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::LogicalXor(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BinaryOr(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+            BinaryExpressionOperator::BooleanOr(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
             BinaryExpressionOperator::Extra(_) => None,
         }
     }
@@ -511,5 +324,23 @@ impl ThirdPassAnalyzeableNode for BinaryExpressionNode {
         }*/
         // eprintln!("TODO: {}", state.pos_as_string(self.range));
         self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
+    }
+}
+
+impl BinaryOperatorOperandAccess for BinaryExpressionNode {
+    fn get_left_value(&self, state: &mut AnalysisState) -> Option<PHPValue> {
+        self.left.get_php_value(state, &VoidEmitter::new())
+    }
+
+    fn get_left_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+        self.left.get_utype(state, &VoidEmitter::new())
+    }
+
+    fn get_right_value(&self, state: &mut AnalysisState) -> Option<PHPValue> {
+        self.right.get_php_value(state, &VoidEmitter::new())
+    }
+
+    fn get_right_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+        self.right.get_utype(state, &VoidEmitter::new())
     }
 }

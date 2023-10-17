@@ -18,10 +18,11 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
-use crate::types::union::DiscreteType;
+use crate::operators::decrement::DecrementOperator;
+use crate::operators::increment::IncrementOperator;
+use crate::operators::operator::Operator;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
-use std::ffi::OsStr;
 use tree_sitter::Node;
 use tree_sitter::Range;
 
@@ -342,8 +343,8 @@ impl NodeAccess for UpdateExpressionExpr {
 }
 #[derive(Debug, Clone)]
 pub enum UpdateExpressionPostfix {
-    Increment(&'static str, Range),
-    Decrement(&'static str, Range),
+    Increment(IncrementOperator),
+    Decrement(DecrementOperator),
     Extra(ExtraChild),
 }
 
@@ -359,8 +360,8 @@ impl UpdateExpressionPostfix {
             "ERROR" => UpdateExpressionPostfix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "++" => UpdateExpressionPostfix::Increment("++", node.range()),
-            "--" => UpdateExpressionPostfix::Decrement("--", node.range()),
+            "++" => UpdateExpressionPostfix::Increment(IncrementOperator(node.range())),
+            "--" => UpdateExpressionPostfix::Decrement(DecrementOperator(node.range())),
 
             _ => {
                 return Err(ParseError::new(
@@ -382,15 +383,19 @@ impl UpdateExpressionPostfix {
             "ERROR" => UpdateExpressionPostfix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "++" => UpdateExpressionPostfix::Increment("++", node.range()),
-            "--" => UpdateExpressionPostfix::Decrement("--", node.range()),
+            "++" => UpdateExpressionPostfix::Increment(IncrementOperator(node.range())),
+            "--" => UpdateExpressionPostfix::Decrement(DecrementOperator(node.range())),
 
             _ => return Ok(None),
         }))
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UpdateExpressionPostfix::Increment(i) => i.kind(),
+            UpdateExpressionPostfix::Decrement(d) => d.kind(),
+            UpdateExpressionPostfix::Extra(e) => e.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -403,83 +408,11 @@ impl UpdateExpressionPostfix {
         }
         Ok(res)
     }
-
-    pub fn get_utype(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
-        match self {
-            UpdateExpressionPostfix::Extra(x) => x.get_utype(state, emitter),
-            UpdateExpressionPostfix::Increment(_, _) => Some(DiscreteType::String.into()),
-            UpdateExpressionPostfix::Decrement(_, _) => Some(DiscreteType::String.into()),
-        }
-    }
-
-    pub fn get_php_value(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<PHPValue> {
-        match self {
-            UpdateExpressionPostfix::Extra(x) => x.get_php_value(state, emitter),
-            UpdateExpressionPostfix::Increment(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            UpdateExpressionPostfix::Decrement(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-        }
-    }
-
-    pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        match self {
-            UpdateExpressionPostfix::Extra(x) => x.read_from(state, emitter),
-            UpdateExpressionPostfix::Increment(_, _) => (),
-            UpdateExpressionPostfix::Decrement(_, _) => (),
-        }
-    }
-}
-
-impl NodeAccess for UpdateExpressionPostfix {
-    fn brief_desc(&self) -> String {
-        match self {
-            UpdateExpressionPostfix::Extra(x) => {
-                format!("UpdateExpressionPostfix::extra({})", x.brief_desc())
-            }
-            UpdateExpressionPostfix::Increment(a, _) => a.to_string(),
-            UpdateExpressionPostfix::Decrement(a, _) => a.to_string(),
-        }
-    }
-
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        match self {
-            UpdateExpressionPostfix::Extra(x) => x.as_any(),
-            UpdateExpressionPostfix::Increment(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            UpdateExpressionPostfix::Decrement(a, b) => AnyNodeRef::StaticExpr(a, *b),
-        }
-    }
-
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        match self {
-            UpdateExpressionPostfix::Extra(x) => x.children_any(),
-            UpdateExpressionPostfix::Increment(_, _) => todo!("Crap"),
-            UpdateExpressionPostfix::Decrement(_, _) => todo!("Crap"),
-        }
-    }
-
-    fn range(&self) -> Range {
-        match self {
-            UpdateExpressionPostfix::Extra(x) => x.range(),
-            UpdateExpressionPostfix::Increment(_, r) => *r,
-            UpdateExpressionPostfix::Decrement(_, r) => *r,
-        }
-    }
 }
 #[derive(Debug, Clone)]
 pub enum UpdateExpressionPrefix {
-    Increment(&'static str, Range),
-    Decrement(&'static str, Range),
+    Increment(IncrementOperator),
+    Decrement(DecrementOperator),
     Extra(ExtraChild),
 }
 
@@ -495,8 +428,8 @@ impl UpdateExpressionPrefix {
             "ERROR" => UpdateExpressionPrefix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "++" => UpdateExpressionPrefix::Increment("++", node.range()),
-            "--" => UpdateExpressionPrefix::Decrement("--", node.range()),
+            "++" => UpdateExpressionPrefix::Increment(IncrementOperator(node.range())),
+            "--" => UpdateExpressionPrefix::Decrement(DecrementOperator(node.range())),
 
             _ => {
                 return Err(ParseError::new(
@@ -518,15 +451,19 @@ impl UpdateExpressionPrefix {
             "ERROR" => UpdateExpressionPrefix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "++" => UpdateExpressionPrefix::Increment("++", node.range()),
-            "--" => UpdateExpressionPrefix::Decrement("--", node.range()),
+            "++" => UpdateExpressionPrefix::Increment(IncrementOperator(node.range())),
+            "--" => UpdateExpressionPrefix::Decrement(DecrementOperator(node.range())),
 
             _ => return Ok(None),
         }))
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UpdateExpressionPrefix::Increment(i) => i.kind(),
+            UpdateExpressionPrefix::Decrement(d) => d.kind(),
+            UpdateExpressionPrefix::Extra(e) => e.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -538,78 +475,6 @@ impl UpdateExpressionPrefix {
             res.push(Box::new(Self::parse(child, source)?));
         }
         Ok(res)
-    }
-
-    pub fn get_utype(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
-        match self {
-            UpdateExpressionPrefix::Extra(x) => x.get_utype(state, emitter),
-            UpdateExpressionPrefix::Increment(_, _) => Some(DiscreteType::String.into()),
-            UpdateExpressionPrefix::Decrement(_, _) => Some(DiscreteType::String.into()),
-        }
-    }
-
-    pub fn get_php_value(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<PHPValue> {
-        match self {
-            UpdateExpressionPrefix::Extra(x) => x.get_php_value(state, emitter),
-            UpdateExpressionPrefix::Increment(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            UpdateExpressionPrefix::Decrement(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-        }
-    }
-
-    pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        match self {
-            UpdateExpressionPrefix::Extra(x) => x.read_from(state, emitter),
-            UpdateExpressionPrefix::Increment(_, _) => (),
-            UpdateExpressionPrefix::Decrement(_, _) => (),
-        }
-    }
-}
-
-impl NodeAccess for UpdateExpressionPrefix {
-    fn brief_desc(&self) -> String {
-        match self {
-            UpdateExpressionPrefix::Extra(x) => {
-                format!("UpdateExpressionPrefix::extra({})", x.brief_desc())
-            }
-            UpdateExpressionPrefix::Increment(a, _) => a.to_string(),
-            UpdateExpressionPrefix::Decrement(a, _) => a.to_string(),
-        }
-    }
-
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        match self {
-            UpdateExpressionPrefix::Extra(x) => x.as_any(),
-            UpdateExpressionPrefix::Increment(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            UpdateExpressionPrefix::Decrement(a, b) => AnyNodeRef::StaticExpr(a, *b),
-        }
-    }
-
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        match self {
-            UpdateExpressionPrefix::Extra(x) => x.children_any(),
-            UpdateExpressionPrefix::Increment(_, _) => todo!("Crap"),
-            UpdateExpressionPrefix::Decrement(_, _) => todo!("Crap"),
-        }
-    }
-
-    fn range(&self) -> Range {
-        match self {
-            UpdateExpressionPrefix::Extra(x) => x.range(),
-            UpdateExpressionPrefix::Increment(_, r) => *r,
-            UpdateExpressionPrefix::Decrement(_, r) => *r,
-        }
     }
 }
 #[derive(Debug, Clone)]

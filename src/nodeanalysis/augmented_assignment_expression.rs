@@ -7,7 +7,11 @@ use crate::{
             AugmentedAssignmentExpressionOperator,
         },
     },
-    issue::IssueEmitter,
+    issue::{IssueEmitter, VoidEmitter},
+    operators::{
+        binary::{BinaryAssignmentOperator, BinaryOperatorOperandAccess},
+        operator::Operator,
+    },
     types::union::{DiscreteType, UnionType},
     value::PHPValue,
 };
@@ -56,67 +60,67 @@ impl AugmentedAssignmentExpressionNode {
             return None;
         };
         let _noe: Option<u32> = match *self.operator {
-            AugmentedAssignmentExpressionOperator::ModAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::ModAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::AndAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::AndAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::PowAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::PowAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::MultAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::MultAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::AddAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::AddAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::SubAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::SubAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::ConcatAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::ConcatAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::DivAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::DivAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::RightShiftAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::NullsafeAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::XorAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::XorAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
             ),
-            AugmentedAssignmentExpressionOperator::OrAssign(_, _) => crate::missing_none!(
+            AugmentedAssignmentExpressionOperator::OrAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",
                 self.kind(),
                 self.operator
@@ -136,59 +140,77 @@ impl AugmentedAssignmentExpressionNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match *self.operator {
-            AugmentedAssignmentExpressionOperator::ModAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::AndAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::PowAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::MultAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::AddAssign(_, _) => {
-                if let Some(left_type) = self.left.get_utype(state, emitter) {
-                    if left_type.is_float() {
-                        return Some(DiscreteType::Float.into());
-                    }
-                }
-                if let Some(right_utype) = self.right.get_utype(state, emitter) {
-                    if right_utype.is_int() {
-                        return Some(DiscreteType::Int.into());
-                    }
-                }
-                let mut utype = UnionType::new();
-                utype.push(DiscreteType::Int);
-                utype.push(DiscreteType::Float);
-                Some(utype)
-            }
-            AugmentedAssignmentExpressionOperator::SubAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::ConcatAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::DivAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::XorAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
-            AugmentedAssignmentExpressionOperator::OrAssign(_, _) => {
-                crate::missing_none!("{}.get_utype(..)", self.kind())
-            }
+            AugmentedAssignmentExpressionOperator::Extra(_) => None,
+            _ => self.operator.get_operator_utype(self, state, emitter),
+        }
+    }
+}
 
+impl BinaryOperatorOperandAccess for AugmentedAssignmentExpressionNode {
+    fn get_left_value(&self, state: &mut AnalysisState) -> Option<PHPValue> {
+        self.left.get_php_value(state, &VoidEmitter::new())
+    }
+
+    fn get_right_value(&self, state: &mut AnalysisState) -> Option<PHPValue> {
+        self.right.get_php_value(state, &VoidEmitter::new())
+    }
+
+    fn get_left_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+        self.left.get_utype(state, &VoidEmitter::new())
+    }
+
+    fn get_right_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+        self.right.get_utype(state, &VoidEmitter::new())
+    }
+}
+
+impl BinaryAssignmentOperator for AugmentedAssignmentExpressionOperator {
+    fn get_operator_utype(
+        &self,
+        operands: &impl BinaryOperatorOperandAccess,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) -> Option<UnionType> {
+        match self {
+            AugmentedAssignmentExpressionOperator::ModAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::AndAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::PowAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::MultAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::AddAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::SubAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::ConcatAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::DivAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::LeftShiftAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::RightShiftAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::NullsafeAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::XorAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
+            AugmentedAssignmentExpressionOperator::OrAssign(oper) => {
+                oper.get_operator_utype(operands, state, emitter)
+            }
             AugmentedAssignmentExpressionOperator::Extra(_) => None,
         }
     }
@@ -209,32 +231,32 @@ impl ThirdPassAnalyzeableNode for AugmentedAssignmentExpressionNode {
 
         let right_val = self.right.get_php_value(state, emitter);
         let left_val = self.left.get_php_value(state, emitter);
-        let (val_type, value) = match *self.operator {
-            AugmentedAssignmentExpressionOperator::ModAssign(op, _) => (
+        let (val_type, value) = match &*self.operator {
+            AugmentedAssignmentExpressionOperator::ModAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::AndAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::AndAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::PowAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::PowAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::MultAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::MultAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::AddAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::AddAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::SubAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::SubAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::ConcatAssign(op, _) => {
+            AugmentedAssignmentExpressionOperator::ConcatAssign(op) => {
                 if let Some(_utype) = &maybe_left_utype {
                     /*if !utype.can_be_cast_to_string() {
                         emitter.emit();
@@ -264,33 +286,37 @@ impl ThirdPassAnalyzeableNode for AugmentedAssignmentExpressionNode {
 
                 (
                     Some(DiscreteType::String.into()),
-                    crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                    crate::missing_none!(
+                        "{}[{}].analyze_round_two(..)",
+                        self.kind(),
+                        op.operator()
+                    ),
                 )
             }
-            AugmentedAssignmentExpressionOperator::DivAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::DivAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
 
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_, _) => (
+            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_) => (
                 Some(DiscreteType::Int.into()),
                 crate::missing_none!("{}.analyze_round_two(..)", self.kind()),
             ),
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::RightShiftAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::NullsafeAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::XorAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::XorAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
-            AugmentedAssignmentExpressionOperator::OrAssign(op, _) => (
+            AugmentedAssignmentExpressionOperator::OrAssign(op) => (
                 None,
-                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op),
+                crate::missing_none!("{}[{}].analyze_round_two(..)", self.kind(), op.operator()),
             ),
 
             AugmentedAssignmentExpressionOperator::Extra(_) => (None, None),

@@ -79,21 +79,21 @@ impl UpdateExpressionNode {
 
         if let Some(prefix) = &self.prefix {
             match (&**prefix, &val) {
-                (UpdateExpressionPrefix::Increment(_, _), PHPValue::NULL) => Some(PHPValue::Int(1)),
-                (UpdateExpressionPrefix::Increment(_, _), PHPValue::Boolean(_)) => Some(val),
-                (UpdateExpressionPrefix::Increment(_, _), PHPValue::Int(i)) => {
+                (UpdateExpressionPrefix::Increment(_), PHPValue::NULL) => Some(PHPValue::Int(1)),
+                (UpdateExpressionPrefix::Increment(_), PHPValue::Boolean(_)) => Some(val),
+                (UpdateExpressionPrefix::Increment(_), PHPValue::Int(i)) => {
                     Some(PHPValue::Int(i + 1))
                 }
-                (UpdateExpressionPrefix::Increment(_, _), PHPValue::Float(PHPFloat::Real(f))) => {
+                (UpdateExpressionPrefix::Increment(_), PHPValue::Float(PHPFloat::Real(f))) => {
                     Some(PHPValue::Float(PHPFloat::new(f + 1.0)))
                 }
 
-                (UpdateExpressionPrefix::Decrement(_, _), PHPValue::NULL) => Some(PHPValue::NULL),
-                (UpdateExpressionPrefix::Decrement(_, _), PHPValue::Boolean(_)) => Some(val),
-                (UpdateExpressionPrefix::Decrement(_, _), PHPValue::Int(i)) => {
+                (UpdateExpressionPrefix::Decrement(_), PHPValue::NULL) => Some(PHPValue::NULL),
+                (UpdateExpressionPrefix::Decrement(_), PHPValue::Boolean(_)) => Some(val),
+                (UpdateExpressionPrefix::Decrement(_), PHPValue::Int(i)) => {
                     Some(PHPValue::Int(i - 1))
                 }
-                (UpdateExpressionPrefix::Decrement(_, _), PHPValue::Float(PHPFloat::Real(f))) => {
+                (UpdateExpressionPrefix::Decrement(_), PHPValue::Float(PHPFloat::Real(f))) => {
                     Some(PHPValue::Float(PHPFloat::new(f - 1.0)))
                 }
                 (_, PHPValue::Float(_)) => crate::missing_none!(
@@ -121,31 +121,31 @@ impl UpdateExpressionNode {
             let expr_type = self.expr.get_utype(state, emitter)?.single_type()?;
 
             match (&**prefix, expr_type) {
-                (UpdateExpressionPrefix::Increment(_, _), DiscreteType::Int)
-                | (UpdateExpressionPrefix::Decrement(_, _), DiscreteType::Int) => {
+                (UpdateExpressionPrefix::Increment(_), DiscreteType::Int)
+                | (UpdateExpressionPrefix::Decrement(_), DiscreteType::Int) => {
                     Some(DiscreteType::Int.into())
                 }
 
-                (UpdateExpressionPrefix::Increment(_, _), DiscreteType::Float)
-                | (UpdateExpressionPrefix::Decrement(_, _), DiscreteType::Float) => {
+                (UpdateExpressionPrefix::Increment(_), DiscreteType::Float)
+                | (UpdateExpressionPrefix::Decrement(_), DiscreteType::Float) => {
                     Some(DiscreteType::Float.into())
                 }
 
-                (UpdateExpressionPrefix::Increment(_, _), DiscreteType::Bool)
-                | (UpdateExpressionPrefix::Decrement(_, _), DiscreteType::Bool) => {
+                (UpdateExpressionPrefix::Increment(_), DiscreteType::Bool)
+                | (UpdateExpressionPrefix::Decrement(_), DiscreteType::Bool) => {
                     Some(DiscreteType::Bool.into())
                 }
 
-                (UpdateExpressionPrefix::Increment(_, _), DiscreteType::String)
-                | (UpdateExpressionPrefix::Decrement(_, _), DiscreteType::String) => {
+                (UpdateExpressionPrefix::Increment(_), DiscreteType::String)
+                | (UpdateExpressionPrefix::Decrement(_), DiscreteType::String) => {
                     Some(DiscreteType::String.into())
                 }
 
-                (UpdateExpressionPrefix::Increment(_, _), DiscreteType::NULL) => {
+                (UpdateExpressionPrefix::Increment(_), DiscreteType::NULL) => {
                     Some(DiscreteType::Int.into())
                 }
 
-                (UpdateExpressionPrefix::Decrement(_, _), DiscreteType::NULL) => {
+                (UpdateExpressionPrefix::Decrement(_), DiscreteType::NULL) => {
                     Some(DiscreteType::NULL.into())
                 }
 
@@ -159,8 +159,8 @@ impl UpdateExpressionNode {
 
     fn prefix_op(&self) -> Option<Operator> {
         self.prefix.as_ref().and_then(|op_ref| match &**op_ref {
-            UpdateExpressionPrefix::Increment(_, _) => Some(Operator::Increment),
-            UpdateExpressionPrefix::Decrement(_, _) => Some(Operator::Decrement),
+            UpdateExpressionPrefix::Increment(_) => Some(Operator::Increment),
+            UpdateExpressionPrefix::Decrement(_) => Some(Operator::Decrement),
 
             UpdateExpressionPrefix::Extra(_) => None,
         })
@@ -168,8 +168,8 @@ impl UpdateExpressionNode {
 
     fn postfix_op(&self) -> Option<Operator> {
         self.postfix.as_ref().and_then(|op_ref| match &**op_ref {
-            UpdateExpressionPostfix::Increment(_, _) => Some(Operator::Increment),
-            UpdateExpressionPostfix::Decrement(_, _) => Some(Operator::Decrement),
+            UpdateExpressionPostfix::Increment(_) => Some(Operator::Increment),
+            UpdateExpressionPostfix::Decrement(_) => Some(Operator::Decrement),
 
             UpdateExpressionPostfix::Extra(_) => None,
         })

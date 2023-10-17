@@ -1,4 +1,3 @@
-use crate::analysis::state::AnalysisState;
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
@@ -8,20 +7,20 @@ use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
-use crate::issue::IssueEmitter;
-use crate::types::union::DiscreteType;
-use crate::types::union::UnionType;
-use crate::value::PHPValue;
-use std::ffi::OsStr;
+use crate::operators::add::AddOperator;
+use crate::operators::binary_not::BinaryNotOperator;
+use crate::operators::not::NotOperator;
+use crate::operators::operator::Operator;
+use crate::operators::sub::SubOperator;
 use tree_sitter::Node;
 use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum UnaryOpExpressionOperator {
-    Not(&'static str, Range),
-    Add(&'static str, Range),
-    Sub(&'static str, Range),
-    BinaryNot(&'static str, Range),
+    Not(NotOperator),
+    Add(AddOperator),
+    Sub(SubOperator),
+    BinaryNot(BinaryNotOperator),
     Extra(ExtraChild),
 }
 
@@ -39,10 +38,10 @@ impl UnaryOpExpressionOperator {
             "ERROR" => UnaryOpExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "!" => UnaryOpExpressionOperator::Not("!", node.range()),
-            "+" => UnaryOpExpressionOperator::Add("+", node.range()),
-            "-" => UnaryOpExpressionOperator::Sub("-", node.range()),
-            "~" => UnaryOpExpressionOperator::BinaryNot("~", node.range()),
+            "!" => UnaryOpExpressionOperator::Not(NotOperator(node.range())),
+            "+" => UnaryOpExpressionOperator::Add(AddOperator(node.range())),
+            "-" => UnaryOpExpressionOperator::Sub(SubOperator(node.range())),
+            "~" => UnaryOpExpressionOperator::BinaryNot(BinaryNotOperator(node.range())),
 
             _ => {
                 return Err(ParseError::new(
@@ -66,17 +65,23 @@ impl UnaryOpExpressionOperator {
             "ERROR" => UnaryOpExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "!" => UnaryOpExpressionOperator::Not("!", node.range()),
-            "+" => UnaryOpExpressionOperator::Add("+", node.range()),
-            "-" => UnaryOpExpressionOperator::Sub("-", node.range()),
-            "~" => UnaryOpExpressionOperator::BinaryNot("~", node.range()),
+            "!" => UnaryOpExpressionOperator::Not(NotOperator(node.range())),
+            "+" => UnaryOpExpressionOperator::Add(AddOperator(node.range())),
+            "-" => UnaryOpExpressionOperator::Sub(SubOperator(node.range())),
+            "~" => UnaryOpExpressionOperator::BinaryNot(BinaryNotOperator(node.range())),
 
             _ => return Ok(None),
         }))
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UnaryOpExpressionOperator::Not(n) => n.kind(),
+            UnaryOpExpressionOperator::Add(a) => a.kind(),
+            UnaryOpExpressionOperator::Sub(s) => s.kind(),
+            UnaryOpExpressionOperator::BinaryNot(bn) => bn.kind(),
+            UnaryOpExpressionOperator::Extra(e) => e.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -88,96 +93,6 @@ impl UnaryOpExpressionOperator {
             res.push(Box::new(Self::parse(child, source)?));
         }
         Ok(res)
-    }
-
-    pub fn get_utype(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
-        match self {
-            UnaryOpExpressionOperator::Extra(x) => x.get_utype(state, emitter),
-            UnaryOpExpressionOperator::Not(_, _) => Some(DiscreteType::String.into()),
-            UnaryOpExpressionOperator::Add(_, _) => Some(DiscreteType::String.into()),
-            UnaryOpExpressionOperator::Sub(_, _) => Some(DiscreteType::String.into()),
-            UnaryOpExpressionOperator::BinaryNot(_, _) => Some(DiscreteType::String.into()),
-        }
-    }
-
-    pub fn get_php_value(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<PHPValue> {
-        match self {
-            UnaryOpExpressionOperator::Extra(x) => x.get_php_value(state, emitter),
-            UnaryOpExpressionOperator::Not(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            UnaryOpExpressionOperator::Add(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            UnaryOpExpressionOperator::Sub(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            UnaryOpExpressionOperator::BinaryNot(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-        }
-    }
-
-    pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        match self {
-            UnaryOpExpressionOperator::Extra(x) => x.read_from(state, emitter),
-            UnaryOpExpressionOperator::Not(_, _) => (),
-            UnaryOpExpressionOperator::Add(_, _) => (),
-            UnaryOpExpressionOperator::Sub(_, _) => (),
-            UnaryOpExpressionOperator::BinaryNot(_, _) => (),
-        }
-    }
-}
-
-impl NodeAccess for UnaryOpExpressionOperator {
-    fn brief_desc(&self) -> String {
-        match self {
-            UnaryOpExpressionOperator::Extra(x) => {
-                format!("UnaryOpExpressionOperator::extra({})", x.brief_desc())
-            }
-            UnaryOpExpressionOperator::Not(a, _) => a.to_string(),
-            UnaryOpExpressionOperator::Add(a, _) => a.to_string(),
-            UnaryOpExpressionOperator::Sub(a, _) => a.to_string(),
-            UnaryOpExpressionOperator::BinaryNot(a, _) => a.to_string(),
-        }
-    }
-
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        match self {
-            UnaryOpExpressionOperator::Extra(x) => x.as_any(),
-            UnaryOpExpressionOperator::Not(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            UnaryOpExpressionOperator::Add(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            UnaryOpExpressionOperator::Sub(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            UnaryOpExpressionOperator::BinaryNot(a, b) => AnyNodeRef::StaticExpr(a, *b),
-        }
-    }
-
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        match self {
-            UnaryOpExpressionOperator::Extra(x) => x.children_any(),
-            UnaryOpExpressionOperator::Not(_, _) => todo!("Crap"),
-            UnaryOpExpressionOperator::Add(_, _) => todo!("Crap"),
-            UnaryOpExpressionOperator::Sub(_, _) => todo!("Crap"),
-            UnaryOpExpressionOperator::BinaryNot(_, _) => todo!("Crap"),
-        }
-    }
-
-    fn range(&self) -> Range {
-        match self {
-            UnaryOpExpressionOperator::Extra(x) => x.range(),
-            UnaryOpExpressionOperator::Not(_, r) => *r,
-            UnaryOpExpressionOperator::Add(_, r) => *r,
-            UnaryOpExpressionOperator::Sub(_, r) => *r,
-            UnaryOpExpressionOperator::BinaryNot(_, r) => *r,
-        }
     }
 }
 #[derive(Debug, Clone)]

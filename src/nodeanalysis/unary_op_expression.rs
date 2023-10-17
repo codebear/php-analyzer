@@ -2,6 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::unary_op_expression::{UnaryOpExpressionNode, UnaryOpExpressionOperator},
     issue::IssueEmitter,
+    operators::operator::Operator,
     types::union::{DiscreteType, UnionType},
     value::{PHPFloat, PHPValue},
 };
@@ -19,20 +20,20 @@ impl UnaryOpExpressionNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match &**self.operator.as_ref()? {
-            UnaryOpExpressionOperator::Not(_, _) => Some(DiscreteType::Bool.into()),
-            UnaryOpExpressionOperator::Add(_, _) => self
+            UnaryOpExpressionOperator::Not(_) => Some(DiscreteType::Bool.into()),
+            UnaryOpExpressionOperator::Add(_) => self
                 .expr
                 .as_ref()?
                 .get_php_value(state, emitter)?
                 .as_php_num()?
                 .get_utype(),
-            UnaryOpExpressionOperator::Sub(_, _) => self
+            UnaryOpExpressionOperator::Sub(_) => self
                 .expr
                 .as_ref()?
                 .get_php_value(state, emitter)?
                 .as_php_num()?
                 .get_utype(),
-            UnaryOpExpressionOperator::BinaryNot(_, _) => Some(DiscreteType::Int.into()),
+            UnaryOpExpressionOperator::BinaryNot(_) => Some(DiscreteType::Int.into()),
 
             UnaryOpExpressionOperator::Extra(_) => None,
         }
@@ -60,16 +61,16 @@ impl UnaryOpExpressionNode {
         };
 
         match (&**operator, value) {
-            (UnaryOpExpressionOperator::Not(_, _), v) => v.as_bool().map(|x| PHPValue::Boolean(!x)),
-            (UnaryOpExpressionOperator::Add(op, _), _) => {
-                crate::missing_none!("unary add [{}]", op)
+            (UnaryOpExpressionOperator::Not(_), v) => v.as_bool().map(|x| PHPValue::Boolean(!x)),
+            (UnaryOpExpressionOperator::Add(op), _) => {
+                crate::missing_none!("unary add [{}]", op.operator())
             }
-            (UnaryOpExpressionOperator::Sub(_, _), PHPValue::Int(i)) => Some(PHPValue::Int(-i)),
-            (UnaryOpExpressionOperator::Sub(_, _), PHPValue::Float(PHPFloat::Real(f))) => {
+            (UnaryOpExpressionOperator::Sub(_), PHPValue::Int(i)) => Some(PHPValue::Int(-i)),
+            (UnaryOpExpressionOperator::Sub(_), PHPValue::Float(PHPFloat::Real(f))) => {
                 Some(PHPValue::Float(PHPFloat::new(-f)))
             }
             // (UnaryOpExpressionOperator::Squelch(_, _), _) => todo!(),
-            (UnaryOpExpressionOperator::BinaryNot(_, _), _) => {
+            (UnaryOpExpressionOperator::BinaryNot(_), _) => {
                 crate::missing_none!("unary binary not")
             }
 

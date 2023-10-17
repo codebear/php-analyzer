@@ -44,6 +44,13 @@ impl ExtraChild {
             }
         })
     }
+    pub fn kind(&self) -> &'static str {
+        return match self {
+            ExtraChild::Comment(c) => c.kind(),
+            ExtraChild::TextInterpolation(t) => t.kind(),
+            ExtraChild::Error(e) => e.kind(),
+        };
+    }
 }
 impl NodeAccess for ExtraChild {
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {

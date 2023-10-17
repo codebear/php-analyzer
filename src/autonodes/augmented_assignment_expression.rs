@@ -19,10 +19,22 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
-use crate::types::union::DiscreteType;
+use crate::operators::add_assign::AddAssignOperator;
+use crate::operators::and_assign::AndAssignOperator;
+use crate::operators::concat_assign::ConcatAssignOperator;
+use crate::operators::div_assign::DivAssignOperator;
+use crate::operators::left_shift_assign::LeftShiftAssignOperator;
+use crate::operators::mod_assign::ModAssignOperator;
+use crate::operators::mult_assign::MultAssignOperator;
+use crate::operators::nullsafe_assign::NullsafeAssignOperator;
+use crate::operators::operator::Operator;
+use crate::operators::or_assign::OrAssignOperator;
+use crate::operators::pow_assign::PowAssignOperator;
+use crate::operators::right_shift_assign::RightShiftAssignOperator;
+use crate::operators::sub_assign::SubAssignOperator;
+use crate::operators::xor_assign::XorAssignOperator;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
-use std::ffi::OsStr;
 use tree_sitter::Node;
 use tree_sitter::Range;
 
@@ -410,19 +422,19 @@ impl NodeAccess for AugmentedAssignmentExpressionLeft {
 }
 #[derive(Debug, Clone)]
 pub enum AugmentedAssignmentExpressionOperator {
-    ModAssign(&'static str, Range),
-    AndAssign(&'static str, Range),
-    PowAssign(&'static str, Range),
-    MultAssign(&'static str, Range),
-    AddAssign(&'static str, Range),
-    SubAssign(&'static str, Range),
-    ConcatAssign(&'static str, Range),
-    DivAssign(&'static str, Range),
-    LeftShiftAssign(&'static str, Range),
-    RightShiftAssign(&'static str, Range),
-    NullsafeAssign(&'static str, Range),
-    XorAssign(&'static str, Range),
-    OrAssign(&'static str, Range),
+    ModAssign(ModAssignOperator),
+    AndAssign(AndAssignOperator),
+    PowAssign(PowAssignOperator),
+    MultAssign(MultAssignOperator),
+    AddAssign(AddAssignOperator),
+    SubAssign(SubAssignOperator),
+    ConcatAssign(ConcatAssignOperator),
+    DivAssign(DivAssignOperator),
+    LeftShiftAssign(LeftShiftAssignOperator),
+    RightShiftAssign(RightShiftAssignOperator),
+    NullsafeAssign(NullsafeAssignOperator),
+    XorAssign(XorAssignOperator),
+    OrAssign(OrAssignOperator),
     Extra(ExtraChild),
 }
 
@@ -440,19 +452,43 @@ impl AugmentedAssignmentExpressionOperator {
             "ERROR" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "%=" => AugmentedAssignmentExpressionOperator::ModAssign("%=", node.range()),
-            "&=" => AugmentedAssignmentExpressionOperator::AndAssign("&=", node.range()),
-            "**=" => AugmentedAssignmentExpressionOperator::PowAssign("**=", node.range()),
-            "*=" => AugmentedAssignmentExpressionOperator::MultAssign("*=", node.range()),
-            "+=" => AugmentedAssignmentExpressionOperator::AddAssign("+=", node.range()),
-            "-=" => AugmentedAssignmentExpressionOperator::SubAssign("-=", node.range()),
-            ".=" => AugmentedAssignmentExpressionOperator::ConcatAssign(".=", node.range()),
-            "/=" => AugmentedAssignmentExpressionOperator::DivAssign("/=", node.range()),
-            "<<=" => AugmentedAssignmentExpressionOperator::LeftShiftAssign("<<=", node.range()),
-            ">>=" => AugmentedAssignmentExpressionOperator::RightShiftAssign(">>=", node.range()),
-            "??=" => AugmentedAssignmentExpressionOperator::NullsafeAssign("??=", node.range()),
-            "^=" => AugmentedAssignmentExpressionOperator::XorAssign("^=", node.range()),
-            "|=" => AugmentedAssignmentExpressionOperator::OrAssign("|=", node.range()),
+            "%=" => {
+                AugmentedAssignmentExpressionOperator::ModAssign(ModAssignOperator(node.range()))
+            }
+            "&=" => {
+                AugmentedAssignmentExpressionOperator::AndAssign(AndAssignOperator(node.range()))
+            }
+            "**=" => {
+                AugmentedAssignmentExpressionOperator::PowAssign(PowAssignOperator(node.range()))
+            }
+            "*=" => {
+                AugmentedAssignmentExpressionOperator::MultAssign(MultAssignOperator(node.range()))
+            }
+            "+=" => {
+                AugmentedAssignmentExpressionOperator::AddAssign(AddAssignOperator(node.range()))
+            }
+            "-=" => {
+                AugmentedAssignmentExpressionOperator::SubAssign(SubAssignOperator(node.range()))
+            }
+            ".=" => AugmentedAssignmentExpressionOperator::ConcatAssign(ConcatAssignOperator(
+                node.range(),
+            )),
+            "/=" => {
+                AugmentedAssignmentExpressionOperator::DivAssign(DivAssignOperator(node.range()))
+            }
+            "<<=" => AugmentedAssignmentExpressionOperator::LeftShiftAssign(
+                LeftShiftAssignOperator(node.range()),
+            ),
+            ">>=" => AugmentedAssignmentExpressionOperator::RightShiftAssign(
+                RightShiftAssignOperator(node.range()),
+            ),
+            "??=" => AugmentedAssignmentExpressionOperator::NullsafeAssign(NullsafeAssignOperator(
+                node.range(),
+            )),
+            "^=" => {
+                AugmentedAssignmentExpressionOperator::XorAssign(XorAssignOperator(node.range()))
+            }
+            "|=" => AugmentedAssignmentExpressionOperator::OrAssign(OrAssignOperator(node.range())),
 
             _ => {
                 return Err(ParseError::new(
@@ -476,26 +512,65 @@ impl AugmentedAssignmentExpressionOperator {
             "ERROR" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "%=" => AugmentedAssignmentExpressionOperator::ModAssign("%=", node.range()),
-            "&=" => AugmentedAssignmentExpressionOperator::AndAssign("&=", node.range()),
-            "**=" => AugmentedAssignmentExpressionOperator::PowAssign("**=", node.range()),
-            "*=" => AugmentedAssignmentExpressionOperator::MultAssign("*=", node.range()),
-            "+=" => AugmentedAssignmentExpressionOperator::AddAssign("+=", node.range()),
-            "-=" => AugmentedAssignmentExpressionOperator::SubAssign("-=", node.range()),
-            ".=" => AugmentedAssignmentExpressionOperator::ConcatAssign(".=", node.range()),
-            "/=" => AugmentedAssignmentExpressionOperator::DivAssign("/=", node.range()),
-            "<<=" => AugmentedAssignmentExpressionOperator::LeftShiftAssign("<<=", node.range()),
-            ">>=" => AugmentedAssignmentExpressionOperator::RightShiftAssign(">>=", node.range()),
-            "??=" => AugmentedAssignmentExpressionOperator::NullsafeAssign("??=", node.range()),
-            "^=" => AugmentedAssignmentExpressionOperator::XorAssign("^=", node.range()),
-            "|=" => AugmentedAssignmentExpressionOperator::OrAssign("|=", node.range()),
+            "%=" => {
+                AugmentedAssignmentExpressionOperator::ModAssign(ModAssignOperator(node.range()))
+            }
+            "&=" => {
+                AugmentedAssignmentExpressionOperator::AndAssign(AndAssignOperator(node.range()))
+            }
+            "**=" => {
+                AugmentedAssignmentExpressionOperator::PowAssign(PowAssignOperator(node.range()))
+            }
+            "*=" => {
+                AugmentedAssignmentExpressionOperator::MultAssign(MultAssignOperator(node.range()))
+            }
+            "+=" => {
+                AugmentedAssignmentExpressionOperator::AddAssign(AddAssignOperator(node.range()))
+            }
+            "-=" => {
+                AugmentedAssignmentExpressionOperator::SubAssign(SubAssignOperator(node.range()))
+            }
+            ".=" => AugmentedAssignmentExpressionOperator::ConcatAssign(ConcatAssignOperator(
+                node.range(),
+            )),
+            "/=" => {
+                AugmentedAssignmentExpressionOperator::DivAssign(DivAssignOperator(node.range()))
+            }
+            "<<=" => AugmentedAssignmentExpressionOperator::LeftShiftAssign(
+                LeftShiftAssignOperator(node.range()),
+            ),
+            ">>=" => AugmentedAssignmentExpressionOperator::RightShiftAssign(
+                RightShiftAssignOperator(node.range()),
+            ),
+            "??=" => AugmentedAssignmentExpressionOperator::NullsafeAssign(NullsafeAssignOperator(
+                node.range(),
+            )),
+            "^=" => {
+                AugmentedAssignmentExpressionOperator::XorAssign(XorAssignOperator(node.range()))
+            }
+            "|=" => AugmentedAssignmentExpressionOperator::OrAssign(OrAssignOperator(node.range())),
 
             _ => return Ok(None),
         }))
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            AugmentedAssignmentExpressionOperator::ModAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::AndAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::PowAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::MultAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::AddAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::SubAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::ConcatAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::DivAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::LeftShiftAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::RightShiftAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::NullsafeAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::XorAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::OrAssign(oper) => oper.operator(),
+            AugmentedAssignmentExpressionOperator::Extra(oper) => oper.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -507,214 +582,6 @@ impl AugmentedAssignmentExpressionOperator {
             res.push(Box::new(Self::parse(child, source)?));
         }
         Ok(res)
-    }
-
-    pub fn get_utype(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
-        match self {
-            AugmentedAssignmentExpressionOperator::Extra(x) => x.get_utype(state, emitter),
-            AugmentedAssignmentExpressionOperator::ModAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::AndAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::PowAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::MultAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::AddAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::SubAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::ConcatAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::DivAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::XorAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-            AugmentedAssignmentExpressionOperator::OrAssign(_, _) => {
-                Some(DiscreteType::String.into())
-            }
-        }
-    }
-
-    pub fn get_php_value(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<PHPValue> {
-        match self {
-            AugmentedAssignmentExpressionOperator::Extra(x) => x.get_php_value(state, emitter),
-            AugmentedAssignmentExpressionOperator::ModAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::AndAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::PowAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::MultAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::AddAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::SubAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::ConcatAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::DivAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::XorAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-            AugmentedAssignmentExpressionOperator::OrAssign(a, _) => {
-                Some(PHPValue::String(OsStr::new(a).to_os_string()))
-            }
-        }
-    }
-
-    pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        match self {
-            AugmentedAssignmentExpressionOperator::Extra(x) => x.read_from(state, emitter),
-            AugmentedAssignmentExpressionOperator::ModAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::AndAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::PowAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::MultAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::AddAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::SubAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::ConcatAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::DivAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::XorAssign(_, _) => (),
-            AugmentedAssignmentExpressionOperator::OrAssign(_, _) => (),
-        }
-    }
-}
-
-impl NodeAccess for AugmentedAssignmentExpressionOperator {
-    fn brief_desc(&self) -> String {
-        match self {
-            AugmentedAssignmentExpressionOperator::Extra(x) => format!(
-                "AugmentedAssignmentExpressionOperator::extra({})",
-                x.brief_desc()
-            ),
-            AugmentedAssignmentExpressionOperator::ModAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::AndAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::PowAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::MultAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::AddAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::SubAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::ConcatAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::DivAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::XorAssign(a, _) => a.to_string(),
-            AugmentedAssignmentExpressionOperator::OrAssign(a, _) => a.to_string(),
-        }
-    }
-
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        match self {
-            AugmentedAssignmentExpressionOperator::Extra(x) => x.as_any(),
-            AugmentedAssignmentExpressionOperator::ModAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            AugmentedAssignmentExpressionOperator::AndAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            AugmentedAssignmentExpressionOperator::PowAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            AugmentedAssignmentExpressionOperator::MultAssign(a, b) => {
-                AnyNodeRef::StaticExpr(a, *b)
-            }
-            AugmentedAssignmentExpressionOperator::AddAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            AugmentedAssignmentExpressionOperator::SubAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            AugmentedAssignmentExpressionOperator::ConcatAssign(a, b) => {
-                AnyNodeRef::StaticExpr(a, *b)
-            }
-            AugmentedAssignmentExpressionOperator::DivAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(a, b) => {
-                AnyNodeRef::StaticExpr(a, *b)
-            }
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(a, b) => {
-                AnyNodeRef::StaticExpr(a, *b)
-            }
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(a, b) => {
-                AnyNodeRef::StaticExpr(a, *b)
-            }
-            AugmentedAssignmentExpressionOperator::XorAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
-            AugmentedAssignmentExpressionOperator::OrAssign(a, b) => AnyNodeRef::StaticExpr(a, *b),
-        }
-    }
-
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        match self {
-            AugmentedAssignmentExpressionOperator::Extra(x) => x.children_any(),
-            AugmentedAssignmentExpressionOperator::ModAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::AndAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::PowAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::MultAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::AddAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::SubAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::ConcatAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::DivAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::XorAssign(_, _) => todo!("Crap"),
-            AugmentedAssignmentExpressionOperator::OrAssign(_, _) => todo!("Crap"),
-        }
-    }
-
-    fn range(&self) -> Range {
-        match self {
-            AugmentedAssignmentExpressionOperator::Extra(x) => x.range(),
-            AugmentedAssignmentExpressionOperator::ModAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::AndAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::PowAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::MultAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::AddAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::SubAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::ConcatAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::DivAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::XorAssign(_, r) => *r,
-            AugmentedAssignmentExpressionOperator::OrAssign(_, r) => *r,
-        }
     }
 }
 #[derive(Debug, Clone)]

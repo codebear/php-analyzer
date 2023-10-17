@@ -24,6 +24,7 @@ pub mod description;
 pub mod errornode;
 pub mod issue;
 pub mod nodeanalysis;
+pub mod operators;
 pub mod symboldata;
 pub mod types;
 pub mod value;
