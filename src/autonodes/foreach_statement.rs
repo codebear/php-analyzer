@@ -87,7 +87,11 @@ impl ForeachStatementBody {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ForeachStatementBody::Extra(y) => y.kind(),
+            ForeachStatementBody::_Statement(y) => y.kind(),
+            ForeachStatementBody::ColonBlock(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -246,7 +250,12 @@ impl ForeachStatementValue {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ForeachStatementValue::Extra(y) => y.kind(),
+            ForeachStatementValue::_Expression(y) => y.kind(),
+            ForeachStatementValue::ByRef(y) => y.kind(),
+            ForeachStatementValue::ListLiteral(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

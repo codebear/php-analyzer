@@ -128,7 +128,18 @@ impl ByRefChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ByRefChildren::Extra(y) => y.kind(),
+            ByRefChildren::DynamicVariableName(y) => y.kind(),
+            ByRefChildren::FunctionCallExpression(y) => y.kind(),
+            ByRefChildren::MemberAccessExpression(y) => y.kind(),
+            ByRefChildren::MemberCallExpression(y) => y.kind(),
+            ByRefChildren::NullsafeMemberAccessExpression(y) => y.kind(),
+            ByRefChildren::NullsafeMemberCallExpression(y) => y.kind(),
+            ByRefChildren::ScopedCallExpression(y) => y.kind(),
+            ByRefChildren::SubscriptExpression(y) => y.kind(),
+            ByRefChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

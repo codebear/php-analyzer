@@ -254,7 +254,29 @@ impl SubscriptExpressionDereferenceable {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            SubscriptExpressionDereferenceable::Extra(y) => y.kind(),
+            SubscriptExpressionDereferenceable::ArrayCreationExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::CastExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::ClassConstantAccessExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::DynamicVariableName(y) => y.kind(),
+            SubscriptExpressionDereferenceable::EncapsedString(y) => y.kind(),
+            SubscriptExpressionDereferenceable::FunctionCallExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::Heredoc(y) => y.kind(),
+            SubscriptExpressionDereferenceable::MemberAccessExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::MemberCallExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::Name(y) => y.kind(),
+            SubscriptExpressionDereferenceable::Nowdoc(y) => y.kind(),
+            SubscriptExpressionDereferenceable::NullsafeMemberAccessExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::NullsafeMemberCallExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::ParenthesizedExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::QualifiedName(y) => y.kind(),
+            SubscriptExpressionDereferenceable::ScopedCallExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::ScopedPropertyAccessExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::String(y) => y.kind(),
+            SubscriptExpressionDereferenceable::SubscriptExpression(y) => y.kind(),
+            SubscriptExpressionDereferenceable::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -677,7 +699,13 @@ impl SubscriptExpressionChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            SubscriptExpressionChildren::Extra(y) => y.kind(),
+            SubscriptExpressionChildren::Integer(y) => y.kind(),
+            SubscriptExpressionChildren::Name(y) => y.kind(),
+            SubscriptExpressionChildren::UnaryOpExpression(y) => y.kind(),
+            SubscriptExpressionChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

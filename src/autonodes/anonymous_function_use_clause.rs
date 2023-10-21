@@ -76,7 +76,11 @@ impl AnonymousFunctionUseClauseChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            AnonymousFunctionUseClauseChildren::Extra(y) => y.kind(),
+            AnonymousFunctionUseClauseChildren::ByRef(y) => y.kind(),
+            AnonymousFunctionUseClauseChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

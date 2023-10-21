@@ -84,7 +84,12 @@ impl ProgramChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ProgramChildren::Extra(y) => y.kind(),
+            ProgramChildren::_Statement(y) => y.kind(),
+            ProgramChildren::PhpTag(y) => y.kind(),
+            ProgramChildren::Text(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

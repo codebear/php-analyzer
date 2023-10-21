@@ -89,7 +89,11 @@ impl ArrowFunctionReturnType {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ArrowFunctionReturnType::Extra(y) => y.kind(),
+            ArrowFunctionReturnType::_Type(y) => y.kind(),
+            ArrowFunctionReturnType::BottomType(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

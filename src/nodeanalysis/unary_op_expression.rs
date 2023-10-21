@@ -1,6 +1,10 @@
 use crate::{
     analysis::state::AnalysisState,
-    autonodes::unary_op_expression::{UnaryOpExpressionNode, UnaryOpExpressionOperator},
+    autonodes::{
+        any::AnyNodeRef,
+        unary_op_expression::{UnaryOpExpressionNode, UnaryOpExpressionOperator},
+    },
+    autotree::NodeAccess,
     issue::IssueEmitter,
     operators::operator::Operator,
     types::union::{DiscreteType, UnionType},
@@ -77,5 +81,35 @@ impl UnaryOpExpressionNode {
             (UnaryOpExpressionOperator::Extra(_), _) => return None,
             _ => crate::missing_none!("get_php_value: {:?}", self),
         }
+    }
+}
+
+impl NodeAccess for UnaryOpExpressionOperator {
+    fn brief_desc(&self) -> String {
+        match self {
+            UnaryOpExpressionOperator::Not(op) => op.brief_desc(),
+            UnaryOpExpressionOperator::Add(op) => op.brief_desc(),
+            UnaryOpExpressionOperator::Sub(op) => op.brief_desc(),
+            UnaryOpExpressionOperator::BinaryNot(op) => op.brief_desc(),
+            UnaryOpExpressionOperator::Extra(op) => op.brief_desc(),
+        }
+    }
+
+    fn range(&self) -> tree_sitter::Range {
+        match self {
+            UnaryOpExpressionOperator::Not(op) => op.range(),
+            UnaryOpExpressionOperator::Add(op) => op.range(),
+            UnaryOpExpressionOperator::Sub(op) => op.range(),
+            UnaryOpExpressionOperator::BinaryNot(op) => op.range(),
+            UnaryOpExpressionOperator::Extra(op) => op.range(),
+        }
+    }
+
+    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+        todo!()
+    }
+
+    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+        todo!()
     }
 }

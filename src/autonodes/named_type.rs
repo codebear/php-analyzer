@@ -68,7 +68,11 @@ impl NamedTypeChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            NamedTypeChildren::Extra(y) => y.kind(),
+            NamedTypeChildren::Name(y) => y.kind(),
+            NamedTypeChildren::QualifiedName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

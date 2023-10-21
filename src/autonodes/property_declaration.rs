@@ -113,7 +113,15 @@ impl PropertyDeclarationModifiers {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            PropertyDeclarationModifiers::Extra(y) => y.kind(),
+            PropertyDeclarationModifiers::AbstractModifier(y) => y.kind(),
+            PropertyDeclarationModifiers::FinalModifier(y) => y.kind(),
+            PropertyDeclarationModifiers::ReadonlyModifier(y) => y.kind(),
+            PropertyDeclarationModifiers::StaticModifier(y) => y.kind(),
+            PropertyDeclarationModifiers::VarModifier(y) => y.kind(),
+            PropertyDeclarationModifiers::VisibilityModifier(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -299,7 +307,11 @@ impl PropertyDeclarationProperties {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            PropertyDeclarationProperties::Extra(y) => y.kind(),
+            PropertyDeclarationProperties::Comma(y, _) => y,
+            PropertyDeclarationProperties::PropertyElement(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

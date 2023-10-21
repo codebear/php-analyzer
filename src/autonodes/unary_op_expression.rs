@@ -7,11 +7,13 @@ use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
+
 use crate::operators::add::AddOperator;
 use crate::operators::binary_not::BinaryNotOperator;
 use crate::operators::not::NotOperator;
 use crate::operators::operator::Operator;
 use crate::operators::sub::SubOperator;
+
 use tree_sitter::Node;
 use tree_sitter::Range;
 
@@ -76,11 +78,11 @@ impl UnaryOpExpressionOperator {
 
     pub fn kind(&self) -> &'static str {
         match self {
-            UnaryOpExpressionOperator::Not(n) => n.kind(),
-            UnaryOpExpressionOperator::Add(a) => a.kind(),
-            UnaryOpExpressionOperator::Sub(s) => s.kind(),
-            UnaryOpExpressionOperator::BinaryNot(bn) => bn.kind(),
-            UnaryOpExpressionOperator::Extra(e) => e.kind(),
+            UnaryOpExpressionOperator::Extra(y) => y.kind(),
+            UnaryOpExpressionOperator::Not(y) => y.kind(),
+            UnaryOpExpressionOperator::Add(y) => y.kind(),
+            UnaryOpExpressionOperator::Sub(y) => y.kind(),
+            UnaryOpExpressionOperator::BinaryNot(y) => y.kind(),
         }
     }
 

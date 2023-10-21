@@ -183,7 +183,20 @@ impl AugmentedAssignmentExpressionLeft {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            AugmentedAssignmentExpressionLeft::Extra(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::CastExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::DynamicVariableName(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::FunctionCallExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::MemberAccessExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::MemberCallExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::NullsafeMemberAccessExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::NullsafeMemberCallExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::ScopedCallExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::ScopedPropertyAccessExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::SubscriptExpression(y) => y.kind(),
+            AugmentedAssignmentExpressionLeft::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -556,20 +569,20 @@ impl AugmentedAssignmentExpressionOperator {
 
     pub fn kind(&self) -> &'static str {
         match self {
-            AugmentedAssignmentExpressionOperator::ModAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::AndAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::PowAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::MultAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::AddAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::SubAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::ConcatAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::DivAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::LeftShiftAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::RightShiftAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::NullsafeAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::XorAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::OrAssign(oper) => oper.operator(),
-            AugmentedAssignmentExpressionOperator::Extra(oper) => oper.kind(),
+            AugmentedAssignmentExpressionOperator::Extra(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::ModAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::AndAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::PowAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::MultAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::AddAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::SubAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::ConcatAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::DivAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::LeftShiftAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::RightShiftAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::NullsafeAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::XorAssign(y) => y.kind(),
+            AugmentedAssignmentExpressionOperator::OrAssign(y) => y.kind(),
         }
     }
 

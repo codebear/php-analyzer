@@ -165,7 +165,21 @@ impl ObjectCreationExpressionChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ObjectCreationExpressionChildren::Extra(y) => y.kind(),
+            ObjectCreationExpressionChildren::Arguments(y) => y.kind(),
+            ObjectCreationExpressionChildren::BaseClause(y) => y.kind(),
+            ObjectCreationExpressionChildren::ClassInterfaceClause(y) => y.kind(),
+            ObjectCreationExpressionChildren::DeclarationList(y) => y.kind(),
+            ObjectCreationExpressionChildren::DynamicVariableName(y) => y.kind(),
+            ObjectCreationExpressionChildren::MemberAccessExpression(y) => y.kind(),
+            ObjectCreationExpressionChildren::Name(y) => y.kind(),
+            ObjectCreationExpressionChildren::NullsafeMemberAccessExpression(y) => y.kind(),
+            ObjectCreationExpressionChildren::QualifiedName(y) => y.kind(),
+            ObjectCreationExpressionChildren::ScopedPropertyAccessExpression(y) => y.kind(),
+            ObjectCreationExpressionChildren::SubscriptExpression(y) => y.kind(),
+            ObjectCreationExpressionChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

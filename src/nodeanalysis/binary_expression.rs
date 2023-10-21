@@ -8,7 +8,10 @@ use crate::{
     },
     issue::{IssueEmitter, VoidEmitter},
     missing,
-    operators::binary::{BinaryOperator, BinaryOperatorOperandAccess},
+    operators::{
+        binary::{BinaryOperator, BinaryOperatorOperandAccess},
+        operator::Operator,
+    },
     types::union::UnionType,
     value::PHPValue,
 };
@@ -253,6 +256,82 @@ impl BinaryOperator for BinaryExpressionOperator {
             }
             BinaryExpressionOperator::Extra(_) => None,
         }
+    }
+}
+
+impl NodeAccess for BinaryExpressionOperator {
+    fn brief_desc(&self) -> String {
+        match self {
+            BinaryExpressionOperator::NotEqual(op) => op.brief_desc(),
+            BinaryExpressionOperator::NotIdentical(op) => op.brief_desc(),
+            BinaryExpressionOperator::Mod(op) => op.brief_desc(),
+            BinaryExpressionOperator::BinaryAnd(op) => op.brief_desc(),
+            BinaryExpressionOperator::BooleanAnd(op) => op.brief_desc(),
+            BinaryExpressionOperator::Mult(op) => op.brief_desc(),
+            BinaryExpressionOperator::Add(op) => op.brief_desc(),
+            BinaryExpressionOperator::Sub(op) => op.brief_desc(),
+            BinaryExpressionOperator::Concat(op) => op.brief_desc(),
+            BinaryExpressionOperator::Div(op) => op.brief_desc(),
+            BinaryExpressionOperator::LessThan(op) => op.brief_desc(),
+            BinaryExpressionOperator::LeftShift(op) => op.brief_desc(),
+            BinaryExpressionOperator::LessThanOrEqual(op) => op.brief_desc(),
+            BinaryExpressionOperator::Spaceship(op) => op.brief_desc(),
+            BinaryExpressionOperator::Equal(op) => op.brief_desc(),
+            BinaryExpressionOperator::Identical(op) => op.brief_desc(),
+            BinaryExpressionOperator::GreaterThan(op) => op.brief_desc(),
+            BinaryExpressionOperator::GreaterThanOrEqual(op) => op.brief_desc(),
+            BinaryExpressionOperator::RightShift(op) => op.brief_desc(),
+            BinaryExpressionOperator::NullCoalesce(op) => op.brief_desc(),
+            BinaryExpressionOperator::BinaryXor(op) => op.brief_desc(),
+            BinaryExpressionOperator::LogicalAnd(op) => op.brief_desc(),
+            BinaryExpressionOperator::Instanceof(op) => op.brief_desc(),
+            BinaryExpressionOperator::LogicalOr(op) => op.brief_desc(),
+            BinaryExpressionOperator::LogicalXor(op) => op.brief_desc(),
+            BinaryExpressionOperator::BinaryOr(op) => op.brief_desc(),
+            BinaryExpressionOperator::BooleanOr(op) => op.brief_desc(),
+            BinaryExpressionOperator::Extra(ex) => ex.brief_desc(),
+        }
+    }
+
+    fn range(&self) -> tree_sitter::Range {
+        match self {
+            BinaryExpressionOperator::NotEqual(op) => op.range(),
+            BinaryExpressionOperator::NotIdentical(op) => op.range(),
+            BinaryExpressionOperator::Mod(op) => op.range(),
+            BinaryExpressionOperator::BinaryAnd(op) => op.range(),
+            BinaryExpressionOperator::BooleanAnd(op) => op.range(),
+            BinaryExpressionOperator::Mult(op) => op.range(),
+            BinaryExpressionOperator::Add(op) => op.range(),
+            BinaryExpressionOperator::Sub(op) => op.range(),
+            BinaryExpressionOperator::Concat(op) => op.range(),
+            BinaryExpressionOperator::Div(op) => op.range(),
+            BinaryExpressionOperator::LessThan(op) => op.range(),
+            BinaryExpressionOperator::LeftShift(op) => op.range(),
+            BinaryExpressionOperator::LessThanOrEqual(op) => op.range(),
+            BinaryExpressionOperator::Spaceship(op) => op.range(),
+            BinaryExpressionOperator::Equal(op) => op.range(),
+            BinaryExpressionOperator::Identical(op) => op.range(),
+            BinaryExpressionOperator::GreaterThan(op) => op.range(),
+            BinaryExpressionOperator::GreaterThanOrEqual(op) => op.range(),
+            BinaryExpressionOperator::RightShift(op) => op.range(),
+            BinaryExpressionOperator::NullCoalesce(op) => op.range(),
+            BinaryExpressionOperator::BinaryXor(op) => op.range(),
+            BinaryExpressionOperator::LogicalAnd(op) => op.range(),
+            BinaryExpressionOperator::Instanceof(op) => op.range(),
+            BinaryExpressionOperator::LogicalOr(op) => op.range(),
+            BinaryExpressionOperator::LogicalXor(op) => op.range(),
+            BinaryExpressionOperator::BinaryOr(op) => op.range(),
+            BinaryExpressionOperator::BooleanOr(op) => op.range(),
+            BinaryExpressionOperator::Extra(ex) => ex.range(),
+        }
+    }
+
+    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+        todo!()
+    }
+
+    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+        todo!()
     }
 }
 

@@ -185,34 +185,34 @@ impl BinaryExpressionOperator {
 
     pub fn kind(&self) -> &'static str {
         match self {
-            BinaryExpressionOperator::NotEqual(oper) => oper.operator(),
-            BinaryExpressionOperator::NotIdentical(oper) => oper.operator(),
-            BinaryExpressionOperator::Mod(oper) => oper.operator(),
-            BinaryExpressionOperator::BinaryAnd(oper) => oper.operator(),
-            BinaryExpressionOperator::BooleanAnd(oper) => oper.operator(),
-            BinaryExpressionOperator::Mult(oper) => oper.operator(),
-            BinaryExpressionOperator::Add(oper) => oper.operator(),
-            BinaryExpressionOperator::Sub(oper) => oper.operator(),
-            BinaryExpressionOperator::Concat(oper) => oper.operator(),
-            BinaryExpressionOperator::Div(oper) => oper.operator(),
-            BinaryExpressionOperator::LessThan(oper) => oper.operator(),
-            BinaryExpressionOperator::LeftShift(oper) => oper.operator(),
-            BinaryExpressionOperator::LessThanOrEqual(oper) => oper.operator(),
-            BinaryExpressionOperator::Spaceship(oper) => oper.operator(),
-            BinaryExpressionOperator::Equal(oper) => oper.operator(),
-            BinaryExpressionOperator::Identical(oper) => oper.operator(),
-            BinaryExpressionOperator::GreaterThan(oper) => oper.operator(),
-            BinaryExpressionOperator::GreaterThanOrEqual(oper) => oper.operator(),
-            BinaryExpressionOperator::RightShift(oper) => oper.operator(),
-            BinaryExpressionOperator::NullCoalesce(oper) => oper.operator(),
-            BinaryExpressionOperator::BinaryXor(oper) => oper.operator(),
-            BinaryExpressionOperator::LogicalAnd(oper) => oper.operator(),
-            BinaryExpressionOperator::Instanceof(oper) => oper.operator(),
-            BinaryExpressionOperator::LogicalOr(oper) => oper.operator(),
-            BinaryExpressionOperator::LogicalXor(oper) => oper.operator(),
-            BinaryExpressionOperator::BinaryOr(oper) => oper.operator(),
-            BinaryExpressionOperator::BooleanOr(oper) => oper.operator(),
-            BinaryExpressionOperator::Extra(oper) => oper.kind(),
+            BinaryExpressionOperator::Extra(y) => y.kind(),
+            BinaryExpressionOperator::NotEqual(y) => y.kind(),
+            BinaryExpressionOperator::NotIdentical(y) => y.kind(),
+            BinaryExpressionOperator::Mod(y) => y.kind(),
+            BinaryExpressionOperator::BinaryAnd(y) => y.kind(),
+            BinaryExpressionOperator::BooleanAnd(y) => y.kind(),
+            BinaryExpressionOperator::Mult(y) => y.kind(),
+            BinaryExpressionOperator::Add(y) => y.kind(),
+            BinaryExpressionOperator::Sub(y) => y.kind(),
+            BinaryExpressionOperator::Concat(y) => y.kind(),
+            BinaryExpressionOperator::Div(y) => y.kind(),
+            BinaryExpressionOperator::LessThan(y) => y.kind(),
+            BinaryExpressionOperator::LeftShift(y) => y.kind(),
+            BinaryExpressionOperator::LessThanOrEqual(y) => y.kind(),
+            BinaryExpressionOperator::Spaceship(y) => y.kind(),
+            BinaryExpressionOperator::Equal(y) => y.kind(),
+            BinaryExpressionOperator::Identical(y) => y.kind(),
+            BinaryExpressionOperator::GreaterThan(y) => y.kind(),
+            BinaryExpressionOperator::GreaterThanOrEqual(y) => y.kind(),
+            BinaryExpressionOperator::RightShift(y) => y.kind(),
+            BinaryExpressionOperator::NullCoalesce(y) => y.kind(),
+            BinaryExpressionOperator::BinaryXor(y) => y.kind(),
+            BinaryExpressionOperator::LogicalAnd(y) => y.kind(),
+            BinaryExpressionOperator::Instanceof(y) => y.kind(),
+            BinaryExpressionOperator::LogicalOr(y) => y.kind(),
+            BinaryExpressionOperator::LogicalXor(y) => y.kind(),
+            BinaryExpressionOperator::BinaryOr(y) => y.kind(),
+            BinaryExpressionOperator::BooleanOr(y) => y.kind(),
         }
     }
 
@@ -350,7 +350,18 @@ impl BinaryExpressionRight {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            BinaryExpressionRight::Extra(y) => y.kind(),
+            BinaryExpressionRight::_Expression(y) => y.kind(),
+            BinaryExpressionRight::DynamicVariableName(y) => y.kind(),
+            BinaryExpressionRight::MemberAccessExpression(y) => y.kind(),
+            BinaryExpressionRight::Name(y) => y.kind(),
+            BinaryExpressionRight::NullsafeMemberAccessExpression(y) => y.kind(),
+            BinaryExpressionRight::QualifiedName(y) => y.kind(),
+            BinaryExpressionRight::ScopedPropertyAccessExpression(y) => y.kind(),
+            BinaryExpressionRight::SubscriptExpression(y) => y.kind(),
+            BinaryExpressionRight::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

@@ -121,7 +121,13 @@ impl NullsafeMemberCallExpressionName {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            NullsafeMemberCallExpressionName::Extra(y) => y.kind(),
+            NullsafeMemberCallExpressionName::_Expression(y) => y.kind(),
+            NullsafeMemberCallExpressionName::DynamicVariableName(y) => y.kind(),
+            NullsafeMemberCallExpressionName::Name(y) => y.kind(),
+            NullsafeMemberCallExpressionName::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -451,7 +457,29 @@ impl NullsafeMemberCallExpressionObject {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            NullsafeMemberCallExpressionObject::Extra(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::ArrayCreationExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::CastExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::ClassConstantAccessExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::DynamicVariableName(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::EncapsedString(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::FunctionCallExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::Heredoc(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::MemberAccessExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::MemberCallExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::Name(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::Nowdoc(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::NullsafeMemberAccessExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::NullsafeMemberCallExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::ParenthesizedExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::QualifiedName(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::ScopedCallExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::ScopedPropertyAccessExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::String(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::SubscriptExpression(y) => y.kind(),
+            NullsafeMemberCallExpressionObject::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

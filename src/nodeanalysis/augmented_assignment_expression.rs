@@ -164,6 +164,39 @@ impl BinaryOperatorOperandAccess for AugmentedAssignmentExpressionNode {
     }
 }
 
+impl NodeAccess for AugmentedAssignmentExpressionOperator {
+    fn brief_desc(&self) -> String {
+        "AugmentedAssignmentExpressionOperator".into()
+    }
+
+    fn range(&self) -> tree_sitter::Range {
+        match self {
+            AugmentedAssignmentExpressionOperator::ModAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::AndAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::PowAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::MultAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::AddAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::SubAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::ConcatAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::DivAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::LeftShiftAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::RightShiftAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::NullsafeAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::XorAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::OrAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::Extra(ex) => ex.range(),
+        }
+    }
+
+    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+        todo!()
+    }
+
+    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+        todo!()
+    }
+}
+
 impl BinaryAssignmentOperator for AugmentedAssignmentExpressionOperator {
     fn get_operator_utype(
         &self,

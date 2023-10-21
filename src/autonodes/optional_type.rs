@@ -72,7 +72,11 @@ impl OptionalTypeChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            OptionalTypeChildren::Extra(y) => y.kind(),
+            OptionalTypeChildren::NamedType(y) => y.kind(),
+            OptionalTypeChildren::PrimitiveType(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

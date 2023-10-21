@@ -106,7 +106,13 @@ impl ExponentiationExpressionLeft {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ExponentiationExpressionLeft::Extra(y) => y.kind(),
+            ExponentiationExpressionLeft::_PrimaryExpression(y) => y.kind(),
+            ExponentiationExpressionLeft::CloneExpression(y) => y.kind(),
+            ExponentiationExpressionLeft::MatchExpression(y) => y.kind(),
+            ExponentiationExpressionLeft::UnaryOpExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -327,7 +333,16 @@ impl ExponentiationExpressionRight {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ExponentiationExpressionRight::Extra(y) => y.kind(),
+            ExponentiationExpressionRight::_PrimaryExpression(y) => y.kind(),
+            ExponentiationExpressionRight::AssignmentExpression(y) => y.kind(),
+            ExponentiationExpressionRight::AugmentedAssignmentExpression(y) => y.kind(),
+            ExponentiationExpressionRight::CloneExpression(y) => y.kind(),
+            ExponentiationExpressionRight::ExponentiationExpression(y) => y.kind(),
+            ExponentiationExpressionRight::MatchExpression(y) => y.kind(),
+            ExponentiationExpressionRight::UnaryOpExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

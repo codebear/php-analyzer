@@ -74,7 +74,11 @@ impl ConstDeclarationChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ConstDeclarationChildren::Extra(y) => y.kind(),
+            ConstDeclarationChildren::ConstElement(y) => y.kind(),
+            ConstDeclarationChildren::VisibilityModifier(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

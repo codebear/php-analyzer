@@ -156,7 +156,20 @@ impl UnsetStatementChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UnsetStatementChildren::Extra(y) => y.kind(),
+            UnsetStatementChildren::CastExpression(y) => y.kind(),
+            UnsetStatementChildren::DynamicVariableName(y) => y.kind(),
+            UnsetStatementChildren::FunctionCallExpression(y) => y.kind(),
+            UnsetStatementChildren::MemberAccessExpression(y) => y.kind(),
+            UnsetStatementChildren::MemberCallExpression(y) => y.kind(),
+            UnsetStatementChildren::NullsafeMemberAccessExpression(y) => y.kind(),
+            UnsetStatementChildren::NullsafeMemberCallExpression(y) => y.kind(),
+            UnsetStatementChildren::ScopedCallExpression(y) => y.kind(),
+            UnsetStatementChildren::ScopedPropertyAccessExpression(y) => y.kind(),
+            UnsetStatementChildren::SubscriptExpression(y) => y.kind(),
+            UnsetStatementChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

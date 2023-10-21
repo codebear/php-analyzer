@@ -75,7 +75,11 @@ impl IfStatementAlternative {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            IfStatementAlternative::Extra(y) => y.kind(),
+            IfStatementAlternative::ElseClause(y) => y.kind(),
+            IfStatementAlternative::ElseIfClause(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -231,7 +235,11 @@ impl IfStatementBody {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            IfStatementBody::Extra(y) => y.kind(),
+            IfStatementBody::_Statement(y) => y.kind(),
+            IfStatementBody::ColonBlock(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

@@ -4,8 +4,7 @@ import fs from 'fs';
 const raw_json = fs.readFileSync("tree-sitter-php/src/node-types.json");
 
 const node_defs = JSON.parse(raw_json);
-
-let type_name_map = {
+let operators = {
     // Assignments
     '%=': "ModAssign",
     '&=': "AndAssign",
@@ -43,26 +42,32 @@ let type_name_map = {
     ">=": "GreaterThanOrEqual",
     ">>": "RightShift",
     "^": "BinaryXor",
-    "And": "LogicalAnd",
-    //"Instanceof": "",
-    "Or": "LogicalOr",
-    "Xor": "LogicalXor",
+    "and": "LogicalAnd",
+    "instanceof": "Instanceof",
+    "or": "LogicalOr",
+    "xor": "LogicalXor",
     "|": "BinaryOr",
     "||": "BooleanOr",
 
     "++": "Increment",
     "--": "Decrement",
 
+    "??": "NullCoalesce",
+
     // Unary operators
     "!": "Not",
     "@": "Squelch",
     "~": "BinaryNot",
+};
+let type_name_map = {
+    ...operators,
 
     // Div
     ",": "Comma",
-    "??": "NullCoalesce",
     "\"": "DoubleQuote",
 };
+
+
 
 let type_map = {};
 
@@ -108,7 +113,11 @@ for (const node_def of node_defs) {
         'float'
     ];
     if (!node_def.named && nostrings.indexOf(node_def.type) == -1) {
-        type_map[node_def.type] = "&'static str";
+        if (node_def.type in operators) {
+            type_map[node_def.type] = operators[node_def.type] + "Operator"; // "&'static str";
+        } else {
+            type_map[node_def.type] = "&'static str";
+        }
     }
 }
 
@@ -135,7 +144,7 @@ function get_enum_matches(enum_name, types, callback) {
 }
 
 function create_enum_for_types(name, types) {
-    let uses = [
+    let enum_uses = [
         "tree_sitter::Range",
         "crate::autotree::NodeAccess",
         "crate::autotree::ParseError",
@@ -143,13 +152,27 @@ function create_enum_for_types(name, types) {
         "crate::extra::ExtraChild",
     ];
     let enum_entries = new Set();
+    let has_node_access = true;
+    let has_utype_and_value_access = true;
     for (const enum_type of types) {
         let tname = get_rust_enum_name(enum_type.type);
         let ttype = get_rust_type_name(enum_type.type);
-        uses.push("crate::autonodes::" + enum_type.type + "::" + ttype);
+        enum_uses.push("crate::autonodes::" + enum_type.type + "::" + ttype);
         let entry = tname + "(";
+        let type_match;
         if (ttype.match(/'static/)) {
             entry += ttype + ", Range";
+        } else if (type_match = ttype.match(/^(.*)Operator$/)) {
+            let parts = type_match[1].replace(/([A-Z])/g, "_$1").toLowerCase().split("_");
+            parts.shift();
+            let operator_module = parts.join("_");
+            if (operator_module == "mod") {
+                operator_module = "modulus";
+            }
+            enum_uses.push("crate::operators::" + operator_module + "::" + ttype);
+            entry += ttype;
+            has_node_access = true;
+            has_utype_and_value_access = false;
         } else {
             entry += "Box<" + ttype + ">";
         }
@@ -163,9 +186,9 @@ function create_enum_for_types(name, types) {
     }
 
     // uses.push("crate::autonodes::any::AnyNode");
-    uses.push("crate::autonodes::comment::CommentNode");
-    uses.push("crate::errornode::ErrorNode");
-    uses.push("crate::autonodes::text_interpolation::TextInterpolationNode");
+    enum_uses.push("crate::autonodes::comment::CommentNode");
+    enum_uses.push("crate::errornode::ErrorNode");
+    enum_uses.push("crate::autonodes::text_interpolation::TextInterpolationNode");
     // child_enum_buffer += "   Unknown(Box<AnyNode>),\n";
     child_enum_buffer += "  Extra(ExtraChild),\n";
 
@@ -189,6 +212,9 @@ function create_enum_for_types(name, types) {
         if (child_type.match(/'static/)) {
             parsing = rust_str(type.type);
             parsing += ", node.range()";
+            opt_parsing = 'Some(todo!("Det lyt fiksas"))';
+        } else if (child_type.match(/Operator$/)) {
+            parsing = child_type + "(node.range())";
             opt_parsing = 'Some(todo!("Det lyt fiksas"))';
         } else {
             parsing = "Box::new(" + parsing + ")";
@@ -218,10 +244,10 @@ function create_enum_for_types(name, types) {
         parse_wildcard += `        _ => return Err(ParseError::new(node.range(), format!("Parse error, unexpected node-type: {}", node.kind()))),`;
         parse_opt_wildcard = `_ => return Ok(None),`;
     }
-    uses.push("crate::analysis::state::AnalysisState");
-    uses.push("crate::issue::IssueEmitter");
-    uses.push("crate::value::PHPValue");
-    uses.push("crate::types::union::UnionType");
+    enum_uses.push("crate::analysis::state::AnalysisState");
+    enum_uses.push("crate::issue::IssueEmitter");
+    enum_uses.push("crate::value::PHPValue");
+    enum_uses.push("crate::types::union::UnionType");
 
     child_enum_buffer += `impl ${name} {
         pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
@@ -239,7 +265,16 @@ function create_enum_for_types(name, types) {
         }
 
         pub fn kind(&self) -> &'static str {
-            self.as_any().kind()
+            match self {
+                ${get_enum_matches(name, types, function (child_type, rust_type) {
+        /*if (rust_type.match(/'static/)) {
+            enum_uses.push("crate::types::union::DiscreteType");
+
+            return ["_,_", 'Some(DiscreteType::String.into())'];
+        }*/
+        return ['x', 'x.kind()'];
+    })}
+            }
         }
 
         pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>,ParseError>
@@ -250,96 +285,103 @@ function create_enum_for_types(name, types) {
             }
             Ok(res)
         }
+`;
+    if (has_utype_and_value_access) {
 
+        child_enum_buffer += `
         pub fn get_utype(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<UnionType> {
             match self {
     ${get_enum_matches(name, types, function (child_type, rust_type) {
-        if (rust_type.match(/'static/)) {
-            uses.push("crate::types::union::DiscreteType");
+            if (rust_type.match(/'static/)) {
+                enum_uses.push("crate::types::union::DiscreteType");
 
-            return ["_,_", 'Some(DiscreteType::String.into())'];
-        }
-        return ['x', 'x.get_utype(state, emitter)'];
-    })}
+                return ["_,_", 'Some(DiscreteType::String.into())'];
+            }
+            return ['x', 'x.get_utype(state, emitter)'];
+        })}
             }
         }
 
         pub fn get_php_value(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) -> Option<PHPValue> {
             match self {
     ${get_enum_matches(name, types, function (child_type, rust_type) {
-        if (rust_type.match(/'static/)) {
-            uses.push("std::ffi::OsStr");
-            return ["a,_", 'Some(PHPValue::String(OsStr::new(a).to_os_string()))'];
-        }
-        return ['x', 'x.get_php_value(state, emitter)'];
-    })}
+            if (rust_type.match(/'static/)) {
+                enum_uses.push("std::ffi::OsStr");
+                return ["a,_", 'Some(PHPValue::String(OsStr::new(a).to_os_string()))'];
+            }
+            return ['x', 'x.get_php_value(state, emitter)'];
+        })}
             }
         }
 
         pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
             match self {
     ${get_enum_matches(name, types, function (child_type, rust_type) {
-        if (rust_type.match(/'static/)) {
-            return ["_,_", '()'];
-        }
-        return ['x', 'x.read_from(state, emitter)'];
-    })}
+            if (rust_type.match(/'static/)) {
+                return ["_,_", '()'];
             }
-        }
-
+            return ['x', 'x.read_from(state, emitter)'];
+        })}
+            }
+        }`;
     }
+    child_enum_buffer += `
+    }
+    `;
+    if (has_node_access) {
+        child_enum_buffer += `
 
     impl NodeAccess for ${name} {
 
         fn brief_desc(&self) -> String {
             match self {
     ${get_enum_matches(name, types, function (child_type, rust_type) {
-        if (rust_type.match(/'static/)) {
-            return ["a,_", `a.to_string()`];
-        }
-        return ["x", `format!("${name}::${child_type}({})", x.brief_desc())`];
-    })}
+            if (rust_type.match(/'static/)) {
+                return ["a,_", `a.to_string()`];
+            }
+            return ["x", `format!("${name}::${child_type}({})", x.brief_desc())`];
+        })}
             }
         }
 
         fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
             match self {
     ${get_enum_matches(name, types, function (child_type, rust_type) {
-        if (rust_type.match(/'static/)) {
-            return ["a,b", `AnyNodeRef::StaticExpr(a, *b)`];
-        }
-        return ["x", 'x.as_any()'];
-    })}
+            if (rust_type.match(/'static/)) {
+                return ["a,b", `AnyNodeRef::StaticExpr(a, *b)`];
+            }
+            return ["x", 'x.as_any()'];
+        })}
             }
         }
 
         fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
             match self {
     ${get_enum_matches(name, types, function (child_type, rust_type) {
-        if (rust_type.match(/'static/)) {
-            return ["_,_", 'todo!("Crap")'];
-        }
-        return ["x", "x.children_any()"];
-    })}
+            if (rust_type.match(/'static/)) {
+                return ["_,_", 'todo!("Crap")'];
+            }
+            return ["x", "x.children_any()"];
+        })}
             }       
         }
 
         fn range(&self) -> Range {
             match self {
     ${get_enum_matches(name, types, function (child_type, rust_type) {
-        if (rust_type.match(/'static/)) {
-            return ["_,r", "*r"];
-        }
-        return ["x", "x.range()"];
-    })}
+            if (rust_type.match(/'static/)) {
+                return ["_,r", "*r"];
+            }
+            return ["x", "x.range()"];
+        })}
             }
         }
 
     }
     `;
 
-
-    return [child_enum_buffer, uses];
+    }
+    return [child_enum_buffer, enum_uses];
 }
 
 let any_uses = {
@@ -668,6 +710,9 @@ for (const node_def of node_defs) {
     let use_buffer = "";
     usages: for (const usage in uses) {
         if (usage.match(/'static/)) {
+            continue;
+        }
+        if (usage.match(/Operator$/) && !usage.match(/::operators::/)) {
             continue;
         }
         for (let decl of declares) {

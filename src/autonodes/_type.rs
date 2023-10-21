@@ -68,7 +68,11 @@ impl _TypeNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            _TypeNode::Extra(y) => y.kind(),
+            _TypeNode::IntersectionType(y) => y.kind(),
+            _TypeNode::UnionType(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

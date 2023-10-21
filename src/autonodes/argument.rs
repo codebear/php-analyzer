@@ -89,7 +89,12 @@ impl ArgumentChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ArgumentChildren::Extra(y) => y.kind(),
+            ArgumentChildren::_Expression(y) => y.kind(),
+            ArgumentChildren::Name(y) => y.kind(),
+            ArgumentChildren::VariadicUnpacking(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

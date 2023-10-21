@@ -184,7 +184,24 @@ impl FunctionCallExpressionFunction {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            FunctionCallExpressionFunction::Extra(y) => y.kind(),
+            FunctionCallExpressionFunction::ArrayCreationExpression(y) => y.kind(),
+            FunctionCallExpressionFunction::DynamicVariableName(y) => y.kind(),
+            FunctionCallExpressionFunction::EncapsedString(y) => y.kind(),
+            FunctionCallExpressionFunction::FunctionCallExpression(y) => y.kind(),
+            FunctionCallExpressionFunction::Heredoc(y) => y.kind(),
+            FunctionCallExpressionFunction::MemberCallExpression(y) => y.kind(),
+            FunctionCallExpressionFunction::Name(y) => y.kind(),
+            FunctionCallExpressionFunction::Nowdoc(y) => y.kind(),
+            FunctionCallExpressionFunction::NullsafeMemberCallExpression(y) => y.kind(),
+            FunctionCallExpressionFunction::ParenthesizedExpression(y) => y.kind(),
+            FunctionCallExpressionFunction::QualifiedName(y) => y.kind(),
+            FunctionCallExpressionFunction::ScopedCallExpression(y) => y.kind(),
+            FunctionCallExpressionFunction::String(y) => y.kind(),
+            FunctionCallExpressionFunction::SubscriptExpression(y) => y.kind(),
+            FunctionCallExpressionFunction::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

@@ -72,7 +72,11 @@ impl UseListChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UseListChildren::Extra(y) => y.kind(),
+            UseListChildren::UseAsClause(y) => y.kind(),
+            UseListChildren::UseInsteadOfClause(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

@@ -99,7 +99,11 @@ impl MethodDeclarationReturnType {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            MethodDeclarationReturnType::Extra(y) => y.kind(),
+            MethodDeclarationReturnType::_Type(y) => y.kind(),
+            MethodDeclarationReturnType::BottomType(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -276,7 +280,15 @@ impl MethodDeclarationChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            MethodDeclarationChildren::Extra(y) => y.kind(),
+            MethodDeclarationChildren::AbstractModifier(y) => y.kind(),
+            MethodDeclarationChildren::FinalModifier(y) => y.kind(),
+            MethodDeclarationChildren::ReadonlyModifier(y) => y.kind(),
+            MethodDeclarationChildren::StaticModifier(y) => y.kind(),
+            MethodDeclarationChildren::VarModifier(y) => y.kind(),
+            MethodDeclarationChildren::VisibilityModifier(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

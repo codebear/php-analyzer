@@ -76,7 +76,11 @@ impl UseInsteadOfClauseChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UseInsteadOfClauseChildren::Extra(y) => y.kind(),
+            UseInsteadOfClauseChildren::ClassConstantAccessExpression(y) => y.kind(),
+            UseInsteadOfClauseChildren::Name(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

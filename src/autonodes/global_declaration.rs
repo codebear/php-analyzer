@@ -76,7 +76,11 @@ impl GlobalDeclarationChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            GlobalDeclarationChildren::Extra(y) => y.kind(),
+            GlobalDeclarationChildren::DynamicVariableName(y) => y.kind(),
+            GlobalDeclarationChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

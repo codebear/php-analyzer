@@ -76,7 +76,12 @@ impl UseDeclarationChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UseDeclarationChildren::Extra(y) => y.kind(),
+            UseDeclarationChildren::Name(y) => y.kind(),
+            UseDeclarationChildren::QualifiedName(y) => y.kind(),
+            UseDeclarationChildren::UseList(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

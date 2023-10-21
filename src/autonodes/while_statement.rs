@@ -85,7 +85,11 @@ impl WhileStatementBody {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            WhileStatementBody::Extra(y) => y.kind(),
+            WhileStatementBody::_Statement(y) => y.kind(),
+            WhileStatementBody::ColonBlock(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

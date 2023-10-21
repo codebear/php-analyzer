@@ -84,7 +84,11 @@ impl YieldExpressionChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            YieldExpressionChildren::Extra(y) => y.kind(),
+            YieldExpressionChildren::_Expression(y) => y.kind(),
+            YieldExpressionChildren::ArrayElementInitializer(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

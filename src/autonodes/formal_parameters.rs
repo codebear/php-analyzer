@@ -80,7 +80,12 @@ impl FormalParametersChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            FormalParametersChildren::Extra(y) => y.kind(),
+            FormalParametersChildren::PropertyPromotionParameter(y) => y.kind(),
+            FormalParametersChildren::SimpleParameter(y) => y.kind(),
+            FormalParametersChildren::VariadicParameter(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

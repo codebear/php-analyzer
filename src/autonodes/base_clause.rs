@@ -68,7 +68,11 @@ impl BaseClauseChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            BaseClauseChildren::Extra(y) => y.kind(),
+            BaseClauseChildren::Name(y) => y.kind(),
+            BaseClauseChildren::QualifiedName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

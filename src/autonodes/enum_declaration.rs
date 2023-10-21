@@ -75,7 +75,11 @@ impl EnumDeclarationChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            EnumDeclarationChildren::Extra(y) => y.kind(),
+            EnumDeclarationChildren::ClassInterfaceClause(y) => y.kind(),
+            EnumDeclarationChildren::PrimitiveType(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

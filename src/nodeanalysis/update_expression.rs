@@ -13,6 +13,7 @@ use crate::{
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
+use crate::autotree::NodeAccess;
 
 enum Operator {
     Increment,
@@ -180,6 +181,74 @@ impl UpdateExpressionNode {
     }
 }
 
+impl NodeAccess for UpdateExpressionPostfix {
+    fn brief_desc(&self) -> String {
+        match self {
+            UpdateExpressionPostfix::Increment(op) => {
+                crate::operators::operator::Operator::brief_desc(op)
+            }
+            UpdateExpressionPostfix::Decrement(op) => {
+                crate::operators::operator::Operator::brief_desc(op)
+            }
+            UpdateExpressionPostfix::Extra(ex) => ex.brief_desc(),
+        }
+    }
+
+    fn range(&self) -> tree_sitter::Range {
+        match self {
+            UpdateExpressionPostfix::Increment(op) => {
+                crate::operators::operator::Operator::range(op)
+            }
+            UpdateExpressionPostfix::Decrement(op) => {
+                crate::operators::operator::Operator::range(op)
+            }
+            UpdateExpressionPostfix::Extra(ex) => ex.range(),
+        }
+    }
+
+    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+        todo!()
+    }
+
+    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+        todo!()
+    }
+}
+
+impl NodeAccess for UpdateExpressionPrefix {
+    fn brief_desc(&self) -> String {
+        match self {
+            UpdateExpressionPrefix::Increment(op) => {
+                crate::operators::operator::Operator::brief_desc(op)
+            }
+            UpdateExpressionPrefix::Decrement(op) => {
+                crate::operators::operator::Operator::brief_desc(op)
+            }
+            UpdateExpressionPrefix::Extra(ex) => ex.brief_desc(),
+        }
+    }
+
+    fn range(&self) -> tree_sitter::Range {
+        match self {
+            UpdateExpressionPrefix::Increment(op) => {
+                crate::operators::operator::Operator::range(op)
+            }
+            UpdateExpressionPrefix::Decrement(op) => {
+                crate::operators::operator::Operator::range(op)
+            }
+            UpdateExpressionPrefix::Extra(ex) => ex.range(),
+        }
+    }
+
+    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+        todo!()
+    }
+
+    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+        todo!()
+    }
+}
+
 // FIXME here are plenty to analyze
 // --NULL == NULL
 // ++NULL == 1
@@ -187,7 +256,6 @@ impl UpdateExpressionNode {
 // ++false == false
 //
 
-use crate::autotree::NodeAccess;
 impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
     fn analyze_third_pass(
         &self,

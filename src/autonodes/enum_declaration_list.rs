@@ -84,7 +84,12 @@ impl EnumDeclarationListChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            EnumDeclarationListChildren::Extra(y) => y.kind(),
+            EnumDeclarationListChildren::EnumCase(y) => y.kind(),
+            EnumDeclarationListChildren::MethodDeclaration(y) => y.kind(),
+            EnumDeclarationListChildren::UseDeclaration(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

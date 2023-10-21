@@ -66,7 +66,11 @@ impl EnumCaseValue {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            EnumCaseValue::Extra(y) => y.kind(),
+            EnumCaseValue::Integer(y) => y.kind(),
+            EnumCaseValue::String(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

@@ -124,7 +124,16 @@ impl HeredocBodyChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            HeredocBodyChildren::Extra(y) => y.kind(),
+            HeredocBodyChildren::_Expression(y) => y.kind(),
+            HeredocBodyChildren::DynamicVariableName(y) => y.kind(),
+            HeredocBodyChildren::EscapeSequence(y) => y.kind(),
+            HeredocBodyChildren::MemberAccessExpression(y) => y.kind(),
+            HeredocBodyChildren::StringValue(y) => y.kind(),
+            HeredocBodyChildren::SubscriptExpression(y) => y.kind(),
+            HeredocBodyChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

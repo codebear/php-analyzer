@@ -95,7 +95,12 @@ impl DynamicVariableNameChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            DynamicVariableNameChildren::Extra(y) => y.kind(),
+            DynamicVariableNameChildren::_Expression(y) => y.kind(),
+            DynamicVariableNameChildren::DynamicVariableName(y) => y.kind(),
+            DynamicVariableNameChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

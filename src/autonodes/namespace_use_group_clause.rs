@@ -80,7 +80,11 @@ impl NamespaceUseGroupClauseChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            NamespaceUseGroupClauseChildren::Extra(y) => y.kind(),
+            NamespaceUseGroupClauseChildren::NamespaceAliasingClause(y) => y.kind(),
+            NamespaceUseGroupClauseChildren::NamespaceName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

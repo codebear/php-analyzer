@@ -204,7 +204,26 @@ impl _ExpressionNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            _ExpressionNode::Extra(y) => y.kind(),
+            _ExpressionNode::_PrimaryExpression(y) => y.kind(),
+            _ExpressionNode::AssignmentExpression(y) => y.kind(),
+            _ExpressionNode::AugmentedAssignmentExpression(y) => y.kind(),
+            _ExpressionNode::BinaryExpression(y) => y.kind(),
+            _ExpressionNode::CastExpression(y) => y.kind(),
+            _ExpressionNode::CloneExpression(y) => y.kind(),
+            _ExpressionNode::ConditionalExpression(y) => y.kind(),
+            _ExpressionNode::ExponentiationExpression(y) => y.kind(),
+            _ExpressionNode::IncludeExpression(y) => y.kind(),
+            _ExpressionNode::IncludeOnceExpression(y) => y.kind(),
+            _ExpressionNode::MatchExpression(y) => y.kind(),
+            _ExpressionNode::ReferenceAssignmentExpression(y) => y.kind(),
+            _ExpressionNode::RequireExpression(y) => y.kind(),
+            _ExpressionNode::RequireOnceExpression(y) => y.kind(),
+            _ExpressionNode::SilenceExpression(y) => y.kind(),
+            _ExpressionNode::UnaryOpExpression(y) => y.kind(),
+            _ExpressionNode::YieldExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

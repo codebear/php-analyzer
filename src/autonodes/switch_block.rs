@@ -72,7 +72,11 @@ impl SwitchBlockChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            SwitchBlockChildren::Extra(y) => y.kind(),
+            SwitchBlockChildren::CaseStatement(y) => y.kind(),
+            SwitchBlockChildren::DefaultStatement(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

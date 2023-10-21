@@ -124,7 +124,16 @@ impl EncapsedStringChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            EncapsedStringChildren::Extra(y) => y.kind(),
+            EncapsedStringChildren::_Expression(y) => y.kind(),
+            EncapsedStringChildren::DynamicVariableName(y) => y.kind(),
+            EncapsedStringChildren::EscapeSequence(y) => y.kind(),
+            EncapsedStringChildren::MemberAccessExpression(y) => y.kind(),
+            EncapsedStringChildren::StringValue(y) => y.kind(),
+            EncapsedStringChildren::SubscriptExpression(y) => y.kind(),
+            EncapsedStringChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

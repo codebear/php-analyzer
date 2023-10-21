@@ -84,7 +84,11 @@ impl ElseClauseBody {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ElseClauseBody::Extra(y) => y.kind(),
+            ElseClauseBody::_Statement(y) => y.kind(),
+            ElseClauseBody::ColonBlock(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

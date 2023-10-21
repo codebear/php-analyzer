@@ -85,7 +85,12 @@ impl ClassDeclarationModifier {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ClassDeclarationModifier::Extra(y) => y.kind(),
+            ClassDeclarationModifier::AbstractModifier(y) => y.kind(),
+            ClassDeclarationModifier::FinalModifier(y) => y.kind(),
+            ClassDeclarationModifier::ReadonlyModifier(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -241,7 +246,11 @@ impl ClassDeclarationChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ClassDeclarationChildren::Extra(y) => y.kind(),
+            ClassDeclarationChildren::BaseClause(y) => y.kind(),
+            ClassDeclarationChildren::ClassInterfaceClause(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

@@ -276,7 +276,33 @@ impl _PrimaryExpressionNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            _PrimaryExpressionNode::Extra(y) => y.kind(),
+            _PrimaryExpressionNode::_Literal(y) => y.kind(),
+            _PrimaryExpressionNode::AnonymousFunctionCreationExpression(y) => y.kind(),
+            _PrimaryExpressionNode::ArrayCreationExpression(y) => y.kind(),
+            _PrimaryExpressionNode::ArrowFunction(y) => y.kind(),
+            _PrimaryExpressionNode::CastExpression(y) => y.kind(),
+            _PrimaryExpressionNode::ClassConstantAccessExpression(y) => y.kind(),
+            _PrimaryExpressionNode::DynamicVariableName(y) => y.kind(),
+            _PrimaryExpressionNode::FunctionCallExpression(y) => y.kind(),
+            _PrimaryExpressionNode::MemberAccessExpression(y) => y.kind(),
+            _PrimaryExpressionNode::MemberCallExpression(y) => y.kind(),
+            _PrimaryExpressionNode::Name(y) => y.kind(),
+            _PrimaryExpressionNode::NullsafeMemberAccessExpression(y) => y.kind(),
+            _PrimaryExpressionNode::NullsafeMemberCallExpression(y) => y.kind(),
+            _PrimaryExpressionNode::ObjectCreationExpression(y) => y.kind(),
+            _PrimaryExpressionNode::ParenthesizedExpression(y) => y.kind(),
+            _PrimaryExpressionNode::PrintIntrinsic(y) => y.kind(),
+            _PrimaryExpressionNode::QualifiedName(y) => y.kind(),
+            _PrimaryExpressionNode::ScopedCallExpression(y) => y.kind(),
+            _PrimaryExpressionNode::ScopedPropertyAccessExpression(y) => y.kind(),
+            _PrimaryExpressionNode::ShellCommandExpression(y) => y.kind(),
+            _PrimaryExpressionNode::SubscriptExpression(y) => y.kind(),
+            _PrimaryExpressionNode::ThrowExpression(y) => y.kind(),
+            _PrimaryExpressionNode::UpdateExpression(y) => y.kind(),
+            _PrimaryExpressionNode::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

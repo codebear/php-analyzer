@@ -128,7 +128,16 @@ impl ShellCommandExpressionChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ShellCommandExpressionChildren::Extra(y) => y.kind(),
+            ShellCommandExpressionChildren::_Expression(y) => y.kind(),
+            ShellCommandExpressionChildren::DynamicVariableName(y) => y.kind(),
+            ShellCommandExpressionChildren::EscapeSequence(y) => y.kind(),
+            ShellCommandExpressionChildren::MemberAccessExpression(y) => y.kind(),
+            ShellCommandExpressionChildren::StringValue(y) => y.kind(),
+            ShellCommandExpressionChildren::SubscriptExpression(y) => y.kind(),
+            ShellCommandExpressionChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

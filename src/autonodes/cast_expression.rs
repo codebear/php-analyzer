@@ -125,7 +125,16 @@ impl CastExpressionValue {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            CastExpressionValue::Extra(y) => y.kind(),
+            CastExpressionValue::_PrimaryExpression(y) => y.kind(),
+            CastExpressionValue::CloneExpression(y) => y.kind(),
+            CastExpressionValue::ExponentiationExpression(y) => y.kind(),
+            CastExpressionValue::IncludeExpression(y) => y.kind(),
+            CastExpressionValue::IncludeOnceExpression(y) => y.kind(),
+            CastExpressionValue::SilenceExpression(y) => y.kind(),
+            CastExpressionValue::UnaryOpExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

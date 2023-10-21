@@ -259,7 +259,30 @@ impl ClassConstantAccessExpressionClass {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ClassConstantAccessExpressionClass::Extra(y) => y.kind(),
+            ClassConstantAccessExpressionClass::ArrayCreationExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::CastExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::ClassConstantAccessExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::DynamicVariableName(y) => y.kind(),
+            ClassConstantAccessExpressionClass::EncapsedString(y) => y.kind(),
+            ClassConstantAccessExpressionClass::FunctionCallExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::Heredoc(y) => y.kind(),
+            ClassConstantAccessExpressionClass::MemberAccessExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::MemberCallExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::Name(y) => y.kind(),
+            ClassConstantAccessExpressionClass::Nowdoc(y) => y.kind(),
+            ClassConstantAccessExpressionClass::NullsafeMemberAccessExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::NullsafeMemberCallExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::ParenthesizedExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::QualifiedName(y) => y.kind(),
+            ClassConstantAccessExpressionClass::RelativeScope(y) => y.kind(),
+            ClassConstantAccessExpressionClass::ScopedCallExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::ScopedPropertyAccessExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::String(y) => y.kind(),
+            ClassConstantAccessExpressionClass::SubscriptExpression(y) => y.kind(),
+            ClassConstantAccessExpressionClass::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

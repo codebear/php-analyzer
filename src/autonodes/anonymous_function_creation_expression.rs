@@ -93,7 +93,11 @@ impl AnonymousFunctionCreationExpressionReturnType {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            AnonymousFunctionCreationExpressionReturnType::Extra(y) => y.kind(),
+            AnonymousFunctionCreationExpressionReturnType::_Type(y) => y.kind(),
+            AnonymousFunctionCreationExpressionReturnType::BottomType(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

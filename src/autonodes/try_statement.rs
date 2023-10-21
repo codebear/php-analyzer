@@ -73,7 +73,11 @@ impl TryStatementChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            TryStatementChildren::Extra(y) => y.kind(),
+            TryStatementChildren::CatchClause(y) => y.kind(),
+            TryStatementChildren::FinallyClause(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

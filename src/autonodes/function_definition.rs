@@ -93,7 +93,11 @@ impl FunctionDefinitionReturnType {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            FunctionDefinitionReturnType::Extra(y) => y.kind(),
+            FunctionDefinitionReturnType::_Type(y) => y.kind(),
+            FunctionDefinitionReturnType::BottomType(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

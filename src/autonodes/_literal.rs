@@ -92,7 +92,17 @@ impl _LiteralNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            _LiteralNode::Extra(y) => y.kind(),
+            _LiteralNode::Boolean(y) => y.kind(),
+            _LiteralNode::EncapsedString(y) => y.kind(),
+            _LiteralNode::Float(y) => y.kind(),
+            _LiteralNode::Heredoc(y) => y.kind(),
+            _LiteralNode::Integer(y) => y.kind(),
+            _LiteralNode::Nowdoc(y) => y.kind(),
+            _LiteralNode::Null(y) => y.kind(),
+            _LiteralNode::String(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

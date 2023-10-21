@@ -280,7 +280,37 @@ impl _StatementNode {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            _StatementNode::Extra(y) => y.kind(),
+            _StatementNode::BreakStatement(y) => y.kind(),
+            _StatementNode::ClassDeclaration(y) => y.kind(),
+            _StatementNode::CompoundStatement(y) => y.kind(),
+            _StatementNode::ConstDeclaration(y) => y.kind(),
+            _StatementNode::ContinueStatement(y) => y.kind(),
+            _StatementNode::DeclareStatement(y) => y.kind(),
+            _StatementNode::DoStatement(y) => y.kind(),
+            _StatementNode::EchoStatement(y) => y.kind(),
+            _StatementNode::EmptyStatement(y) => y.kind(),
+            _StatementNode::EnumDeclaration(y) => y.kind(),
+            _StatementNode::ExpressionStatement(y) => y.kind(),
+            _StatementNode::ForStatement(y) => y.kind(),
+            _StatementNode::ForeachStatement(y) => y.kind(),
+            _StatementNode::FunctionDefinition(y) => y.kind(),
+            _StatementNode::FunctionStaticDeclaration(y) => y.kind(),
+            _StatementNode::GlobalDeclaration(y) => y.kind(),
+            _StatementNode::GotoStatement(y) => y.kind(),
+            _StatementNode::IfStatement(y) => y.kind(),
+            _StatementNode::InterfaceDeclaration(y) => y.kind(),
+            _StatementNode::NamedLabelStatement(y) => y.kind(),
+            _StatementNode::NamespaceDefinition(y) => y.kind(),
+            _StatementNode::NamespaceUseDeclaration(y) => y.kind(),
+            _StatementNode::ReturnStatement(y) => y.kind(),
+            _StatementNode::SwitchStatement(y) => y.kind(),
+            _StatementNode::TraitDeclaration(y) => y.kind(),
+            _StatementNode::TryStatement(y) => y.kind(),
+            _StatementNode::UnsetStatement(y) => y.kind(),
+            _StatementNode::WhileStatement(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

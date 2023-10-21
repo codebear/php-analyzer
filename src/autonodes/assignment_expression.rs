@@ -165,7 +165,21 @@ impl AssignmentExpressionLeft {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            AssignmentExpressionLeft::Extra(y) => y.kind(),
+            AssignmentExpressionLeft::CastExpression(y) => y.kind(),
+            AssignmentExpressionLeft::DynamicVariableName(y) => y.kind(),
+            AssignmentExpressionLeft::FunctionCallExpression(y) => y.kind(),
+            AssignmentExpressionLeft::ListLiteral(y) => y.kind(),
+            AssignmentExpressionLeft::MemberAccessExpression(y) => y.kind(),
+            AssignmentExpressionLeft::MemberCallExpression(y) => y.kind(),
+            AssignmentExpressionLeft::NullsafeMemberAccessExpression(y) => y.kind(),
+            AssignmentExpressionLeft::NullsafeMemberCallExpression(y) => y.kind(),
+            AssignmentExpressionLeft::ScopedCallExpression(y) => y.kind(),
+            AssignmentExpressionLeft::ScopedPropertyAccessExpression(y) => y.kind(),
+            AssignmentExpressionLeft::SubscriptExpression(y) => y.kind(),
+            AssignmentExpressionLeft::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

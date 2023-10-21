@@ -85,7 +85,11 @@ impl ForStatementCondition {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ForStatementCondition::Extra(y) => y.kind(),
+            ForStatementCondition::_Expression(y) => y.kind(),
+            ForStatementCondition::SequenceExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -242,7 +246,11 @@ impl ForStatementIncrement {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ForStatementIncrement::Extra(y) => y.kind(),
+            ForStatementIncrement::_Expression(y) => y.kind(),
+            ForStatementIncrement::SequenceExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -399,7 +407,11 @@ impl ForStatementInitialize {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ForStatementInitialize::Extra(y) => y.kind(),
+            ForStatementInitialize::_Expression(y) => y.kind(),
+            ForStatementInitialize::SequenceExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

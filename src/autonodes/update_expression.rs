@@ -159,7 +159,20 @@ impl UpdateExpressionExpr {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UpdateExpressionExpr::Extra(y) => y.kind(),
+            UpdateExpressionExpr::CastExpression(y) => y.kind(),
+            UpdateExpressionExpr::DynamicVariableName(y) => y.kind(),
+            UpdateExpressionExpr::FunctionCallExpression(y) => y.kind(),
+            UpdateExpressionExpr::MemberAccessExpression(y) => y.kind(),
+            UpdateExpressionExpr::MemberCallExpression(y) => y.kind(),
+            UpdateExpressionExpr::NullsafeMemberAccessExpression(y) => y.kind(),
+            UpdateExpressionExpr::NullsafeMemberCallExpression(y) => y.kind(),
+            UpdateExpressionExpr::ScopedCallExpression(y) => y.kind(),
+            UpdateExpressionExpr::ScopedPropertyAccessExpression(y) => y.kind(),
+            UpdateExpressionExpr::SubscriptExpression(y) => y.kind(),
+            UpdateExpressionExpr::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
@@ -392,9 +405,9 @@ impl UpdateExpressionPostfix {
 
     pub fn kind(&self) -> &'static str {
         match self {
-            UpdateExpressionPostfix::Increment(i) => i.kind(),
-            UpdateExpressionPostfix::Decrement(d) => d.kind(),
-            UpdateExpressionPostfix::Extra(e) => e.kind(),
+            UpdateExpressionPostfix::Extra(y) => y.kind(),
+            UpdateExpressionPostfix::Increment(y) => y.kind(),
+            UpdateExpressionPostfix::Decrement(y) => y.kind(),
         }
     }
 
@@ -460,9 +473,9 @@ impl UpdateExpressionPrefix {
 
     pub fn kind(&self) -> &'static str {
         match self {
-            UpdateExpressionPrefix::Increment(i) => i.kind(),
-            UpdateExpressionPrefix::Decrement(d) => d.kind(),
-            UpdateExpressionPrefix::Extra(e) => e.kind(),
+            UpdateExpressionPrefix::Extra(y) => y.kind(),
+            UpdateExpressionPrefix::Increment(y) => y.kind(),
+            UpdateExpressionPrefix::Decrement(y) => y.kind(),
         }
     }
 

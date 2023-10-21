@@ -84,7 +84,11 @@ impl EchoStatementChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            EchoStatementChildren::Extra(y) => y.kind(),
+            EchoStatementChildren::_Expression(y) => y.kind(),
+            EchoStatementChildren::SequenceExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

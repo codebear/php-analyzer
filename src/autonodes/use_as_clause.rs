@@ -80,7 +80,12 @@ impl UseAsClauseChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UseAsClauseChildren::Extra(y) => y.kind(),
+            UseAsClauseChildren::ClassConstantAccessExpression(y) => y.kind(),
+            UseAsClauseChildren::Name(y) => y.kind(),
+            UseAsClauseChildren::VisibilityModifier(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

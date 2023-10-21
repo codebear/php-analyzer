@@ -80,7 +80,12 @@ impl UnionTypeChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            UnionTypeChildren::Extra(y) => y.kind(),
+            UnionTypeChildren::NamedType(y) => y.kind(),
+            UnionTypeChildren::OptionalType(y) => y.kind(),
+            UnionTypeChildren::PrimitiveType(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

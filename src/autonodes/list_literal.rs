@@ -175,7 +175,22 @@ impl ListLiteralChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ListLiteralChildren::Extra(y) => y.kind(),
+            ListLiteralChildren::_Expression(y) => y.kind(),
+            ListLiteralChildren::ByRef(y) => y.kind(),
+            ListLiteralChildren::DynamicVariableName(y) => y.kind(),
+            ListLiteralChildren::FunctionCallExpression(y) => y.kind(),
+            ListLiteralChildren::ListLiteral(y) => y.kind(),
+            ListLiteralChildren::MemberAccessExpression(y) => y.kind(),
+            ListLiteralChildren::MemberCallExpression(y) => y.kind(),
+            ListLiteralChildren::NullsafeMemberAccessExpression(y) => y.kind(),
+            ListLiteralChildren::NullsafeMemberCallExpression(y) => y.kind(),
+            ListLiteralChildren::ScopedCallExpression(y) => y.kind(),
+            ListLiteralChildren::ScopedPropertyAccessExpression(y) => y.kind(),
+            ListLiteralChildren::SubscriptExpression(y) => y.kind(),
+            ListLiteralChildren::VariableName(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

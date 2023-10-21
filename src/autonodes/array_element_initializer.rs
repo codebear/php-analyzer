@@ -89,7 +89,11 @@ impl ArrayElementInitializerValue {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            ArrayElementInitializerValue::Extra(y) => y.kind(),
+            ArrayElementInitializerValue::_Expression(y) => y.kind(),
+            ArrayElementInitializerValue::ByRef(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>

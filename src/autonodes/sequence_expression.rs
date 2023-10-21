@@ -87,7 +87,11 @@ impl SequenceExpressionChildren {
     }
 
     pub fn kind(&self) -> &'static str {
-        self.as_any().kind()
+        match self {
+            SequenceExpressionChildren::Extra(y) => y.kind(),
+            SequenceExpressionChildren::_Expression(y) => y.kind(),
+            SequenceExpressionChildren::SequenceExpression(y) => y.kind(),
+        }
     }
 
     pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
