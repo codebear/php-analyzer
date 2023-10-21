@@ -1,3 +1,8 @@
+all:
+	@echo
+	@echo "make <autonodes|native|autofix>"
+	@echo
+
 autonodes:
 	cd tree-sitter-php && tree-sitter generate
 	node gennodes.mjs
