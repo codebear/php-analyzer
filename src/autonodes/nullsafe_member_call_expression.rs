@@ -237,6 +237,7 @@ impl NodeAccess for NullsafeMemberCallExpressionName {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum NullsafeMemberCallExpressionObject {
     ArrayCreationExpression(Box<ArrayCreationExpressionNode>),

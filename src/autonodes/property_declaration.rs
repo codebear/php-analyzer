@@ -249,6 +249,7 @@ impl NodeAccess for PropertyDeclarationModifiers {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum PropertyDeclarationProperties {
     Comma(&'static str, Range),

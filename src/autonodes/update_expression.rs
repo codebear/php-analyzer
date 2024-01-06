@@ -354,6 +354,7 @@ impl NodeAccess for UpdateExpressionExpr {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum UpdateExpressionPostfix {
     Increment(IncrementOperator),

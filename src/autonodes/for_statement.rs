@@ -176,6 +176,7 @@ impl NodeAccess for ForStatementCondition {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum ForStatementIncrement {
     _Expression(Box<_ExpressionNode>),
@@ -337,6 +338,7 @@ impl NodeAccess for ForStatementIncrement {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum ForStatementInitialize {
     _Expression(Box<_ExpressionNode>),

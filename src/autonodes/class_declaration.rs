@@ -188,6 +188,7 @@ impl NodeAccess for ClassDeclarationModifier {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum ClassDeclarationChildren {
     BaseClause(Box<BaseClauseNode>),

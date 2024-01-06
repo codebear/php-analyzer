@@ -177,6 +177,7 @@ impl NodeAccess for ForeachStatementBody {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum ForeachStatementValue {
     _Expression(Box<_ExpressionNode>),

@@ -193,6 +193,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionName {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum ScopedPropertyAccessExpressionScope {
     ArrayCreationExpression(Box<ArrayCreationExpressionNode>),

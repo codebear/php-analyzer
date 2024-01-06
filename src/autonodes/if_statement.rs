@@ -165,6 +165,7 @@ impl NodeAccess for IfStatementAlternative {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum IfStatementBody {
     _Statement(Box<_StatementNode>),

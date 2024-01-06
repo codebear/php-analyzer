@@ -627,6 +627,7 @@ impl NodeAccess for SubscriptExpressionDereferenceable {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum SubscriptExpressionChildren {
     Integer(Box<IntegerNode>),

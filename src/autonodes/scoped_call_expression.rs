@@ -226,6 +226,7 @@ impl NodeAccess for ScopedCallExpressionName {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum ScopedCallExpressionScope {
     ArrayCreationExpression(Box<ArrayCreationExpressionNode>),

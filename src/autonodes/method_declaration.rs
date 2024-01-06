@@ -190,6 +190,7 @@ impl NodeAccess for MethodDeclarationReturnType {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum MethodDeclarationChildren {
     AbstractModifier(Box<AbstractModifierNode>),

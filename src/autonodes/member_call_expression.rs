@@ -225,6 +225,7 @@ impl NodeAccess for MemberCallExpressionName {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum MemberCallExpressionObject {
     ArrayCreationExpression(Box<ArrayCreationExpressionNode>),

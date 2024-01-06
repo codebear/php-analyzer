@@ -157,14 +157,17 @@ use crate::autonodes::yield_expression::YieldExpressionNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
-use crate::operators::operator::Operators;
 use tree_sitter::Node;
 use tree_sitter::Range;
+
+use crate::operators::operator::Operators;
 
 #[derive(Debug, Clone)]
 pub enum AnyNodeRef<'a> {
     StaticExpr(&'static str, Range),
     Error(&'a ErrorNode),
+    Operator(Operators<'a>),
+
     _Expression(&'a _ExpressionNode),
     _Literal(&'a _LiteralNode),
     _PrimaryExpression(&'a _PrimaryExpressionNode),
@@ -259,7 +262,6 @@ pub enum AnyNodeRef<'a> {
     NullsafeMemberAccessExpression(&'a NullsafeMemberAccessExpressionNode),
     NullsafeMemberCallExpression(&'a NullsafeMemberCallExpressionNode),
     ObjectCreationExpression(&'a ObjectCreationExpressionNode),
-    Operator(Operators<'a>),
     OptionalType(&'a OptionalTypeNode),
     ParenthesizedExpression(&'a ParenthesizedExpressionNode),
     PrimitiveType(&'a PrimitiveTypeNode),
@@ -328,6 +330,7 @@ impl<'a> AnyNodeRef<'a> {
         match self {
             AnyNodeRef::StaticExpr(x, _) => x,
             AnyNodeRef::Error(e) => e.kind(),
+            AnyNodeRef::Operator(op) => op.kind(),
             AnyNodeRef::_Expression(n) => n.kind(),
             AnyNodeRef::_Literal(n) => n.kind(),
             AnyNodeRef::_PrimaryExpression(n) => n.kind(),
@@ -484,7 +487,6 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::PhpTag(n) => n.kind(),
             AnyNodeRef::StringValue(n) => n.kind(),
             AnyNodeRef::VarModifier(n) => n.kind(),
-            AnyNodeRef::Operator(op) => op.kind(),
         }
     }
 }
@@ -494,6 +496,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
         match self {
             AnyNodeRef::StaticExpr(x, _) => x.to_string(),
             AnyNodeRef::Error(e) => e.brief_desc(),
+            AnyNodeRef::Operator(op) => op.brief_desc(),
             AnyNodeRef::_Expression(n) => n.brief_desc(),
             AnyNodeRef::_Literal(n) => n.brief_desc(),
             AnyNodeRef::_PrimaryExpression(n) => n.brief_desc(),
@@ -650,7 +653,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::PhpTag(n) => n.brief_desc(),
             AnyNodeRef::StringValue(n) => n.brief_desc(),
             AnyNodeRef::VarModifier(n) => n.brief_desc(),
-            AnyNodeRef::Operator(op) => op.brief_desc(),
         }
     }
 
@@ -658,6 +660,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
         match self {
             AnyNodeRef::StaticExpr(_, r) => *r,
             AnyNodeRef::Error(e) => e.range(),
+            AnyNodeRef::Operator(op) => op.range(),
             AnyNodeRef::_Expression(n) => n.range(),
             AnyNodeRef::_Literal(n) => n.range(),
             AnyNodeRef::_PrimaryExpression(n) => n.range(),
@@ -814,7 +817,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::PhpTag(n) => n.range(),
             AnyNodeRef::StringValue(n) => n.range(),
             AnyNodeRef::VarModifier(n) => n.range(),
-            AnyNodeRef::Operator(op) => op.range(),
         }
     }
 
@@ -826,6 +828,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
         match self {
             AnyNodeRef::StaticExpr(_, _) => vec![],
             AnyNodeRef::Error(e) => e.children_any(),
+            AnyNodeRef::Operator(op) => op.children_any(),
             AnyNodeRef::_Expression(n) => n.children_any(),
             AnyNodeRef::_Literal(n) => n.children_any(),
             AnyNodeRef::_PrimaryExpression(n) => n.children_any(),
@@ -921,7 +924,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.children_any(),
             AnyNodeRef::ObjectCreationExpression(n) => n.children_any(),
             AnyNodeRef::OptionalType(n) => n.children_any(),
-            AnyNodeRef::Operator(n) => n.children_any(),
             AnyNodeRef::ParenthesizedExpression(n) => n.children_any(),
             AnyNodeRef::PrimitiveType(n) => n.children_any(),
             AnyNodeRef::PrintIntrinsic(n) => n.children_any(),

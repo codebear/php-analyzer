@@ -220,6 +220,7 @@ impl NodeAccess for ExponentiationExpressionLeft {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum ExponentiationExpressionRight {
     _PrimaryExpression(Box<_PrimaryExpressionNode>),
