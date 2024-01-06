@@ -10,7 +10,7 @@ use crate::{
     missing,
     operators::{
         binary::{BinaryOperator, BinaryOperatorOperandAccess},
-        operator::Operator,
+        operator::{Operator, Operators},
     },
     types::union::UnionType,
     value::PHPValue,
@@ -327,11 +327,11 @@ impl NodeAccess for BinaryExpressionOperator {
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        todo!()
+        AnyNodeRef::Operator(Operators::Binary(self))
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        todo!()
+        vec![]
     }
 }
 

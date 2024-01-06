@@ -90,7 +90,9 @@ pub trait NodeAccess {
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a>;
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>>;
+    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+        vec![]
+    }
 
     fn named_children<'a>(&'a self, name: &str) -> Vec<AnyNodeRef<'a>> {
         self.children_any()

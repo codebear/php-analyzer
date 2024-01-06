@@ -6,7 +6,7 @@ use crate::{
     },
     autotree::NodeAccess,
     issue::IssueEmitter,
-    operators::operator::Operator,
+    operators::operator::{Operator, Operators},
     types::union::{DiscreteType, UnionType},
     value::{PHPFloat, PHPValue},
 };
@@ -106,10 +106,10 @@ impl NodeAccess for UnaryOpExpressionOperator {
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        todo!()
+        AnyNodeRef::Operator(Operators::Unary(self))
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        todo!()
+        vec![]
     }
 }

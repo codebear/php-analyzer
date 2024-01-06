@@ -422,6 +422,7 @@ impl UpdateExpressionPostfix {
         Ok(res)
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum UpdateExpressionPrefix {
     Increment(IncrementOperator),
@@ -490,6 +491,7 @@ impl UpdateExpressionPrefix {
         Ok(res)
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct UpdateExpressionNode {
     pub range: Range,

@@ -227,6 +227,7 @@ impl BinaryExpressionOperator {
         Ok(res)
     }
 }
+
 #[derive(Debug, Clone)]
 pub enum BinaryExpressionRight {
     _Expression(Box<_ExpressionNode>),

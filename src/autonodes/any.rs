@@ -157,6 +157,7 @@ use crate::autonodes::yield_expression::YieldExpressionNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
+use crate::operators::operator::Operators;
 use tree_sitter::Node;
 use tree_sitter::Range;
 
@@ -258,6 +259,7 @@ pub enum AnyNodeRef<'a> {
     NullsafeMemberAccessExpression(&'a NullsafeMemberAccessExpressionNode),
     NullsafeMemberCallExpression(&'a NullsafeMemberCallExpressionNode),
     ObjectCreationExpression(&'a ObjectCreationExpressionNode),
+    Operator(Operators<'a>),
     OptionalType(&'a OptionalTypeNode),
     ParenthesizedExpression(&'a ParenthesizedExpressionNode),
     PrimitiveType(&'a PrimitiveTypeNode),
@@ -482,6 +484,7 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::PhpTag(n) => n.kind(),
             AnyNodeRef::StringValue(n) => n.kind(),
             AnyNodeRef::VarModifier(n) => n.kind(),
+            AnyNodeRef::Operator(op) => op.kind(),
         }
     }
 }
@@ -647,6 +650,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::PhpTag(n) => n.brief_desc(),
             AnyNodeRef::StringValue(n) => n.brief_desc(),
             AnyNodeRef::VarModifier(n) => n.brief_desc(),
+            AnyNodeRef::Operator(op) => op.brief_desc(),
         }
     }
 
@@ -810,6 +814,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::PhpTag(n) => n.range(),
             AnyNodeRef::StringValue(n) => n.range(),
             AnyNodeRef::VarModifier(n) => n.range(),
+            AnyNodeRef::Operator(op) => op.range(),
         }
     }
 
@@ -916,6 +921,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.children_any(),
             AnyNodeRef::ObjectCreationExpression(n) => n.children_any(),
             AnyNodeRef::OptionalType(n) => n.children_any(),
+            AnyNodeRef::Operator(n) => n.children_any(),
             AnyNodeRef::ParenthesizedExpression(n) => n.children_any(),
             AnyNodeRef::PrimitiveType(n) => n.children_any(),
             AnyNodeRef::PrintIntrinsic(n) => n.children_any(),

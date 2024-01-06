@@ -97,6 +97,7 @@ impl UnaryOpExpressionOperator {
         Ok(res)
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct UnaryOpExpressionNode {
     pub range: Range,

@@ -8,6 +8,7 @@ use crate::{
         },
     },
     issue::{Issue, IssueEmitter},
+    operators::operator::Operators,
     types::union::{DiscreteType, UnionType},
     value::{PHPFloat, PHPValue},
 };
@@ -207,11 +208,11 @@ impl NodeAccess for UpdateExpressionPostfix {
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        todo!()
+        AnyNodeRef::Operator(Operators::UpdateExpressionPostfix(self))
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        todo!()
+        vec![]
     }
 }
 
@@ -241,11 +242,11 @@ impl NodeAccess for UpdateExpressionPrefix {
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        todo!()
+        AnyNodeRef::Operator(Operators::UpdateExpressionPrefix(self))
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        todo!()
+        vec![]
     }
 }
 
