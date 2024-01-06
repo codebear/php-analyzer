@@ -169,6 +169,7 @@ impl NodeAccess for AnonymousFunctionUseClauseChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct AnonymousFunctionUseClauseNode {
     pub range: Range,

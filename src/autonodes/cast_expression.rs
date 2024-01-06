@@ -271,6 +271,7 @@ impl NodeAccess for CastExpressionValue {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct CastExpressionNode {
     pub range: Range,

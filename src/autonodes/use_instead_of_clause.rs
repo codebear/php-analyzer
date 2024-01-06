@@ -173,6 +173,7 @@ impl NodeAccess for UseInsteadOfClauseChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct UseInsteadOfClauseNode {
     pub range: Range,

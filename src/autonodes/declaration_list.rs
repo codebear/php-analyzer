@@ -202,6 +202,7 @@ impl NodeAccess for DeclarationListChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct DeclarationListNode {
     pub range: Range,

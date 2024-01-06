@@ -156,6 +156,7 @@ impl NodeAccess for BaseClauseChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct BaseClauseNode {
     pub range: Range,

@@ -161,6 +161,7 @@ impl NodeAccess for TextInterpolationChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct TextInterpolationNode {
     pub range: Range,

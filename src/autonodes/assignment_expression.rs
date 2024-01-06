@@ -384,6 +384,7 @@ impl NodeAccess for AssignmentExpressionLeft {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct AssignmentExpressionNode {
     pub range: Range,

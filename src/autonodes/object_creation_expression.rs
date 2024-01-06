@@ -395,6 +395,7 @@ impl NodeAccess for ObjectCreationExpressionChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ObjectCreationExpressionNode {
     pub range: Range,

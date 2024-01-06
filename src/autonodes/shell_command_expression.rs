@@ -285,6 +285,7 @@ impl NodeAccess for ShellCommandExpressionChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ShellCommandExpressionNode {
     pub range: Range,

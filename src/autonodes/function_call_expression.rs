@@ -448,6 +448,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct FunctionCallExpressionNode {
     pub range: Range,

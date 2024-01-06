@@ -175,6 +175,7 @@ impl NodeAccess for EchoStatementChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct EchoStatementNode {
     pub range: Range,

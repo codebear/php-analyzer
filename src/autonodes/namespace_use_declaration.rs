@@ -191,6 +191,7 @@ impl NodeAccess for NamespaceUseDeclarationChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct NamespaceUseDeclarationNode {
     pub range: Range,

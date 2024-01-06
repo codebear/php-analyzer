@@ -178,6 +178,7 @@ impl NodeAccess for NamespaceUseGroupClauseChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct NamespaceUseGroupClauseNode {
     pub range: Range,

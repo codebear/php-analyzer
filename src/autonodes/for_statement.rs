@@ -500,6 +500,7 @@ impl NodeAccess for ForStatementInitialize {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ForStatementNode {
     pub range: Range,

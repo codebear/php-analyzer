@@ -812,6 +812,7 @@ impl NodeAccess for SubscriptExpressionChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct SubscriptExpressionNode {
     pub range: Range,

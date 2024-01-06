@@ -175,6 +175,7 @@ impl NodeAccess for YieldExpressionChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct YieldExpressionNode {
     pub range: Range,

@@ -643,6 +643,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ClassConstantAccessExpressionNode {
     pub range: Range,

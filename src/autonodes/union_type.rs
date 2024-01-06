@@ -178,6 +178,7 @@ impl NodeAccess for UnionTypeChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct UnionTypeNode {
     pub range: Range,

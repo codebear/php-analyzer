@@ -196,6 +196,7 @@ impl NodeAccess for AnonymousFunctionCreationExpressionReturnType {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct AnonymousFunctionCreationExpressionNode {
     pub range: Range,

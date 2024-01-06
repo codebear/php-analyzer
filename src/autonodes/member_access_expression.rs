@@ -752,6 +752,7 @@ impl NodeAccess for MemberAccessExpressionObject {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct MemberAccessExpressionNode {
     pub range: Range,

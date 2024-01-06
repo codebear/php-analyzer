@@ -173,6 +173,7 @@ impl NodeAccess for ElseIfClauseBody {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ElseIfClauseNode {
     pub range: Range,

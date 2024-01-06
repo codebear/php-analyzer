@@ -185,6 +185,7 @@ impl NodeAccess for FormalParametersChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct FormalParametersNode {
     pub range: Range,

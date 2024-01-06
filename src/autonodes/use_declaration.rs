@@ -176,6 +176,7 @@ impl NodeAccess for UseDeclarationChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct UseDeclarationNode {
     pub range: Range,

@@ -351,6 +351,7 @@ impl NodeAccess for ForeachStatementValue {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ForeachStatementNode {
     pub range: Range,

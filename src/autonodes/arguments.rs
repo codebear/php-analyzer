@@ -157,6 +157,7 @@ impl NodeAccess for ArgumentsChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ArgumentsNode {
     pub range: Range,

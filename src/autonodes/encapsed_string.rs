@@ -268,6 +268,7 @@ impl NodeAccess for EncapsedStringChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct EncapsedStringNode {
     pub range: Range,

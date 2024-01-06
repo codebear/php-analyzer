@@ -155,6 +155,7 @@ impl NodeAccess for AttributeChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct AttributeNode {
     pub range: Range,

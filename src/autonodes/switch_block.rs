@@ -162,6 +162,7 @@ impl NodeAccess for SwitchBlockChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct SwitchBlockNode {
     pub range: Range,

@@ -186,6 +186,7 @@ impl NodeAccess for EnumDeclarationListChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct EnumDeclarationListNode {
     pub range: Range,

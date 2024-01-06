@@ -179,6 +179,7 @@ impl NodeAccess for ArrowFunctionReturnType {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ArrowFunctionNode {
     pub range: Range,

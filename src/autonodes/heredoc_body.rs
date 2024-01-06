@@ -267,6 +267,7 @@ impl NodeAccess for HeredocBodyChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct HeredocBodyNode {
     pub range: Range,

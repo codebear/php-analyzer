@@ -417,6 +417,7 @@ impl NodeAccess for MethodDeclarationChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct MethodDeclarationNode {
     pub range: Range,

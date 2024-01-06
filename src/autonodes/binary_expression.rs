@@ -520,6 +520,7 @@ impl NodeAccess for BinaryExpressionRight {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct BinaryExpressionNode {
     pub range: Range,

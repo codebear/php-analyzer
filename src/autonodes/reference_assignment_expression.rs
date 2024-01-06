@@ -438,6 +438,7 @@ impl NodeAccess for ReferenceAssignmentExpressionLeft {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ReferenceAssignmentExpressionNode {
     pub range: Range,

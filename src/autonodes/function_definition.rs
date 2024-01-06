@@ -184,6 +184,7 @@ impl NodeAccess for FunctionDefinitionReturnType {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct FunctionDefinitionNode {
     pub range: Range,

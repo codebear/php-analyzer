@@ -166,6 +166,7 @@ impl NodeAccess for ConstDeclarationChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ConstDeclarationNode {
     pub range: Range,

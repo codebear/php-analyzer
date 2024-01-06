@@ -598,6 +598,7 @@ impl AugmentedAssignmentExpressionOperator {
         Ok(res)
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct AugmentedAssignmentExpressionNode {
     pub range: Range,

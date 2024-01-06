@@ -175,6 +175,7 @@ impl NodeAccess for WhileStatementBody {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct WhileStatementNode {
     pub range: Range,

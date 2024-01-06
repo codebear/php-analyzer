@@ -399,6 +399,7 @@ impl NodeAccess for PropertyDeclarationProperties {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct PropertyDeclarationNode {
     pub range: Range,

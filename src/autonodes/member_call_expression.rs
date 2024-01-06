@@ -744,6 +744,7 @@ impl NodeAccess for MemberCallExpressionObject {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct MemberCallExpressionNode {
     pub range: Range,

@@ -388,6 +388,7 @@ impl NodeAccess for ListLiteralChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ListLiteralNode {
     pub range: Range,

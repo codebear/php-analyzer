@@ -159,6 +159,7 @@ impl NodeAccess for QualifiedNameChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct QualifiedNameNode {
     pub range: Range,

@@ -154,6 +154,7 @@ impl NodeAccess for NamedTypeChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct NamedTypeNode {
     pub range: Range,

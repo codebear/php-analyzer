@@ -162,6 +162,7 @@ impl NodeAccess for OptionalTypeChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct OptionalTypeNode {
     pub range: Range,

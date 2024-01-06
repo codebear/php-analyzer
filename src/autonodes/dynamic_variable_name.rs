@@ -198,6 +198,7 @@ impl NodeAccess for DynamicVariableNameChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct DynamicVariableNameNode {
     pub range: Range,

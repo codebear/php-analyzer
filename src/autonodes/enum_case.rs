@@ -150,6 +150,7 @@ impl NodeAccess for EnumCaseValue {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct EnumCaseNode {
     pub range: Range,

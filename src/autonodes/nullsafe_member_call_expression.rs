@@ -831,6 +831,7 @@ impl NodeAccess for NullsafeMemberCallExpressionObject {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct NullsafeMemberCallExpressionNode {
     pub range: Range,

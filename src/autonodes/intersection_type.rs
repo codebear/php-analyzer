@@ -182,6 +182,7 @@ impl NodeAccess for IntersectionTypeChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct IntersectionTypeNode {
     pub range: Range,

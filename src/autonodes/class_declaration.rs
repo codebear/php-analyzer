@@ -338,6 +338,7 @@ impl NodeAccess for ClassDeclarationChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ClassDeclarationNode {
     pub range: Range,

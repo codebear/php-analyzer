@@ -290,6 +290,7 @@ impl NodeAccess for ByRefChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ByRefNode {
     pub range: Range,

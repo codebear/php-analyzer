@@ -178,6 +178,7 @@ impl NodeAccess for ProgramChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ProgramNode {
     pub range: Range,

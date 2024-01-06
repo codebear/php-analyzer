@@ -159,6 +159,7 @@ impl NodeAccess for HeredocIdentifier {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct HeredocNode {
     pub range: Range,

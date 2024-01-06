@@ -811,6 +811,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ScopedPropertyAccessExpressionNode {
     pub range: Range,

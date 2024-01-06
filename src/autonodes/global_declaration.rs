@@ -168,6 +168,7 @@ impl NodeAccess for GlobalDeclarationChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct GlobalDeclarationNode {
     pub range: Range,

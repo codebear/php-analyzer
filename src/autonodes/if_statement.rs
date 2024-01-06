@@ -324,6 +324,7 @@ impl NodeAccess for IfStatementBody {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct IfStatementNode {
     pub range: Range,

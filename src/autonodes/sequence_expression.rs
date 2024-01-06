@@ -179,6 +179,7 @@ impl NodeAccess for SequenceExpressionChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct SequenceExpressionNode {
     pub range: Range,

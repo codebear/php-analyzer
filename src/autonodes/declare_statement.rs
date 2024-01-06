@@ -175,6 +175,7 @@ impl NodeAccess for DeclareStatementChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct DeclareStatementNode {
     pub range: Range,

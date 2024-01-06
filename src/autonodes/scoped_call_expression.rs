@@ -759,6 +759,7 @@ impl NodeAccess for ScopedCallExpressionScope {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ScopedCallExpressionNode {
     pub range: Range,

@@ -163,6 +163,7 @@ impl NodeAccess for ClassInterfaceClauseChildren {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ClassInterfaceClauseNode {
     pub range: Range,

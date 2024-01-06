@@ -495,6 +495,7 @@ impl NodeAccess for ExponentiationExpressionRight {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct ExponentiationExpressionNode {
     pub range: Range,
