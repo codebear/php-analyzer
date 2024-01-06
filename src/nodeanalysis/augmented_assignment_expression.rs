@@ -10,7 +10,7 @@ use crate::{
     issue::{IssueEmitter, VoidEmitter},
     operators::{
         binary::{BinaryAssignmentOperator, BinaryOperatorOperandAccess},
-        operator::Operator,
+        operator::{Operator, Operators},
     },
     types::union::{DiscreteType, UnionType},
     value::PHPValue,
@@ -18,6 +18,50 @@ use crate::{
 
 use super::analysis::ThirdPassAnalyzeableNode;
 use crate::autotree::NodeAccess;
+
+impl NodeAccess for AugmentedAssignmentExpressionOperator {
+    fn brief_desc(&self) -> String {
+        match self {
+            AugmentedAssignmentExpressionOperator::ModAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::AndAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::PowAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::MultAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::AddAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::SubAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::ConcatAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::DivAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::LeftShiftAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::RightShiftAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::NullsafeAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::XorAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::OrAssign(op) => op.brief_desc(),
+            AugmentedAssignmentExpressionOperator::Extra(op) => op.brief_desc(),
+        }
+    }
+
+    fn range(&self) -> tree_sitter::Range {
+        match self {
+            AugmentedAssignmentExpressionOperator::ModAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::AndAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::PowAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::MultAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::AddAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::SubAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::ConcatAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::DivAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::LeftShiftAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::RightShiftAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::NullsafeAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::XorAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::OrAssign(op) => op.range(),
+            AugmentedAssignmentExpressionOperator::Extra(op) => op.range(),
+        }
+    }
+
+    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+        AnyNodeRef::Operator(Operators::AugmentedAssignment(self))
+    }
+}
 
 impl AugmentedAssignmentExpressionNode {
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
