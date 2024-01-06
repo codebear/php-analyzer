@@ -169,9 +169,10 @@ function create_enum_for_types(name, types) {
             if (operator_module == "mod") {
                 operator_module = "modulus";
             }
+            enum_uses.push("crate::operators::operator::Operator");
             enum_uses.push("crate::operators::" + operator_module + "::" + ttype);
             entry += ttype;
-            has_node_access = true;
+            has_node_access = false;
             has_utype_and_value_access = false;
         } else {
             entry += "Box<" + ttype + ">";
@@ -179,7 +180,7 @@ function create_enum_for_types(name, types) {
         entry += ")";
         enum_entries.add(entry);
     }
-    let child_enum_buffer = "#[derive(Debug, Clone)]\n";
+    let child_enum_buffer = "\n#[derive(Debug, Clone)]\n";
     child_enum_buffer += "pub enum " + name + " {\n";
     for (const entry of enum_entries) {
         child_enum_buffer += "  " + entry + ",\n";
@@ -267,12 +268,12 @@ function create_enum_for_types(name, types) {
         pub fn kind(&self) -> &'static str {
             match self {
                 ${get_enum_matches(name, types, function (child_type, rust_type) {
-        /*if (rust_type.match(/'static/)) {
+        if (rust_type.match(/'static/)) {
             enum_uses.push("crate::types::union::DiscreteType");
 
-            return ["_,_", 'Some(DiscreteType::String.into())'];
-        }*/
-        return ['x', 'x.kind()'];
+            return ["y, _", 'y'];
+        }
+        return ['y', 'y.kind()'];
     })}
             }
         }
@@ -350,6 +351,9 @@ function create_enum_for_types(name, types) {
             if (rust_type.match(/'static/)) {
                 return ["a,b", `AnyNodeRef::StaticExpr(a, *b)`];
             }
+            if (rust_type.match(/Operator/)) {
+                return ["op", `AnyNodeRef::Operator(op)`];
+            }
             return ["x", 'x.as_any()'];
         })}
             }
@@ -391,14 +395,18 @@ let any_uses = {
 let any_names = [];
 
 let any_buffer = "\n\n";
-any_buffer += "#[derive(Debug, Clone)]\n";
+any_buffer += "\n#[derive(Debug, Clone)]\n";
 any_buffer += "pub enum AnyNode {\n";
 
 let any_ref_buffer = "\n\n";
-any_ref_buffer += "#[derive(Debug, Clone)]\n";
+any_ref_buffer += "\nuse crate::operators::operator::Operators;\n\n";
+
+any_ref_buffer += "\n#[derive(Debug, Clone)]\n";
 any_ref_buffer += `pub enum AnyNodeRef<'a> {
     StaticExpr(&'static str, Range),
     Error(&'a ErrorNode),
+    Operator(Operators<'a>),
+
 `;
 
 let mod_buffer = "";
@@ -431,9 +439,8 @@ for (const node_def of node_defs) {
         uses["tree_sitter::Range"] = "";
         uses["crate::autotree::NodeAccess"] = "";
         uses["crate::autotree::ParseError"] = "";
-        uses["crate::extra::ExtraChild"] = "";
         declares.push(node_name);
-        node_buffer += "#[derive(Debug, Clone)]\n";
+        node_buffer += "\n#[derive(Debug, Clone)]\n";
         node_buffer += `pub struct ${node_name} {\n`;
         node_buffer += "    pub range: Range,\n";
         let child_count = 0;
@@ -625,6 +632,7 @@ for (const node_def of node_defs) {
             uses['std::os::unix::ffi::OsStrExt'] = '';
 
         } else {
+            uses["crate::extra::ExtraChild"] = "";
             node_buffer += "    pub extras: Vec<Box<ExtraChild>>,\n";
         }
 
@@ -840,6 +848,7 @@ impl <'a>  AnyNodeRef<'a> {
         match self {
             AnyNodeRef::StaticExpr(x, _) => x,
             AnyNodeRef::Error(e) => e.kind(),
+            AnyNodeRef::Operator(op) => op.kind(),
             ${any_names.map(any_name => `AnyNodeRef::${any_name}(n) => n.kind(),`).join("\n")}
         }
     }
@@ -851,6 +860,7 @@ impl <'a> NodeAccess for AnyNodeRef<'a> {
         match self {
             AnyNodeRef::StaticExpr(x, _) => x.to_string(),
             AnyNodeRef::Error(e) => e.brief_desc(),
+            AnyNodeRef::Operator(op) => op.brief_desc(),
             ${any_names.map(any_name => `AnyNodeRef::${any_name}(n) => n.brief_desc(),`).join("\n")}
         }
     }
@@ -859,6 +869,7 @@ impl <'a> NodeAccess for AnyNodeRef<'a> {
         match self {
             AnyNodeRef::StaticExpr(_, r) => *r,
             AnyNodeRef::Error(e) => e.range(),
+            AnyNodeRef::Operator(op) => op.range(),
             ${any_names.map(any_name => `AnyNodeRef::${any_name}(n) => n.range(),`).join("\n")}
         }
     }
@@ -871,6 +882,7 @@ impl <'a> NodeAccess for AnyNodeRef<'a> {
         match self {
             AnyNodeRef::StaticExpr(_,_) => vec!(),
             AnyNodeRef::Error(e) => e.children_any(),
+            AnyNodeRef::Operator(op) => op.children_any(),
             ${any_names.map(any_name => `AnyNodeRef::${any_name}(n) => n.children_any(),`).join("\n")}
         }
     }
