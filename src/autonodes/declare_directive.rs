@@ -1,6 +1,8 @@
 use crate::autonodes::_literal::_LiteralNode;
 use crate::autonodes::any::AnyNodeRef;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -13,8 +15,8 @@ pub struct DeclareDirectiveNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl DeclareDirectiveNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for DeclareDirectiveNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "declare_directive" {
             return Err(ParseError::new(
@@ -46,21 +48,9 @@ impl DeclareDirectiveNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl DeclareDirectiveNode {
     pub fn kind(&self) -> &'static str {
         "declare_directive"
     }

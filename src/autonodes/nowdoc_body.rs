@@ -1,6 +1,8 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::nowdoc_string::NowdocStringNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -13,8 +15,8 @@ pub struct NowdocBodyNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl NowdocBodyNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NowdocBodyNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "nowdoc_body" {
             return Err(ParseError::new(
@@ -42,21 +44,9 @@ impl NowdocBodyNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl NowdocBodyNode {
     pub fn kind(&self) -> &'static str {
         "nowdoc_body"
     }

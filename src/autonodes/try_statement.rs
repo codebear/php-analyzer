@@ -5,7 +5,9 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::compound_statement::CompoundStatementNode;
 use crate::autonodes::finally_clause::FinallyClauseNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -22,8 +24,8 @@ pub enum TryStatementChildren {
     Extra(ExtraChild),
 }
 
-impl TryStatementChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for TryStatementChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -49,7 +51,9 @@ impl TryStatementChildren {
             }
         })
     }
+}
 
+impl TryStatementChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
@@ -172,8 +176,8 @@ pub struct TryStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl TryStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for TryStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "try_statement" {
             return Err(ParseError::new(
@@ -187,17 +191,11 @@ impl TryStatementNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let body: CompoundStatementNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| CompoundStatementNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
+        let body: CompoundStatementNode = Result::from(
+            node.parse_child("body", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             body,
@@ -215,21 +213,9 @@ impl TryStatementNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl TryStatementNode {
     pub fn kind(&self) -> &'static str {
         "try_statement"
     }

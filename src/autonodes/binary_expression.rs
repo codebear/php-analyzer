@@ -11,7 +11,9 @@ use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExp
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -81,8 +83,8 @@ pub enum BinaryExpressionOperator {
     Extra(ExtraChild),
 }
 
-impl BinaryExpressionOperator {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for BinaryExpressionOperator {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => BinaryExpressionOperator::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -134,7 +136,9 @@ impl BinaryExpressionOperator {
             }
         })
     }
+}
 
+impl BinaryExpressionOperator {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => BinaryExpressionOperator::Extra(ExtraChild::Comment(Box::new(
@@ -242,8 +246,8 @@ pub enum BinaryExpressionRight {
     Extra(ExtraChild),
 }
 
-impl BinaryExpressionRight {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for BinaryExpressionRight {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => BinaryExpressionRight::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -296,7 +300,9 @@ impl BinaryExpressionRight {
             }
         })
     }
+}
 
+impl BinaryExpressionRight {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => BinaryExpressionRight::Extra(ExtraChild::Comment(Box::new(
@@ -530,8 +536,8 @@ pub struct BinaryExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl BinaryExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for BinaryExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "binary_expression" {
             return Err(ParseError::new(
@@ -544,31 +550,11 @@ impl BinaryExpressionNode {
                 ),
             ));
         }
-        let left: _ExpressionNode = node
-            .children_by_field_name("left", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field left should exist");
-        let operator: Box<BinaryExpressionOperator> = node
-            .children_by_field_name("operator", &mut node.walk())
-            .map(|chnode2| BinaryExpressionOperator::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field operator should exist")
-            .into();
-        let right: Box<BinaryExpressionRight> = node
-            .children_by_field_name("right", &mut node.walk())
-            .map(|chnode2| BinaryExpressionRight::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field right should exist")
-            .into();
+        let left: _ExpressionNode = Result::from(node.parse_child("left", source).into())?;
+        let operator: Box<BinaryExpressionOperator> =
+            Result::from(node.parse_child("operator", source).into())?;
+        let right: Box<BinaryExpressionRight> =
+            Result::from(node.parse_child("right", source).into())?;
         Ok(Self {
             range,
             left,
@@ -582,21 +568,9 @@ impl BinaryExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl BinaryExpressionNode {
     pub fn kind(&self) -> &'static str {
         "binary_expression"
     }

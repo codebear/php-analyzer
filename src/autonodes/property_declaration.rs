@@ -11,7 +11,9 @@ use crate::autonodes::static_modifier::StaticModifierNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::var_modifier::VarModifierNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -34,8 +36,8 @@ pub enum PropertyDeclarationModifiers {
     Extra(ExtraChild),
 }
 
-impl PropertyDeclarationModifiers {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for PropertyDeclarationModifiers {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => PropertyDeclarationModifiers::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -75,7 +77,9 @@ impl PropertyDeclarationModifiers {
             }
         })
     }
+}
 
+impl PropertyDeclarationModifiers {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => PropertyDeclarationModifiers::Extra(ExtraChild::Comment(Box::new(
@@ -257,8 +261,8 @@ pub enum PropertyDeclarationProperties {
     Extra(ExtraChild),
 }
 
-impl PropertyDeclarationProperties {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for PropertyDeclarationProperties {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => PropertyDeclarationProperties::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -284,7 +288,9 @@ impl PropertyDeclarationProperties {
             }
         })
     }
+}
 
+impl PropertyDeclarationProperties {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => PropertyDeclarationProperties::Extra(ExtraChild::Comment(Box::new(
@@ -410,40 +416,19 @@ pub struct PropertyDeclarationNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl PropertyDeclarationNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for PropertyDeclarationNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "property_declaration" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [property_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let attributes: Option<AttributeListNode> = node
-            .children_by_field_name("attributes", &mut node.walk())
-            .map(|chnode1| AttributeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let modifiers: Vec<Box<PropertyDeclarationModifiers>> = node
-            .children_by_field_name("modifiers", &mut node.walk())
-            .map(|chnode2| PropertyDeclarationModifiers::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .collect::<Vec<Box<PropertyDeclarationModifiers>>>()
-            .into();
-        let properties: Vec<Box<PropertyDeclarationProperties>> = node
-            .children_by_field_name("properties", &mut node.walk())
-            .map(|chnode2| PropertyDeclarationProperties::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .collect::<Vec<Box<PropertyDeclarationProperties>>>()
-            .into();
-        let type_: Option<_TypeNode> = node
-            .children_by_field_name("type", &mut node.walk())
-            .map(|chnode1| _TypeNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
+        let attributes: Option<AttributeListNode> =
+            Result::from(node.parse_child("attributes", source).into())?;
+        let modifiers: Vec<Box<PropertyDeclarationModifiers>> =
+            Result::from(node.parse_child("modifiers", source).into())?;
+        let properties: Vec<Box<PropertyDeclarationProperties>> =
+            Result::from(node.parse_child("properties", source).into())?;
+        let type_: Option<_TypeNode> = Result::from(node.parse_child("type", source).into())?;
         Ok(Self {
             range,
             attributes,
@@ -458,21 +443,9 @@ impl PropertyDeclarationNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl PropertyDeclarationNode {
     pub fn kind(&self) -> &'static str {
         "property_declaration"
     }

@@ -1,7 +1,9 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -15,8 +17,8 @@ pub struct PropertyElementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl PropertyElementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for PropertyElementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "property_element" {
             return Err(ParseError::new(
@@ -29,19 +31,9 @@ impl PropertyElementNode {
                 ),
             ));
         }
-        let initializer: Option<_ExpressionNode> = node
-            .children_by_field_name("initializer", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let name: VariableNameNode = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode1| VariableNameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field name should exist");
+        let initializer: Option<_ExpressionNode> =
+            Result::from(node.parse_child("initializer", source).into())?;
+        let name: VariableNameNode = Result::from(node.parse_child("name", source).into())?;
         Ok(Self {
             range,
             initializer,
@@ -54,21 +46,9 @@ impl PropertyElementNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl PropertyElementNode {
     pub fn kind(&self) -> &'static str {
         "property_element"
     }

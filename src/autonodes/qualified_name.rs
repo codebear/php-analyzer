@@ -4,7 +4,9 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::namespace_name_as_prefix::NamespaceNameAsPrefixNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -21,8 +23,8 @@ pub enum QualifiedNameChildren {
     Extra(ExtraChild),
 }
 
-impl QualifiedNameChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for QualifiedNameChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => QualifiedNameChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -46,7 +48,9 @@ impl QualifiedNameChildren {
             }
         })
     }
+}
 
+impl QualifiedNameChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => QualifiedNameChildren::Extra(ExtraChild::Comment(Box::new(
@@ -167,8 +171,8 @@ pub struct QualifiedNameNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl QualifiedNameNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for QualifiedNameNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "qualified_name" {
             return Err(ParseError::new(
@@ -196,21 +200,9 @@ impl QualifiedNameNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl QualifiedNameNode {
     pub fn kind(&self) -> &'static str {
         "qualified_name"
     }

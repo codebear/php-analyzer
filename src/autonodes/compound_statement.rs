@@ -1,6 +1,8 @@
 use crate::autonodes::_statement::_StatementNode;
 use crate::autonodes::any::AnyNodeRef;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -13,8 +15,8 @@ pub struct CompoundStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl CompoundStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for CompoundStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "compound_statement" {
             return Err(ParseError::new(
@@ -42,21 +44,9 @@ impl CompoundStatementNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl CompoundStatementNode {
     pub fn kind(&self) -> &'static str {
         "compound_statement"
     }

@@ -3,7 +3,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -26,8 +28,8 @@ pub enum UnaryOpExpressionOperator {
     Extra(ExtraChild),
 }
 
-impl UnaryOpExpressionOperator {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UnaryOpExpressionOperator {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => UnaryOpExpressionOperator::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -53,7 +55,9 @@ impl UnaryOpExpressionOperator {
             }
         })
     }
+}
 
+impl UnaryOpExpressionOperator {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => UnaryOpExpressionOperator::Extra(ExtraChild::Comment(Box::new(
@@ -107,8 +111,8 @@ pub struct UnaryOpExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl UnaryOpExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UnaryOpExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "unary_op_expression" {
             return Err(ParseError::new(
@@ -122,28 +126,16 @@ impl UnaryOpExpressionNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let expr: Option<_ExpressionNode> = node
-            .children_by_field_name("expr", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let operator: Option<Box<UnaryOpExpressionOperator>> = node
-            .children_by_field_name("operator", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode2| UnaryOpExpressionOperator::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
+        let expr: Option<_ExpressionNode> = Result::from(
+            node.parse_child("expr", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let operator: Option<Box<UnaryOpExpressionOperator>> = Result::from(
+            node.parse_child("operator", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             expr,
@@ -165,21 +157,9 @@ impl UnaryOpExpressionNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl UnaryOpExpressionNode {
     pub fn kind(&self) -> &'static str {
         "unary_op_expression"
     }

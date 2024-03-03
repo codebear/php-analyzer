@@ -5,7 +5,9 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::php_tag::PhpTagNode;
 use crate::autonodes::text::TextNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -23,8 +25,8 @@ pub enum ProgramChildren {
     Extra(ExtraChild),
 }
 
-impl ProgramChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ProgramChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ProgramChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -53,7 +55,9 @@ impl ProgramChildren {
             }
         })
     }
+}
 
+impl ProgramChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ProgramChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
@@ -186,8 +190,8 @@ pub struct ProgramNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ProgramNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ProgramNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "program" {
             return Err(ParseError::new(
@@ -215,21 +219,9 @@ impl ProgramNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ProgramNode {
     pub fn kind(&self) -> &'static str {
         "program"
     }

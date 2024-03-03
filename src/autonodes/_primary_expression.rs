@@ -27,6 +27,7 @@ use crate::autonodes::throw_expression::ThrowExpressionNode;
 use crate::autonodes::update_expression::UpdateExpressionNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -65,8 +66,8 @@ pub enum _PrimaryExpressionNode {
     Extra(ExtraChild),
 }
 
-impl _PrimaryExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for _PrimaryExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => _PrimaryExpressionNode::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -170,7 +171,9 @@ impl _PrimaryExpressionNode {
             }
         })
     }
+}
 
+impl _PrimaryExpressionNode {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => _PrimaryExpressionNode::Extra(ExtraChild::Comment(Box::new(

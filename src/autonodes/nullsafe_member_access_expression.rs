@@ -22,7 +22,9 @@ use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -41,8 +43,8 @@ pub enum NullsafeMemberAccessExpressionName {
     Extra(ExtraChild),
 }
 
-impl NullsafeMemberAccessExpressionName {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NullsafeMemberAccessExpressionName {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => NullsafeMemberAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -80,7 +82,9 @@ impl NullsafeMemberAccessExpressionName {
             }
         })
     }
+}
 
+impl NullsafeMemberAccessExpressionName {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => NullsafeMemberAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
@@ -267,8 +271,8 @@ pub enum NullsafeMemberAccessExpressionObject {
     Extra(ExtraChild),
 }
 
-impl NullsafeMemberAccessExpressionObject {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NullsafeMemberAccessExpressionObject {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => NullsafeMemberAccessExpressionObject::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
@@ -366,7 +370,9 @@ impl NullsafeMemberAccessExpressionObject {
             }
         })
     }
+}
 
+impl NullsafeMemberAccessExpressionObject {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => NullsafeMemberAccessExpressionObject::Extra(ExtraChild::Comment(
@@ -850,30 +856,16 @@ pub struct NullsafeMemberAccessExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl NullsafeMemberAccessExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NullsafeMemberAccessExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "nullsafe_member_access_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [nullsafe_member_access_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let name: Box<NullsafeMemberAccessExpressionName> = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode2| NullsafeMemberAccessExpressionName::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field name should exist")
-            .into();
-        let object: Box<NullsafeMemberAccessExpressionObject> = node
-            .children_by_field_name("object", &mut node.walk())
-            .map(|chnode2| NullsafeMemberAccessExpressionObject::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field object should exist")
-            .into();
+        let name: Box<NullsafeMemberAccessExpressionName> =
+            Result::from(node.parse_child("name", source).into())?;
+        let object: Box<NullsafeMemberAccessExpressionObject> =
+            Result::from(node.parse_child("object", source).into())?;
         Ok(Self {
             range,
             name,
@@ -886,21 +878,9 @@ impl NullsafeMemberAccessExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl NullsafeMemberAccessExpressionNode {
     pub fn kind(&self) -> &'static str {
         "nullsafe_member_access_expression"
     }

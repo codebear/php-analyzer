@@ -4,7 +4,9 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::qualified_name::QualifiedNameNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -21,8 +23,8 @@ pub enum NamedTypeChildren {
     Extra(ExtraChild),
 }
 
-impl NamedTypeChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NamedTypeChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => NamedTypeChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -46,7 +48,9 @@ impl NamedTypeChildren {
             }
         })
     }
+}
 
+impl NamedTypeChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => NamedTypeChildren::Extra(ExtraChild::Comment(Box::new(
@@ -162,8 +166,8 @@ pub struct NamedTypeNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl NamedTypeNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NamedTypeNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "named_type" {
             return Err(ParseError::new(
@@ -195,21 +199,9 @@ impl NamedTypeNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl NamedTypeNode {
     pub fn kind(&self) -> &'static str {
         "named_type"
     }

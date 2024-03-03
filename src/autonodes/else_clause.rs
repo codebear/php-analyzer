@@ -4,7 +4,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::colon_block::ColonBlockNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -21,8 +23,8 @@ pub enum ElseClauseBody {
     Extra(ExtraChild),
 }
 
-impl ElseClauseBody {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ElseClauseBody {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ElseClauseBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -52,7 +54,9 @@ impl ElseClauseBody {
             }
         })
     }
+}
 
+impl ElseClauseBody {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ElseClauseBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
@@ -180,8 +184,8 @@ pub struct ElseClauseNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ElseClauseNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ElseClauseNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "else_clause" {
             return Err(ParseError::new(
@@ -194,15 +198,7 @@ impl ElseClauseNode {
                 ),
             ));
         }
-        let body: Box<ElseClauseBody> = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode2| ElseClauseBody::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field body should exist")
-            .into();
+        let body: Box<ElseClauseBody> = Result::from(node.parse_child("body", source).into())?;
         Ok(Self {
             range,
             body,
@@ -214,21 +210,9 @@ impl ElseClauseNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ElseClauseNode {
     pub fn kind(&self) -> &'static str {
         "else_clause"
     }

@@ -3,7 +3,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::attribute_list::AttributeListNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -19,8 +21,8 @@ pub struct VariadicParameterNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl VariadicParameterNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for VariadicParameterNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "variadic_parameter" {
             return Err(ParseError::new(
@@ -33,31 +35,12 @@ impl VariadicParameterNode {
                 ),
             ));
         }
-        let attributes: Option<AttributeListNode> = node
-            .children_by_field_name("attributes", &mut node.walk())
-            .map(|chnode1| AttributeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let name: VariableNameNode = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode1| VariableNameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field name should exist");
-        let reference_modifier: Option<ReferenceModifierNode> = node
-            .children_by_field_name("reference_modifier", &mut node.walk())
-            .map(|chnode1| ReferenceModifierNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let type_: Option<_TypeNode> = node
-            .children_by_field_name("type", &mut node.walk())
-            .map(|chnode1| _TypeNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
+        let attributes: Option<AttributeListNode> =
+            Result::from(node.parse_child("attributes", source).into())?;
+        let name: VariableNameNode = Result::from(node.parse_child("name", source).into())?;
+        let reference_modifier: Option<ReferenceModifierNode> =
+            Result::from(node.parse_child("reference_modifier", source).into())?;
+        let type_: Option<_TypeNode> = Result::from(node.parse_child("type", source).into())?;
         Ok(Self {
             range,
             attributes,
@@ -72,21 +55,9 @@ impl VariadicParameterNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl VariadicParameterNode {
     pub fn kind(&self) -> &'static str {
         "variadic_parameter"
     }

@@ -4,7 +4,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::sequence_expression::SequenceExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -21,8 +23,8 @@ pub enum EchoStatementChildren {
     Extra(ExtraChild),
 }
 
-impl EchoStatementChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for EchoStatementChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => EchoStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -52,7 +54,9 @@ impl EchoStatementChildren {
             }
         })
     }
+}
 
+impl EchoStatementChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => EchoStatementChildren::Extra(ExtraChild::Comment(Box::new(
@@ -183,8 +187,8 @@ pub struct EchoStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl EchoStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for EchoStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "echo_statement" {
             return Err(ParseError::new(
@@ -216,21 +220,9 @@ impl EchoStatementNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl EchoStatementNode {
     pub fn kind(&self) -> &'static str {
         "echo_statement"
     }

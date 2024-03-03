@@ -7,7 +7,9 @@ use crate::autonodes::else_clause::ElseClauseNode;
 use crate::autonodes::else_if_clause::ElseIfClauseNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -24,8 +26,8 @@ pub enum IfStatementAlternative {
     Extra(ExtraChild),
 }
 
-impl IfStatementAlternative {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for IfStatementAlternative {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -51,7 +53,9 @@ impl IfStatementAlternative {
             }
         })
     }
+}
 
+impl IfStatementAlternative {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
@@ -173,8 +177,8 @@ pub enum IfStatementBody {
     Extra(ExtraChild),
 }
 
-impl IfStatementBody {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for IfStatementBody {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -204,7 +208,9 @@ impl IfStatementBody {
             }
         })
     }
+}
 
+impl IfStatementBody {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
@@ -334,8 +340,8 @@ pub struct IfStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl IfStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for IfStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "if_statement" {
             return Err(ParseError::new(
@@ -348,30 +354,11 @@ impl IfStatementNode {
                 ),
             ));
         }
-        let alternative: Option<Vec<Box<IfStatementAlternative>>> = node
-            .children_by_field_name("alternative", &mut node.walk())
-            .map(|chnode2| IfStatementAlternative::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .collect::<Vec<Box<IfStatementAlternative>>>()
-            .into();
-        let body: Box<IfStatementBody> = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode2| IfStatementBody::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field body should exist")
-            .into();
-        let condition: ParenthesizedExpressionNode = node
-            .children_by_field_name("condition", &mut node.walk())
-            .map(|chnode1| ParenthesizedExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field condition should exist");
+        let alternative: Option<Vec<Box<IfStatementAlternative>>> =
+            Result::from(node.parse_child("alternative", source).into())?;
+        let body: Box<IfStatementBody> = Result::from(node.parse_child("body", source).into())?;
+        let condition: ParenthesizedExpressionNode =
+            Result::from(node.parse_child("condition", source).into())?;
         Ok(Self {
             range,
             alternative,
@@ -385,21 +372,9 @@ impl IfStatementNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl IfStatementNode {
     pub fn kind(&self) -> &'static str {
         "if_statement"
     }

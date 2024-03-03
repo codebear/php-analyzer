@@ -15,7 +15,9 @@ use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExp
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -42,8 +44,8 @@ pub enum ReferenceAssignmentExpressionLeft {
     Extra(ExtraChild),
 }
 
-impl ReferenceAssignmentExpressionLeft {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ReferenceAssignmentExpressionLeft {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -111,7 +113,9 @@ impl ReferenceAssignmentExpressionLeft {
             }
         })
     }
+}
 
+impl ReferenceAssignmentExpressionLeft {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
@@ -447,28 +451,15 @@ pub struct ReferenceAssignmentExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ReferenceAssignmentExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ReferenceAssignmentExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "reference_assignment_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [reference_assignment_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let left: Box<ReferenceAssignmentExpressionLeft> = node
-            .children_by_field_name("left", &mut node.walk())
-            .map(|chnode2| ReferenceAssignmentExpressionLeft::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field left should exist")
-            .into();
-        let right: _ExpressionNode = node
-            .children_by_field_name("right", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field right should exist");
+        let left: Box<ReferenceAssignmentExpressionLeft> =
+            Result::from(node.parse_child("left", source).into())?;
+        let right: _ExpressionNode = Result::from(node.parse_child("right", source).into())?;
         Ok(Self {
             range,
             left,
@@ -481,21 +472,9 @@ impl ReferenceAssignmentExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ReferenceAssignmentExpressionNode {
     pub fn kind(&self) -> &'static str {
         "reference_assignment_expression"
     }

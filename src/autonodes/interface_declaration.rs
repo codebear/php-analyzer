@@ -2,7 +2,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::base_clause::BaseClauseNode;
 use crate::autonodes::declaration_list::DeclarationListNode;
 use crate::autonodes::name::NameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -17,35 +19,23 @@ pub struct InterfaceDeclarationNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl InterfaceDeclarationNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for InterfaceDeclarationNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "interface_declaration" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [interface_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let body: DeclarationListNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| DeclarationListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
-        let name: NameNode = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| NameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field name should exist");
+        let body: DeclarationListNode = Result::from(
+            node.parse_child("body", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let name: NameNode = Result::from(
+            node.parse_child("name", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             body,
@@ -67,21 +57,9 @@ impl InterfaceDeclarationNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl InterfaceDeclarationNode {
     pub fn kind(&self) -> &'static str {
         "interface_declaration"
     }

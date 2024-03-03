@@ -22,7 +22,9 @@ use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -58,8 +60,8 @@ pub enum ClassConstantAccessExpressionClass {
     Extra(ExtraChild),
 }
 
-impl ClassConstantAccessExpressionClass {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ClassConstantAccessExpressionClass {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -160,7 +162,9 @@ impl ClassConstantAccessExpressionClass {
             }
         })
     }
+}
 
+impl ClassConstantAccessExpressionClass {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Comment(Box::new(
@@ -652,28 +656,15 @@ pub struct ClassConstantAccessExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ClassConstantAccessExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ClassConstantAccessExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "class_constant_access_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [class_constant_access_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let class: Box<ClassConstantAccessExpressionClass> = node
-            .children_by_field_name("class", &mut node.walk())
-            .map(|chnode2| ClassConstantAccessExpressionClass::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field class should exist")
-            .into();
-        let constant: NameNode = node
-            .children_by_field_name("constant", &mut node.walk())
-            .map(|chnode1| NameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field constant should exist");
+        let class: Box<ClassConstantAccessExpressionClass> =
+            Result::from(node.parse_child("class", source).into())?;
+        let constant: NameNode = Result::from(node.parse_child("constant", source).into())?;
         Ok(Self {
             range,
             class,
@@ -686,21 +677,9 @@ impl ClassConstantAccessExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ClassConstantAccessExpressionNode {
     pub fn kind(&self) -> &'static str {
         "class_constant_access_expression"
     }

@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::autonodes::program::ProgramNode;
 use crate::issue::IssuePosition;
 use crate::{analysis::state::AnalysisState, autonodes::any::AnyNodeRef};
@@ -216,3 +218,358 @@ pub trait NodeAccess {
         return true;
     }
 }
+
+pub trait NodeParser {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError>
+    where
+        Self: Sized;
+
+    fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    where
+        I: Iterator<Item = Node<'a>>,
+        Self: Sized,
+    {
+        let mut res: Vec<Box<Self>> = vec![];
+        for child in children {
+            if child.kind() == "comment" {
+                continue;
+            }
+            res.push(Box::new(Self::parse(child, source)?));
+        }
+        Ok(res)
+    }
+}
+
+pub struct ChildNodeParserHelper<'node, 'source, 'skipped, T> {
+    node: &'node Node<'node>,
+    fieldname: &'static str,
+    source: &'source Vec<u8>,
+    mark_skipped_node: Option<&'skipped mut Vec<usize>>,
+    _marker: std::marker::PhantomData<T>,
+}
+
+impl<'node, 'source, 'skipped, T> ChildNodeParserHelper<'node, 'source, 'skipped, T> {
+    fn maybe_mark_skipped_node(&mut self, node_id: usize) {
+        if let Some(ref mut skip_nodes) = self.mark_skipped_node.as_mut() {
+            skip_nodes.push(node_id);
+        }
+    }
+
+    pub fn mark_skipped_node(mut self, skip_nodes: &'skipped mut Vec<usize>) -> Self {
+        self.mark_skipped_node = Some(skip_nodes);
+        self
+    }
+}
+
+pub trait ChildNodeParser<'node, 'source, 'skipped> {
+    fn parse_child<T>(
+        &'node self,
+        fieldname: &'static str,
+        source: &'source Vec<u8>,
+    ) -> ChildNodeParserHelper<'node, 'source, 'skipped, T>
+    where
+        T: NodeParser;
+}
+
+impl<'node, 'source, 'skipped> ChildNodeParser<'node, 'source, 'skipped> for Node<'node> {
+    fn parse_child<T>(
+        &'node self,
+        fieldname: &'static str,
+        source: &'source Vec<u8>,
+    ) -> ChildNodeParserHelper<'node, 'source, 'skipped, T>
+    where
+        T: NodeParser,
+    {
+        ChildNodeParserHelper {
+            node: self,
+            fieldname,
+            source,
+            mark_skipped_node: None,
+            _marker: PhantomData,
+        }
+    }
+}
+/*
+impl<'node, 'source, T> ChildNodeParserHelper<'node, 'source, T> {
+    // void
+}*/
+
+impl<T> Into<Result<Option<T>, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
+where
+    T: NodeParser,
+{
+    fn into(self) -> Result<Option<T>, ParseError> {
+        for noe in self
+            .node
+            .children_by_field_name(self.fieldname, &mut self.node.walk())
+        {
+            let parsed = T::parse(noe, self.source)?;
+            return Ok(Some(parsed));
+        }
+        return Ok(None);
+    }
+}
+
+impl<T> Into<Result<T, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
+where
+    T: NodeParser,
+{
+    fn into(self) -> Result<T, ParseError> {
+        for noe in self
+            .node
+            .children_by_field_name(self.fieldname, &mut self.node.walk())
+        {
+            let parsed = T::parse(noe, self.source)?;
+            return Ok(parsed);
+        }
+        return Err(ParseError::new(
+            self.node.range(),
+            format!(
+                "Expected child node with fieldname {}",
+                self.fieldname.to_string()
+            ),
+        ));
+    }
+}
+
+impl<T> Into<Result<Box<T>, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
+where
+    T: NodeParser,
+{
+    fn into(mut self) -> Result<Box<T>, ParseError> {
+        for noe in self
+            .node
+            .children_by_field_name(self.fieldname, &mut self.node.walk())
+        {
+            self.maybe_mark_skipped_node(noe.id());
+            let parsed = T::parse(noe, self.source)?;
+            return Ok(Box::new(parsed));
+        }
+        return Err(ParseError::new(
+            self.node.range(),
+            format!(
+                "Expected child node with fieldname {}",
+                self.fieldname.to_string()
+            ),
+        ));
+    }
+}
+
+impl<T> Into<Result<Vec<T>, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
+where
+    T: NodeParser,
+{
+    fn into(self) -> Result<Vec<T>, ParseError> {
+        let mut result = vec![];
+        for noe in self
+            .node
+            .children_by_field_name(self.fieldname, &mut self.node.walk())
+        {
+            let parsed = T::parse(noe, self.source)?;
+            result.push(parsed);
+        }
+        Ok(result)
+    }
+}
+
+impl<T> Into<Result<Vec<Box<T>>, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
+where
+    T: NodeParser,
+{
+    fn into(self) -> Result<Vec<Box<T>>, ParseError> {
+        let mut result = vec![];
+        for noe in self
+            .node
+            .children_by_field_name(self.fieldname, &mut self.node.walk())
+        {
+            let parsed = T::parse(noe, self.source)?;
+            result.push(Box::new(parsed));
+        }
+        Ok(result)
+    }
+}
+
+impl<T> Into<Result<Option<Vec<T>>, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
+where
+    T: NodeParser,
+{
+    fn into(self) -> Result<Option<Vec<T>>, ParseError> {
+        let mut result = vec![];
+        for noe in self
+            .node
+            .children_by_field_name(self.fieldname, &mut self.node.walk())
+        {
+            let parsed = T::parse(noe, self.source)?;
+            result.push(parsed);
+        }
+        if result.len() > 0 {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+impl<T> Into<Result<Option<Vec<Box<T>>>, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
+where
+    T: NodeParser,
+{
+    fn into(self) -> Result<Option<Vec<Box<T>>>, ParseError> {
+        let mut result = vec![];
+        for noe in self
+            .node
+            .children_by_field_name(self.fieldname, &mut self.node.walk())
+        {
+            let parsed = T::parse(noe, self.source)?;
+            result.push(Box::new(parsed));
+        }
+        if result.len() > 0 {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+impl<T> Into<Result<Option<Box<T>>, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
+where
+    T: NodeParser,
+{
+    fn into(self) -> Result<Option<Box<T>>, ParseError> {
+        for noe in self
+            .node
+            .children_by_field_name(self.fieldname, &mut self.node.walk())
+        {
+            let parsed = T::parse(noe, self.source)?;
+            return Ok(Some(Box::new(parsed)));
+        }
+        return Ok(None);
+    }
+}
+
+pub struct NodeParserBuilder<'node, 'skip_nodes, TParseResult, TFMap> {
+    node: &'node Node<'node>,
+    fieldname: &'static str,
+    map: Box<TFMap>,
+    skip_nodes: Option<&'skip_nodes mut Vec<usize>>,
+    _marker: std::marker::PhantomData<TParseResult>,
+}
+
+impl<'node, 'skip_nodes, TParseResult, TFMap>
+    NodeParserBuilder<'node, 'skip_nodes, TParseResult, TFMap>
+where
+    TFMap: FnMut(Node<'node>) -> Result<TParseResult, ParseError>, // TFBoxMap: FnMut(Node<'node>) -> Result<Box<TParseResult>, ParseError>,
+{
+    pub fn mark_skipped_node(mut self, skip_nodes: &'skip_nodes mut Vec<usize>) -> Self {
+        self.skip_nodes = Some(skip_nodes);
+        self
+    }
+
+    pub fn boxed(self) -> NodeParserBuilder<'node, 'skip_nodes, Box<TParseResult>, TFMap> {
+        todo!();
+    }
+    /*  pub fn boxed(mut self) -> NodeParserBuilder<'node, 'skip_nodes, Box<TParseResult>, TFBoxMap>
+    where {
+            let mut mapper = self.map;
+
+            let new_mapper = Box::new(move |childnode| -> Result<Box<TParseResult>, ParseError> {
+                let res = mapper(childnode)?;
+
+                let x = Box::new(res);
+                Ok(x)
+            });
+
+            NodeParserBuilder {
+                node: self.node,
+                fieldname: self.fieldname,
+                map: new_mapper,
+                skip_nodes: self.skip_nodes,
+                _marker: PhantomData,
+            }
+        }*/
+
+    pub fn one(self) -> Result<TParseResult, ParseError> {
+        let node = self.node;
+        let mut items = self.many()?;
+        if items.len() != 1 {
+            return Err(ParseError::new(
+                node.range(),
+                format!("Expected exactly one node, got {}", items.len()),
+            ));
+        }
+        let item = items.drain(..).next().expect("This must have one element");
+        Ok(item)
+    }
+
+    pub fn maybe_one(self) -> Result<Option<TParseResult>, ParseError> {
+        let node = self.node;
+        let mut items = self.many()?;
+        if items.len() > 1 {
+            return Err(ParseError::new(
+                node.range(),
+                format!("Expected at most one node, got {}", items.len()),
+            ));
+        }
+        let maybe_item = items.drain(..).next();
+        Ok(maybe_item)
+    }
+
+    pub fn many(self) -> Result<Vec<TParseResult>, ParseError> {
+        let fieldname = self.fieldname;
+        let node = self.node;
+        let mut tree_cursor = &mut node.walk();
+        let iter = node.children_by_field_name(fieldname, &mut tree_cursor);
+
+        let nodevec = if let Some(maybe_mark_skipped_node) = self.skip_nodes {
+            iter.map(|chnode| {
+                maybe_mark_skipped_node.push(chnode.id());
+                chnode
+            })
+            .map(self.map)
+            .collect::<Result<Vec<_>, ParseError>>()?
+        } else {
+            iter.map(self.map).collect::<Result<Vec<_>, ParseError>>()?
+        };
+
+        Ok(nodevec)
+    }
+    pub fn maybe_many(self) -> Result<Option<Vec<TParseResult>>, ParseError> {
+        let nodevec = self.many()?;
+        if nodevec.len() > 0 {
+            Ok(Some(nodevec))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+/*
+pub(crate) trait NodeParserHelper<'node> {
+    fn parse_child<'noskipnodes, TFMap, TParseResult>(
+        &'node self,
+        fieldname: &'static str,
+        map: TFMap,
+    ) -> NodeParserBuilder<'node, 'noskipnodes, TParseResult, TFMap>
+    where
+        TFMap: FnMut(Node<'node>) -> Result<TParseResult, ParseError>;
+}
+*/
+/*
+impl<'node> NodeParserHelper<'node> for Node<'node> {
+    fn parse_child<'noskipnodes, TFMap, TParseResult>(
+        &'node self,
+        fieldname: &'static str,
+        map: TFMap,
+    ) -> NodeParserBuilder<'node, 'noskipnodes, TParseResult, TFMap>
+    where
+        TFMap: FnMut(Node<'node>) -> Result<TParseResult, ParseError>,
+    {
+        NodeParserBuilder {
+            node: self,
+            fieldname,
+            map: Box::new(map),
+            skip_nodes: None,
+            _marker: PhantomData,
+        }
+    }
+}*/

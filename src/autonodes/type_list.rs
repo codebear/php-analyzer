@@ -1,6 +1,8 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::named_type::NamedTypeNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -13,8 +15,8 @@ pub struct TypeListNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl TypeListNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for TypeListNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "type_list" {
             return Err(ParseError::new(
@@ -42,21 +44,9 @@ impl TypeListNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl TypeListNode {
     pub fn kind(&self) -> &'static str {
         "type_list"
     }

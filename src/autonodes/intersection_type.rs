@@ -5,7 +5,9 @@ use crate::autonodes::named_type::NamedTypeNode;
 use crate::autonodes::optional_type::OptionalTypeNode;
 use crate::autonodes::primitive_type::PrimitiveTypeNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -23,8 +25,8 @@ pub enum IntersectionTypeChildren {
     Extra(ExtraChild),
 }
 
-impl IntersectionTypeChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for IntersectionTypeChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => IntersectionTypeChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -53,7 +55,9 @@ impl IntersectionTypeChildren {
             }
         })
     }
+}
 
+impl IntersectionTypeChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => IntersectionTypeChildren::Extra(ExtraChild::Comment(Box::new(
@@ -190,8 +194,8 @@ pub struct IntersectionTypeNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl IntersectionTypeNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for IntersectionTypeNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "intersection_type" {
             return Err(ParseError::new(
@@ -219,21 +223,9 @@ impl IntersectionTypeNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl IntersectionTypeNode {
     pub fn kind(&self) -> &'static str {
         "intersection_type"
     }

@@ -6,7 +6,9 @@ use crate::autonodes::const_element::ConstElementNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -23,8 +25,8 @@ pub enum ConstDeclarationChildren {
     Extra(ExtraChild),
 }
 
-impl ConstDeclarationChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ConstDeclarationChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ConstDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -50,7 +52,9 @@ impl ConstDeclarationChildren {
             }
         })
     }
+}
 
+impl ConstDeclarationChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ConstDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
@@ -176,8 +180,8 @@ pub struct ConstDeclarationNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ConstDeclarationNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ConstDeclarationNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "const_declaration" {
             return Err(ParseError::new(
@@ -191,26 +195,16 @@ impl ConstDeclarationNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let attributes: Option<AttributeListNode> = node
-            .children_by_field_name("attributes", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| AttributeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let modifier: Option<FinalModifierNode> = node
-            .children_by_field_name("modifier", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| FinalModifierNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
+        let attributes: Option<AttributeListNode> = Result::from(
+            node.parse_child("attributes", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let modifier: Option<FinalModifierNode> = Result::from(
+            node.parse_child("modifier", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             attributes,
@@ -229,21 +223,9 @@ impl ConstDeclarationNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ConstDeclarationNode {
     pub fn kind(&self) -> &'static str {
         "const_declaration"
     }

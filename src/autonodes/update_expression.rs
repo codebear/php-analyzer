@@ -13,7 +13,9 @@ use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExp
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -42,8 +44,8 @@ pub enum UpdateExpressionExpr {
     Extra(ExtraChild),
 }
 
-impl UpdateExpressionExpr {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UpdateExpressionExpr {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => UpdateExpressionExpr::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -102,7 +104,9 @@ impl UpdateExpressionExpr {
             }
         })
     }
+}
 
+impl UpdateExpressionExpr {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => UpdateExpressionExpr::Extra(ExtraChild::Comment(Box::new(
@@ -362,8 +366,8 @@ pub enum UpdateExpressionPostfix {
     Extra(ExtraChild),
 }
 
-impl UpdateExpressionPostfix {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UpdateExpressionPostfix {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => UpdateExpressionPostfix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -385,7 +389,9 @@ impl UpdateExpressionPostfix {
             }
         })
     }
+}
 
+impl UpdateExpressionPostfix {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => UpdateExpressionPostfix::Extra(ExtraChild::Comment(Box::new(
@@ -431,8 +437,8 @@ pub enum UpdateExpressionPrefix {
     Extra(ExtraChild),
 }
 
-impl UpdateExpressionPrefix {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UpdateExpressionPrefix {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => UpdateExpressionPrefix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -454,7 +460,9 @@ impl UpdateExpressionPrefix {
             }
         })
     }
+}
 
+impl UpdateExpressionPrefix {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => UpdateExpressionPrefix::Extra(ExtraChild::Comment(Box::new(
@@ -502,8 +510,8 @@ pub struct UpdateExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl UpdateExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UpdateExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "update_expression" {
             return Err(ParseError::new(
@@ -516,31 +524,12 @@ impl UpdateExpressionNode {
                 ),
             ));
         }
-        let expr: Box<UpdateExpressionExpr> = node
-            .children_by_field_name("expr", &mut node.walk())
-            .map(|chnode2| UpdateExpressionExpr::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field expr should exist")
-            .into();
-        let postfix: Option<Box<UpdateExpressionPostfix>> = node
-            .children_by_field_name("postfix", &mut node.walk())
-            .map(|chnode2| UpdateExpressionPostfix::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
-        let prefix: Option<Box<UpdateExpressionPrefix>> = node
-            .children_by_field_name("prefix", &mut node.walk())
-            .map(|chnode2| UpdateExpressionPrefix::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
+        let expr: Box<UpdateExpressionExpr> =
+            Result::from(node.parse_child("expr", source).into())?;
+        let postfix: Option<Box<UpdateExpressionPostfix>> =
+            Result::from(node.parse_child("postfix", source).into())?;
+        let prefix: Option<Box<UpdateExpressionPrefix>> =
+            Result::from(node.parse_child("prefix", source).into())?;
         Ok(Self {
             range,
             expr,
@@ -554,21 +543,9 @@ impl UpdateExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl UpdateExpressionNode {
     pub fn kind(&self) -> &'static str {
         "update_expression"
     }

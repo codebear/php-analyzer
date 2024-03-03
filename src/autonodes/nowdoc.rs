@@ -2,7 +2,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::heredoc_end::HeredocEndNode;
 use crate::autonodes::heredoc_start::HeredocStartNode;
 use crate::autonodes::nowdoc_body::NowdocBodyNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -17,8 +19,8 @@ pub struct NowdocNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl NowdocNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NowdocNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "nowdoc" {
             return Err(ParseError::new(
@@ -31,26 +33,10 @@ impl NowdocNode {
                 ),
             ));
         }
-        let end_tag: HeredocEndNode = node
-            .children_by_field_name("end_tag", &mut node.walk())
-            .map(|chnode1| HeredocEndNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field end_tag should exist");
-        let identifier: HeredocStartNode = node
-            .children_by_field_name("identifier", &mut node.walk())
-            .map(|chnode1| HeredocStartNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field identifier should exist");
-        let value: Option<NowdocBodyNode> = node
-            .children_by_field_name("value", &mut node.walk())
-            .map(|chnode1| NowdocBodyNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
+        let end_tag: HeredocEndNode = Result::from(node.parse_child("end_tag", source).into())?;
+        let identifier: HeredocStartNode =
+            Result::from(node.parse_child("identifier", source).into())?;
+        let value: Option<NowdocBodyNode> = Result::from(node.parse_child("value", source).into())?;
         Ok(Self {
             range,
             end_tag,
@@ -64,21 +50,9 @@ impl NowdocNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl NowdocNode {
     pub fn kind(&self) -> &'static str {
         "nowdoc"
     }

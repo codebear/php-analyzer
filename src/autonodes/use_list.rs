@@ -4,7 +4,9 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::use_as_clause::UseAsClauseNode;
 use crate::autonodes::use_instead_of_clause::UseInsteadOfClauseNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -21,8 +23,8 @@ pub enum UseListChildren {
     Extra(ExtraChild),
 }
 
-impl UseListChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UseListChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => UseListChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -48,7 +50,9 @@ impl UseListChildren {
             }
         })
     }
+}
 
+impl UseListChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => UseListChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
@@ -168,8 +172,8 @@ pub struct UseListNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl UseListNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UseListNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "use_list" {
             return Err(ParseError::new(
@@ -197,21 +201,9 @@ impl UseListNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl UseListNode {
     pub fn kind(&self) -> &'static str {
         "use_list"
     }

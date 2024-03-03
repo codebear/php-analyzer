@@ -31,6 +31,7 @@ use crate::autonodes::try_statement::TryStatementNode;
 use crate::autonodes::unset_statement::UnsetStatementNode;
 use crate::autonodes::while_statement::WhileStatementNode;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -73,8 +74,8 @@ pub enum _StatementNode {
     Extra(ExtraChild),
 }
 
-impl _StatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for _StatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => _StatementNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -178,7 +179,9 @@ impl _StatementNode {
             }
         })
     }
+}
 
+impl _StatementNode {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => _StatementNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(

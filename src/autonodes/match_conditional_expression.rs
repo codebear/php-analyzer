@@ -1,7 +1,9 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::match_condition_list::MatchConditionListNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -15,26 +17,16 @@ pub struct MatchConditionalExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl MatchConditionalExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for MatchConditionalExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "match_conditional_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [match_conditional_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let conditional_expressions: MatchConditionListNode = node
-            .children_by_field_name("conditional_expressions", &mut node.walk())
-            .map(|chnode1| MatchConditionListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field conditional_expressions should exist");
-        let return_expression: _ExpressionNode = node
-            .children_by_field_name("return_expression", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field return_expression should exist");
+        let conditional_expressions: MatchConditionListNode =
+            Result::from(node.parse_child("conditional_expressions", source).into())?;
+        let return_expression: _ExpressionNode =
+            Result::from(node.parse_child("return_expression", source).into())?;
         Ok(Self {
             range,
             conditional_expressions,
@@ -47,21 +39,9 @@ impl MatchConditionalExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl MatchConditionalExpressionNode {
     pub fn kind(&self) -> &'static str {
         "match_conditional_expression"
     }

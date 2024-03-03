@@ -11,6 +11,7 @@ use crate::autonodes::null::NullNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -33,8 +34,8 @@ pub enum _LiteralNode {
     Extra(ExtraChild),
 }
 
-impl _LiteralNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for _LiteralNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => _LiteralNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -64,7 +65,9 @@ impl _LiteralNode {
             }
         })
     }
+}
 
+impl _LiteralNode {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => _LiteralNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(

@@ -3,6 +3,7 @@ use tree_sitter::Node;
 use crate::{
     analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, comment::CommentNode, text_interpolation::TextInterpolationNode},
+    autotree::NodeParser,
     autotree::{NodeAccess, ParseError},
     errornode::ErrorNode,
     issue::IssueEmitter,

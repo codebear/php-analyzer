@@ -13,7 +13,9 @@ use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExp
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -39,8 +41,8 @@ pub enum UnsetStatementChildren {
     Extra(ExtraChild),
 }
 
-impl UnsetStatementChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UnsetStatementChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => UnsetStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -99,7 +101,9 @@ impl UnsetStatementChildren {
             }
         })
     }
+}
 
+impl UnsetStatementChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => UnsetStatementChildren::Extra(ExtraChild::Comment(Box::new(
@@ -368,8 +372,8 @@ pub struct UnsetStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl UnsetStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UnsetStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "unset_statement" {
             return Err(ParseError::new(
@@ -397,21 +401,9 @@ impl UnsetStatementNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl UnsetStatementNode {
     pub fn kind(&self) -> &'static str {
         "unset_statement"
     }

@@ -1,6 +1,8 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::namespace_name::NamespaceNameNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -13,8 +15,8 @@ pub struct NamespaceNameAsPrefixNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl NamespaceNameAsPrefixNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NamespaceNameAsPrefixNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "namespace_name_as_prefix" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [namespace_name_as_prefix] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
@@ -37,21 +39,9 @@ impl NamespaceNameAsPrefixNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl NamespaceNameAsPrefixNode {
     pub fn kind(&self) -> &'static str {
         "namespace_name_as_prefix"
     }

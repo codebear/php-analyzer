@@ -7,7 +7,9 @@ use crate::autonodes::enum_declaration_list::EnumDeclarationListNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::primitive_type::PrimitiveTypeNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -24,8 +26,8 @@ pub enum EnumDeclarationChildren {
     Extra(ExtraChild),
 }
 
-impl EnumDeclarationChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for EnumDeclarationChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => EnumDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -51,7 +53,9 @@ impl EnumDeclarationChildren {
             }
         })
     }
+}
 
+impl EnumDeclarationChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => EnumDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
@@ -178,8 +182,8 @@ pub struct EnumDeclarationNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl EnumDeclarationNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for EnumDeclarationNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "enum_declaration" {
             return Err(ParseError::new(
@@ -193,38 +197,21 @@ impl EnumDeclarationNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let attributes: Option<AttributeListNode> = node
-            .children_by_field_name("attributes", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| AttributeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let body: EnumDeclarationListNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| EnumDeclarationListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
-        let name: NameNode = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| NameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field name should exist");
+        let attributes: Option<AttributeListNode> = Result::from(
+            node.parse_child("attributes", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let body: EnumDeclarationListNode = Result::from(
+            node.parse_child("body", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let name: NameNode = Result::from(
+            node.parse_child("name", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             attributes,
@@ -244,21 +231,9 @@ impl EnumDeclarationNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl EnumDeclarationNode {
     pub fn kind(&self) -> &'static str {
         "enum_declaration"
     }

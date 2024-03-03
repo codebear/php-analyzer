@@ -1,7 +1,9 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::declaration_list::DeclarationListNode;
 use crate::autonodes::name::NameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -15,8 +17,8 @@ pub struct TraitDeclarationNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl TraitDeclarationNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for TraitDeclarationNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "trait_declaration" {
             return Err(ParseError::new(
@@ -29,20 +31,8 @@ impl TraitDeclarationNode {
                 ),
             ));
         }
-        let body: DeclarationListNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode1| DeclarationListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
-        let name: NameNode = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode1| NameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field name should exist");
+        let body: DeclarationListNode = Result::from(node.parse_child("body", source).into())?;
+        let name: NameNode = Result::from(node.parse_child("name", source).into())?;
         Ok(Self {
             range,
             body,
@@ -55,21 +45,9 @@ impl TraitDeclarationNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl TraitDeclarationNode {
     pub fn kind(&self) -> &'static str {
         "trait_declaration"
     }

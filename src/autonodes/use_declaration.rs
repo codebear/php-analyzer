@@ -5,7 +5,9 @@ use crate::autonodes::name::NameNode;
 use crate::autonodes::qualified_name::QualifiedNameNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::use_list::UseListNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -23,8 +25,8 @@ pub enum UseDeclarationChildren {
     Extra(ExtraChild),
 }
 
-impl UseDeclarationChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UseDeclarationChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => UseDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -51,7 +53,9 @@ impl UseDeclarationChildren {
             }
         })
     }
+}
 
+impl UseDeclarationChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => UseDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
@@ -184,8 +188,8 @@ pub struct UseDeclarationNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl UseDeclarationNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for UseDeclarationNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "use_declaration" {
             return Err(ParseError::new(
@@ -213,21 +217,9 @@ impl UseDeclarationNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl UseDeclarationNode {
     pub fn kind(&self) -> &'static str {
         "use_declaration"
     }

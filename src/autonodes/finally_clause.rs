@@ -1,6 +1,8 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::compound_statement::CompoundStatementNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -13,8 +15,8 @@ pub struct FinallyClauseNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl FinallyClauseNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for FinallyClauseNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "finally_clause" {
             return Err(ParseError::new(
@@ -27,13 +29,7 @@ impl FinallyClauseNode {
                 ),
             ));
         }
-        let body: CompoundStatementNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode1| CompoundStatementNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
+        let body: CompoundStatementNode = Result::from(node.parse_child("body", source).into())?;
         Ok(Self {
             range,
             body,
@@ -45,21 +41,9 @@ impl FinallyClauseNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl FinallyClauseNode {
     pub fn kind(&self) -> &'static str {
         "finally_clause"
     }

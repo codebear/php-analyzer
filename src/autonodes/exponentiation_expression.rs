@@ -8,7 +8,9 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::match_expression::MatchExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -27,8 +29,8 @@ pub enum ExponentiationExpressionLeft {
     Extra(ExtraChild),
 }
 
-impl ExponentiationExpressionLeft {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ExponentiationExpressionLeft {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ExponentiationExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -66,7 +68,9 @@ impl ExponentiationExpressionLeft {
             }
         })
     }
+}
 
+impl ExponentiationExpressionLeft {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ExponentiationExpressionLeft::Extra(ExtraChild::Comment(Box::new(
@@ -233,8 +237,8 @@ pub enum ExponentiationExpressionRight {
     Extra(ExtraChild),
 }
 
-impl ExponentiationExpressionRight {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ExponentiationExpressionRight {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ExponentiationExpressionRight::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -283,7 +287,9 @@ impl ExponentiationExpressionRight {
             }
         })
     }
+}
 
+impl ExponentiationExpressionRight {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ExponentiationExpressionRight::Extra(ExtraChild::Comment(Box::new(
@@ -504,30 +510,16 @@ pub struct ExponentiationExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ExponentiationExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ExponentiationExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "exponentiation_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [exponentiation_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let left: Box<ExponentiationExpressionLeft> = node
-            .children_by_field_name("left", &mut node.walk())
-            .map(|chnode2| ExponentiationExpressionLeft::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field left should exist")
-            .into();
-        let right: Box<ExponentiationExpressionRight> = node
-            .children_by_field_name("right", &mut node.walk())
-            .map(|chnode2| ExponentiationExpressionRight::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field right should exist")
-            .into();
+        let left: Box<ExponentiationExpressionLeft> =
+            Result::from(node.parse_child("left", source).into())?;
+        let right: Box<ExponentiationExpressionRight> =
+            Result::from(node.parse_child("right", source).into())?;
         Ok(Self {
             range,
             left,
@@ -540,21 +532,9 @@ impl ExponentiationExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ExponentiationExpressionNode {
     pub fn kind(&self) -> &'static str {
         "exponentiation_expression"
     }

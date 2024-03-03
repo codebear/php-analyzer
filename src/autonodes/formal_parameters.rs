@@ -5,7 +5,9 @@ use crate::autonodes::property_promotion_parameter::PropertyPromotionParameterNo
 use crate::autonodes::simple_parameter::SimpleParameterNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variadic_parameter::VariadicParameterNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -23,8 +25,8 @@ pub enum FormalParametersChildren {
     Extra(ExtraChild),
 }
 
-impl FormalParametersChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for FormalParametersChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => FormalParametersChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -53,7 +55,9 @@ impl FormalParametersChildren {
             }
         })
     }
+}
 
+impl FormalParametersChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => FormalParametersChildren::Extra(ExtraChild::Comment(Box::new(
@@ -193,8 +197,8 @@ pub struct FormalParametersNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl FormalParametersNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for FormalParametersNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "formal_parameters" {
             return Err(ParseError::new(
@@ -222,21 +226,9 @@ impl FormalParametersNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl FormalParametersNode {
     pub fn kind(&self) -> &'static str {
         "formal_parameters"
     }

@@ -5,7 +5,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::sequence_expression::SequenceExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -22,8 +24,8 @@ pub enum ForStatementCondition {
     Extra(ExtraChild),
 }
 
-impl ForStatementCondition {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ForStatementCondition {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ForStatementCondition::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -53,7 +55,9 @@ impl ForStatementCondition {
             }
         })
     }
+}
 
+impl ForStatementCondition {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ForStatementCondition::Extra(ExtraChild::Comment(Box::new(
@@ -184,8 +188,8 @@ pub enum ForStatementIncrement {
     Extra(ExtraChild),
 }
 
-impl ForStatementIncrement {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ForStatementIncrement {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ForStatementIncrement::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -215,7 +219,9 @@ impl ForStatementIncrement {
             }
         })
     }
+}
 
+impl ForStatementIncrement {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ForStatementIncrement::Extra(ExtraChild::Comment(Box::new(
@@ -346,8 +352,8 @@ pub enum ForStatementInitialize {
     Extra(ExtraChild),
 }
 
-impl ForStatementInitialize {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ForStatementInitialize {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ForStatementInitialize::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -377,7 +383,9 @@ impl ForStatementInitialize {
             }
         })
     }
+}
 
+impl ForStatementInitialize {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ForStatementInitialize::Extra(ExtraChild::Comment(Box::new(
@@ -511,8 +519,8 @@ pub struct ForStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ForStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ForStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "for_statement" {
             return Err(ParseError::new(
@@ -526,42 +534,21 @@ impl ForStatementNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let condition: Option<Box<ForStatementCondition>> = node
-            .children_by_field_name("condition", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode2| ForStatementCondition::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
-        let increment: Option<Box<ForStatementIncrement>> = node
-            .children_by_field_name("increment", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode2| ForStatementIncrement::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
-        let initialize: Option<Box<ForStatementInitialize>> = node
-            .children_by_field_name("initialize", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode2| ForStatementInitialize::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
+        let condition: Option<Box<ForStatementCondition>> = Result::from(
+            node.parse_child("condition", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let increment: Option<Box<ForStatementIncrement>> = Result::from(
+            node.parse_child("increment", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let initialize: Option<Box<ForStatementInitialize>> = Result::from(
+            node.parse_child("initialize", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             condition,
@@ -581,21 +568,9 @@ impl ForStatementNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ForStatementNode {
     pub fn kind(&self) -> &'static str {
         "for_statement"
     }

@@ -6,7 +6,9 @@ use crate::autonodes::name::NameNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variadic_unpacking::VariadicUnpackingNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -24,8 +26,8 @@ pub enum ArgumentChildren {
     Extra(ExtraChild),
 }
 
-impl ArgumentChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ArgumentChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ArgumentChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -56,7 +58,9 @@ impl ArgumentChildren {
             }
         })
     }
+}
 
+impl ArgumentChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ArgumentChildren::Extra(ExtraChild::Comment(Box::new(
@@ -195,8 +199,8 @@ pub struct ArgumentNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ArgumentNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ArgumentNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "argument" {
             return Err(ParseError::new(
@@ -210,26 +214,16 @@ impl ArgumentNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let name: Option<NameNode> = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| NameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let reference_modifier: Option<ReferenceModifierNode> = node
-            .children_by_field_name("reference_modifier", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| ReferenceModifierNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
+        let name: Option<NameNode> = Result::from(
+            node.parse_child("name", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let reference_modifier: Option<ReferenceModifierNode> = Result::from(
+            node.parse_child("reference_modifier", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             name,
@@ -252,21 +246,9 @@ impl ArgumentNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ArgumentNode {
     pub fn kind(&self) -> &'static str {
         "argument"
     }

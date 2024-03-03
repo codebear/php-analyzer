@@ -24,7 +24,9 @@ use crate::autonodes::string::StringNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -59,8 +61,8 @@ pub enum SubscriptExpressionDereferenceable {
     Extra(ExtraChild),
 }
 
-impl SubscriptExpressionDereferenceable {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for SubscriptExpressionDereferenceable {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -158,7 +160,9 @@ impl SubscriptExpressionDereferenceable {
             }
         })
     }
+}
 
+impl SubscriptExpressionDereferenceable {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Comment(Box::new(
@@ -637,8 +641,8 @@ pub enum SubscriptExpressionChildren {
     Extra(ExtraChild),
 }
 
-impl SubscriptExpressionChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for SubscriptExpressionChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => SubscriptExpressionChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -670,7 +674,9 @@ impl SubscriptExpressionChildren {
             }
         })
     }
+}
 
+impl SubscriptExpressionChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => SubscriptExpressionChildren::Extra(ExtraChild::Comment(Box::new(
@@ -822,35 +828,23 @@ pub struct SubscriptExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl SubscriptExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for SubscriptExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "subscript_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [subscript_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let dereferenceable: Option<Box<SubscriptExpressionDereferenceable>> = node
-            .children_by_field_name("dereferenceable", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode2| SubscriptExpressionDereferenceable::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
-        let index: Option<_ExpressionNode> = node
-            .children_by_field_name("index", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
+        let dereferenceable: Option<Box<SubscriptExpressionDereferenceable>> = Result::from(
+            node.parse_child("dereferenceable", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let index: Option<_ExpressionNode> = Result::from(
+            node.parse_child("index", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             dereferenceable,
@@ -869,21 +863,9 @@ impl SubscriptExpressionNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl SubscriptExpressionNode {
     pub fn kind(&self) -> &'static str {
         "subscript_expression"
     }

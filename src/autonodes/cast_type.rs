@@ -1,5 +1,7 @@
 use crate::autonodes::any::AnyNodeRef;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use std::ffi::OsStr;
 use std::ffi::OsString;
@@ -13,8 +15,8 @@ pub struct CastTypeNode {
     pub raw: Vec<u8>,
 }
 
-impl CastTypeNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for CastTypeNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "cast_type" {
             return Err(ParseError::new(
@@ -33,21 +35,9 @@ impl CastTypeNode {
             raw: source[range.start_byte..range.end_byte].to_vec(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl CastTypeNode {
     pub fn kind(&self) -> &'static str {
         "cast_type"
     }

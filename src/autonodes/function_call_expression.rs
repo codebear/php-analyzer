@@ -17,7 +17,9 @@ use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -47,8 +49,8 @@ pub enum FunctionCallExpressionFunction {
     Extra(ExtraChild),
 }
 
-impl FunctionCallExpressionFunction {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for FunctionCallExpressionFunction {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => FunctionCallExpressionFunction::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -117,7 +119,9 @@ impl FunctionCallExpressionFunction {
             }
         })
     }
+}
 
+impl FunctionCallExpressionFunction {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => FunctionCallExpressionFunction::Extra(ExtraChild::Comment(Box::new(
@@ -457,28 +461,15 @@ pub struct FunctionCallExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl FunctionCallExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for FunctionCallExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "function_call_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [function_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let arguments: ArgumentsNode = node
-            .children_by_field_name("arguments", &mut node.walk())
-            .map(|chnode1| ArgumentsNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field arguments should exist");
-        let function: Box<FunctionCallExpressionFunction> = node
-            .children_by_field_name("function", &mut node.walk())
-            .map(|chnode2| FunctionCallExpressionFunction::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field function should exist")
-            .into();
+        let arguments: ArgumentsNode = Result::from(node.parse_child("arguments", source).into())?;
+        let function: Box<FunctionCallExpressionFunction> =
+            Result::from(node.parse_child("function", source).into())?;
         Ok(Self {
             range,
             arguments,
@@ -491,21 +482,9 @@ impl FunctionCallExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl FunctionCallExpressionNode {
     pub fn kind(&self) -> &'static str {
         "function_call_expression"
     }

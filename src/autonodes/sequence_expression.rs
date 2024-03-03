@@ -3,7 +3,9 @@ use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -20,8 +22,8 @@ pub enum SequenceExpressionChildren {
     Extra(ExtraChild),
 }
 
-impl SequenceExpressionChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for SequenceExpressionChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => SequenceExpressionChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -53,7 +55,9 @@ impl SequenceExpressionChildren {
             }
         })
     }
+}
 
+impl SequenceExpressionChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => SequenceExpressionChildren::Extra(ExtraChild::Comment(Box::new(
@@ -187,8 +191,8 @@ pub struct SequenceExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl SequenceExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for SequenceExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "sequence_expression" {
             return Err(ParseError::new(
@@ -216,21 +220,9 @@ impl SequenceExpressionNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl SequenceExpressionNode {
     pub fn kind(&self) -> &'static str {
         "sequence_expression"
     }

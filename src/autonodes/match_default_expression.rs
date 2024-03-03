@@ -1,6 +1,8 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -13,19 +15,14 @@ pub struct MatchDefaultExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl MatchDefaultExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for MatchDefaultExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "match_default_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [match_default_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let return_expression: _ExpressionNode = node
-            .children_by_field_name("return_expression", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field return_expression should exist");
+        let return_expression: _ExpressionNode =
+            Result::from(node.parse_child("return_expression", source).into())?;
         Ok(Self {
             range,
             return_expression,
@@ -37,21 +34,9 @@ impl MatchDefaultExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl MatchDefaultExpressionNode {
     pub fn kind(&self) -> &'static str {
         "match_default_expression"
     }

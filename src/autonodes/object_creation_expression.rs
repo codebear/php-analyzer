@@ -15,7 +15,9 @@ use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExp
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -42,8 +44,8 @@ pub enum ObjectCreationExpressionChildren {
     Extra(ExtraChild),
 }
 
-impl ObjectCreationExpressionChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ObjectCreationExpressionChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ObjectCreationExpressionChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -105,7 +107,9 @@ impl ObjectCreationExpressionChildren {
             }
         })
     }
+}
 
+impl ObjectCreationExpressionChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ObjectCreationExpressionChildren::Extra(ExtraChild::Comment(Box::new(
@@ -404,23 +408,18 @@ pub struct ObjectCreationExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ObjectCreationExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ObjectCreationExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "object_creation_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [object_creation_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let attributes: Option<AttributeListNode> = node
-            .children_by_field_name("attributes", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| AttributeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
+        let attributes: Option<AttributeListNode> = Result::from(
+            node.parse_child("attributes", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             attributes,
@@ -438,21 +437,9 @@ impl ObjectCreationExpressionNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ObjectCreationExpressionNode {
     pub fn kind(&self) -> &'static str {
         "object_creation_expression"
     }

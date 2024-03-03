@@ -6,7 +6,9 @@ use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -23,8 +25,8 @@ pub enum EnumCaseValue {
     Extra(ExtraChild),
 }
 
-impl EnumCaseValue {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for EnumCaseValue {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => EnumCaseValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -46,7 +48,9 @@ impl EnumCaseValue {
             }
         })
     }
+}
 
+impl EnumCaseValue {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => EnumCaseValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
@@ -160,8 +164,8 @@ pub struct EnumCaseNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl EnumCaseNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for EnumCaseNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "enum_case" {
             return Err(ParseError::new(
@@ -174,27 +178,11 @@ impl EnumCaseNode {
                 ),
             ));
         }
-        let attributes: Option<AttributeListNode> = node
-            .children_by_field_name("attributes", &mut node.walk())
-            .map(|chnode1| AttributeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let name: NameNode = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode1| NameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field name should exist");
-        let value: Option<Box<EnumCaseValue>> = node
-            .children_by_field_name("value", &mut node.walk())
-            .map(|chnode2| EnumCaseValue::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
+        let attributes: Option<AttributeListNode> =
+            Result::from(node.parse_child("attributes", source).into())?;
+        let name: NameNode = Result::from(node.parse_child("name", source).into())?;
+        let value: Option<Box<EnumCaseValue>> =
+            Result::from(node.parse_child("value", source).into())?;
         Ok(Self {
             range,
             attributes,
@@ -208,21 +196,9 @@ impl EnumCaseNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl EnumCaseNode {
     pub fn kind(&self) -> &'static str {
         "enum_case"
     }

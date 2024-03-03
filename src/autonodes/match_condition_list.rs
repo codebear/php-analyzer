@@ -1,6 +1,8 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -13,8 +15,8 @@ pub struct MatchConditionListNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl MatchConditionListNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for MatchConditionListNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "match_condition_list" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [match_condition_list] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
@@ -34,21 +36,9 @@ impl MatchConditionListNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl MatchConditionListNode {
     pub fn kind(&self) -> &'static str {
         "match_condition_list"
     }

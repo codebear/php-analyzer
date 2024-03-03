@@ -2,7 +2,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::compound_statement::CompoundStatementNode;
 use crate::autonodes::type_list::TypeListNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -17,8 +19,8 @@ pub struct CatchClauseNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl CatchClauseNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for CatchClauseNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "catch_clause" {
             return Err(ParseError::new(
@@ -31,26 +33,9 @@ impl CatchClauseNode {
                 ),
             ));
         }
-        let body: CompoundStatementNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode1| CompoundStatementNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
-        let name: Option<VariableNameNode> = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode1| VariableNameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let type_: TypeListNode = node
-            .children_by_field_name("type", &mut node.walk())
-            .map(|chnode1| TypeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field type should exist");
+        let body: CompoundStatementNode = Result::from(node.parse_child("body", source).into())?;
+        let name: Option<VariableNameNode> = Result::from(node.parse_child("name", source).into())?;
+        let type_: TypeListNode = Result::from(node.parse_child("type", source).into())?;
         Ok(Self {
             range,
             body,
@@ -64,21 +49,9 @@ impl CatchClauseNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl CatchClauseNode {
     pub fn kind(&self) -> &'static str {
         "catch_clause"
     }

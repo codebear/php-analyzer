@@ -20,6 +20,7 @@ use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
 use crate::autonodes::yield_expression::YieldExpressionNode;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -51,8 +52,8 @@ pub enum _ExpressionNode {
     Extra(ExtraChild),
 }
 
-impl _ExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for _ExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => _ExpressionNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -127,7 +128,9 @@ impl _ExpressionNode {
             }
         })
     }
+}
 
+impl _ExpressionNode {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => _ExpressionNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(

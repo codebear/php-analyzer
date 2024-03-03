@@ -155,6 +155,7 @@ use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autonodes::while_statement::WhileStatementNode;
 use crate::autonodes::yield_expression::YieldExpressionNode;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use tree_sitter::Node;
@@ -167,7 +168,6 @@ pub enum AnyNodeRef<'a> {
     StaticExpr(&'static str, Range),
     Error(&'a ErrorNode),
     Operator(Operators<'a>),
-
     _Expression(&'a _ExpressionNode),
     _Literal(&'a _LiteralNode),
     _PrimaryExpression(&'a _PrimaryExpressionNode),
@@ -325,6 +325,7 @@ pub enum AnyNodeRef<'a> {
     StringValue(&'a StringValueNode),
     VarModifier(&'a VarModifierNode),
 }
+
 impl<'a> AnyNodeRef<'a> {
     pub fn kind(&self) -> &'static str {
         match self {

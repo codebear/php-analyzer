@@ -5,7 +5,9 @@ use crate::autonodes::heredoc_body::HeredocBodyNode;
 use crate::autonodes::heredoc_end::HeredocEndNode;
 use crate::autonodes::heredoc_start::HeredocStartNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -24,8 +26,8 @@ pub enum HeredocIdentifier {
     Extra(ExtraChild),
 }
 
-impl HeredocIdentifier {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for HeredocIdentifier {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => HeredocIdentifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -49,7 +51,9 @@ impl HeredocIdentifier {
             }
         })
     }
+}
 
+impl HeredocIdentifier {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => HeredocIdentifier::Extra(ExtraChild::Comment(Box::new(
@@ -169,8 +173,8 @@ pub struct HeredocNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl HeredocNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for HeredocNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "heredoc" {
             return Err(ParseError::new(
@@ -183,27 +187,11 @@ impl HeredocNode {
                 ),
             ));
         }
-        let end_tag: HeredocEndNode = node
-            .children_by_field_name("end_tag", &mut node.walk())
-            .map(|chnode1| HeredocEndNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field end_tag should exist");
-        let identifier: Vec<Box<HeredocIdentifier>> = node
-            .children_by_field_name("identifier", &mut node.walk())
-            .map(|chnode2| HeredocIdentifier::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .collect::<Vec<Box<HeredocIdentifier>>>()
-            .into();
-        let value: Option<HeredocBodyNode> = node
-            .children_by_field_name("value", &mut node.walk())
-            .map(|chnode1| HeredocBodyNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
+        let end_tag: HeredocEndNode = Result::from(node.parse_child("end_tag", source).into())?;
+        let identifier: Vec<Box<HeredocIdentifier>> =
+            Result::from(node.parse_child("identifier", source).into())?;
+        let value: Option<HeredocBodyNode> =
+            Result::from(node.parse_child("value", source).into())?;
         Ok(Self {
             range,
             end_tag,
@@ -217,21 +205,9 @@ impl HeredocNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl HeredocNode {
     pub fn kind(&self) -> &'static str {
         "heredoc"
     }

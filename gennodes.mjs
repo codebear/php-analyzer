@@ -3,6 +3,11 @@ import fs from 'fs';
 
 const raw_json = fs.readFileSync("tree-sitter-php/src/node-types.json");
 
+const additional_properties = {
+    "class_declaration": "crate::nodeanalysis::class_declaration::ClassDeclarationState",
+    "method_declaration": "crate::nodeanalysis::method_declaration::MethodDeclarationState",
+};
+
 const node_defs = JSON.parse(raw_json);
 let operators = {
     // Assignments
@@ -246,17 +251,20 @@ function create_enum_for_types(name, types) {
         parse_opt_wildcard = `_ => return Ok(None),`;
     }
     enum_uses.push("crate::analysis::state::AnalysisState");
+    enum_uses.push("crate::autotree::NodeParser");
     enum_uses.push("crate::issue::IssueEmitter");
     enum_uses.push("crate::value::PHPValue");
     enum_uses.push("crate::types::union::UnionType");
-
-    child_enum_buffer += `impl ${name} {
-        pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    child_enum_buffer += `\nimpl NodeParser for ${name} {
+        fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
             Ok(match node.kind() {
                 ${match_enum_buffer}
                 ${parse_wildcard}
             })
         }
+    }
+        `;
+    child_enum_buffer += `\nimpl ${name} {
 
         pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
             Ok(Some(match node.kind() {
@@ -389,7 +397,8 @@ function create_enum_for_types(name, types) {
 }
 
 let any_uses = {
-    "crate::errornode::ErrorNode": ""
+    "crate::errornode::ErrorNode": "",
+    "crate::autotree::NodeParser": "",
 };
 
 let any_names = [];
@@ -406,7 +415,6 @@ any_ref_buffer += `pub enum AnyNodeRef<'a> {
     StaticExpr(&'static str, Range),
     Error(&'a ErrorNode),
     Operator(Operators<'a>),
-
 `;
 
 let mod_buffer = "";
@@ -438,6 +446,8 @@ for (const node_def of node_defs) {
     } else {
         uses["tree_sitter::Range"] = "";
         uses["crate::autotree::NodeAccess"] = "";
+        uses["crate::autotree::NodeParser"] = "";
+        uses["crate::autotree::ChildNodeParser"] = "";
         uses["crate::autotree::ParseError"] = "";
         declares.push(node_name);
         node_buffer += "\n#[derive(Debug, Clone)]\n";
@@ -458,53 +468,83 @@ for (const node_def of node_defs) {
                 // console.log(field_def);
 
                 let impl_prequel_entry = "";
+                let impl_prequel_entry2 = "";
 
                 let rust_name = rustify_name(field_name);
-                impl_prequel_entry += 'node.children_by_field_name("' + field_name + '", &mut node.walk())';
-
-                if ("children" in node_def && Object.values(node_def.children).length) {
-                    impl_prequel_entry += "\n\t\t\t\t.map(|chnode| { skip_nodes.push(chnode.id()); chnode })\n";
-                }
+                //impl_prequel_entry += 'node.children_by_field_name("' + field_name + '", &mut node.walk())';
+                impl_prequel_entry2 += "node.parse_child(\"" + field_name + "\"";
+                impl_prequel_entry += "Result::from(node.parse_child(\"" + field_name + "\", source)";
 
                 let boxed = false;
                 if (field_def.types.length == 1) {
                     let raw_type = field_def.types[0].type;
                     field_type = get_rust_type_name(raw_type);
                     uses["crate::autonodes::" + raw_type + "::" + field_type] = "";
-                    if (field_type.match(/'static/)) {
-                        impl_prequel_entry += "/* hva */";
+                    //uses["crate::autotree::NodeParserHelper"] = "";
+                    /*if (field_type.match(/'static/)) {
+                        impl_prequel_entry += "/ * hva * /";
                     } else {
-                        impl_prequel_entry += "\n\t\t\t\t.map(|chnode1| " + field_type + "::parse(chnode1, source))";
-                    }
-                    impl_prequel_entry += ".collect::<Result<Vec<_>, ParseError>>()?.drain(..)";
+                    impl_prequel_entry += "\n\t\t\t\t.map(|chnode1| " + field_type + "::parse(chnode1, source))";
+                    }*/
+                    impl_prequel_entry2 += ", |chnode1| " + field_type + "::parse(chnode1, source)";
+
+                    //                    impl_prequel_entry += ".collect::<Result<Vec<_>, ParseError>>()?.drain(..)";
                 } else if (field_def.types.length > 1) {
+                    // uses["crate::autotree::NodeParserHelper"] = "";
+
+                    // impl_prequel_enrty = "";
+
                     let field_enum_name = get_rust_type_name(node_def.type, to_camel_case(field_name));
-                    impl_prequel_entry += "\n\t\t\t\t.map(|chnode2| " + field_enum_name + "::parse(chnode2, source))";
-                    impl_prequel_entry += "            .collect::<Result<Vec<_>, ParseError>>()?.drain(..)";
+                    // impl_prequel_entry += "\n\t\t\t\t.map(|chnode2| " + field_enum_name + "::parse(chnode2, source))";
+                    // impl_prequel_entry += "            .collect::<Result<Vec<_>, ParseError>>()?.drain(..)";
+
+                    impl_prequel_entry2 += ", |chnode2| " + field_enum_name + "::parse(chnode2, source)";
 
                     let [part_child_enum_buffer, usings] = create_enum_for_types(field_enum_name, field_def.types);
                     child_enum_buffer += part_child_enum_buffer;
                     usings.map(function (u) {
                         uses[u] = "";
                     });
-                    impl_prequel_entry += "\n\t\t\t\t.map(|z| Box::new(z))";
+                    // impl_prequel_entry += ".boxed()";
+                    //                     impl_prequel_entry += "\n\t\t\t\t.map(|z| Box::new(z))";
                     field_type = "Box<" + field_enum_name + ">";
                     boxed = true;
                     // console.log(field_def);
                 }
+                impl_prequel_entry2 += ")";
+                if ("children" in node_def && Object.values(node_def.children).length) {
+                    //impl_prequel_entry += "\n\t\t\t\t.map(|chnode| { skip_nodes.push(chnode.id()); chnode })\n";
+                    impl_prequel_entry += ".mark_skipped_node(&mut skip_nodes)";
+                    //                    impl_prequel_entry += ", Some(&mut skip_nodes)";
+                    //                } else {
+                    //                    impl_prequel_entry += ", None";
+                    //impl_prequel_entry += ", Some(&mut skip_nodes)).into())?";
+                } else {
+                    //impl_prequel_entry += ", None).into())?";
 
+                }
                 let child_cast_entry = "";
+                if (boxed) {
+                    // impl_prequel_entry += "\n\t\t\t\t.into()";
+                    impl_prequel_entry2 += ".boxed()";
+                } else {
+                    // impl_prequel_entry += ".to_owned()"
+                }
 
                 if (field_def.multiple) {
                     field_type = "Vec<" + field_type + ">";
-                    impl_prequel_entry += "\n\t\t\t\t.collect::<" + field_type + ">()";
+                    // impl_prequel_entry += "\n\t\t\t\t.collect::<" + field_type + ">()";
+                    impl_prequel_entry2 += "\n\t\t\t\t.many()";
                     if (field_def.required) {
                         child_cast_entry = `child_vec.extend(self.${rust_name}.iter().map(|v| v.as_any()));` + "\n";
                     } else {
                         child_cast_entry = `if let Some(x) = &self.${rust_name} { child_vec.extend(x.iter().map(|z| z.as_any()));}` + "\n";
                     }
+                } else if (field_def.required) {
+                    // impl_prequel_entry += "\n\t\t\t\t.next()";
+                    impl_prequel_entry2 += "\n\t\t\t\t.one()";
                 } else {
-                    impl_prequel_entry += "\n\t\t\t\t.next()";
+                    impl_prequel_entry2 += "\n\t\t\t\t.maybe_one()";
                 }
 
                 //                 if let Some(x) = self.child { &[x.as_any()] } else { &[] },\n
@@ -513,22 +553,18 @@ for (const node_def of node_defs) {
                     if (!child_cast_entry) child_cast_entry += `if let Some(x) = &self.${rust_name} { child_vec.push(x.as_any()); }` + "\n";
                 } else {
                     if (!child_cast_entry) child_cast_entry += `child_vec.push(self.${rust_name}.as_any());` + "\n";
-                    if (!field_def.multiple) {
-                        impl_prequel_entry += '\n\t\t\t\t.expect("Field ' + field_name + ' should exist")';
-                    }
+                    //if (!field_def.multiple) {
+                    //    impl_prequel_entry += '\n\t\t\t\t.expect("Field ' + field_name + ' should exist")';
+                    //}
                 }
                 child_cast += child_cast_entry;
-                if (boxed) {
-                    impl_prequel_entry += "\n\t\t\t\t.into()";
-                } else {
-                    // impl_prequel_entry += ".to_owned()"
-                }
+
 
 
 
                 impl_members += rust_name + ",\n";
 
-                impl_prequel += "       let " + rust_name + ": " + field_type + " = " + impl_prequel_entry + ";";
+                impl_prequel += "       let " + rust_name + ": " + field_type + " = " + impl_prequel_entry + ".into())?;";
 
 
                 // console.log(field_def);
@@ -561,8 +597,8 @@ for (const node_def of node_defs) {
                 children_type = "BROKEN";
             }
             let extra = `extras: ExtraChild::parse_vec(
-                node.named_children(&mut node.walk())
-                    .filter(|node| node.kind() == "comment")`;
+        node.named_children(&mut node.walk())
+            .filter(|node| node.kind() == "comment")`;
             if (children_def.multiple) {
                 node_buffer += "    pub children: Vec<" + children_type + ">,\n";
 
@@ -615,18 +651,18 @@ for (const node_def of node_defs) {
         } else if (child_count) {
             // impl_members += "extras: vec![], // todo lookup unused nodes\n";
             impl_members += `extras: ExtraChild::parse_vec(
-                node.named_children(&mut node.walk())
-                    .filter(|node| node.kind() == "comment"), source).unwrap(),`;
+        node.named_children(&mut node.walk())
+            .filter(|node| node.kind() == "comment"), source).unwrap(),`;
         }
         let raw_getter = "";
         if (!child_count) {
             node_buffer += "    pub raw: Vec<u8>,\n";
             impl_members += "   raw: source[range.start_byte..range.end_byte].to_vec(),\n";
             raw_getter = `
-                pub fn get_raw(&self) -> OsString {
-                    OsStr::from_bytes(&self.raw).to_os_string()
-                }
-            `;
+    pub fn get_raw(&self) -> OsString {
+        OsStr::from_bytes(&self.raw).to_os_string()
+    }
+`;
             uses['std::ffi::OsStr'] = '';
             uses['std::ffi::OsString'] = '';
             uses['std::os::unix::ffi::OsStrExt'] = '';
@@ -636,43 +672,44 @@ for (const node_def of node_defs) {
             node_buffer += "    pub extras: Vec<Box<ExtraChild>>,\n";
         }
 
+        if (node_def.type in additional_properties) {
+            uses["std::sync::OnceLock"] = "";
+            let prop_name = additional_properties[node_def.type];
+            node_buffer += "    pub state: OnceLock<" + prop_name + ">,\n";
+            impl_members += "   state: OnceLock::new(),\n";
+        }
+
         node_buffer += "}\n";
 
         // Implement parsing
         uses["tree_sitter::Node"] = "";
         impl_buffer += "\n";
-        impl_buffer += `impl ${node_name} {
-        pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-            let range = node.range();
-            if node.kind() != "${node_def.type}" {
-                return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [${node_def.type}] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
-            }
-            ${impl_prequel}
-            Ok(Self {
-                range,
-                ${impl_members}
-            })
-        }
+        impl_buffer += `
 
-        pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-        where I: Iterator<Item=Node<'a>> {
-            let mut res: Vec<Box<Self>> = vec!();
-            for child in children {
-                if child.kind() == "comment" {
-                    continue;
-                }
-                res.push(Box::new(Self::parse(child, source)?));
-            }
-            Ok(res)
+impl NodeParser for ${node_name} {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+        let range = node.range();
+        if node.kind() != "${node_def.type}" {
+            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [${node_def.type}] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-
-        pub fn kind(&self) -> &'static str {
-            "${node_def.type}"
-        }
-        ${raw_getter}
+        ${impl_prequel}
+        Ok(Self {
+            range,
+            ${impl_members}
+        })
     }
+}
 
-    impl NodeAccess for ${node_name} {
+impl ${node_name} {
+
+
+    pub fn kind(&self) -> &'static str {
+        "${node_def.type}"
+    }
+    ${raw_getter}
+}
+
+impl NodeAccess for ${node_name} {
 
         fn brief_desc(&self) -> String {
             "${node_name}".into()
@@ -754,8 +791,8 @@ impl AnyNode {
 
     pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-           // "comment" => 
-           // "text_interpolation" => 
+            // "comment" => 
+            // "text_interpolation" => 
 ${Object.values(node_defs).map(node_def => {
     const name = get_rust_type_name(node_def.type);
     if (name.match(/'static/)) {
@@ -787,7 +824,7 @@ impl NodeAccess for AnyNode {
 
     fn brief_desc(&self) -> String {
         match self {
-${Object.values(node_defs).map(node_def => {
+        ${Object.values(node_defs).map(node_def => {
     const name = get_rust_type_name(node_def.type);
     if (name.match(/'static/)) {
         return "";
@@ -843,6 +880,7 @@ ${Object.values(node_defs).map(node_def => {
 
 any_ref_buffer += `
 }
+
 impl <'a>  AnyNodeRef<'a> {
     pub fn kind(&self) -> &'static str {
         match self {

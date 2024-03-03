@@ -5,7 +5,9 @@ use crate::autonodes::colon_block::ColonBlockNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -22,8 +24,8 @@ pub enum ElseIfClauseBody {
     Extra(ExtraChild),
 }
 
-impl ElseIfClauseBody {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ElseIfClauseBody {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ElseIfClauseBody::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -53,7 +55,9 @@ impl ElseIfClauseBody {
             }
         })
     }
+}
 
+impl ElseIfClauseBody {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ElseIfClauseBody::Extra(ExtraChild::Comment(Box::new(
@@ -182,8 +186,8 @@ pub struct ElseIfClauseNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ElseIfClauseNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ElseIfClauseNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "else_if_clause" {
             return Err(ParseError::new(
@@ -196,22 +200,9 @@ impl ElseIfClauseNode {
                 ),
             ));
         }
-        let body: Box<ElseIfClauseBody> = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode2| ElseIfClauseBody::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field body should exist")
-            .into();
-        let condition: ParenthesizedExpressionNode = node
-            .children_by_field_name("condition", &mut node.walk())
-            .map(|chnode1| ParenthesizedExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field condition should exist");
+        let body: Box<ElseIfClauseBody> = Result::from(node.parse_child("body", source).into())?;
+        let condition: ParenthesizedExpressionNode =
+            Result::from(node.parse_child("condition", source).into())?;
         Ok(Self {
             range,
             body,
@@ -224,21 +215,9 @@ impl ElseIfClauseNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ElseIfClauseNode {
     pub fn kind(&self) -> &'static str {
         "else_if_clause"
     }

@@ -9,7 +9,9 @@ use crate::autonodes::formal_parameters::FormalParametersNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -26,8 +28,8 @@ pub enum ArrowFunctionReturnType {
     Extra(ExtraChild),
 }
 
-impl ArrowFunctionReturnType {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ArrowFunctionReturnType {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ArrowFunctionReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -57,7 +59,9 @@ impl ArrowFunctionReturnType {
             }
         })
     }
+}
 
+impl ArrowFunctionReturnType {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ArrowFunctionReturnType::Extra(ExtraChild::Comment(Box::new(
@@ -192,8 +196,8 @@ pub struct ArrowFunctionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ArrowFunctionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ArrowFunctionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "arrow_function" {
             return Err(ParseError::new(
@@ -207,60 +211,31 @@ impl ArrowFunctionNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let attributes: Option<AttributeListNode> = node
-            .children_by_field_name("attributes", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| AttributeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let body: _ExpressionNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
-        let parameters: FormalParametersNode = node
-            .children_by_field_name("parameters", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| FormalParametersNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field parameters should exist");
-        let reference_modifier: Option<ReferenceModifierNode> = node
-            .children_by_field_name("reference_modifier", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| ReferenceModifierNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let return_type: Option<Box<ArrowFunctionReturnType>> = node
-            .children_by_field_name("return_type", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode2| ArrowFunctionReturnType::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
+        let attributes: Option<AttributeListNode> = Result::from(
+            node.parse_child("attributes", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let body: _ExpressionNode = Result::from(
+            node.parse_child("body", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let parameters: FormalParametersNode = Result::from(
+            node.parse_child("parameters", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let reference_modifier: Option<ReferenceModifierNode> = Result::from(
+            node.parse_child("reference_modifier", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
+        let return_type: Option<Box<ArrowFunctionReturnType>> = Result::from(
+            node.parse_child("return_type", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             attributes,
@@ -285,21 +260,9 @@ impl ArrowFunctionNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ArrowFunctionNode {
     pub fn kind(&self) -> &'static str {
         "arrow_function"
     }

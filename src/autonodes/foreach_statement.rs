@@ -7,7 +7,9 @@ use crate::autonodes::colon_block::ColonBlockNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::list_literal::ListLiteralNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -24,8 +26,8 @@ pub enum ForeachStatementBody {
     Extra(ExtraChild),
 }
 
-impl ForeachStatementBody {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ForeachStatementBody {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ForeachStatementBody::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -55,7 +57,9 @@ impl ForeachStatementBody {
             }
         })
     }
+}
 
+impl ForeachStatementBody {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ForeachStatementBody::Extra(ExtraChild::Comment(Box::new(
@@ -186,8 +190,8 @@ pub enum ForeachStatementValue {
     Extra(ExtraChild),
 }
 
-impl ForeachStatementValue {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ForeachStatementValue {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ForeachStatementValue::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -218,7 +222,9 @@ impl ForeachStatementValue {
             }
         })
     }
+}
 
+impl ForeachStatementValue {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ForeachStatementValue::Extra(ExtraChild::Comment(Box::new(
@@ -362,8 +368,8 @@ pub struct ForeachStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ForeachStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ForeachStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "foreach_statement" {
             return Err(ParseError::new(
@@ -376,36 +382,13 @@ impl ForeachStatementNode {
                 ),
             ));
         }
-        let body: Option<Box<ForeachStatementBody>> = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode2| ForeachStatementBody::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
-        let key: Option<_ExpressionNode> = node
-            .children_by_field_name("key", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let traversable: _ExpressionNode = node
-            .children_by_field_name("traversable", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field traversable should exist");
-        let value: Box<ForeachStatementValue> = node
-            .children_by_field_name("value", &mut node.walk())
-            .map(|chnode2| ForeachStatementValue::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field value should exist")
-            .into();
+        let body: Option<Box<ForeachStatementBody>> =
+            Result::from(node.parse_child("body", source).into())?;
+        let key: Option<_ExpressionNode> = Result::from(node.parse_child("key", source).into())?;
+        let traversable: _ExpressionNode =
+            Result::from(node.parse_child("traversable", source).into())?;
+        let value: Box<ForeachStatementValue> =
+            Result::from(node.parse_child("value", source).into())?;
         Ok(Self {
             range,
             body,
@@ -420,21 +403,9 @@ impl ForeachStatementNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ForeachStatementNode {
     pub fn kind(&self) -> &'static str {
         "foreach_statement"
     }

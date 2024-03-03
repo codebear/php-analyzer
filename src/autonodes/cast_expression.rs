@@ -10,7 +10,9 @@ use crate::autonodes::include_once_expression::IncludeOnceExpressionNode;
 use crate::autonodes::silence_expression::SilenceExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -32,8 +34,8 @@ pub enum CastExpressionValue {
     Extra(ExtraChild),
 }
 
-impl CastExpressionValue {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for CastExpressionValue {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => CastExpressionValue::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -78,7 +80,9 @@ impl CastExpressionValue {
             }
         })
     }
+}
 
+impl CastExpressionValue {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => CastExpressionValue::Extra(ExtraChild::Comment(Box::new(
@@ -280,8 +284,8 @@ pub struct CastExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl CastExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for CastExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "cast_expression" {
             return Err(ParseError::new(
@@ -294,22 +298,9 @@ impl CastExpressionNode {
                 ),
             ));
         }
-        let type_: CastTypeNode = node
-            .children_by_field_name("type", &mut node.walk())
-            .map(|chnode1| CastTypeNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field type should exist");
-        let value: Box<CastExpressionValue> = node
-            .children_by_field_name("value", &mut node.walk())
-            .map(|chnode2| CastExpressionValue::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field value should exist")
-            .into();
+        let type_: CastTypeNode = Result::from(node.parse_child("type", source).into())?;
+        let value: Box<CastExpressionValue> =
+            Result::from(node.parse_child("value", source).into())?;
         Ok(Self {
             range,
             type_,
@@ -322,21 +313,9 @@ impl CastExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl CastExpressionNode {
     pub fn kind(&self) -> &'static str {
         "cast_expression"
     }

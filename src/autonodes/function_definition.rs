@@ -9,7 +9,9 @@ use crate::autonodes::formal_parameters::FormalParametersNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -26,8 +28,8 @@ pub enum FunctionDefinitionReturnType {
     Extra(ExtraChild),
 }
 
-impl FunctionDefinitionReturnType {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for FunctionDefinitionReturnType {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => FunctionDefinitionReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -59,7 +61,9 @@ impl FunctionDefinitionReturnType {
             }
         })
     }
+}
 
+impl FunctionDefinitionReturnType {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => FunctionDefinitionReturnType::Extra(ExtraChild::Comment(Box::new(
@@ -197,8 +201,8 @@ pub struct FunctionDefinitionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl FunctionDefinitionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for FunctionDefinitionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "function_definition" {
             return Err(ParseError::new(
@@ -211,47 +215,16 @@ impl FunctionDefinitionNode {
                 ),
             ));
         }
-        let attributes: Option<AttributeListNode> = node
-            .children_by_field_name("attributes", &mut node.walk())
-            .map(|chnode1| AttributeListNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let body: CompoundStatementNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode1| CompoundStatementNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
-        let name: NameNode = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode1| NameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field name should exist");
-        let parameters: FormalParametersNode = node
-            .children_by_field_name("parameters", &mut node.walk())
-            .map(|chnode1| FormalParametersNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field parameters should exist");
-        let reference_modifier: Option<ReferenceModifierNode> = node
-            .children_by_field_name("reference_modifier", &mut node.walk())
-            .map(|chnode1| ReferenceModifierNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let return_type: Option<Box<FunctionDefinitionReturnType>> = node
-            .children_by_field_name("return_type", &mut node.walk())
-            .map(|chnode2| FunctionDefinitionReturnType::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
+        let attributes: Option<AttributeListNode> =
+            Result::from(node.parse_child("attributes", source).into())?;
+        let body: CompoundStatementNode = Result::from(node.parse_child("body", source).into())?;
+        let name: NameNode = Result::from(node.parse_child("name", source).into())?;
+        let parameters: FormalParametersNode =
+            Result::from(node.parse_child("parameters", source).into())?;
+        let reference_modifier: Option<ReferenceModifierNode> =
+            Result::from(node.parse_child("reference_modifier", source).into())?;
+        let return_type: Option<Box<FunctionDefinitionReturnType>> =
+            Result::from(node.parse_child("return_type", source).into())?;
         Ok(Self {
             range,
             attributes,
@@ -268,21 +241,9 @@ impl FunctionDefinitionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl FunctionDefinitionNode {
     pub fn kind(&self) -> &'static str {
         "function_definition"
     }

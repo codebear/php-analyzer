@@ -1,7 +1,9 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::_statement::_StatementNode;
 use crate::autonodes::any::AnyNodeRef;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -15,8 +17,8 @@ pub struct CaseStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl CaseStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for CaseStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "case_statement" {
             return Err(ParseError::new(
@@ -30,17 +32,11 @@ impl CaseStatementNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let value: _ExpressionNode = node
-            .children_by_field_name("value", &mut node.walk())
-            .map(|chnode| {
-                skip_nodes.push(chnode.id());
-                chnode
-            })
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field value should exist");
+        let value: _ExpressionNode = Result::from(
+            node.parse_child("value", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             value,
@@ -58,21 +54,9 @@ impl CaseStatementNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl CaseStatementNode {
     pub fn kind(&self) -> &'static str {
         "case_statement"
     }

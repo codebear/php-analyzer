@@ -4,7 +4,9 @@ use crate::autonodes::by_ref::ByRefNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -21,8 +23,8 @@ pub enum AnonymousFunctionUseClauseChildren {
     Extra(ExtraChild),
 }
 
-impl AnonymousFunctionUseClauseChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for AnonymousFunctionUseClauseChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -50,7 +52,9 @@ impl AnonymousFunctionUseClauseChildren {
             }
         })
     }
+}
 
+impl AnonymousFunctionUseClauseChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
@@ -177,8 +181,8 @@ pub struct AnonymousFunctionUseClauseNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl AnonymousFunctionUseClauseNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for AnonymousFunctionUseClauseNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "anonymous_function_use_clause" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [anonymous_function_use_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
@@ -198,21 +202,9 @@ impl AnonymousFunctionUseClauseNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl AnonymousFunctionUseClauseNode {
     pub fn kind(&self) -> &'static str {
         "anonymous_function_use_clause"
     }

@@ -1,7 +1,9 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
 use crate::autonodes::switch_block::SwitchBlockNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -15,8 +17,8 @@ pub struct SwitchStatementNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl SwitchStatementNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for SwitchStatementNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "switch_statement" {
             return Err(ParseError::new(
@@ -29,20 +31,9 @@ impl SwitchStatementNode {
                 ),
             ));
         }
-        let body: SwitchBlockNode = node
-            .children_by_field_name("body", &mut node.walk())
-            .map(|chnode1| SwitchBlockNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field body should exist");
-        let condition: ParenthesizedExpressionNode = node
-            .children_by_field_name("condition", &mut node.walk())
-            .map(|chnode1| ParenthesizedExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field condition should exist");
+        let body: SwitchBlockNode = Result::from(node.parse_child("body", source).into())?;
+        let condition: ParenthesizedExpressionNode =
+            Result::from(node.parse_child("condition", source).into())?;
         Ok(Self {
             range,
             body,
@@ -55,21 +46,9 @@ impl SwitchStatementNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl SwitchStatementNode {
     pub fn kind(&self) -> &'static str {
         "switch_statement"
     }

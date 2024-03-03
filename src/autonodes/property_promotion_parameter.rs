@@ -4,7 +4,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
 use tree_sitter::Node;
@@ -21,44 +23,20 @@ pub struct PropertyPromotionParameterNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl PropertyPromotionParameterNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for PropertyPromotionParameterNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "property_promotion_parameter" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [property_promotion_parameter] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let default_value: Option<_ExpressionNode> = node
-            .children_by_field_name("default_value", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let name: VariableNameNode = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode1| VariableNameNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field name should exist");
-        let readonly: Option<ReadonlyModifierNode> = node
-            .children_by_field_name("readonly", &mut node.walk())
-            .map(|chnode1| ReadonlyModifierNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let type_: Option<_TypeNode> = node
-            .children_by_field_name("type", &mut node.walk())
-            .map(|chnode1| _TypeNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let visibility: VisibilityModifierNode = node
-            .children_by_field_name("visibility", &mut node.walk())
-            .map(|chnode1| VisibilityModifierNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field visibility should exist");
+        let default_value: Option<_ExpressionNode> =
+            Result::from(node.parse_child("default_value", source).into())?;
+        let name: VariableNameNode = Result::from(node.parse_child("name", source).into())?;
+        let readonly: Option<ReadonlyModifierNode> =
+            Result::from(node.parse_child("readonly", source).into())?;
+        let type_: Option<_TypeNode> = Result::from(node.parse_child("type", source).into())?;
+        let visibility: VisibilityModifierNode =
+            Result::from(node.parse_child("visibility", source).into())?;
         Ok(Self {
             range,
             default_value,
@@ -74,21 +52,9 @@ impl PropertyPromotionParameterNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl PropertyPromotionParameterNode {
     pub fn kind(&self) -> &'static str {
         "property_promotion_parameter"
     }

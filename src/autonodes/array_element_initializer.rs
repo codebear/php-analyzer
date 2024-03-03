@@ -5,7 +5,9 @@ use crate::autonodes::by_ref::ByRefNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variadic_unpacking::VariadicUnpackingNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -22,8 +24,8 @@ pub enum ArrayElementInitializerValue {
     Extra(ExtraChild),
 }
 
-impl ArrayElementInitializerValue {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ArrayElementInitializerValue {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ArrayElementInitializerValue::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -55,7 +57,9 @@ impl ArrayElementInitializerValue {
             }
         })
     }
+}
 
+impl ArrayElementInitializerValue {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ArrayElementInitializerValue::Extra(ExtraChild::Comment(Box::new(
@@ -190,32 +194,17 @@ pub struct ArrayElementInitializerNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ArrayElementInitializerNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ArrayElementInitializerNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "array_element_initializer" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [array_element_initializer] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let key: Option<_ExpressionNode> = node
-            .children_by_field_name("key", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let spread: Option<VariadicUnpackingNode> = node
-            .children_by_field_name("spread", &mut node.walk())
-            .map(|chnode1| VariadicUnpackingNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next();
-        let value: Option<Box<ArrayElementInitializerValue>> = node
-            .children_by_field_name("value", &mut node.walk())
-            .map(|chnode2| ArrayElementInitializerValue::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .into();
+        let key: Option<_ExpressionNode> = Result::from(node.parse_child("key", source).into())?;
+        let spread: Option<VariadicUnpackingNode> =
+            Result::from(node.parse_child("spread", source).into())?;
+        let value: Option<Box<ArrayElementInitializerValue>> =
+            Result::from(node.parse_child("value", source).into())?;
         Ok(Self {
             range,
             key,
@@ -229,21 +218,9 @@ impl ArrayElementInitializerNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ArrayElementInitializerNode {
     pub fn kind(&self) -> &'static str {
         "array_element_initializer"
     }

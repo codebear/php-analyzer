@@ -5,7 +5,9 @@ use crate::autonodes::namespace_name::NamespaceNameNode;
 use crate::autonodes::namespace_use_clause::NamespaceUseClauseNode;
 use crate::autonodes::namespace_use_group::NamespaceUseGroupNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -23,8 +25,8 @@ pub enum NamespaceUseDeclarationChildren {
     Extra(ExtraChild),
 }
 
-impl NamespaceUseDeclarationChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NamespaceUseDeclarationChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => NamespaceUseDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -55,7 +57,9 @@ impl NamespaceUseDeclarationChildren {
             }
         })
     }
+}
 
+impl NamespaceUseDeclarationChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => NamespaceUseDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
@@ -199,8 +203,8 @@ pub struct NamespaceUseDeclarationNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl NamespaceUseDeclarationNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for NamespaceUseDeclarationNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "namespace_use_declaration" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [namespace_use_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
@@ -220,21 +224,9 @@ impl NamespaceUseDeclarationNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl NamespaceUseDeclarationNode {
     pub fn kind(&self) -> &'static str {
         "namespace_use_declaration"
     }

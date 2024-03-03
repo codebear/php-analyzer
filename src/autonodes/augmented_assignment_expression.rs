@@ -14,7 +14,9 @@ use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExp
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -54,8 +56,8 @@ pub enum AugmentedAssignmentExpressionLeft {
     Extra(ExtraChild),
 }
 
-impl AugmentedAssignmentExpressionLeft {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for AugmentedAssignmentExpressionLeft {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -120,7 +122,9 @@ impl AugmentedAssignmentExpressionLeft {
             }
         })
     }
+}
 
+impl AugmentedAssignmentExpressionLeft {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
@@ -452,8 +456,8 @@ pub enum AugmentedAssignmentExpressionOperator {
     Extra(ExtraChild),
 }
 
-impl AugmentedAssignmentExpressionOperator {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for AugmentedAssignmentExpressionOperator {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
@@ -512,7 +516,9 @@ impl AugmentedAssignmentExpressionOperator {
             }
         })
     }
+}
 
+impl AugmentedAssignmentExpressionOperator {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Comment(
@@ -608,37 +614,17 @@ pub struct AugmentedAssignmentExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl AugmentedAssignmentExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for AugmentedAssignmentExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "augmented_assignment_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [augmented_assignment_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let left: Box<AugmentedAssignmentExpressionLeft> = node
-            .children_by_field_name("left", &mut node.walk())
-            .map(|chnode2| AugmentedAssignmentExpressionLeft::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field left should exist")
-            .into();
-        let operator: Box<AugmentedAssignmentExpressionOperator> = node
-            .children_by_field_name("operator", &mut node.walk())
-            .map(|chnode2| AugmentedAssignmentExpressionOperator::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field operator should exist")
-            .into();
-        let right: _ExpressionNode = node
-            .children_by_field_name("right", &mut node.walk())
-            .map(|chnode1| _ExpressionNode::parse(chnode1, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .next()
-            .expect("Field right should exist");
+        let left: Box<AugmentedAssignmentExpressionLeft> =
+            Result::from(node.parse_child("left", source).into())?;
+        let operator: Box<AugmentedAssignmentExpressionOperator> =
+            Result::from(node.parse_child("operator", source).into())?;
+        let right: _ExpressionNode = Result::from(node.parse_child("right", source).into())?;
         Ok(Self {
             range,
             left,
@@ -652,21 +638,9 @@ impl AugmentedAssignmentExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl AugmentedAssignmentExpressionNode {
     pub fn kind(&self) -> &'static str {
         "augmented_assignment_expression"
     }

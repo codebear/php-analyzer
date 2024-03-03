@@ -4,7 +4,9 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::dynamic_variable_name::DynamicVariableNameNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -21,8 +23,8 @@ pub enum GlobalDeclarationChildren {
     Extra(ExtraChild),
 }
 
-impl GlobalDeclarationChildren {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for GlobalDeclarationChildren {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => GlobalDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -50,7 +52,9 @@ impl GlobalDeclarationChildren {
             }
         })
     }
+}
 
+impl GlobalDeclarationChildren {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => GlobalDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
@@ -176,8 +180,8 @@ pub struct GlobalDeclarationNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl GlobalDeclarationNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for GlobalDeclarationNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "global_declaration" {
             return Err(ParseError::new(
@@ -205,21 +209,9 @@ impl GlobalDeclarationNode {
             )?,
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl GlobalDeclarationNode {
     pub fn kind(&self) -> &'static str {
         "global_declaration"
     }

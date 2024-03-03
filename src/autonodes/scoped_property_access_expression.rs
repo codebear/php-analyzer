@@ -22,7 +22,9 @@ use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
 use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
+use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
+use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
@@ -39,8 +41,8 @@ pub enum ScopedPropertyAccessExpressionName {
     Extra(ExtraChild),
 }
 
-impl ScopedPropertyAccessExpressionName {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ScopedPropertyAccessExpressionName {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -68,7 +70,9 @@ impl ScopedPropertyAccessExpressionName {
             }
         })
     }
+}
 
+impl ScopedPropertyAccessExpressionName {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
@@ -220,8 +224,8 @@ pub enum ScopedPropertyAccessExpressionScope {
     Extra(ExtraChild),
 }
 
-impl ScopedPropertyAccessExpressionScope {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ScopedPropertyAccessExpressionScope {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -322,7 +326,9 @@ impl ScopedPropertyAccessExpressionScope {
             }
         })
     }
+}
 
+impl ScopedPropertyAccessExpressionScope {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Comment(Box::new(
@@ -820,30 +826,16 @@ pub struct ScopedPropertyAccessExpressionNode {
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl ScopedPropertyAccessExpressionNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+impl NodeParser for ScopedPropertyAccessExpressionNode {
+    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "scoped_property_access_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [scoped_property_access_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let name: Box<ScopedPropertyAccessExpressionName> = node
-            .children_by_field_name("name", &mut node.walk())
-            .map(|chnode2| ScopedPropertyAccessExpressionName::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field name should exist")
-            .into();
-        let scope: Box<ScopedPropertyAccessExpressionScope> = node
-            .children_by_field_name("scope", &mut node.walk())
-            .map(|chnode2| ScopedPropertyAccessExpressionScope::parse(chnode2, source))
-            .collect::<Result<Vec<_>, ParseError>>()?
-            .drain(..)
-            .map(|z| Box::new(z))
-            .next()
-            .expect("Field scope should exist")
-            .into();
+        let name: Box<ScopedPropertyAccessExpressionName> =
+            Result::from(node.parse_child("name", source).into())?;
+        let scope: Box<ScopedPropertyAccessExpressionScope> =
+            Result::from(node.parse_child("scope", source).into())?;
         Ok(Self {
             range,
             name,
@@ -856,21 +848,9 @@ impl ScopedPropertyAccessExpressionNode {
             .unwrap(),
         })
     }
+}
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            if child.kind() == "comment" {
-                continue;
-            }
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
+impl ScopedPropertyAccessExpressionNode {
     pub fn kind(&self) -> &'static str {
         "scoped_property_access_expression"
     }
