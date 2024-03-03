@@ -38,6 +38,11 @@ pub enum InlineGenericSearchMode {
     Implements,
 }
 
+#[derive(Debug, Clone)]
+pub struct ClassDeclarationState {
+    pub name: Option<String>,
+}
+
 impl ClassDeclarationNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         ()
@@ -57,6 +62,11 @@ impl ClassDeclarationNode {
         _emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         None
+    }
+
+    pub fn get_state(&self) -> &ClassDeclarationState {
+        self.state
+            .get_or_init(|| ClassDeclarationState { name: None })
     }
 
     fn get_class_name(&self, state: &mut AnalysisState) -> ClassName {

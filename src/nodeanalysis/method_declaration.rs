@@ -27,6 +27,9 @@ use crate::autotree::NodeAccess;
 
 use crate::analysis::scope::BranchableScope;
 
+#[derive(Debug, Clone)]
+pub struct MethodDeclarationState {}
+
 impl MethodDeclarationNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         crate::missing!("{}.read_from(..)", self.kind());
@@ -46,6 +49,10 @@ impl MethodDeclarationNode {
         _emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
+    }
+
+    pub fn get_state(&self) -> &MethodDeclarationState {
+        self.state.get_or_init(|| MethodDeclarationState {})
     }
 }
 ///
