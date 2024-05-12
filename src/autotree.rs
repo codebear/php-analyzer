@@ -3,7 +3,8 @@ use std::marker::PhantomData;
 use crate::autonodes::program::ProgramNode;
 use crate::issue::IssuePosition;
 use crate::{analysis::state::AnalysisState, autonodes::any::AnyNodeRef};
-use tree_sitter::Range;
+// use tree_sitter::Range;
+use crate::parser::Range;
 use tree_sitter::Tree;
 use tree_sitter::{Node, Point};
 
@@ -14,8 +15,14 @@ pub struct ParseError {
 }
 
 impl ParseError {
-    pub fn new(range: Range, error: String) -> Self {
-        Self { range, error }
+    pub fn new<R>(range: R, error: String) -> Self
+    where
+        R: Into<Range>,
+    {
+        Self {
+            range: range.into(),
+            error,
+        }
     }
 }
 

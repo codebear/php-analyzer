@@ -25,7 +25,6 @@ use crate::autonodes::namespace_definition::NamespaceDefinitionNode;
 use crate::autonodes::namespace_use_declaration::NamespaceUseDeclarationNode;
 use crate::autonodes::return_statement::ReturnStatementNode;
 use crate::autonodes::switch_statement::SwitchStatementNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::trait_declaration::TraitDeclarationNode;
 use crate::autonodes::try_statement::TryStatementNode;
 use crate::autonodes::unset_statement::UnsetStatementNode;
@@ -36,10 +35,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum _StatementNode {
@@ -80,9 +79,6 @@ impl NodeParser for _StatementNode {
             "comment" => _StatementNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => _StatementNode::Extra(ExtraChild::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            ))),
             "ERROR" => {
                 _StatementNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -187,9 +183,6 @@ impl _StatementNode {
             "comment" => _StatementNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => _StatementNode::Extra(ExtraChild::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            ))),
             "ERROR" => {
                 _StatementNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }

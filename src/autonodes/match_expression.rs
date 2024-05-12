@@ -6,8 +6,8 @@ use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct MatchExpressionNode {
@@ -19,7 +19,7 @@ pub struct MatchExpressionNode {
 
 impl NodeParser for MatchExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "match_expression" {
             return Err(ParseError::new(
                 range,

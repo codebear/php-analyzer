@@ -3,19 +3,17 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::property_promotion_parameter::PropertyPromotionParameterNode;
 use crate::autonodes::simple_parameter::SimpleParameterNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variadic_parameter::VariadicParameterNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum FormalParametersChildren {
@@ -31,9 +29,6 @@ impl NodeParser for FormalParametersChildren {
             "comment" => FormalParametersChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => FormalParametersChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => FormalParametersChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -63,9 +58,6 @@ impl FormalParametersChildren {
             "comment" => FormalParametersChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => FormalParametersChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => FormalParametersChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -199,7 +191,7 @@ pub struct FormalParametersNode {
 
 impl NodeParser for FormalParametersNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "formal_parameters" {
             return Err(ParseError::new(
                 range,

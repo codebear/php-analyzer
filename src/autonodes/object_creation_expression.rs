@@ -13,7 +13,6 @@ use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExp
 use crate::autonodes::qualified_name::QualifiedNameNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -22,10 +21,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum ObjectCreationExpressionChildren {
@@ -50,11 +49,6 @@ impl NodeParser for ObjectCreationExpressionChildren {
             "comment" => ObjectCreationExpressionChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                ObjectCreationExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => ObjectCreationExpressionChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -115,11 +109,6 @@ impl ObjectCreationExpressionChildren {
             "comment" => ObjectCreationExpressionChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                ObjectCreationExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => ObjectCreationExpressionChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -410,7 +399,7 @@ pub struct ObjectCreationExpressionNode {
 
 impl NodeParser for ObjectCreationExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "object_creation_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [object_creation_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }

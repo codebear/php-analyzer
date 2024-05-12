@@ -1,7 +1,7 @@
 use tree_sitter::Point;
-use tree_sitter::Range;
-
+//use tree_sitter::Range;
 use crate::issue::IssuePosition;
+use crate::parser::Range;
 use crate::symbols::FullyQualifiedName;
 use crate::symbols::Name;
 use crate::symbols::Symbol;

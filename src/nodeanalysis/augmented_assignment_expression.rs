@@ -39,7 +39,7 @@ impl NodeAccess for AugmentedAssignmentExpressionOperator {
         }
     }
 
-    fn range(&self) -> tree_sitter::Range {
+    fn range(&self) -> crate::parser::Range {
         match self {
             AugmentedAssignmentExpressionOperator::ModAssign(op) => op.range(),
             AugmentedAssignmentExpressionOperator::AndAssign(op) => op.range(),

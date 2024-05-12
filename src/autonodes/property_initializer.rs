@@ -5,34 +5,27 @@ use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
-pub struct SilenceExpressionNode {
+pub struct PropertyInitializerNode {
     pub range: Range,
-    pub expr: _ExpressionNode,
+    pub initializer: _ExpressionNode,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
-impl NodeParser for SilenceExpressionNode {
+impl NodeParser for PropertyInitializerNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
-        if node.kind() != "silence_expression" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [silence_expression] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+        let range: Range = node.range().into();
+        if node.kind() != "property_initializer" {
+            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [property_initializer] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let expr: _ExpressionNode = Result::from(node.parse_child("expr", source).into())?;
+        let initializer: _ExpressionNode =
+            Result::from(node.parse_child("initializer", source).into())?;
         Ok(Self {
             range,
-            expr,
+            initializer,
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
                     .filter(|node| node.kind() == "comment"),
@@ -43,26 +36,26 @@ impl NodeParser for SilenceExpressionNode {
     }
 }
 
-impl SilenceExpressionNode {
+impl PropertyInitializerNode {
     pub fn kind(&self) -> &'static str {
-        "silence_expression"
+        "property_initializer"
     }
 }
 
-impl NodeAccess for SilenceExpressionNode {
+impl NodeAccess for PropertyInitializerNode {
     fn brief_desc(&self) -> String {
-        "SilenceExpressionNode".into()
+        "PropertyInitializerNode".into()
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        AnyNodeRef::SilenceExpression(self)
+        AnyNodeRef::PropertyInitializer(self)
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
         // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
-        child_vec.push(self.expr.as_any());
+        child_vec.push(self.initializer.as_any());
 
         child_vec.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
         child_vec

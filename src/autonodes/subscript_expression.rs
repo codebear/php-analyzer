@@ -9,7 +9,6 @@ use crate::autonodes::dynamic_variable_name::DynamicVariableNameNode;
 use crate::autonodes::encapsed_string::EncapsedStringNode;
 use crate::autonodes::function_call_expression::FunctionCallExpressionNode;
 use crate::autonodes::heredoc::HeredocNode;
-use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::member_access_expression::MemberAccessExpressionNode;
 use crate::autonodes::member_call_expression::MemberCallExpressionNode;
 use crate::autonodes::name::NameNode;
@@ -21,8 +20,6 @@ use crate::autonodes::qualified_name::QualifiedNameNode;
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::string::StringNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
-use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -31,10 +28,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum SubscriptExpressionDereferenceable {
@@ -67,11 +64,6 @@ impl NodeParser for SubscriptExpressionDereferenceable {
             "comment" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                SubscriptExpressionDereferenceable::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -168,11 +160,6 @@ impl SubscriptExpressionDereferenceable {
             "comment" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                SubscriptExpressionDereferenceable::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => SubscriptExpressionDereferenceable::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -633,234 +620,33 @@ impl NodeAccess for SubscriptExpressionDereferenceable {
 }
 
 #[derive(Debug, Clone)]
-pub enum SubscriptExpressionChildren {
-    Integer(Box<IntegerNode>),
-    Name(Box<NameNode>),
-    UnaryOpExpression(Box<UnaryOpExpressionNode>),
-    VariableName(Box<VariableNameNode>),
-    Extra(ExtraChild),
-}
-
-impl NodeParser for SubscriptExpressionChildren {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        Ok(match node.kind() {
-            "comment" => SubscriptExpressionChildren::Extra(ExtraChild::Comment(Box::new(
-                CommentNode::parse(node, source)?,
-            ))),
-            "text_interpolation" => {
-                SubscriptExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
-            "ERROR" => SubscriptExpressionChildren::Extra(ExtraChild::Error(Box::new(
-                ErrorNode::parse(node, source)?,
-            ))),
-            "integer" => {
-                SubscriptExpressionChildren::Integer(Box::new(IntegerNode::parse(node, source)?))
-            }
-            "name" => SubscriptExpressionChildren::Name(Box::new(NameNode::parse(node, source)?)),
-            "unary_op_expression" => SubscriptExpressionChildren::UnaryOpExpression(Box::new(
-                UnaryOpExpressionNode::parse(node, source)?,
-            )),
-            "variable_name" => SubscriptExpressionChildren::VariableName(Box::new(
-                VariableNameNode::parse(node, source)?,
-            )),
-
-            _ => {
-                return Err(ParseError::new(
-                    node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
-                ))
-            }
-        })
-    }
-}
-
-impl SubscriptExpressionChildren {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
-        Ok(Some(match node.kind() {
-            "comment" => SubscriptExpressionChildren::Extra(ExtraChild::Comment(Box::new(
-                CommentNode::parse(node, source)?,
-            ))),
-            "text_interpolation" => {
-                SubscriptExpressionChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
-            "ERROR" => SubscriptExpressionChildren::Extra(ExtraChild::Error(Box::new(
-                ErrorNode::parse(node, source)?,
-            ))),
-            "integer" => {
-                SubscriptExpressionChildren::Integer(Box::new(IntegerNode::parse(node, source)?))
-            }
-            "name" => SubscriptExpressionChildren::Name(Box::new(NameNode::parse(node, source)?)),
-            "unary_op_expression" => SubscriptExpressionChildren::UnaryOpExpression(Box::new(
-                UnaryOpExpressionNode::parse(node, source)?,
-            )),
-            "variable_name" => SubscriptExpressionChildren::VariableName(Box::new(
-                VariableNameNode::parse(node, source)?,
-            )),
-
-            _ => return Ok(None),
-        }))
-    }
-
-    pub fn kind(&self) -> &'static str {
-        match self {
-            SubscriptExpressionChildren::Extra(y) => y.kind(),
-            SubscriptExpressionChildren::Integer(y) => y.kind(),
-            SubscriptExpressionChildren::Name(y) => y.kind(),
-            SubscriptExpressionChildren::UnaryOpExpression(y) => y.kind(),
-            SubscriptExpressionChildren::VariableName(y) => y.kind(),
-        }
-    }
-
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
-    where
-        I: Iterator<Item = Node<'a>>,
-    {
-        let mut res: Vec<Box<Self>> = vec![];
-        for child in children {
-            res.push(Box::new(Self::parse(child, source)?));
-        }
-        Ok(res)
-    }
-
-    pub fn get_utype(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
-        match self {
-            SubscriptExpressionChildren::Extra(x) => x.get_utype(state, emitter),
-            SubscriptExpressionChildren::Integer(x) => x.get_utype(state, emitter),
-            SubscriptExpressionChildren::Name(x) => x.get_utype(state, emitter),
-            SubscriptExpressionChildren::UnaryOpExpression(x) => x.get_utype(state, emitter),
-            SubscriptExpressionChildren::VariableName(x) => x.get_utype(state, emitter),
-        }
-    }
-
-    pub fn get_php_value(
-        &self,
-        state: &mut AnalysisState,
-        emitter: &dyn IssueEmitter,
-    ) -> Option<PHPValue> {
-        match self {
-            SubscriptExpressionChildren::Extra(x) => x.get_php_value(state, emitter),
-            SubscriptExpressionChildren::Integer(x) => x.get_php_value(state, emitter),
-            SubscriptExpressionChildren::Name(x) => x.get_php_value(state, emitter),
-            SubscriptExpressionChildren::UnaryOpExpression(x) => x.get_php_value(state, emitter),
-            SubscriptExpressionChildren::VariableName(x) => x.get_php_value(state, emitter),
-        }
-    }
-
-    pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        match self {
-            SubscriptExpressionChildren::Extra(x) => x.read_from(state, emitter),
-            SubscriptExpressionChildren::Integer(x) => x.read_from(state, emitter),
-            SubscriptExpressionChildren::Name(x) => x.read_from(state, emitter),
-            SubscriptExpressionChildren::UnaryOpExpression(x) => x.read_from(state, emitter),
-            SubscriptExpressionChildren::VariableName(x) => x.read_from(state, emitter),
-        }
-    }
-}
-
-impl NodeAccess for SubscriptExpressionChildren {
-    fn brief_desc(&self) -> String {
-        match self {
-            SubscriptExpressionChildren::Extra(x) => {
-                format!("SubscriptExpressionChildren::extra({})", x.brief_desc())
-            }
-            SubscriptExpressionChildren::Integer(x) => {
-                format!("SubscriptExpressionChildren::integer({})", x.brief_desc())
-            }
-            SubscriptExpressionChildren::Name(x) => {
-                format!("SubscriptExpressionChildren::name({})", x.brief_desc())
-            }
-            SubscriptExpressionChildren::UnaryOpExpression(x) => format!(
-                "SubscriptExpressionChildren::unary_op_expression({})",
-                x.brief_desc()
-            ),
-            SubscriptExpressionChildren::VariableName(x) => format!(
-                "SubscriptExpressionChildren::variable_name({})",
-                x.brief_desc()
-            ),
-        }
-    }
-
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
-        match self {
-            SubscriptExpressionChildren::Extra(x) => x.as_any(),
-            SubscriptExpressionChildren::Integer(x) => x.as_any(),
-            SubscriptExpressionChildren::Name(x) => x.as_any(),
-            SubscriptExpressionChildren::UnaryOpExpression(x) => x.as_any(),
-            SubscriptExpressionChildren::VariableName(x) => x.as_any(),
-        }
-    }
-
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
-        match self {
-            SubscriptExpressionChildren::Extra(x) => x.children_any(),
-            SubscriptExpressionChildren::Integer(x) => x.children_any(),
-            SubscriptExpressionChildren::Name(x) => x.children_any(),
-            SubscriptExpressionChildren::UnaryOpExpression(x) => x.children_any(),
-            SubscriptExpressionChildren::VariableName(x) => x.children_any(),
-        }
-    }
-
-    fn range(&self) -> Range {
-        match self {
-            SubscriptExpressionChildren::Extra(x) => x.range(),
-            SubscriptExpressionChildren::Integer(x) => x.range(),
-            SubscriptExpressionChildren::Name(x) => x.range(),
-            SubscriptExpressionChildren::UnaryOpExpression(x) => x.range(),
-            SubscriptExpressionChildren::VariableName(x) => x.range(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct SubscriptExpressionNode {
     pub range: Range,
-    pub dereferenceable: Option<Box<SubscriptExpressionDereferenceable>>,
+    pub dereferenceable: Box<SubscriptExpressionDereferenceable>,
     pub index: Option<_ExpressionNode>,
-    pub children: Vec<Box<SubscriptExpressionChildren>>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
 impl NodeParser for SubscriptExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "subscript_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [subscript_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let mut skip_nodes: Vec<usize> = vec![];
-        let dereferenceable: Option<Box<SubscriptExpressionDereferenceable>> = Result::from(
-            node.parse_child("dereferenceable", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
-        )?;
-        let index: Option<_ExpressionNode> = Result::from(
-            node.parse_child("index", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
-        )?;
+        let dereferenceable: Box<SubscriptExpressionDereferenceable> =
+            Result::from(node.parse_child("dereferenceable", source).into())?;
+        let index: Option<_ExpressionNode> =
+            Result::from(node.parse_child("index", source).into())?;
         Ok(Self {
             range,
             dereferenceable,
             index,
-            children: SubscriptExpressionChildren::parse_vec(
-                node.named_children(&mut node.walk())
-                    .filter(|node| !skip_nodes.contains(&node.id()))
-                    .filter(|node| node.kind() != "comment"),
-                source,
-            )?,
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
-                    .filter(|node| node.kind() == "comment")
-                    .filter(|node| !skip_nodes.contains(&node.id())),
+                    .filter(|node| node.kind() == "comment"),
                 source,
-            )?,
+            )
+            .unwrap(),
         })
     }
 }
@@ -884,14 +670,10 @@ impl NodeAccess for SubscriptExpressionNode {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
         // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
-        if let Some(x) = &self.dereferenceable {
-            child_vec.push(x.as_any());
-        }
+        child_vec.push(self.dereferenceable.as_any());
         if let Some(x) = &self.index {
             child_vec.push(x.as_any());
         }
-        child_vec.extend(self.children.iter().map(|n| n.as_any()));
-        child_vec.extend(self.extras.iter().map(|n| n.as_any()));
 
         child_vec.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
         child_vec

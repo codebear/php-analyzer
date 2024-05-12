@@ -4,19 +4,17 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::const_declaration::ConstDeclarationNode;
 use crate::autonodes::method_declaration::MethodDeclarationNode;
 use crate::autonodes::property_declaration::PropertyDeclarationNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::use_declaration::UseDeclarationNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum DeclarationListChildren {
@@ -33,9 +31,6 @@ impl NodeParser for DeclarationListChildren {
             "comment" => DeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => DeclarationListChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => DeclarationListChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -68,9 +63,6 @@ impl DeclarationListChildren {
             "comment" => DeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => DeclarationListChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => DeclarationListChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -216,7 +208,7 @@ pub struct DeclarationListNode {
 
 impl NodeParser for DeclarationListNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "declaration_list" {
             return Err(ParseError::new(
                 range,

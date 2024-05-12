@@ -20,7 +20,6 @@ use crate::autonodes::relative_scope::RelativeScopeNode;
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -29,10 +28,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum ScopedPropertyAccessExpressionName {
@@ -47,11 +46,6 @@ impl NodeParser for ScopedPropertyAccessExpressionName {
             "comment" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                ScopedPropertyAccessExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -78,11 +72,6 @@ impl ScopedPropertyAccessExpressionName {
             "comment" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                ScopedPropertyAccessExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => ScopedPropertyAccessExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -230,11 +219,6 @@ impl NodeParser for ScopedPropertyAccessExpressionScope {
             "comment" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                ScopedPropertyAccessExpressionScope::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -334,11 +318,6 @@ impl ScopedPropertyAccessExpressionScope {
             "comment" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                ScopedPropertyAccessExpressionScope::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => ScopedPropertyAccessExpressionScope::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -828,7 +807,7 @@ pub struct ScopedPropertyAccessExpressionNode {
 
 impl NodeParser for ScopedPropertyAccessExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "scoped_property_access_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [scoped_property_access_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }

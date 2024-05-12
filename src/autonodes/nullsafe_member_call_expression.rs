@@ -21,7 +21,6 @@ use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -30,10 +29,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum NullsafeMemberCallExpressionName {
@@ -50,11 +49,6 @@ impl NodeParser for NullsafeMemberCallExpressionName {
             "comment" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                NullsafeMemberCallExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -91,11 +85,6 @@ impl NullsafeMemberCallExpressionName {
             "comment" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                NullsafeMemberCallExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -273,11 +262,6 @@ impl NodeParser for NullsafeMemberCallExpressionObject {
             "comment" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                NullsafeMemberCallExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -374,11 +358,6 @@ impl NullsafeMemberCallExpressionObject {
             "comment" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                NullsafeMemberCallExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -849,7 +828,7 @@ pub struct NullsafeMemberCallExpressionNode {
 
 impl NodeParser for NullsafeMemberCallExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "nullsafe_member_call_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [nullsafe_member_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }

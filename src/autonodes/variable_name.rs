@@ -1,12 +1,11 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::name::NameNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct VariableNameNode {
@@ -17,7 +16,7 @@ pub struct VariableNameNode {
 
 impl NodeParser for VariableNameNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "variable_name" {
             return Err(ParseError::new(
                 range,

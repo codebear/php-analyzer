@@ -4,7 +4,6 @@ use crate::autonodes::catch_clause::CatchClauseNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::compound_statement::CompoundStatementNode;
 use crate::autonodes::finally_clause::FinallyClauseNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -12,10 +11,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum TryStatementChildren {
@@ -30,9 +29,6 @@ impl NodeParser for TryStatementChildren {
             "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => TryStatementChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => TryStatementChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -59,9 +55,6 @@ impl TryStatementChildren {
             "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => TryStatementChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => TryStatementChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -178,7 +171,7 @@ pub struct TryStatementNode {
 
 impl NodeParser for TryStatementNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "try_statement" {
             return Err(ParseError::new(
                 range,

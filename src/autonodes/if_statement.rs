@@ -6,7 +6,6 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::else_clause::ElseClauseNode;
 use crate::autonodes::else_if_clause::ElseIfClauseNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -14,10 +13,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum IfStatementAlternative {
@@ -32,9 +31,6 @@ impl NodeParser for IfStatementAlternative {
             "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => IfStatementAlternative::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => IfStatementAlternative::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -61,9 +57,6 @@ impl IfStatementAlternative {
             "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => IfStatementAlternative::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => IfStatementAlternative::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -183,9 +176,6 @@ impl NodeParser for IfStatementBody {
             "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => IfStatementBody::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => {
                 IfStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -216,9 +206,6 @@ impl IfStatementBody {
             "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => IfStatementBody::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => {
                 IfStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -342,7 +329,7 @@ pub struct IfStatementNode {
 
 impl NodeParser for IfStatementNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "if_statement" {
             return Err(ParseError::new(
                 range,

@@ -1,13 +1,12 @@
 use crate::autonodes::any::AnyNodeRef;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
+use crate::parser::Range;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::os::unix::ffi::OsStrExt;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct PrimitiveTypeNode {
@@ -17,7 +16,7 @@ pub struct PrimitiveTypeNode {
 
 impl NodeParser for PrimitiveTypeNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "primitive_type" {
             return Err(ParseError::new(
                 range,

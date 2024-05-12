@@ -11,7 +11,6 @@ use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpress
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -23,13 +22,13 @@ use crate::issue::IssueEmitter;
 use crate::operators::decrement::DecrementOperator;
 use crate::operators::increment::IncrementOperator;
 use crate::operators::operator::Operator;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
-pub enum UpdateExpressionExpr {
+pub enum UpdateExpressionArgument {
     CastExpression(Box<CastExpressionNode>),
     DynamicVariableName(Box<DynamicVariableNameNode>),
     FunctionCallExpression(Box<FunctionCallExpressionNode>),
@@ -44,57 +43,54 @@ pub enum UpdateExpressionExpr {
     Extra(ExtraChild),
 }
 
-impl NodeParser for UpdateExpressionExpr {
+impl NodeParser for UpdateExpressionArgument {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => UpdateExpressionExpr::Extra(ExtraChild::Comment(Box::new(
+            "comment" => UpdateExpressionArgument::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => UpdateExpressionExpr::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
-            "ERROR" => UpdateExpressionExpr::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
-                node, source,
-            )?))),
-            "cast_expression" => UpdateExpressionExpr::CastExpression(Box::new(
+            "ERROR" => UpdateExpressionArgument::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
+            "cast_expression" => UpdateExpressionArgument::CastExpression(Box::new(
                 CastExpressionNode::parse(node, source)?,
             )),
-            "dynamic_variable_name" => UpdateExpressionExpr::DynamicVariableName(Box::new(
+            "dynamic_variable_name" => UpdateExpressionArgument::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
-            "function_call_expression" => UpdateExpressionExpr::FunctionCallExpression(Box::new(
-                FunctionCallExpressionNode::parse(node, source)?,
-            )),
-            "member_access_expression" => UpdateExpressionExpr::MemberAccessExpression(Box::new(
-                MemberAccessExpressionNode::parse(node, source)?,
-            )),
-            "member_call_expression" => UpdateExpressionExpr::MemberCallExpression(Box::new(
+            "function_call_expression" => UpdateExpressionArgument::FunctionCallExpression(
+                Box::new(FunctionCallExpressionNode::parse(node, source)?),
+            ),
+            "member_access_expression" => UpdateExpressionArgument::MemberAccessExpression(
+                Box::new(MemberAccessExpressionNode::parse(node, source)?),
+            ),
+            "member_call_expression" => UpdateExpressionArgument::MemberCallExpression(Box::new(
                 MemberCallExpressionNode::parse(node, source)?,
             )),
             "nullsafe_member_access_expression" => {
-                UpdateExpressionExpr::NullsafeMemberAccessExpression(Box::new(
+                UpdateExpressionArgument::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
                 ))
             }
             "nullsafe_member_call_expression" => {
-                UpdateExpressionExpr::NullsafeMemberCallExpression(Box::new(
+                UpdateExpressionArgument::NullsafeMemberCallExpression(Box::new(
                     NullsafeMemberCallExpressionNode::parse(node, source)?,
                 ))
             }
-            "scoped_call_expression" => UpdateExpressionExpr::ScopedCallExpression(Box::new(
+            "scoped_call_expression" => UpdateExpressionArgument::ScopedCallExpression(Box::new(
                 ScopedCallExpressionNode::parse(node, source)?,
             )),
             "scoped_property_access_expression" => {
-                UpdateExpressionExpr::ScopedPropertyAccessExpression(Box::new(
+                UpdateExpressionArgument::ScopedPropertyAccessExpression(Box::new(
                     ScopedPropertyAccessExpressionNode::parse(node, source)?,
                 ))
             }
-            "subscript_expression" => UpdateExpressionExpr::SubscriptExpression(Box::new(
+            "subscript_expression" => UpdateExpressionArgument::SubscriptExpression(Box::new(
                 SubscriptExpressionNode::parse(node, source)?,
             )),
-            "variable_name" => {
-                UpdateExpressionExpr::VariableName(Box::new(VariableNameNode::parse(node, source)?))
-            }
+            "variable_name" => UpdateExpressionArgument::VariableName(Box::new(
+                VariableNameNode::parse(node, source)?,
+            )),
 
             _ => {
                 return Err(ParseError::new(
@@ -106,57 +102,54 @@ impl NodeParser for UpdateExpressionExpr {
     }
 }
 
-impl UpdateExpressionExpr {
+impl UpdateExpressionArgument {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => UpdateExpressionExpr::Extra(ExtraChild::Comment(Box::new(
+            "comment" => UpdateExpressionArgument::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => UpdateExpressionExpr::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
-            "ERROR" => UpdateExpressionExpr::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
-                node, source,
-            )?))),
-            "cast_expression" => UpdateExpressionExpr::CastExpression(Box::new(
+            "ERROR" => UpdateExpressionArgument::Extra(ExtraChild::Error(Box::new(
+                ErrorNode::parse(node, source)?,
+            ))),
+            "cast_expression" => UpdateExpressionArgument::CastExpression(Box::new(
                 CastExpressionNode::parse(node, source)?,
             )),
-            "dynamic_variable_name" => UpdateExpressionExpr::DynamicVariableName(Box::new(
+            "dynamic_variable_name" => UpdateExpressionArgument::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
             )),
-            "function_call_expression" => UpdateExpressionExpr::FunctionCallExpression(Box::new(
-                FunctionCallExpressionNode::parse(node, source)?,
-            )),
-            "member_access_expression" => UpdateExpressionExpr::MemberAccessExpression(Box::new(
-                MemberAccessExpressionNode::parse(node, source)?,
-            )),
-            "member_call_expression" => UpdateExpressionExpr::MemberCallExpression(Box::new(
+            "function_call_expression" => UpdateExpressionArgument::FunctionCallExpression(
+                Box::new(FunctionCallExpressionNode::parse(node, source)?),
+            ),
+            "member_access_expression" => UpdateExpressionArgument::MemberAccessExpression(
+                Box::new(MemberAccessExpressionNode::parse(node, source)?),
+            ),
+            "member_call_expression" => UpdateExpressionArgument::MemberCallExpression(Box::new(
                 MemberCallExpressionNode::parse(node, source)?,
             )),
             "nullsafe_member_access_expression" => {
-                UpdateExpressionExpr::NullsafeMemberAccessExpression(Box::new(
+                UpdateExpressionArgument::NullsafeMemberAccessExpression(Box::new(
                     NullsafeMemberAccessExpressionNode::parse(node, source)?,
                 ))
             }
             "nullsafe_member_call_expression" => {
-                UpdateExpressionExpr::NullsafeMemberCallExpression(Box::new(
+                UpdateExpressionArgument::NullsafeMemberCallExpression(Box::new(
                     NullsafeMemberCallExpressionNode::parse(node, source)?,
                 ))
             }
-            "scoped_call_expression" => UpdateExpressionExpr::ScopedCallExpression(Box::new(
+            "scoped_call_expression" => UpdateExpressionArgument::ScopedCallExpression(Box::new(
                 ScopedCallExpressionNode::parse(node, source)?,
             )),
             "scoped_property_access_expression" => {
-                UpdateExpressionExpr::ScopedPropertyAccessExpression(Box::new(
+                UpdateExpressionArgument::ScopedPropertyAccessExpression(Box::new(
                     ScopedPropertyAccessExpressionNode::parse(node, source)?,
                 ))
             }
-            "subscript_expression" => UpdateExpressionExpr::SubscriptExpression(Box::new(
+            "subscript_expression" => UpdateExpressionArgument::SubscriptExpression(Box::new(
                 SubscriptExpressionNode::parse(node, source)?,
             )),
-            "variable_name" => {
-                UpdateExpressionExpr::VariableName(Box::new(VariableNameNode::parse(node, source)?))
-            }
+            "variable_name" => UpdateExpressionArgument::VariableName(Box::new(
+                VariableNameNode::parse(node, source)?,
+            )),
 
             _ => return Ok(None),
         }))
@@ -164,18 +157,18 @@ impl UpdateExpressionExpr {
 
     pub fn kind(&self) -> &'static str {
         match self {
-            UpdateExpressionExpr::Extra(y) => y.kind(),
-            UpdateExpressionExpr::CastExpression(y) => y.kind(),
-            UpdateExpressionExpr::DynamicVariableName(y) => y.kind(),
-            UpdateExpressionExpr::FunctionCallExpression(y) => y.kind(),
-            UpdateExpressionExpr::MemberAccessExpression(y) => y.kind(),
-            UpdateExpressionExpr::MemberCallExpression(y) => y.kind(),
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(y) => y.kind(),
-            UpdateExpressionExpr::NullsafeMemberCallExpression(y) => y.kind(),
-            UpdateExpressionExpr::ScopedCallExpression(y) => y.kind(),
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(y) => y.kind(),
-            UpdateExpressionExpr::SubscriptExpression(y) => y.kind(),
-            UpdateExpressionExpr::VariableName(y) => y.kind(),
+            UpdateExpressionArgument::Extra(y) => y.kind(),
+            UpdateExpressionArgument::CastExpression(y) => y.kind(),
+            UpdateExpressionArgument::DynamicVariableName(y) => y.kind(),
+            UpdateExpressionArgument::FunctionCallExpression(y) => y.kind(),
+            UpdateExpressionArgument::MemberAccessExpression(y) => y.kind(),
+            UpdateExpressionArgument::MemberCallExpression(y) => y.kind(),
+            UpdateExpressionArgument::NullsafeMemberAccessExpression(y) => y.kind(),
+            UpdateExpressionArgument::NullsafeMemberCallExpression(y) => y.kind(),
+            UpdateExpressionArgument::ScopedCallExpression(y) => y.kind(),
+            UpdateExpressionArgument::ScopedPropertyAccessExpression(y) => y.kind(),
+            UpdateExpressionArgument::SubscriptExpression(y) => y.kind(),
+            UpdateExpressionArgument::VariableName(y) => y.kind(),
         }
     }
 
@@ -196,18 +189,24 @@ impl UpdateExpressionExpr {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            UpdateExpressionExpr::Extra(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::CastExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::DynamicVariableName(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::FunctionCallExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::MemberAccessExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::MemberCallExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::NullsafeMemberCallExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::ScopedCallExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::SubscriptExpression(x) => x.get_utype(state, emitter),
-            UpdateExpressionExpr::VariableName(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::Extra(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::CastExpression(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::DynamicVariableName(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::FunctionCallExpression(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::MemberAccessExpression(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::MemberCallExpression(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::NullsafeMemberAccessExpression(x) => {
+                x.get_utype(state, emitter)
+            }
+            UpdateExpressionArgument::NullsafeMemberCallExpression(x) => {
+                x.get_utype(state, emitter)
+            }
+            UpdateExpressionArgument::ScopedCallExpression(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::ScopedPropertyAccessExpression(x) => {
+                x.get_utype(state, emitter)
+            }
+            UpdateExpressionArgument::SubscriptExpression(x) => x.get_utype(state, emitter),
+            UpdateExpressionArgument::VariableName(x) => x.get_utype(state, emitter),
         }
     }
 
@@ -217,144 +216,152 @@ impl UpdateExpressionExpr {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            UpdateExpressionExpr::Extra(x) => x.get_php_value(state, emitter),
-            UpdateExpressionExpr::CastExpression(x) => x.get_php_value(state, emitter),
-            UpdateExpressionExpr::DynamicVariableName(x) => x.get_php_value(state, emitter),
-            UpdateExpressionExpr::FunctionCallExpression(x) => x.get_php_value(state, emitter),
-            UpdateExpressionExpr::MemberAccessExpression(x) => x.get_php_value(state, emitter),
-            UpdateExpressionExpr::MemberCallExpression(x) => x.get_php_value(state, emitter),
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(x) => {
+            UpdateExpressionArgument::Extra(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::CastExpression(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::DynamicVariableName(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::FunctionCallExpression(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::MemberAccessExpression(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::MemberCallExpression(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::NullsafeMemberAccessExpression(x) => {
                 x.get_php_value(state, emitter)
             }
-            UpdateExpressionExpr::NullsafeMemberCallExpression(x) => {
+            UpdateExpressionArgument::NullsafeMemberCallExpression(x) => {
                 x.get_php_value(state, emitter)
             }
-            UpdateExpressionExpr::ScopedCallExpression(x) => x.get_php_value(state, emitter),
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(x) => {
+            UpdateExpressionArgument::ScopedCallExpression(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::ScopedPropertyAccessExpression(x) => {
                 x.get_php_value(state, emitter)
             }
-            UpdateExpressionExpr::SubscriptExpression(x) => x.get_php_value(state, emitter),
-            UpdateExpressionExpr::VariableName(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::SubscriptExpression(x) => x.get_php_value(state, emitter),
+            UpdateExpressionArgument::VariableName(x) => x.get_php_value(state, emitter),
         }
     }
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            UpdateExpressionExpr::Extra(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::CastExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::DynamicVariableName(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::FunctionCallExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::MemberAccessExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::MemberCallExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::NullsafeMemberCallExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::ScopedCallExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::SubscriptExpression(x) => x.read_from(state, emitter),
-            UpdateExpressionExpr::VariableName(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::Extra(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::CastExpression(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::DynamicVariableName(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::FunctionCallExpression(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::MemberAccessExpression(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::MemberCallExpression(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::NullsafeMemberAccessExpression(x) => {
+                x.read_from(state, emitter)
+            }
+            UpdateExpressionArgument::NullsafeMemberCallExpression(x) => {
+                x.read_from(state, emitter)
+            }
+            UpdateExpressionArgument::ScopedCallExpression(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::ScopedPropertyAccessExpression(x) => {
+                x.read_from(state, emitter)
+            }
+            UpdateExpressionArgument::SubscriptExpression(x) => x.read_from(state, emitter),
+            UpdateExpressionArgument::VariableName(x) => x.read_from(state, emitter),
         }
     }
 }
 
-impl NodeAccess for UpdateExpressionExpr {
+impl NodeAccess for UpdateExpressionArgument {
     fn brief_desc(&self) -> String {
         match self {
-            UpdateExpressionExpr::Extra(x) => {
-                format!("UpdateExpressionExpr::extra({})", x.brief_desc())
+            UpdateExpressionArgument::Extra(x) => {
+                format!("UpdateExpressionArgument::extra({})", x.brief_desc())
             }
-            UpdateExpressionExpr::CastExpression(x) => {
-                format!("UpdateExpressionExpr::cast_expression({})", x.brief_desc())
-            }
-            UpdateExpressionExpr::DynamicVariableName(x) => format!(
-                "UpdateExpressionExpr::dynamic_variable_name({})",
+            UpdateExpressionArgument::CastExpression(x) => format!(
+                "UpdateExpressionArgument::cast_expression({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::FunctionCallExpression(x) => format!(
-                "UpdateExpressionExpr::function_call_expression({})",
+            UpdateExpressionArgument::DynamicVariableName(x) => format!(
+                "UpdateExpressionArgument::dynamic_variable_name({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::MemberAccessExpression(x) => format!(
-                "UpdateExpressionExpr::member_access_expression({})",
+            UpdateExpressionArgument::FunctionCallExpression(x) => format!(
+                "UpdateExpressionArgument::function_call_expression({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::MemberCallExpression(x) => format!(
-                "UpdateExpressionExpr::member_call_expression({})",
+            UpdateExpressionArgument::MemberAccessExpression(x) => format!(
+                "UpdateExpressionArgument::member_access_expression({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(x) => format!(
-                "UpdateExpressionExpr::nullsafe_member_access_expression({})",
+            UpdateExpressionArgument::MemberCallExpression(x) => format!(
+                "UpdateExpressionArgument::member_call_expression({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::NullsafeMemberCallExpression(x) => format!(
-                "UpdateExpressionExpr::nullsafe_member_call_expression({})",
+            UpdateExpressionArgument::NullsafeMemberAccessExpression(x) => format!(
+                "UpdateExpressionArgument::nullsafe_member_access_expression({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::ScopedCallExpression(x) => format!(
-                "UpdateExpressionExpr::scoped_call_expression({})",
+            UpdateExpressionArgument::NullsafeMemberCallExpression(x) => format!(
+                "UpdateExpressionArgument::nullsafe_member_call_expression({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(x) => format!(
-                "UpdateExpressionExpr::scoped_property_access_expression({})",
+            UpdateExpressionArgument::ScopedCallExpression(x) => format!(
+                "UpdateExpressionArgument::scoped_call_expression({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::SubscriptExpression(x) => format!(
-                "UpdateExpressionExpr::subscript_expression({})",
+            UpdateExpressionArgument::ScopedPropertyAccessExpression(x) => format!(
+                "UpdateExpressionArgument::scoped_property_access_expression({})",
                 x.brief_desc()
             ),
-            UpdateExpressionExpr::VariableName(x) => {
-                format!("UpdateExpressionExpr::variable_name({})", x.brief_desc())
-            }
+            UpdateExpressionArgument::SubscriptExpression(x) => format!(
+                "UpdateExpressionArgument::subscript_expression({})",
+                x.brief_desc()
+            ),
+            UpdateExpressionArgument::VariableName(x) => format!(
+                "UpdateExpressionArgument::variable_name({})",
+                x.brief_desc()
+            ),
         }
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            UpdateExpressionExpr::Extra(x) => x.as_any(),
-            UpdateExpressionExpr::CastExpression(x) => x.as_any(),
-            UpdateExpressionExpr::DynamicVariableName(x) => x.as_any(),
-            UpdateExpressionExpr::FunctionCallExpression(x) => x.as_any(),
-            UpdateExpressionExpr::MemberAccessExpression(x) => x.as_any(),
-            UpdateExpressionExpr::MemberCallExpression(x) => x.as_any(),
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(x) => x.as_any(),
-            UpdateExpressionExpr::NullsafeMemberCallExpression(x) => x.as_any(),
-            UpdateExpressionExpr::ScopedCallExpression(x) => x.as_any(),
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(x) => x.as_any(),
-            UpdateExpressionExpr::SubscriptExpression(x) => x.as_any(),
-            UpdateExpressionExpr::VariableName(x) => x.as_any(),
+            UpdateExpressionArgument::Extra(x) => x.as_any(),
+            UpdateExpressionArgument::CastExpression(x) => x.as_any(),
+            UpdateExpressionArgument::DynamicVariableName(x) => x.as_any(),
+            UpdateExpressionArgument::FunctionCallExpression(x) => x.as_any(),
+            UpdateExpressionArgument::MemberAccessExpression(x) => x.as_any(),
+            UpdateExpressionArgument::MemberCallExpression(x) => x.as_any(),
+            UpdateExpressionArgument::NullsafeMemberAccessExpression(x) => x.as_any(),
+            UpdateExpressionArgument::NullsafeMemberCallExpression(x) => x.as_any(),
+            UpdateExpressionArgument::ScopedCallExpression(x) => x.as_any(),
+            UpdateExpressionArgument::ScopedPropertyAccessExpression(x) => x.as_any(),
+            UpdateExpressionArgument::SubscriptExpression(x) => x.as_any(),
+            UpdateExpressionArgument::VariableName(x) => x.as_any(),
         }
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            UpdateExpressionExpr::Extra(x) => x.children_any(),
-            UpdateExpressionExpr::CastExpression(x) => x.children_any(),
-            UpdateExpressionExpr::DynamicVariableName(x) => x.children_any(),
-            UpdateExpressionExpr::FunctionCallExpression(x) => x.children_any(),
-            UpdateExpressionExpr::MemberAccessExpression(x) => x.children_any(),
-            UpdateExpressionExpr::MemberCallExpression(x) => x.children_any(),
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(x) => x.children_any(),
-            UpdateExpressionExpr::NullsafeMemberCallExpression(x) => x.children_any(),
-            UpdateExpressionExpr::ScopedCallExpression(x) => x.children_any(),
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(x) => x.children_any(),
-            UpdateExpressionExpr::SubscriptExpression(x) => x.children_any(),
-            UpdateExpressionExpr::VariableName(x) => x.children_any(),
+            UpdateExpressionArgument::Extra(x) => x.children_any(),
+            UpdateExpressionArgument::CastExpression(x) => x.children_any(),
+            UpdateExpressionArgument::DynamicVariableName(x) => x.children_any(),
+            UpdateExpressionArgument::FunctionCallExpression(x) => x.children_any(),
+            UpdateExpressionArgument::MemberAccessExpression(x) => x.children_any(),
+            UpdateExpressionArgument::MemberCallExpression(x) => x.children_any(),
+            UpdateExpressionArgument::NullsafeMemberAccessExpression(x) => x.children_any(),
+            UpdateExpressionArgument::NullsafeMemberCallExpression(x) => x.children_any(),
+            UpdateExpressionArgument::ScopedCallExpression(x) => x.children_any(),
+            UpdateExpressionArgument::ScopedPropertyAccessExpression(x) => x.children_any(),
+            UpdateExpressionArgument::SubscriptExpression(x) => x.children_any(),
+            UpdateExpressionArgument::VariableName(x) => x.children_any(),
         }
     }
 
     fn range(&self) -> Range {
         match self {
-            UpdateExpressionExpr::Extra(x) => x.range(),
-            UpdateExpressionExpr::CastExpression(x) => x.range(),
-            UpdateExpressionExpr::DynamicVariableName(x) => x.range(),
-            UpdateExpressionExpr::FunctionCallExpression(x) => x.range(),
-            UpdateExpressionExpr::MemberAccessExpression(x) => x.range(),
-            UpdateExpressionExpr::MemberCallExpression(x) => x.range(),
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(x) => x.range(),
-            UpdateExpressionExpr::NullsafeMemberCallExpression(x) => x.range(),
-            UpdateExpressionExpr::ScopedCallExpression(x) => x.range(),
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(x) => x.range(),
-            UpdateExpressionExpr::SubscriptExpression(x) => x.range(),
-            UpdateExpressionExpr::VariableName(x) => x.range(),
+            UpdateExpressionArgument::Extra(x) => x.range(),
+            UpdateExpressionArgument::CastExpression(x) => x.range(),
+            UpdateExpressionArgument::DynamicVariableName(x) => x.range(),
+            UpdateExpressionArgument::FunctionCallExpression(x) => x.range(),
+            UpdateExpressionArgument::MemberAccessExpression(x) => x.range(),
+            UpdateExpressionArgument::MemberCallExpression(x) => x.range(),
+            UpdateExpressionArgument::NullsafeMemberAccessExpression(x) => x.range(),
+            UpdateExpressionArgument::NullsafeMemberCallExpression(x) => x.range(),
+            UpdateExpressionArgument::ScopedCallExpression(x) => x.range(),
+            UpdateExpressionArgument::ScopedPropertyAccessExpression(x) => x.range(),
+            UpdateExpressionArgument::SubscriptExpression(x) => x.range(),
+            UpdateExpressionArgument::VariableName(x) => x.range(),
         }
     }
 }
@@ -372,14 +379,11 @@ impl NodeParser for UpdateExpressionPostfix {
             "comment" => UpdateExpressionPostfix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => UpdateExpressionPostfix::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => UpdateExpressionPostfix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "++" => UpdateExpressionPostfix::Increment(IncrementOperator(node.range())),
-            "--" => UpdateExpressionPostfix::Decrement(DecrementOperator(node.range())),
+            "++" => UpdateExpressionPostfix::Increment(IncrementOperator(node.range().into())),
+            "--" => UpdateExpressionPostfix::Decrement(DecrementOperator(node.range().into())),
 
             _ => {
                 return Err(ParseError::new(
@@ -397,14 +401,11 @@ impl UpdateExpressionPostfix {
             "comment" => UpdateExpressionPostfix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => UpdateExpressionPostfix::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => UpdateExpressionPostfix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "++" => UpdateExpressionPostfix::Increment(IncrementOperator(node.range())),
-            "--" => UpdateExpressionPostfix::Decrement(DecrementOperator(node.range())),
+            "++" => UpdateExpressionPostfix::Increment(IncrementOperator(node.range().into())),
+            "--" => UpdateExpressionPostfix::Decrement(DecrementOperator(node.range().into())),
 
             _ => return Ok(None),
         }))
@@ -443,14 +444,11 @@ impl NodeParser for UpdateExpressionPrefix {
             "comment" => UpdateExpressionPrefix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => UpdateExpressionPrefix::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => UpdateExpressionPrefix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "++" => UpdateExpressionPrefix::Increment(IncrementOperator(node.range())),
-            "--" => UpdateExpressionPrefix::Decrement(DecrementOperator(node.range())),
+            "++" => UpdateExpressionPrefix::Increment(IncrementOperator(node.range().into())),
+            "--" => UpdateExpressionPrefix::Decrement(DecrementOperator(node.range().into())),
 
             _ => {
                 return Err(ParseError::new(
@@ -468,14 +466,11 @@ impl UpdateExpressionPrefix {
             "comment" => UpdateExpressionPrefix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => UpdateExpressionPrefix::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => UpdateExpressionPrefix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "++" => UpdateExpressionPrefix::Increment(IncrementOperator(node.range())),
-            "--" => UpdateExpressionPrefix::Decrement(DecrementOperator(node.range())),
+            "++" => UpdateExpressionPrefix::Increment(IncrementOperator(node.range().into())),
+            "--" => UpdateExpressionPrefix::Decrement(DecrementOperator(node.range().into())),
 
             _ => return Ok(None),
         }))
@@ -504,7 +499,7 @@ impl UpdateExpressionPrefix {
 #[derive(Debug, Clone)]
 pub struct UpdateExpressionNode {
     pub range: Range,
-    pub expr: Box<UpdateExpressionExpr>,
+    pub argument: Box<UpdateExpressionArgument>,
     pub postfix: Option<Box<UpdateExpressionPostfix>>,
     pub prefix: Option<Box<UpdateExpressionPrefix>>,
     pub extras: Vec<Box<ExtraChild>>,
@@ -512,7 +507,7 @@ pub struct UpdateExpressionNode {
 
 impl NodeParser for UpdateExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "update_expression" {
             return Err(ParseError::new(
                 range,
@@ -524,15 +519,15 @@ impl NodeParser for UpdateExpressionNode {
                 ),
             ));
         }
-        let expr: Box<UpdateExpressionExpr> =
-            Result::from(node.parse_child("expr", source).into())?;
+        let argument: Box<UpdateExpressionArgument> =
+            Result::from(node.parse_child("argument", source).into())?;
         let postfix: Option<Box<UpdateExpressionPostfix>> =
             Result::from(node.parse_child("postfix", source).into())?;
         let prefix: Option<Box<UpdateExpressionPrefix>> =
             Result::from(node.parse_child("prefix", source).into())?;
         Ok(Self {
             range,
-            expr,
+            argument,
             postfix,
             prefix,
             extras: ExtraChild::parse_vec(
@@ -564,7 +559,7 @@ impl NodeAccess for UpdateExpressionNode {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
         // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
-        child_vec.push(self.expr.as_any());
+        child_vec.push(self.argument.as_any());
         if let Some(x) = &self.postfix {
             child_vec.push(x.as_any());
         }

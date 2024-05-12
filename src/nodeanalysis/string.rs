@@ -18,7 +18,8 @@ impl StringNode {
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
-        let raw = &self.child.raw;
+        todo!();
+        let raw = b""; // &self.child.raw;
         let len = raw.len();
         if len < 2 {
             return None;

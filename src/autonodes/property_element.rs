@@ -1,25 +1,25 @@
-use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
+use crate::autonodes::property_initializer::PropertyInitializerNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct PropertyElementNode {
     pub range: Range,
-    pub initializer: Option<_ExpressionNode>,
     pub name: VariableNameNode,
+    pub child: Option<Box<PropertyInitializerNode>>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
 impl NodeParser for PropertyElementNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "property_element" {
             return Err(ParseError::new(
                 range,
@@ -31,19 +31,30 @@ impl NodeParser for PropertyElementNode {
                 ),
             ));
         }
-        let initializer: Option<_ExpressionNode> =
-            Result::from(node.parse_child("initializer", source).into())?;
-        let name: VariableNameNode = Result::from(node.parse_child("name", source).into())?;
+        let mut skip_nodes: Vec<usize> = vec![];
+        let name: VariableNameNode = Result::from(
+            node.parse_child("name", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
-            initializer,
             name,
+            child: node
+                .named_children(&mut node.walk())
+                .filter(|node| !skip_nodes.contains(&node.id()))
+                .filter(|node| node.kind() != "comment")
+                .map(|k| PropertyInitializerNode::parse(k, source))
+                .collect::<Result<Vec<PropertyInitializerNode>, ParseError>>()?
+                .drain(..)
+                .map(|j| Box::new(j))
+                .next(),
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
-                    .filter(|node| node.kind() == "comment"),
+                    .filter(|node| node.kind() == "comment")
+                    .filter(|node| !skip_nodes.contains(&node.id())),
                 source,
-            )
-            .unwrap(),
+            )?,
         })
     }
 }
@@ -67,10 +78,11 @@ impl NodeAccess for PropertyElementNode {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
         // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
-        if let Some(x) = &self.initializer {
+        child_vec.push(self.name.as_any());
+        if let Some(x) = &self.child {
             child_vec.push(x.as_any());
         }
-        child_vec.push(self.name.as_any());
+        child_vec.extend(self.extras.iter().map(|n| n.as_any()));
 
         child_vec.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
         child_vec

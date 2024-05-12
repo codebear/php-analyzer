@@ -4,11 +4,11 @@ use std::{
 };
 
 use nom::Finish;
-use tree_sitter::Range;
 
 use crate::{
     analysis::state::AnalysisState,
     issue::IssueEmitter,
+    parser::Range,
     types::{parse_types::UnionOfTypes, union::UnionType},
 };
 

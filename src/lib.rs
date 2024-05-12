@@ -13,7 +13,8 @@ use std::sync::Arc;
 use std::sync::RwLock;
 
 pub use tree_sitter::Point;
-pub use tree_sitter::Range;
+//use tree_sitter::Range;
+use crate::parser::Range;
 pub use tree_sitter::Tree;
 
 pub mod analysis;

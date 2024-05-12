@@ -4,18 +4,16 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::php_tag::PhpTagNode;
 use crate::autonodes::text::TextNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum ProgramChildren {
@@ -31,9 +29,6 @@ impl NodeParser for ProgramChildren {
             "comment" => ProgramChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => ProgramChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => {
                 ProgramChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -63,9 +58,6 @@ impl ProgramChildren {
             "comment" => ProgramChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => ProgramChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => {
                 ProgramChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -192,7 +184,7 @@ pub struct ProgramNode {
 
 impl NodeParser for ProgramNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "program" {
             return Err(ParseError::new(
                 range,

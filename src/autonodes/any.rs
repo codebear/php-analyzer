@@ -27,6 +27,7 @@ use crate::autonodes::cast_expression::CastExpressionNode;
 use crate::autonodes::cast_type::CastTypeNode;
 use crate::autonodes::catch_clause::CatchClauseNode;
 use crate::autonodes::class_constant_access_expression::ClassConstantAccessExpressionNode;
+use crate::autonodes::class_constant_access_identifier::ClassConstantAccessIdentifierNode;
 use crate::autonodes::class_declaration::ClassDeclarationNode;
 use crate::autonodes::class_interface_clause::ClassInterfaceClauseNode;
 use crate::autonodes::clone_expression::CloneExpressionNode;
@@ -41,6 +42,7 @@ use crate::autonodes::declaration_list::DeclarationListNode;
 use crate::autonodes::declare_directive::DeclareDirectiveNode;
 use crate::autonodes::declare_statement::DeclareStatementNode;
 use crate::autonodes::default_statement::DefaultStatementNode;
+use crate::autonodes::disjunctive_normal_form_type::DisjunctiveNormalFormTypeNode;
 use crate::autonodes::do_statement::DoStatementNode;
 use crate::autonodes::dynamic_variable_name::DynamicVariableNameNode;
 use crate::autonodes::echo_statement::EchoStatementNode;
@@ -51,8 +53,8 @@ use crate::autonodes::encapsed_string::EncapsedStringNode;
 use crate::autonodes::enum_case::EnumCaseNode;
 use crate::autonodes::enum_declaration::EnumDeclarationNode;
 use crate::autonodes::enum_declaration_list::EnumDeclarationListNode;
+use crate::autonodes::error_suppression_expression::ErrorSuppressionExpressionNode;
 use crate::autonodes::escape_sequence::EscapeSequenceNode;
-use crate::autonodes::exponentiation_expression::ExponentiationExpressionNode;
 use crate::autonodes::expression_statement::ExpressionStatementNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
 use crate::autonodes::finally_clause::FinallyClauseNode;
@@ -103,6 +105,7 @@ use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExp
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
 use crate::autonodes::object_creation_expression::ObjectCreationExpressionNode;
 use crate::autonodes::optional_type::OptionalTypeNode;
+use crate::autonodes::pair::PairNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
 use crate::autonodes::php_tag::PhpTagNode;
 use crate::autonodes::primitive_type::PrimitiveTypeNode;
@@ -110,6 +113,7 @@ use crate::autonodes::print_intrinsic::PrintIntrinsicNode;
 use crate::autonodes::program::ProgramNode;
 use crate::autonodes::property_declaration::PropertyDeclarationNode;
 use crate::autonodes::property_element::PropertyElementNode;
+use crate::autonodes::property_initializer::PropertyInitializerNode;
 use crate::autonodes::property_promotion_parameter::PropertyPromotionParameterNode;
 use crate::autonodes::qualified_name::QualifiedNameNode;
 use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
@@ -123,7 +127,6 @@ use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::sequence_expression::SequenceExpressionNode;
 use crate::autonodes::shell_command_expression::ShellCommandExpressionNode;
-use crate::autonodes::silence_expression::SilenceExpressionNode;
 use crate::autonodes::simple_parameter::SimpleParameterNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
 use crate::autonodes::static_variable_declaration::StaticVariableDeclarationNode;
@@ -158,8 +161,8 @@ use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 use crate::operators::operator::Operators;
 
@@ -188,6 +191,7 @@ pub enum AnyNodeRef<'a> {
     AugmentedAssignmentExpression(&'a AugmentedAssignmentExpressionNode),
     BaseClause(&'a BaseClauseNode),
     BinaryExpression(&'a BinaryExpressionNode),
+    Boolean(&'a BooleanNode),
     BreakStatement(&'a BreakStatementNode),
     ByRef(&'a ByRefNode),
     CaseStatement(&'a CaseStatementNode),
@@ -195,6 +199,7 @@ pub enum AnyNodeRef<'a> {
     CastType(&'a CastTypeNode),
     CatchClause(&'a CatchClauseNode),
     ClassConstantAccessExpression(&'a ClassConstantAccessExpressionNode),
+    ClassConstantAccessIdentifier(&'a ClassConstantAccessIdentifierNode),
     ClassDeclaration(&'a ClassDeclarationNode),
     ClassInterfaceClause(&'a ClassInterfaceClauseNode),
     CloneExpression(&'a CloneExpressionNode),
@@ -208,6 +213,7 @@ pub enum AnyNodeRef<'a> {
     DeclareDirective(&'a DeclareDirectiveNode),
     DeclareStatement(&'a DeclareStatementNode),
     DefaultStatement(&'a DefaultStatementNode),
+    DisjunctiveNormalFormType(&'a DisjunctiveNormalFormTypeNode),
     DoStatement(&'a DoStatementNode),
     DynamicVariableName(&'a DynamicVariableNameNode),
     EchoStatement(&'a EchoStatementNode),
@@ -218,7 +224,7 @@ pub enum AnyNodeRef<'a> {
     EnumCase(&'a EnumCaseNode),
     EnumDeclaration(&'a EnumDeclarationNode),
     EnumDeclarationList(&'a EnumDeclarationListNode),
-    ExponentiationExpression(&'a ExponentiationExpressionNode),
+    ErrorSuppressionExpression(&'a ErrorSuppressionExpressionNode),
     ExpressionStatement(&'a ExpressionStatementNode),
     FinalModifier(&'a FinalModifierNode),
     FinallyClause(&'a FinallyClauseNode),
@@ -259,16 +265,19 @@ pub enum AnyNodeRef<'a> {
     NamespaceUseGroupClause(&'a NamespaceUseGroupClauseNode),
     Nowdoc(&'a NowdocNode),
     NowdocBody(&'a NowdocBodyNode),
+    Null(&'a NullNode),
     NullsafeMemberAccessExpression(&'a NullsafeMemberAccessExpressionNode),
     NullsafeMemberCallExpression(&'a NullsafeMemberCallExpressionNode),
     ObjectCreationExpression(&'a ObjectCreationExpressionNode),
     OptionalType(&'a OptionalTypeNode),
+    Pair(&'a PairNode),
     ParenthesizedExpression(&'a ParenthesizedExpressionNode),
     PrimitiveType(&'a PrimitiveTypeNode),
     PrintIntrinsic(&'a PrintIntrinsicNode),
     Program(&'a ProgramNode),
     PropertyDeclaration(&'a PropertyDeclarationNode),
     PropertyElement(&'a PropertyElementNode),
+    PropertyInitializer(&'a PropertyInitializerNode),
     PropertyPromotionParameter(&'a PropertyPromotionParameterNode),
     QualifiedName(&'a QualifiedNameNode),
     ReadonlyModifier(&'a ReadonlyModifierNode),
@@ -282,7 +291,6 @@ pub enum AnyNodeRef<'a> {
     ScopedPropertyAccessExpression(&'a ScopedPropertyAccessExpressionNode),
     SequenceExpression(&'a SequenceExpressionNode),
     ShellCommandExpression(&'a ShellCommandExpressionNode),
-    SilenceExpression(&'a SilenceExpressionNode),
     SimpleParameter(&'a SimpleParameterNode),
     StaticModifier(&'a StaticModifierNode),
     StaticVariableDeclaration(&'a StaticVariableDeclarationNode),
@@ -311,7 +319,6 @@ pub enum AnyNodeRef<'a> {
     VisibilityModifier(&'a VisibilityModifierNode),
     WhileStatement(&'a WhileStatementNode),
     YieldExpression(&'a YieldExpressionNode),
-    Boolean(&'a BooleanNode),
     BottomType(&'a BottomTypeNode),
     Comment(&'a CommentNode),
     EscapeSequence(&'a EscapeSequenceNode),
@@ -320,7 +327,6 @@ pub enum AnyNodeRef<'a> {
     HeredocStart(&'a HeredocStartNode),
     Integer(&'a IntegerNode),
     NowdocString(&'a NowdocStringNode),
-    Null(&'a NullNode),
     PhpTag(&'a PhpTagNode),
     StringValue(&'a StringValueNode),
     VarModifier(&'a VarModifierNode),
@@ -352,6 +358,7 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::AugmentedAssignmentExpression(n) => n.kind(),
             AnyNodeRef::BaseClause(n) => n.kind(),
             AnyNodeRef::BinaryExpression(n) => n.kind(),
+            AnyNodeRef::Boolean(n) => n.kind(),
             AnyNodeRef::BreakStatement(n) => n.kind(),
             AnyNodeRef::ByRef(n) => n.kind(),
             AnyNodeRef::CaseStatement(n) => n.kind(),
@@ -359,6 +366,7 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::CastType(n) => n.kind(),
             AnyNodeRef::CatchClause(n) => n.kind(),
             AnyNodeRef::ClassConstantAccessExpression(n) => n.kind(),
+            AnyNodeRef::ClassConstantAccessIdentifier(n) => n.kind(),
             AnyNodeRef::ClassDeclaration(n) => n.kind(),
             AnyNodeRef::ClassInterfaceClause(n) => n.kind(),
             AnyNodeRef::CloneExpression(n) => n.kind(),
@@ -372,6 +380,7 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::DeclareDirective(n) => n.kind(),
             AnyNodeRef::DeclareStatement(n) => n.kind(),
             AnyNodeRef::DefaultStatement(n) => n.kind(),
+            AnyNodeRef::DisjunctiveNormalFormType(n) => n.kind(),
             AnyNodeRef::DoStatement(n) => n.kind(),
             AnyNodeRef::DynamicVariableName(n) => n.kind(),
             AnyNodeRef::EchoStatement(n) => n.kind(),
@@ -382,7 +391,7 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::EnumCase(n) => n.kind(),
             AnyNodeRef::EnumDeclaration(n) => n.kind(),
             AnyNodeRef::EnumDeclarationList(n) => n.kind(),
-            AnyNodeRef::ExponentiationExpression(n) => n.kind(),
+            AnyNodeRef::ErrorSuppressionExpression(n) => n.kind(),
             AnyNodeRef::ExpressionStatement(n) => n.kind(),
             AnyNodeRef::FinalModifier(n) => n.kind(),
             AnyNodeRef::FinallyClause(n) => n.kind(),
@@ -423,16 +432,19 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::NamespaceUseGroupClause(n) => n.kind(),
             AnyNodeRef::Nowdoc(n) => n.kind(),
             AnyNodeRef::NowdocBody(n) => n.kind(),
+            AnyNodeRef::Null(n) => n.kind(),
             AnyNodeRef::NullsafeMemberAccessExpression(n) => n.kind(),
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.kind(),
             AnyNodeRef::ObjectCreationExpression(n) => n.kind(),
             AnyNodeRef::OptionalType(n) => n.kind(),
+            AnyNodeRef::Pair(n) => n.kind(),
             AnyNodeRef::ParenthesizedExpression(n) => n.kind(),
             AnyNodeRef::PrimitiveType(n) => n.kind(),
             AnyNodeRef::PrintIntrinsic(n) => n.kind(),
             AnyNodeRef::Program(n) => n.kind(),
             AnyNodeRef::PropertyDeclaration(n) => n.kind(),
             AnyNodeRef::PropertyElement(n) => n.kind(),
+            AnyNodeRef::PropertyInitializer(n) => n.kind(),
             AnyNodeRef::PropertyPromotionParameter(n) => n.kind(),
             AnyNodeRef::QualifiedName(n) => n.kind(),
             AnyNodeRef::ReadonlyModifier(n) => n.kind(),
@@ -446,7 +458,6 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::ScopedPropertyAccessExpression(n) => n.kind(),
             AnyNodeRef::SequenceExpression(n) => n.kind(),
             AnyNodeRef::ShellCommandExpression(n) => n.kind(),
-            AnyNodeRef::SilenceExpression(n) => n.kind(),
             AnyNodeRef::SimpleParameter(n) => n.kind(),
             AnyNodeRef::StaticModifier(n) => n.kind(),
             AnyNodeRef::StaticVariableDeclaration(n) => n.kind(),
@@ -475,7 +486,6 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::VisibilityModifier(n) => n.kind(),
             AnyNodeRef::WhileStatement(n) => n.kind(),
             AnyNodeRef::YieldExpression(n) => n.kind(),
-            AnyNodeRef::Boolean(n) => n.kind(),
             AnyNodeRef::BottomType(n) => n.kind(),
             AnyNodeRef::Comment(n) => n.kind(),
             AnyNodeRef::EscapeSequence(n) => n.kind(),
@@ -484,7 +494,6 @@ impl<'a> AnyNodeRef<'a> {
             AnyNodeRef::HeredocStart(n) => n.kind(),
             AnyNodeRef::Integer(n) => n.kind(),
             AnyNodeRef::NowdocString(n) => n.kind(),
-            AnyNodeRef::Null(n) => n.kind(),
             AnyNodeRef::PhpTag(n) => n.kind(),
             AnyNodeRef::StringValue(n) => n.kind(),
             AnyNodeRef::VarModifier(n) => n.kind(),
@@ -518,6 +527,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::AugmentedAssignmentExpression(n) => n.brief_desc(),
             AnyNodeRef::BaseClause(n) => n.brief_desc(),
             AnyNodeRef::BinaryExpression(n) => n.brief_desc(),
+            AnyNodeRef::Boolean(n) => n.brief_desc(),
             AnyNodeRef::BreakStatement(n) => n.brief_desc(),
             AnyNodeRef::ByRef(n) => n.brief_desc(),
             AnyNodeRef::CaseStatement(n) => n.brief_desc(),
@@ -525,6 +535,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::CastType(n) => n.brief_desc(),
             AnyNodeRef::CatchClause(n) => n.brief_desc(),
             AnyNodeRef::ClassConstantAccessExpression(n) => n.brief_desc(),
+            AnyNodeRef::ClassConstantAccessIdentifier(n) => n.brief_desc(),
             AnyNodeRef::ClassDeclaration(n) => n.brief_desc(),
             AnyNodeRef::ClassInterfaceClause(n) => n.brief_desc(),
             AnyNodeRef::CloneExpression(n) => n.brief_desc(),
@@ -538,6 +549,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::DeclareDirective(n) => n.brief_desc(),
             AnyNodeRef::DeclareStatement(n) => n.brief_desc(),
             AnyNodeRef::DefaultStatement(n) => n.brief_desc(),
+            AnyNodeRef::DisjunctiveNormalFormType(n) => n.brief_desc(),
             AnyNodeRef::DoStatement(n) => n.brief_desc(),
             AnyNodeRef::DynamicVariableName(n) => n.brief_desc(),
             AnyNodeRef::EchoStatement(n) => n.brief_desc(),
@@ -548,7 +560,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::EnumCase(n) => n.brief_desc(),
             AnyNodeRef::EnumDeclaration(n) => n.brief_desc(),
             AnyNodeRef::EnumDeclarationList(n) => n.brief_desc(),
-            AnyNodeRef::ExponentiationExpression(n) => n.brief_desc(),
+            AnyNodeRef::ErrorSuppressionExpression(n) => n.brief_desc(),
             AnyNodeRef::ExpressionStatement(n) => n.brief_desc(),
             AnyNodeRef::FinalModifier(n) => n.brief_desc(),
             AnyNodeRef::FinallyClause(n) => n.brief_desc(),
@@ -589,16 +601,19 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::NamespaceUseGroupClause(n) => n.brief_desc(),
             AnyNodeRef::Nowdoc(n) => n.brief_desc(),
             AnyNodeRef::NowdocBody(n) => n.brief_desc(),
+            AnyNodeRef::Null(n) => n.brief_desc(),
             AnyNodeRef::NullsafeMemberAccessExpression(n) => n.brief_desc(),
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.brief_desc(),
             AnyNodeRef::ObjectCreationExpression(n) => n.brief_desc(),
             AnyNodeRef::OptionalType(n) => n.brief_desc(),
+            AnyNodeRef::Pair(n) => n.brief_desc(),
             AnyNodeRef::ParenthesizedExpression(n) => n.brief_desc(),
             AnyNodeRef::PrimitiveType(n) => n.brief_desc(),
             AnyNodeRef::PrintIntrinsic(n) => n.brief_desc(),
             AnyNodeRef::Program(n) => n.brief_desc(),
             AnyNodeRef::PropertyDeclaration(n) => n.brief_desc(),
             AnyNodeRef::PropertyElement(n) => n.brief_desc(),
+            AnyNodeRef::PropertyInitializer(n) => n.brief_desc(),
             AnyNodeRef::PropertyPromotionParameter(n) => n.brief_desc(),
             AnyNodeRef::QualifiedName(n) => n.brief_desc(),
             AnyNodeRef::ReadonlyModifier(n) => n.brief_desc(),
@@ -612,7 +627,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ScopedPropertyAccessExpression(n) => n.brief_desc(),
             AnyNodeRef::SequenceExpression(n) => n.brief_desc(),
             AnyNodeRef::ShellCommandExpression(n) => n.brief_desc(),
-            AnyNodeRef::SilenceExpression(n) => n.brief_desc(),
             AnyNodeRef::SimpleParameter(n) => n.brief_desc(),
             AnyNodeRef::StaticModifier(n) => n.brief_desc(),
             AnyNodeRef::StaticVariableDeclaration(n) => n.brief_desc(),
@@ -641,7 +655,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::VisibilityModifier(n) => n.brief_desc(),
             AnyNodeRef::WhileStatement(n) => n.brief_desc(),
             AnyNodeRef::YieldExpression(n) => n.brief_desc(),
-            AnyNodeRef::Boolean(n) => n.brief_desc(),
             AnyNodeRef::BottomType(n) => n.brief_desc(),
             AnyNodeRef::Comment(n) => n.brief_desc(),
             AnyNodeRef::EscapeSequence(n) => n.brief_desc(),
@@ -650,7 +663,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::HeredocStart(n) => n.brief_desc(),
             AnyNodeRef::Integer(n) => n.brief_desc(),
             AnyNodeRef::NowdocString(n) => n.brief_desc(),
-            AnyNodeRef::Null(n) => n.brief_desc(),
             AnyNodeRef::PhpTag(n) => n.brief_desc(),
             AnyNodeRef::StringValue(n) => n.brief_desc(),
             AnyNodeRef::VarModifier(n) => n.brief_desc(),
@@ -682,6 +694,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::AugmentedAssignmentExpression(n) => n.range(),
             AnyNodeRef::BaseClause(n) => n.range(),
             AnyNodeRef::BinaryExpression(n) => n.range(),
+            AnyNodeRef::Boolean(n) => n.range(),
             AnyNodeRef::BreakStatement(n) => n.range(),
             AnyNodeRef::ByRef(n) => n.range(),
             AnyNodeRef::CaseStatement(n) => n.range(),
@@ -689,6 +702,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::CastType(n) => n.range(),
             AnyNodeRef::CatchClause(n) => n.range(),
             AnyNodeRef::ClassConstantAccessExpression(n) => n.range(),
+            AnyNodeRef::ClassConstantAccessIdentifier(n) => n.range(),
             AnyNodeRef::ClassDeclaration(n) => n.range(),
             AnyNodeRef::ClassInterfaceClause(n) => n.range(),
             AnyNodeRef::CloneExpression(n) => n.range(),
@@ -702,6 +716,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::DeclareDirective(n) => n.range(),
             AnyNodeRef::DeclareStatement(n) => n.range(),
             AnyNodeRef::DefaultStatement(n) => n.range(),
+            AnyNodeRef::DisjunctiveNormalFormType(n) => n.range(),
             AnyNodeRef::DoStatement(n) => n.range(),
             AnyNodeRef::DynamicVariableName(n) => n.range(),
             AnyNodeRef::EchoStatement(n) => n.range(),
@@ -712,7 +727,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::EnumCase(n) => n.range(),
             AnyNodeRef::EnumDeclaration(n) => n.range(),
             AnyNodeRef::EnumDeclarationList(n) => n.range(),
-            AnyNodeRef::ExponentiationExpression(n) => n.range(),
+            AnyNodeRef::ErrorSuppressionExpression(n) => n.range(),
             AnyNodeRef::ExpressionStatement(n) => n.range(),
             AnyNodeRef::FinalModifier(n) => n.range(),
             AnyNodeRef::FinallyClause(n) => n.range(),
@@ -753,16 +768,19 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::NamespaceUseGroupClause(n) => n.range(),
             AnyNodeRef::Nowdoc(n) => n.range(),
             AnyNodeRef::NowdocBody(n) => n.range(),
+            AnyNodeRef::Null(n) => n.range(),
             AnyNodeRef::NullsafeMemberAccessExpression(n) => n.range(),
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.range(),
             AnyNodeRef::ObjectCreationExpression(n) => n.range(),
             AnyNodeRef::OptionalType(n) => n.range(),
+            AnyNodeRef::Pair(n) => n.range(),
             AnyNodeRef::ParenthesizedExpression(n) => n.range(),
             AnyNodeRef::PrimitiveType(n) => n.range(),
             AnyNodeRef::PrintIntrinsic(n) => n.range(),
             AnyNodeRef::Program(n) => n.range(),
             AnyNodeRef::PropertyDeclaration(n) => n.range(),
             AnyNodeRef::PropertyElement(n) => n.range(),
+            AnyNodeRef::PropertyInitializer(n) => n.range(),
             AnyNodeRef::PropertyPromotionParameter(n) => n.range(),
             AnyNodeRef::QualifiedName(n) => n.range(),
             AnyNodeRef::ReadonlyModifier(n) => n.range(),
@@ -776,7 +794,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ScopedPropertyAccessExpression(n) => n.range(),
             AnyNodeRef::SequenceExpression(n) => n.range(),
             AnyNodeRef::ShellCommandExpression(n) => n.range(),
-            AnyNodeRef::SilenceExpression(n) => n.range(),
             AnyNodeRef::SimpleParameter(n) => n.range(),
             AnyNodeRef::StaticModifier(n) => n.range(),
             AnyNodeRef::StaticVariableDeclaration(n) => n.range(),
@@ -805,7 +822,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::VisibilityModifier(n) => n.range(),
             AnyNodeRef::WhileStatement(n) => n.range(),
             AnyNodeRef::YieldExpression(n) => n.range(),
-            AnyNodeRef::Boolean(n) => n.range(),
             AnyNodeRef::BottomType(n) => n.range(),
             AnyNodeRef::Comment(n) => n.range(),
             AnyNodeRef::EscapeSequence(n) => n.range(),
@@ -814,7 +830,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::HeredocStart(n) => n.range(),
             AnyNodeRef::Integer(n) => n.range(),
             AnyNodeRef::NowdocString(n) => n.range(),
-            AnyNodeRef::Null(n) => n.range(),
             AnyNodeRef::PhpTag(n) => n.range(),
             AnyNodeRef::StringValue(n) => n.range(),
             AnyNodeRef::VarModifier(n) => n.range(),
@@ -850,6 +865,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::AugmentedAssignmentExpression(n) => n.children_any(),
             AnyNodeRef::BaseClause(n) => n.children_any(),
             AnyNodeRef::BinaryExpression(n) => n.children_any(),
+            AnyNodeRef::Boolean(n) => n.children_any(),
             AnyNodeRef::BreakStatement(n) => n.children_any(),
             AnyNodeRef::ByRef(n) => n.children_any(),
             AnyNodeRef::CaseStatement(n) => n.children_any(),
@@ -857,6 +873,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::CastType(n) => n.children_any(),
             AnyNodeRef::CatchClause(n) => n.children_any(),
             AnyNodeRef::ClassConstantAccessExpression(n) => n.children_any(),
+            AnyNodeRef::ClassConstantAccessIdentifier(n) => n.children_any(),
             AnyNodeRef::ClassDeclaration(n) => n.children_any(),
             AnyNodeRef::ClassInterfaceClause(n) => n.children_any(),
             AnyNodeRef::CloneExpression(n) => n.children_any(),
@@ -870,6 +887,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::DeclareDirective(n) => n.children_any(),
             AnyNodeRef::DeclareStatement(n) => n.children_any(),
             AnyNodeRef::DefaultStatement(n) => n.children_any(),
+            AnyNodeRef::DisjunctiveNormalFormType(n) => n.children_any(),
             AnyNodeRef::DoStatement(n) => n.children_any(),
             AnyNodeRef::DynamicVariableName(n) => n.children_any(),
             AnyNodeRef::EchoStatement(n) => n.children_any(),
@@ -880,7 +898,7 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::EnumCase(n) => n.children_any(),
             AnyNodeRef::EnumDeclaration(n) => n.children_any(),
             AnyNodeRef::EnumDeclarationList(n) => n.children_any(),
-            AnyNodeRef::ExponentiationExpression(n) => n.children_any(),
+            AnyNodeRef::ErrorSuppressionExpression(n) => n.children_any(),
             AnyNodeRef::ExpressionStatement(n) => n.children_any(),
             AnyNodeRef::FinalModifier(n) => n.children_any(),
             AnyNodeRef::FinallyClause(n) => n.children_any(),
@@ -921,16 +939,19 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::NamespaceUseGroupClause(n) => n.children_any(),
             AnyNodeRef::Nowdoc(n) => n.children_any(),
             AnyNodeRef::NowdocBody(n) => n.children_any(),
+            AnyNodeRef::Null(n) => n.children_any(),
             AnyNodeRef::NullsafeMemberAccessExpression(n) => n.children_any(),
             AnyNodeRef::NullsafeMemberCallExpression(n) => n.children_any(),
             AnyNodeRef::ObjectCreationExpression(n) => n.children_any(),
             AnyNodeRef::OptionalType(n) => n.children_any(),
+            AnyNodeRef::Pair(n) => n.children_any(),
             AnyNodeRef::ParenthesizedExpression(n) => n.children_any(),
             AnyNodeRef::PrimitiveType(n) => n.children_any(),
             AnyNodeRef::PrintIntrinsic(n) => n.children_any(),
             AnyNodeRef::Program(n) => n.children_any(),
             AnyNodeRef::PropertyDeclaration(n) => n.children_any(),
             AnyNodeRef::PropertyElement(n) => n.children_any(),
+            AnyNodeRef::PropertyInitializer(n) => n.children_any(),
             AnyNodeRef::PropertyPromotionParameter(n) => n.children_any(),
             AnyNodeRef::QualifiedName(n) => n.children_any(),
             AnyNodeRef::ReadonlyModifier(n) => n.children_any(),
@@ -944,7 +965,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::ScopedPropertyAccessExpression(n) => n.children_any(),
             AnyNodeRef::SequenceExpression(n) => n.children_any(),
             AnyNodeRef::ShellCommandExpression(n) => n.children_any(),
-            AnyNodeRef::SilenceExpression(n) => n.children_any(),
             AnyNodeRef::SimpleParameter(n) => n.children_any(),
             AnyNodeRef::StaticModifier(n) => n.children_any(),
             AnyNodeRef::StaticVariableDeclaration(n) => n.children_any(),
@@ -973,7 +993,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::VisibilityModifier(n) => n.children_any(),
             AnyNodeRef::WhileStatement(n) => n.children_any(),
             AnyNodeRef::YieldExpression(n) => n.children_any(),
-            AnyNodeRef::Boolean(n) => n.children_any(),
             AnyNodeRef::BottomType(n) => n.children_any(),
             AnyNodeRef::Comment(n) => n.children_any(),
             AnyNodeRef::EscapeSequence(n) => n.children_any(),
@@ -982,7 +1001,6 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
             AnyNodeRef::HeredocStart(n) => n.children_any(),
             AnyNodeRef::Integer(n) => n.children_any(),
             AnyNodeRef::NowdocString(n) => n.children_any(),
-            AnyNodeRef::Null(n) => n.children_any(),
             AnyNodeRef::PhpTag(n) => n.children_any(),
             AnyNodeRef::StringValue(n) => n.children_any(),
             AnyNodeRef::VarModifier(n) => n.children_any(),
@@ -1012,6 +1030,7 @@ pub enum AnyNode {
     AugmentedAssignmentExpression(Box<AugmentedAssignmentExpressionNode>),
     BaseClause(Box<BaseClauseNode>),
     BinaryExpression(Box<BinaryExpressionNode>),
+    Boolean(Box<BooleanNode>),
     BreakStatement(Box<BreakStatementNode>),
     ByRef(Box<ByRefNode>),
     CaseStatement(Box<CaseStatementNode>),
@@ -1019,6 +1038,7 @@ pub enum AnyNode {
     CastType(Box<CastTypeNode>),
     CatchClause(Box<CatchClauseNode>),
     ClassConstantAccessExpression(Box<ClassConstantAccessExpressionNode>),
+    ClassConstantAccessIdentifier(Box<ClassConstantAccessIdentifierNode>),
     ClassDeclaration(Box<ClassDeclarationNode>),
     ClassInterfaceClause(Box<ClassInterfaceClauseNode>),
     CloneExpression(Box<CloneExpressionNode>),
@@ -1032,6 +1052,7 @@ pub enum AnyNode {
     DeclareDirective(Box<DeclareDirectiveNode>),
     DeclareStatement(Box<DeclareStatementNode>),
     DefaultStatement(Box<DefaultStatementNode>),
+    DisjunctiveNormalFormType(Box<DisjunctiveNormalFormTypeNode>),
     DoStatement(Box<DoStatementNode>),
     DynamicVariableName(Box<DynamicVariableNameNode>),
     EchoStatement(Box<EchoStatementNode>),
@@ -1042,7 +1063,7 @@ pub enum AnyNode {
     EnumCase(Box<EnumCaseNode>),
     EnumDeclaration(Box<EnumDeclarationNode>),
     EnumDeclarationList(Box<EnumDeclarationListNode>),
-    ExponentiationExpression(Box<ExponentiationExpressionNode>),
+    ErrorSuppressionExpression(Box<ErrorSuppressionExpressionNode>),
     ExpressionStatement(Box<ExpressionStatementNode>),
     FinalModifier(Box<FinalModifierNode>),
     FinallyClause(Box<FinallyClauseNode>),
@@ -1083,16 +1104,19 @@ pub enum AnyNode {
     NamespaceUseGroupClause(Box<NamespaceUseGroupClauseNode>),
     Nowdoc(Box<NowdocNode>),
     NowdocBody(Box<NowdocBodyNode>),
+    Null(Box<NullNode>),
     NullsafeMemberAccessExpression(Box<NullsafeMemberAccessExpressionNode>),
     NullsafeMemberCallExpression(Box<NullsafeMemberCallExpressionNode>),
     ObjectCreationExpression(Box<ObjectCreationExpressionNode>),
     OptionalType(Box<OptionalTypeNode>),
+    Pair(Box<PairNode>),
     ParenthesizedExpression(Box<ParenthesizedExpressionNode>),
     PrimitiveType(Box<PrimitiveTypeNode>),
     PrintIntrinsic(Box<PrintIntrinsicNode>),
     Program(Box<ProgramNode>),
     PropertyDeclaration(Box<PropertyDeclarationNode>),
     PropertyElement(Box<PropertyElementNode>),
+    PropertyInitializer(Box<PropertyInitializerNode>),
     PropertyPromotionParameter(Box<PropertyPromotionParameterNode>),
     QualifiedName(Box<QualifiedNameNode>),
     ReadonlyModifier(Box<ReadonlyModifierNode>),
@@ -1106,7 +1130,6 @@ pub enum AnyNode {
     ScopedPropertyAccessExpression(Box<ScopedPropertyAccessExpressionNode>),
     SequenceExpression(Box<SequenceExpressionNode>),
     ShellCommandExpression(Box<ShellCommandExpressionNode>),
-    SilenceExpression(Box<SilenceExpressionNode>),
     SimpleParameter(Box<SimpleParameterNode>),
     StaticModifier(Box<StaticModifierNode>),
     StaticVariableDeclaration(Box<StaticVariableDeclarationNode>),
@@ -1135,7 +1158,6 @@ pub enum AnyNode {
     VisibilityModifier(Box<VisibilityModifierNode>),
     WhileStatement(Box<WhileStatementNode>),
     YieldExpression(Box<YieldExpressionNode>),
-    Boolean(Box<BooleanNode>),
     BottomType(Box<BottomTypeNode>),
     Comment(Box<CommentNode>),
     EscapeSequence(Box<EscapeSequenceNode>),
@@ -1144,7 +1166,6 @@ pub enum AnyNode {
     HeredocStart(Box<HeredocStartNode>),
     Integer(Box<IntegerNode>),
     NowdocString(Box<NowdocStringNode>),
-    Null(Box<NullNode>),
     PhpTag(Box<PhpTagNode>),
     StringValue(Box<StringValueNode>),
     VarModifier(Box<VarModifierNode>),
@@ -1205,6 +1226,7 @@ impl AnyNode {
             "binary_expression" => {
                 AnyNode::BinaryExpression(Box::new(BinaryExpressionNode::parse(node, source)?))
             }
+            "boolean" => AnyNode::Boolean(Box::new(BooleanNode::parse(node, source)?)),
             "break_statement" => {
                 AnyNode::BreakStatement(Box::new(BreakStatementNode::parse(node, source)?))
             }
@@ -1219,6 +1241,9 @@ impl AnyNode {
             "catch_clause" => AnyNode::CatchClause(Box::new(CatchClauseNode::parse(node, source)?)),
             "class_constant_access_expression" => AnyNode::ClassConstantAccessExpression(Box::new(
                 ClassConstantAccessExpressionNode::parse(node, source)?,
+            )),
+            "class_constant_access_identifier" => AnyNode::ClassConstantAccessIdentifier(Box::new(
+                ClassConstantAccessIdentifierNode::parse(node, source)?,
             )),
             "class_declaration" => {
                 AnyNode::ClassDeclaration(Box::new(ClassDeclarationNode::parse(node, source)?))
@@ -1257,6 +1282,9 @@ impl AnyNode {
             "default_statement" => {
                 AnyNode::DefaultStatement(Box::new(DefaultStatementNode::parse(node, source)?))
             }
+            "disjunctive_normal_form_type" => AnyNode::DisjunctiveNormalFormType(Box::new(
+                DisjunctiveNormalFormTypeNode::parse(node, source)?,
+            )),
             "do_statement" => AnyNode::DoStatement(Box::new(DoStatementNode::parse(node, source)?)),
             "dynamic_variable_name" => AnyNode::DynamicVariableName(Box::new(
                 DynamicVariableNameNode::parse(node, source)?,
@@ -1281,8 +1309,8 @@ impl AnyNode {
             "enum_declaration_list" => AnyNode::EnumDeclarationList(Box::new(
                 EnumDeclarationListNode::parse(node, source)?,
             )),
-            "exponentiation_expression" => AnyNode::ExponentiationExpression(Box::new(
-                ExponentiationExpressionNode::parse(node, source)?,
+            "error_suppression_expression" => AnyNode::ErrorSuppressionExpression(Box::new(
+                ErrorSuppressionExpressionNode::parse(node, source)?,
             )),
             "expression_statement" => AnyNode::ExpressionStatement(Box::new(
                 ExpressionStatementNode::parse(node, source)?,
@@ -1386,6 +1414,7 @@ impl AnyNode {
             )),
             "nowdoc" => AnyNode::Nowdoc(Box::new(NowdocNode::parse(node, source)?)),
             "nowdoc_body" => AnyNode::NowdocBody(Box::new(NowdocBodyNode::parse(node, source)?)),
+            "null" => AnyNode::Null(Box::new(NullNode::parse(node, source)?)),
             "nullsafe_member_access_expression" => AnyNode::NullsafeMemberAccessExpression(
                 Box::new(NullsafeMemberAccessExpressionNode::parse(node, source)?),
             ),
@@ -1398,6 +1427,7 @@ impl AnyNode {
             "optional_type" => {
                 AnyNode::OptionalType(Box::new(OptionalTypeNode::parse(node, source)?))
             }
+            "pair" => AnyNode::Pair(Box::new(PairNode::parse(node, source)?)),
             "parenthesized_expression" => AnyNode::ParenthesizedExpression(Box::new(
                 ParenthesizedExpressionNode::parse(node, source)?,
             )),
@@ -1414,6 +1444,9 @@ impl AnyNode {
             "property_element" => {
                 AnyNode::PropertyElement(Box::new(PropertyElementNode::parse(node, source)?))
             }
+            "property_initializer" => AnyNode::PropertyInitializer(Box::new(
+                PropertyInitializerNode::parse(node, source)?,
+            )),
             "property_promotion_parameter" => AnyNode::PropertyPromotionParameter(Box::new(
                 PropertyPromotionParameterNode::parse(node, source)?,
             )),
@@ -1453,9 +1486,6 @@ impl AnyNode {
             "shell_command_expression" => AnyNode::ShellCommandExpression(Box::new(
                 ShellCommandExpressionNode::parse(node, source)?,
             )),
-            "silence_expression" => {
-                AnyNode::SilenceExpression(Box::new(SilenceExpressionNode::parse(node, source)?))
-            }
             "simple_parameter" => {
                 AnyNode::SimpleParameter(Box::new(SimpleParameterNode::parse(node, source)?))
             }
@@ -1529,7 +1559,6 @@ impl AnyNode {
                 AnyNode::YieldExpression(Box::new(YieldExpressionNode::parse(node, source)?))
             }
 
-            "boolean" => AnyNode::Boolean(Box::new(BooleanNode::parse(node, source)?)),
             "bottom_type" => AnyNode::BottomType(Box::new(BottomTypeNode::parse(node, source)?)),
 
             "comment" => AnyNode::Comment(Box::new(CommentNode::parse(node, source)?)),
@@ -1550,8 +1579,6 @@ impl AnyNode {
             "nowdoc_string" => {
                 AnyNode::NowdocString(Box::new(NowdocStringNode::parse(node, source)?))
             }
-
-            "null" => AnyNode::Null(Box::new(NullNode::parse(node, source)?)),
 
             "php_tag" => AnyNode::PhpTag(Box::new(PhpTagNode::parse(node, source)?)),
 
@@ -1603,6 +1630,7 @@ impl NodeAccess for AnyNode {
             AnyNode::AugmentedAssignmentExpression(x) => x.brief_desc(),
             AnyNode::BaseClause(x) => x.brief_desc(),
             AnyNode::BinaryExpression(x) => x.brief_desc(),
+            AnyNode::Boolean(x) => x.brief_desc(),
             AnyNode::BreakStatement(x) => x.brief_desc(),
             AnyNode::ByRef(x) => x.brief_desc(),
             AnyNode::CaseStatement(x) => x.brief_desc(),
@@ -1610,6 +1638,7 @@ impl NodeAccess for AnyNode {
             AnyNode::CastType(x) => x.brief_desc(),
             AnyNode::CatchClause(x) => x.brief_desc(),
             AnyNode::ClassConstantAccessExpression(x) => x.brief_desc(),
+            AnyNode::ClassConstantAccessIdentifier(x) => x.brief_desc(),
             AnyNode::ClassDeclaration(x) => x.brief_desc(),
             AnyNode::ClassInterfaceClause(x) => x.brief_desc(),
             AnyNode::CloneExpression(x) => x.brief_desc(),
@@ -1623,6 +1652,7 @@ impl NodeAccess for AnyNode {
             AnyNode::DeclareDirective(x) => x.brief_desc(),
             AnyNode::DeclareStatement(x) => x.brief_desc(),
             AnyNode::DefaultStatement(x) => x.brief_desc(),
+            AnyNode::DisjunctiveNormalFormType(x) => x.brief_desc(),
             AnyNode::DoStatement(x) => x.brief_desc(),
             AnyNode::DynamicVariableName(x) => x.brief_desc(),
             AnyNode::EchoStatement(x) => x.brief_desc(),
@@ -1633,7 +1663,7 @@ impl NodeAccess for AnyNode {
             AnyNode::EnumCase(x) => x.brief_desc(),
             AnyNode::EnumDeclaration(x) => x.brief_desc(),
             AnyNode::EnumDeclarationList(x) => x.brief_desc(),
-            AnyNode::ExponentiationExpression(x) => x.brief_desc(),
+            AnyNode::ErrorSuppressionExpression(x) => x.brief_desc(),
             AnyNode::ExpressionStatement(x) => x.brief_desc(),
             AnyNode::FinalModifier(x) => x.brief_desc(),
             AnyNode::FinallyClause(x) => x.brief_desc(),
@@ -1674,16 +1704,19 @@ impl NodeAccess for AnyNode {
             AnyNode::NamespaceUseGroupClause(x) => x.brief_desc(),
             AnyNode::Nowdoc(x) => x.brief_desc(),
             AnyNode::NowdocBody(x) => x.brief_desc(),
+            AnyNode::Null(x) => x.brief_desc(),
             AnyNode::NullsafeMemberAccessExpression(x) => x.brief_desc(),
             AnyNode::NullsafeMemberCallExpression(x) => x.brief_desc(),
             AnyNode::ObjectCreationExpression(x) => x.brief_desc(),
             AnyNode::OptionalType(x) => x.brief_desc(),
+            AnyNode::Pair(x) => x.brief_desc(),
             AnyNode::ParenthesizedExpression(x) => x.brief_desc(),
             AnyNode::PrimitiveType(x) => x.brief_desc(),
             AnyNode::PrintIntrinsic(x) => x.brief_desc(),
             AnyNode::Program(x) => x.brief_desc(),
             AnyNode::PropertyDeclaration(x) => x.brief_desc(),
             AnyNode::PropertyElement(x) => x.brief_desc(),
+            AnyNode::PropertyInitializer(x) => x.brief_desc(),
             AnyNode::PropertyPromotionParameter(x) => x.brief_desc(),
             AnyNode::QualifiedName(x) => x.brief_desc(),
             AnyNode::ReadonlyModifier(x) => x.brief_desc(),
@@ -1697,7 +1730,6 @@ impl NodeAccess for AnyNode {
             AnyNode::ScopedPropertyAccessExpression(x) => x.brief_desc(),
             AnyNode::SequenceExpression(x) => x.brief_desc(),
             AnyNode::ShellCommandExpression(x) => x.brief_desc(),
-            AnyNode::SilenceExpression(x) => x.brief_desc(),
             AnyNode::SimpleParameter(x) => x.brief_desc(),
             AnyNode::StaticModifier(x) => x.brief_desc(),
             AnyNode::StaticVariableDeclaration(x) => x.brief_desc(),
@@ -1727,7 +1759,6 @@ impl NodeAccess for AnyNode {
             AnyNode::WhileStatement(x) => x.brief_desc(),
             AnyNode::YieldExpression(x) => x.brief_desc(),
 
-            AnyNode::Boolean(x) => x.brief_desc(),
             AnyNode::BottomType(x) => x.brief_desc(),
 
             AnyNode::Comment(x) => x.brief_desc(),
@@ -1742,8 +1773,6 @@ impl NodeAccess for AnyNode {
             AnyNode::Integer(x) => x.brief_desc(),
 
             AnyNode::NowdocString(x) => x.brief_desc(),
-
-            AnyNode::Null(x) => x.brief_desc(),
 
             AnyNode::PhpTag(x) => x.brief_desc(),
 
@@ -1775,6 +1804,7 @@ impl NodeAccess for AnyNode {
             AnyNode::AugmentedAssignmentExpression(x) => x.range(),
             AnyNode::BaseClause(x) => x.range(),
             AnyNode::BinaryExpression(x) => x.range(),
+            AnyNode::Boolean(x) => x.range(),
             AnyNode::BreakStatement(x) => x.range(),
             AnyNode::ByRef(x) => x.range(),
             AnyNode::CaseStatement(x) => x.range(),
@@ -1782,6 +1812,7 @@ impl NodeAccess for AnyNode {
             AnyNode::CastType(x) => x.range(),
             AnyNode::CatchClause(x) => x.range(),
             AnyNode::ClassConstantAccessExpression(x) => x.range(),
+            AnyNode::ClassConstantAccessIdentifier(x) => x.range(),
             AnyNode::ClassDeclaration(x) => x.range(),
             AnyNode::ClassInterfaceClause(x) => x.range(),
             AnyNode::CloneExpression(x) => x.range(),
@@ -1795,6 +1826,7 @@ impl NodeAccess for AnyNode {
             AnyNode::DeclareDirective(x) => x.range(),
             AnyNode::DeclareStatement(x) => x.range(),
             AnyNode::DefaultStatement(x) => x.range(),
+            AnyNode::DisjunctiveNormalFormType(x) => x.range(),
             AnyNode::DoStatement(x) => x.range(),
             AnyNode::DynamicVariableName(x) => x.range(),
             AnyNode::EchoStatement(x) => x.range(),
@@ -1805,7 +1837,7 @@ impl NodeAccess for AnyNode {
             AnyNode::EnumCase(x) => x.range(),
             AnyNode::EnumDeclaration(x) => x.range(),
             AnyNode::EnumDeclarationList(x) => x.range(),
-            AnyNode::ExponentiationExpression(x) => x.range(),
+            AnyNode::ErrorSuppressionExpression(x) => x.range(),
             AnyNode::ExpressionStatement(x) => x.range(),
             AnyNode::FinalModifier(x) => x.range(),
             AnyNode::FinallyClause(x) => x.range(),
@@ -1846,16 +1878,19 @@ impl NodeAccess for AnyNode {
             AnyNode::NamespaceUseGroupClause(x) => x.range(),
             AnyNode::Nowdoc(x) => x.range(),
             AnyNode::NowdocBody(x) => x.range(),
+            AnyNode::Null(x) => x.range(),
             AnyNode::NullsafeMemberAccessExpression(x) => x.range(),
             AnyNode::NullsafeMemberCallExpression(x) => x.range(),
             AnyNode::ObjectCreationExpression(x) => x.range(),
             AnyNode::OptionalType(x) => x.range(),
+            AnyNode::Pair(x) => x.range(),
             AnyNode::ParenthesizedExpression(x) => x.range(),
             AnyNode::PrimitiveType(x) => x.range(),
             AnyNode::PrintIntrinsic(x) => x.range(),
             AnyNode::Program(x) => x.range(),
             AnyNode::PropertyDeclaration(x) => x.range(),
             AnyNode::PropertyElement(x) => x.range(),
+            AnyNode::PropertyInitializer(x) => x.range(),
             AnyNode::PropertyPromotionParameter(x) => x.range(),
             AnyNode::QualifiedName(x) => x.range(),
             AnyNode::ReadonlyModifier(x) => x.range(),
@@ -1869,7 +1904,6 @@ impl NodeAccess for AnyNode {
             AnyNode::ScopedPropertyAccessExpression(x) => x.range(),
             AnyNode::SequenceExpression(x) => x.range(),
             AnyNode::ShellCommandExpression(x) => x.range(),
-            AnyNode::SilenceExpression(x) => x.range(),
             AnyNode::SimpleParameter(x) => x.range(),
             AnyNode::StaticModifier(x) => x.range(),
             AnyNode::StaticVariableDeclaration(x) => x.range(),
@@ -1899,7 +1933,6 @@ impl NodeAccess for AnyNode {
             AnyNode::WhileStatement(x) => x.range(),
             AnyNode::YieldExpression(x) => x.range(),
 
-            AnyNode::Boolean(x) => x.range(),
             AnyNode::BottomType(x) => x.range(),
 
             AnyNode::Comment(x) => x.range(),
@@ -1914,8 +1947,6 @@ impl NodeAccess for AnyNode {
             AnyNode::Integer(x) => x.range(),
 
             AnyNode::NowdocString(x) => x.range(),
-
-            AnyNode::Null(x) => x.range(),
 
             AnyNode::PhpTag(x) => x.range(),
 
@@ -1947,6 +1978,7 @@ impl NodeAccess for AnyNode {
             AnyNode::AugmentedAssignmentExpression(x) => x.as_any(),
             AnyNode::BaseClause(x) => x.as_any(),
             AnyNode::BinaryExpression(x) => x.as_any(),
+            AnyNode::Boolean(x) => x.as_any(),
             AnyNode::BreakStatement(x) => x.as_any(),
             AnyNode::ByRef(x) => x.as_any(),
             AnyNode::CaseStatement(x) => x.as_any(),
@@ -1954,6 +1986,7 @@ impl NodeAccess for AnyNode {
             AnyNode::CastType(x) => x.as_any(),
             AnyNode::CatchClause(x) => x.as_any(),
             AnyNode::ClassConstantAccessExpression(x) => x.as_any(),
+            AnyNode::ClassConstantAccessIdentifier(x) => x.as_any(),
             AnyNode::ClassDeclaration(x) => x.as_any(),
             AnyNode::ClassInterfaceClause(x) => x.as_any(),
             AnyNode::CloneExpression(x) => x.as_any(),
@@ -1967,6 +2000,7 @@ impl NodeAccess for AnyNode {
             AnyNode::DeclareDirective(x) => x.as_any(),
             AnyNode::DeclareStatement(x) => x.as_any(),
             AnyNode::DefaultStatement(x) => x.as_any(),
+            AnyNode::DisjunctiveNormalFormType(x) => x.as_any(),
             AnyNode::DoStatement(x) => x.as_any(),
             AnyNode::DynamicVariableName(x) => x.as_any(),
             AnyNode::EchoStatement(x) => x.as_any(),
@@ -1977,7 +2011,7 @@ impl NodeAccess for AnyNode {
             AnyNode::EnumCase(x) => x.as_any(),
             AnyNode::EnumDeclaration(x) => x.as_any(),
             AnyNode::EnumDeclarationList(x) => x.as_any(),
-            AnyNode::ExponentiationExpression(x) => x.as_any(),
+            AnyNode::ErrorSuppressionExpression(x) => x.as_any(),
             AnyNode::ExpressionStatement(x) => x.as_any(),
             AnyNode::FinalModifier(x) => x.as_any(),
             AnyNode::FinallyClause(x) => x.as_any(),
@@ -2018,16 +2052,19 @@ impl NodeAccess for AnyNode {
             AnyNode::NamespaceUseGroupClause(x) => x.as_any(),
             AnyNode::Nowdoc(x) => x.as_any(),
             AnyNode::NowdocBody(x) => x.as_any(),
+            AnyNode::Null(x) => x.as_any(),
             AnyNode::NullsafeMemberAccessExpression(x) => x.as_any(),
             AnyNode::NullsafeMemberCallExpression(x) => x.as_any(),
             AnyNode::ObjectCreationExpression(x) => x.as_any(),
             AnyNode::OptionalType(x) => x.as_any(),
+            AnyNode::Pair(x) => x.as_any(),
             AnyNode::ParenthesizedExpression(x) => x.as_any(),
             AnyNode::PrimitiveType(x) => x.as_any(),
             AnyNode::PrintIntrinsic(x) => x.as_any(),
             AnyNode::Program(x) => x.as_any(),
             AnyNode::PropertyDeclaration(x) => x.as_any(),
             AnyNode::PropertyElement(x) => x.as_any(),
+            AnyNode::PropertyInitializer(x) => x.as_any(),
             AnyNode::PropertyPromotionParameter(x) => x.as_any(),
             AnyNode::QualifiedName(x) => x.as_any(),
             AnyNode::ReadonlyModifier(x) => x.as_any(),
@@ -2041,7 +2078,6 @@ impl NodeAccess for AnyNode {
             AnyNode::ScopedPropertyAccessExpression(x) => x.as_any(),
             AnyNode::SequenceExpression(x) => x.as_any(),
             AnyNode::ShellCommandExpression(x) => x.as_any(),
-            AnyNode::SilenceExpression(x) => x.as_any(),
             AnyNode::SimpleParameter(x) => x.as_any(),
             AnyNode::StaticModifier(x) => x.as_any(),
             AnyNode::StaticVariableDeclaration(x) => x.as_any(),
@@ -2071,7 +2107,6 @@ impl NodeAccess for AnyNode {
             AnyNode::WhileStatement(x) => x.as_any(),
             AnyNode::YieldExpression(x) => x.as_any(),
 
-            AnyNode::Boolean(x) => x.as_any(),
             AnyNode::BottomType(x) => x.as_any(),
 
             AnyNode::Comment(x) => x.as_any(),
@@ -2086,8 +2121,6 @@ impl NodeAccess for AnyNode {
             AnyNode::Integer(x) => x.as_any(),
 
             AnyNode::NowdocString(x) => x.as_any(),
-
-            AnyNode::Null(x) => x.as_any(),
 
             AnyNode::PhpTag(x) => x.as_any(),
 

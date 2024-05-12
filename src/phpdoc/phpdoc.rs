@@ -13,8 +13,8 @@ use nom::{
     sequence::preceded,
     Err, IResult, Slice,
 };
-use tree_sitter::Range;
-
+//use tree_sitter::Range;
+use crate::parser::Range;
 use crate::types::{parse_types::UnionOfTypes, parser::union_type};
 
 use super::{position::PHPDocInput, types::PHPDocEntry};

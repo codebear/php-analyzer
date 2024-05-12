@@ -1,12 +1,11 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct IncludeOnceExpressionNode {
@@ -17,7 +16,7 @@ pub struct IncludeOnceExpressionNode {
 
 impl NodeParser for IncludeOnceExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "include_once_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [include_once_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }

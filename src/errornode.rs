@@ -6,7 +6,8 @@ use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::os::unix::ffi::OsStrExt;
 use tree_sitter::Node;
-use tree_sitter::Range;
+//use tree_sitter::Range;
+use crate::parser::Range;
 
 #[derive(Debug, Clone)]
 pub struct ErrorNode {
@@ -29,7 +30,7 @@ impl ErrorNode {
         }
 
         Ok(Self {
-            range,
+            range: range.into(),
             children: AnyNode::parse_vec(node.named_children(&mut node.walk()), source)?,
             raw: source[range.start_byte..range.end_byte].to_vec(),
         })

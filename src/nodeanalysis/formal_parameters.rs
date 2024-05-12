@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ffi::OsString};
 
-use tree_sitter::Range;
-
+//use tree_sitter::Range;
+use crate::parser::Range;
 use crate::{
     analysis::state::AnalysisState,
     autonodes::formal_parameters::{FormalParametersChildren, FormalParametersNode},
@@ -47,7 +47,7 @@ impl FormalParametersNode {
             .map(|x| ChildNode::ChildNode(x.clone()))
             .collect();
         children.extend(self.extras.iter().map(|y| ChildNode::ExtraNode(y.clone())));
-        children.sort_by(|a, b| a.range().cmp(&b.range()));
+        children.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
 
         // FIXME extract phpdoc-param-entries from function phpdoc
 
@@ -55,8 +55,8 @@ impl FormalParametersNode {
             match noe_child {
                 ChildNode::ExtraNode(extra) => match &**extra {
                     ExtraChild::Comment(c) => raw_comment = Some((c.get_raw(), c.range())),
-
-                    ExtraChild::TextInterpolation(_) | ExtraChild::Error(_) => (),
+                    ExtraChild::Error(_) => (),
+                    //ExtraChild::TextInterpolation(_) | ExtraChild::Error(_) => (),
                 },
                 ChildNode::ChildNode(child) => match &**child {
                     FormalParametersChildren::PropertyPromotionParameter(_) => {

@@ -4,18 +4,16 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::namespace_aliasing_clause::NamespaceAliasingClauseNode;
 use crate::autonodes::qualified_name::QualifiedNameNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum NamespaceUseClauseChildren {
@@ -31,11 +29,6 @@ impl NodeParser for NamespaceUseClauseChildren {
             "comment" => NamespaceUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                NamespaceUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => NamespaceUseClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -63,11 +56,6 @@ impl NamespaceUseClauseChildren {
             "comment" => NamespaceUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                NamespaceUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => NamespaceUseClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -198,7 +186,7 @@ pub struct NamespaceUseClauseNode {
 
 impl NodeParser for NamespaceUseClauseNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "namespace_use_clause" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [namespace_use_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }

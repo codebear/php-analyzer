@@ -3,8 +3,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use tree_sitter::Range;
-
+//use tree_sitter::Range;
+use crate::parser::Range;
 use crate::{
     analysis::scope::BranchableScope,
     autonodes::any::AnyNodeRef,

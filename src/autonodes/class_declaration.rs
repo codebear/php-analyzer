@@ -9,7 +9,6 @@ use crate::autonodes::declaration_list::DeclarationListNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -17,11 +16,11 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use std::sync::OnceLock;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum ClassDeclarationModifier {
@@ -37,9 +36,6 @@ impl NodeParser for ClassDeclarationModifier {
             "comment" => ClassDeclarationModifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ClassDeclarationModifier::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ClassDeclarationModifier::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -69,9 +65,6 @@ impl ClassDeclarationModifier {
             "comment" => ClassDeclarationModifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ClassDeclarationModifier::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ClassDeclarationModifier::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -207,9 +200,6 @@ impl NodeParser for ClassDeclarationChildren {
             "comment" => ClassDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ClassDeclarationChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ClassDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -236,9 +226,6 @@ impl ClassDeclarationChildren {
             "comment" => ClassDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ClassDeclarationChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ClassDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -351,7 +338,7 @@ pub struct ClassDeclarationNode {
     pub range: Range,
     pub attributes: Option<AttributeListNode>,
     pub body: DeclarationListNode,
-    pub modifier: Option<Box<ClassDeclarationModifier>>,
+    pub modifier: Option<Vec<Box<ClassDeclarationModifier>>>,
     pub name: NameNode,
     pub children: Vec<Box<ClassDeclarationChildren>>,
     pub extras: Vec<Box<ExtraChild>>,
@@ -360,7 +347,7 @@ pub struct ClassDeclarationNode {
 
 impl NodeParser for ClassDeclarationNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "class_declaration" {
             return Err(ParseError::new(
                 range,
@@ -383,7 +370,7 @@ impl NodeParser for ClassDeclarationNode {
                 .mark_skipped_node(&mut skip_nodes)
                 .into(),
         )?;
-        let modifier: Option<Box<ClassDeclarationModifier>> = Result::from(
+        let modifier: Option<Vec<Box<ClassDeclarationModifier>>> = Result::from(
             node.parse_child("modifier", source)
                 .mark_skipped_node(&mut skip_nodes)
                 .into(),
@@ -440,7 +427,7 @@ impl NodeAccess for ClassDeclarationNode {
         }
         child_vec.push(self.body.as_any());
         if let Some(x) = &self.modifier {
-            child_vec.push(x.as_any());
+            child_vec.extend(x.iter().map(|z| z.as_any()));
         }
         child_vec.push(self.name.as_any());
         child_vec.extend(self.children.iter().map(|n| n.as_any()));

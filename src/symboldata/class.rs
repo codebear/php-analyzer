@@ -1,5 +1,5 @@
-use tree_sitter::Range;
-
+//use tree_sitter::Range;
+use crate::parser::Range;
 use crate::{
     analysis::state::AnalysisState,
     phpdoc::types::{PHPDocComment, PHPDocEntry},
@@ -278,6 +278,7 @@ pub struct ClassData {
     pub interfaces: Vec<ClassName>,
     pub phpdoc_interfaces: Vec<DiscreteType>,
     pub modifier: ClassModifier,
+    pub read_only: bool,
     pub constants: HashMap<Name, Option<PHPValue>>,
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
     pub properties: HashMap<Name, Arc<RwLock<PropertyData>>>,
@@ -299,6 +300,7 @@ impl ClassData {
             interfaces: vec![],
             phpdoc_interfaces: vec![],
             modifier: ClassModifier::None,
+            read_only: false,
             constants: HashMap::new(),
             methods: HashMap::new(),
             properties: HashMap::new(),
@@ -728,6 +730,7 @@ impl TraitData {
             .collect()
     }
 }
+
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct FunctionArgumentData {
     pub name: Name,

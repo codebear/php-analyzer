@@ -197,15 +197,26 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
         let class_name = self.get_class_name(state);
         let base_name = self.get_declared_base_class_name(state, emitter);
 
-        let mut modifier = if let Some(modifier) = &self.modifier {
-            match &**modifier {
-                ClassDeclarationModifier::AbstractModifier(_) => ClassModifier::Abstract,
-                ClassDeclarationModifier::FinalModifier(_) => ClassModifier::Final,
-                _ => ClassModifier::None,
+        let mut is_read_only = false;
+
+        let mut class_modifier = ClassModifier::None;
+
+        if let Some(modifiers) = &self.modifier {
+            for modifier in modifiers {
+                match &**modifier {
+                    ClassDeclarationModifier::AbstractModifier(_) => {
+                        class_modifier = ClassModifier::Abstract;
+                    }
+                    ClassDeclarationModifier::FinalModifier(_) => {
+                        class_modifier = ClassModifier::Final;
+                    }
+                    ClassDeclarationModifier::ReadonlyModifier(_) => {
+                        is_read_only = true;
+                    }
+                    ClassDeclarationModifier::Extra(_) => todo!(),
+                }
             }
-        } else {
-            ClassModifier::None
-        };
+        }
 
         let mut deprecated = None;
 
@@ -266,15 +277,15 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                             }
 
                             PHPDocEntry::Abstract(range) => {
-                                if modifier == ClassModifier::None {
-                                    modifier = ClassModifier::Abstract;
+                                if class_modifier == ClassModifier::None {
+                                    class_modifier = ClassModifier::Abstract;
                                     // FIXME emit hint to declare class as abstract for real
-                                } else if modifier == ClassModifier::Abstract {
+                                } else if class_modifier == ClassModifier::Abstract {
                                     emitter.emit(Issue::RedundantPHPDocEntry(
                                         state.pos_from_range(range.clone()),
                                         "Class is already declared abstract".into(),
                                     ));
-                                } else if modifier == ClassModifier::Final {
+                                } else if class_modifier == ClassModifier::Final {
                                     emitter.emit(Issue::InvalidPHPDocEntry(
                                         state.pos_from_range(range.clone()),
                                         "Can't declare a final class as abstract".into(),
@@ -399,7 +410,8 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
 
         let mut class_data =
             ClassData::new(FileLocation::new(self.name.pos(state)), class_name.clone());
-        class_data.modifier = modifier;
+        class_data.modifier = class_modifier;
+        class_data.read_only = is_read_only;
         if let Some(_) = &base_name {
             class_data.base_class_name = base_name;
         }

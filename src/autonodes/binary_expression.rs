@@ -9,7 +9,6 @@ use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExp
 use crate::autonodes::qualified_name::QualifiedNameNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -27,6 +26,7 @@ use crate::operators::boolean_or::BooleanOrOperator;
 use crate::operators::concat::ConcatOperator;
 use crate::operators::div::DivOperator;
 use crate::operators::equal::EqualOperator;
+use crate::operators::exponential::ExponentialOperator;
 use crate::operators::greater_than::GreaterThanOperator;
 use crate::operators::greater_than_or_equal::GreaterThanOrEqualOperator;
 use crate::operators::identical::IdenticalOperator;
@@ -46,10 +46,10 @@ use crate::operators::operator::Operator;
 use crate::operators::right_shift::RightShiftOperator;
 use crate::operators::spaceship::SpaceshipOperator;
 use crate::operators::sub::SubOperator;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum BinaryExpressionOperator {
@@ -59,6 +59,7 @@ pub enum BinaryExpressionOperator {
     BinaryAnd(BinaryAndOperator),
     BooleanAnd(BooleanAndOperator),
     Mult(MultOperator),
+    Exponential(ExponentialOperator),
     Add(AddOperator),
     Sub(SubOperator),
     Concat(ConcatOperator),
@@ -89,44 +90,48 @@ impl NodeParser for BinaryExpressionOperator {
             "comment" => BinaryExpressionOperator::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => BinaryExpressionOperator::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => BinaryExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "!=" => BinaryExpressionOperator::NotEqual(NotEqualOperator(node.range())),
-            "!==" => BinaryExpressionOperator::NotIdentical(NotIdenticalOperator(node.range())),
-            "%" => BinaryExpressionOperator::Mod(ModOperator(node.range())),
-            "&" => BinaryExpressionOperator::BinaryAnd(BinaryAndOperator(node.range())),
-            "&&" => BinaryExpressionOperator::BooleanAnd(BooleanAndOperator(node.range())),
-            "*" => BinaryExpressionOperator::Mult(MultOperator(node.range())),
-            "+" => BinaryExpressionOperator::Add(AddOperator(node.range())),
-            "-" => BinaryExpressionOperator::Sub(SubOperator(node.range())),
-            "." => BinaryExpressionOperator::Concat(ConcatOperator(node.range())),
-            "/" => BinaryExpressionOperator::Div(DivOperator(node.range())),
-            "<" => BinaryExpressionOperator::LessThan(LessThanOperator(node.range())),
-            "<<" => BinaryExpressionOperator::LeftShift(LeftShiftOperator(node.range())),
-            "<=" => {
-                BinaryExpressionOperator::LessThanOrEqual(LessThanOrEqualOperator(node.range()))
+            "!=" => BinaryExpressionOperator::NotEqual(NotEqualOperator(node.range().into())),
+            "!==" => {
+                BinaryExpressionOperator::NotIdentical(NotIdenticalOperator(node.range().into()))
             }
-            "<=>" => BinaryExpressionOperator::Spaceship(SpaceshipOperator(node.range())),
-            "<>" => BinaryExpressionOperator::NotEqual(NotEqualOperator(node.range())),
-            "==" => BinaryExpressionOperator::Equal(EqualOperator(node.range())),
-            "===" => BinaryExpressionOperator::Identical(IdenticalOperator(node.range())),
-            ">" => BinaryExpressionOperator::GreaterThan(GreaterThanOperator(node.range())),
-            ">=" => BinaryExpressionOperator::GreaterThanOrEqual(GreaterThanOrEqualOperator(
-                node.range(),
+            "%" => BinaryExpressionOperator::Mod(ModOperator(node.range().into())),
+            "&" => BinaryExpressionOperator::BinaryAnd(BinaryAndOperator(node.range().into())),
+            "&&" => BinaryExpressionOperator::BooleanAnd(BooleanAndOperator(node.range().into())),
+            "*" => BinaryExpressionOperator::Mult(MultOperator(node.range().into())),
+            "**" => BinaryExpressionOperator::Exponential(ExponentialOperator(node.range().into())),
+            "+" => BinaryExpressionOperator::Add(AddOperator(node.range().into())),
+            "-" => BinaryExpressionOperator::Sub(SubOperator(node.range().into())),
+            "." => BinaryExpressionOperator::Concat(ConcatOperator(node.range().into())),
+            "/" => BinaryExpressionOperator::Div(DivOperator(node.range().into())),
+            "<" => BinaryExpressionOperator::LessThan(LessThanOperator(node.range().into())),
+            "<<" => BinaryExpressionOperator::LeftShift(LeftShiftOperator(node.range().into())),
+            "<=" => BinaryExpressionOperator::LessThanOrEqual(LessThanOrEqualOperator(
+                node.range().into(),
             )),
-            ">>" => BinaryExpressionOperator::RightShift(RightShiftOperator(node.range())),
-            "??" => BinaryExpressionOperator::NullCoalesce(NullCoalesceOperator(node.range())),
-            "^" => BinaryExpressionOperator::BinaryXor(BinaryXorOperator(node.range())),
-            "and" => BinaryExpressionOperator::LogicalAnd(LogicalAndOperator(node.range())),
-            "instanceof" => BinaryExpressionOperator::Instanceof(InstanceofOperator(node.range())),
-            "or" => BinaryExpressionOperator::LogicalOr(LogicalOrOperator(node.range())),
-            "xor" => BinaryExpressionOperator::LogicalXor(LogicalXorOperator(node.range())),
-            "|" => BinaryExpressionOperator::BinaryOr(BinaryOrOperator(node.range())),
-            "||" => BinaryExpressionOperator::BooleanOr(BooleanOrOperator(node.range())),
+            "<=>" => BinaryExpressionOperator::Spaceship(SpaceshipOperator(node.range().into())),
+            "<>" => BinaryExpressionOperator::NotEqual(NotEqualOperator(node.range().into())),
+            "==" => BinaryExpressionOperator::Equal(EqualOperator(node.range().into())),
+            "===" => BinaryExpressionOperator::Identical(IdenticalOperator(node.range().into())),
+            ">" => BinaryExpressionOperator::GreaterThan(GreaterThanOperator(node.range().into())),
+            ">=" => BinaryExpressionOperator::GreaterThanOrEqual(GreaterThanOrEqualOperator(
+                node.range().into(),
+            )),
+            ">>" => BinaryExpressionOperator::RightShift(RightShiftOperator(node.range().into())),
+            "??" => {
+                BinaryExpressionOperator::NullCoalesce(NullCoalesceOperator(node.range().into()))
+            }
+            "^" => BinaryExpressionOperator::BinaryXor(BinaryXorOperator(node.range().into())),
+            "and" => BinaryExpressionOperator::LogicalAnd(LogicalAndOperator(node.range().into())),
+            "instanceof" => {
+                BinaryExpressionOperator::Instanceof(InstanceofOperator(node.range().into()))
+            }
+            "or" => BinaryExpressionOperator::LogicalOr(LogicalOrOperator(node.range().into())),
+            "xor" => BinaryExpressionOperator::LogicalXor(LogicalXorOperator(node.range().into())),
+            "|" => BinaryExpressionOperator::BinaryOr(BinaryOrOperator(node.range().into())),
+            "||" => BinaryExpressionOperator::BooleanOr(BooleanOrOperator(node.range().into())),
 
             _ => {
                 return Err(ParseError::new(
@@ -144,44 +149,48 @@ impl BinaryExpressionOperator {
             "comment" => BinaryExpressionOperator::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => BinaryExpressionOperator::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => BinaryExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "!=" => BinaryExpressionOperator::NotEqual(NotEqualOperator(node.range())),
-            "!==" => BinaryExpressionOperator::NotIdentical(NotIdenticalOperator(node.range())),
-            "%" => BinaryExpressionOperator::Mod(ModOperator(node.range())),
-            "&" => BinaryExpressionOperator::BinaryAnd(BinaryAndOperator(node.range())),
-            "&&" => BinaryExpressionOperator::BooleanAnd(BooleanAndOperator(node.range())),
-            "*" => BinaryExpressionOperator::Mult(MultOperator(node.range())),
-            "+" => BinaryExpressionOperator::Add(AddOperator(node.range())),
-            "-" => BinaryExpressionOperator::Sub(SubOperator(node.range())),
-            "." => BinaryExpressionOperator::Concat(ConcatOperator(node.range())),
-            "/" => BinaryExpressionOperator::Div(DivOperator(node.range())),
-            "<" => BinaryExpressionOperator::LessThan(LessThanOperator(node.range())),
-            "<<" => BinaryExpressionOperator::LeftShift(LeftShiftOperator(node.range())),
-            "<=" => {
-                BinaryExpressionOperator::LessThanOrEqual(LessThanOrEqualOperator(node.range()))
+            "!=" => BinaryExpressionOperator::NotEqual(NotEqualOperator(node.range().into())),
+            "!==" => {
+                BinaryExpressionOperator::NotIdentical(NotIdenticalOperator(node.range().into()))
             }
-            "<=>" => BinaryExpressionOperator::Spaceship(SpaceshipOperator(node.range())),
-            "<>" => BinaryExpressionOperator::NotEqual(NotEqualOperator(node.range())),
-            "==" => BinaryExpressionOperator::Equal(EqualOperator(node.range())),
-            "===" => BinaryExpressionOperator::Identical(IdenticalOperator(node.range())),
-            ">" => BinaryExpressionOperator::GreaterThan(GreaterThanOperator(node.range())),
-            ">=" => BinaryExpressionOperator::GreaterThanOrEqual(GreaterThanOrEqualOperator(
-                node.range(),
+            "%" => BinaryExpressionOperator::Mod(ModOperator(node.range().into())),
+            "&" => BinaryExpressionOperator::BinaryAnd(BinaryAndOperator(node.range().into())),
+            "&&" => BinaryExpressionOperator::BooleanAnd(BooleanAndOperator(node.range().into())),
+            "*" => BinaryExpressionOperator::Mult(MultOperator(node.range().into())),
+            "**" => BinaryExpressionOperator::Exponential(ExponentialOperator(node.range().into())),
+            "+" => BinaryExpressionOperator::Add(AddOperator(node.range().into())),
+            "-" => BinaryExpressionOperator::Sub(SubOperator(node.range().into())),
+            "." => BinaryExpressionOperator::Concat(ConcatOperator(node.range().into())),
+            "/" => BinaryExpressionOperator::Div(DivOperator(node.range().into())),
+            "<" => BinaryExpressionOperator::LessThan(LessThanOperator(node.range().into())),
+            "<<" => BinaryExpressionOperator::LeftShift(LeftShiftOperator(node.range().into())),
+            "<=" => BinaryExpressionOperator::LessThanOrEqual(LessThanOrEqualOperator(
+                node.range().into(),
             )),
-            ">>" => BinaryExpressionOperator::RightShift(RightShiftOperator(node.range())),
-            "??" => BinaryExpressionOperator::NullCoalesce(NullCoalesceOperator(node.range())),
-            "^" => BinaryExpressionOperator::BinaryXor(BinaryXorOperator(node.range())),
-            "and" => BinaryExpressionOperator::LogicalAnd(LogicalAndOperator(node.range())),
-            "instanceof" => BinaryExpressionOperator::Instanceof(InstanceofOperator(node.range())),
-            "or" => BinaryExpressionOperator::LogicalOr(LogicalOrOperator(node.range())),
-            "xor" => BinaryExpressionOperator::LogicalXor(LogicalXorOperator(node.range())),
-            "|" => BinaryExpressionOperator::BinaryOr(BinaryOrOperator(node.range())),
-            "||" => BinaryExpressionOperator::BooleanOr(BooleanOrOperator(node.range())),
+            "<=>" => BinaryExpressionOperator::Spaceship(SpaceshipOperator(node.range().into())),
+            "<>" => BinaryExpressionOperator::NotEqual(NotEqualOperator(node.range().into())),
+            "==" => BinaryExpressionOperator::Equal(EqualOperator(node.range().into())),
+            "===" => BinaryExpressionOperator::Identical(IdenticalOperator(node.range().into())),
+            ">" => BinaryExpressionOperator::GreaterThan(GreaterThanOperator(node.range().into())),
+            ">=" => BinaryExpressionOperator::GreaterThanOrEqual(GreaterThanOrEqualOperator(
+                node.range().into(),
+            )),
+            ">>" => BinaryExpressionOperator::RightShift(RightShiftOperator(node.range().into())),
+            "??" => {
+                BinaryExpressionOperator::NullCoalesce(NullCoalesceOperator(node.range().into()))
+            }
+            "^" => BinaryExpressionOperator::BinaryXor(BinaryXorOperator(node.range().into())),
+            "and" => BinaryExpressionOperator::LogicalAnd(LogicalAndOperator(node.range().into())),
+            "instanceof" => {
+                BinaryExpressionOperator::Instanceof(InstanceofOperator(node.range().into()))
+            }
+            "or" => BinaryExpressionOperator::LogicalOr(LogicalOrOperator(node.range().into())),
+            "xor" => BinaryExpressionOperator::LogicalXor(LogicalXorOperator(node.range().into())),
+            "|" => BinaryExpressionOperator::BinaryOr(BinaryOrOperator(node.range().into())),
+            "||" => BinaryExpressionOperator::BooleanOr(BooleanOrOperator(node.range().into())),
 
             _ => return Ok(None),
         }))
@@ -196,6 +205,7 @@ impl BinaryExpressionOperator {
             BinaryExpressionOperator::BinaryAnd(y) => y.kind(),
             BinaryExpressionOperator::BooleanAnd(y) => y.kind(),
             BinaryExpressionOperator::Mult(y) => y.kind(),
+            BinaryExpressionOperator::Exponential(y) => y.kind(),
             BinaryExpressionOperator::Add(y) => y.kind(),
             BinaryExpressionOperator::Sub(y) => y.kind(),
             BinaryExpressionOperator::Concat(y) => y.kind(),
@@ -252,9 +262,6 @@ impl NodeParser for BinaryExpressionRight {
             "comment" => BinaryExpressionRight::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => BinaryExpressionRight::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => BinaryExpressionRight::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -308,9 +315,6 @@ impl BinaryExpressionRight {
             "comment" => BinaryExpressionRight::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => BinaryExpressionRight::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => BinaryExpressionRight::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -538,7 +542,7 @@ pub struct BinaryExpressionNode {
 
 impl NodeParser for BinaryExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "binary_expression" {
             return Err(ParseError::new(
                 range,

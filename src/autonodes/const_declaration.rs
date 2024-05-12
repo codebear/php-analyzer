@@ -1,10 +1,10 @@
 use crate::analysis::state::AnalysisState;
+use crate::autonodes::_type::_TypeNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::attribute_list::AttributeListNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::const_element::ConstElementNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -13,10 +13,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum ConstDeclarationChildren {
@@ -31,9 +31,6 @@ impl NodeParser for ConstDeclarationChildren {
             "comment" => ConstDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ConstDeclarationChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ConstDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -60,9 +57,6 @@ impl ConstDeclarationChildren {
             "comment" => ConstDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ConstDeclarationChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ConstDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -176,13 +170,14 @@ pub struct ConstDeclarationNode {
     pub range: Range,
     pub attributes: Option<AttributeListNode>,
     pub modifier: Option<FinalModifierNode>,
+    pub type_: Option<_TypeNode>,
     pub children: Vec<Box<ConstDeclarationChildren>>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
 impl NodeParser for ConstDeclarationNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "const_declaration" {
             return Err(ParseError::new(
                 range,
@@ -205,10 +200,16 @@ impl NodeParser for ConstDeclarationNode {
                 .mark_skipped_node(&mut skip_nodes)
                 .into(),
         )?;
+        let type_: Option<_TypeNode> = Result::from(
+            node.parse_child("type", source)
+                .mark_skipped_node(&mut skip_nodes)
+                .into(),
+        )?;
         Ok(Self {
             range,
             attributes,
             modifier,
+            type_,
             children: ConstDeclarationChildren::parse_vec(
                 node.named_children(&mut node.walk())
                     .filter(|node| !skip_nodes.contains(&node.id()))
@@ -248,6 +249,9 @@ impl NodeAccess for ConstDeclarationNode {
             child_vec.push(x.as_any());
         }
         if let Some(x) = &self.modifier {
+            child_vec.push(x.as_any());
+        }
+        if let Some(x) = &self.type_ {
             child_vec.push(x.as_any());
         }
         child_vec.extend(self.children.iter().map(|n| n.as_any()));

@@ -8,11 +8,12 @@ use std::{
 };
 
 use nom::error::Error;
-use tree_sitter::Range;
+//use tree_sitter::Range;
 
 use crate::{
     analysis::state::AnalysisState,
     issue::{Issue, IssueEmitter, VoidEmitter},
+    parser::Range,
     phpdoc::position::fake_range,
     symboldata::{class::ClassName, SymbolData},
     symbols::{FullyQualifiedName, Name},

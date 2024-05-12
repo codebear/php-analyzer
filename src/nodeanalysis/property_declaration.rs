@@ -2,7 +2,8 @@ use super::analysis::{
     FirstPassAnalyzeableNode, SecondPassAnalyzeableNode, ThirdPassAnalyzeableNode,
 };
 use crate::autonodes::any::AnyNodeRef;
-use crate::autonodes::property_declaration::PropertyDeclarationProperties;
+
+// use crate::autonodes::property_declaration::PropertyDeclarationProperties;
 use crate::autotree::NodeAccess;
 use crate::extra::ExtraChild;
 use crate::{
@@ -36,7 +37,8 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
     fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         let mut inline_doc_comment = false;
         let mut extra_iter = self.extras.iter().peekable();
-        for prop in &self.properties {
+
+        for prop in &self.children {
             let peeked = extra_iter.peek().cloned();
             // FIXME This algorithm is probably broken
             let extra_comment = if let Some(extra) = peeked {
@@ -48,7 +50,8 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
                     match &**extra {
                         ExtraChild::Comment(c) => Some(c),
 
-                        ExtraChild::TextInterpolation(_) | ExtraChild::Error(_) => None,
+                        //ExtraChild::TextInterpolation(_) |
+                        ExtraChild::Error(_) => None,
                     }
                 } else {
                     None
@@ -67,7 +70,12 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
                 None => (),
             }
 
-            match &**prop {
+            prop.analyze_round_one_with_declaration(state, emitter, self);
+            if inline_doc_comment {
+                state.last_doc_comment = None;
+            }
+
+            /*  match &**prop {
                 PropertyDeclarationProperties::Extra(ExtraChild::Comment(c)) => {
                     if let None = state.last_doc_comment {
                         state.last_doc_comment = Some((c.get_raw(), c.range()));
@@ -81,7 +89,7 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
                     }
                 }
                 _ => (),
-            }
+            }*/
         }
     }
 }
@@ -100,13 +108,12 @@ impl ThirdPassAnalyzeableNode for PropertyDeclarationNode {
         emitter: &dyn IssueEmitter,
         _path: &Vec<AnyNodeRef>,
     ) -> bool {
-        for prop in &self.properties {
-            match &**prop {
-                PropertyDeclarationProperties::PropertyElement(p) => {
-                    p.analyze_third_pass_with_declaration(state, emitter, self)
-                }
-                _ => (),
-            }
+        for prop in &self.children {
+            //            match &**prop {
+            //              PropertyDeclarationProperties::PropertyElement(p) => {
+            prop.analyze_third_pass_with_declaration(state, emitter, self);
+            //            }
+            //          _ => (),
         }
         true
     }

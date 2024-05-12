@@ -1,13 +1,12 @@
 use std::{convert::TryInto, os::unix::prelude::OsStrExt};
 
+use crate::autonodes::array_element_initializer::ArrayElementInitializerValue;
+// use crate::autonodes::array_element_initializer::ArrayElementInitializerChildren;
 use crate::autotree::NodeAccess;
 use crate::value::PHPArray;
 use crate::{
     analysis::state::AnalysisState,
-    autonodes::{
-        array_creation_expression::ArrayCreationExpressionNode,
-        array_element_initializer::ArrayElementInitializerValue,
-    },
+    autonodes::array_creation_expression::ArrayCreationExpressionNode,
     issue::IssueEmitter,
     missing_none,
     types::union::{DiscreteType, UnionType},

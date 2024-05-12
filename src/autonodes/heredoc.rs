@@ -4,7 +4,6 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::heredoc_body::HeredocBodyNode;
 use crate::autonodes::heredoc_end::HeredocEndNode;
 use crate::autonodes::heredoc_start::HeredocStartNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -12,12 +11,12 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::DiscreteType;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use std::ffi::OsStr;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum HeredocIdentifier {
@@ -32,13 +31,10 @@ impl NodeParser for HeredocIdentifier {
             "comment" => HeredocIdentifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => HeredocIdentifier::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => HeredocIdentifier::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
-            r#"""# => HeredocIdentifier::DoubleQuote(r#"""#, node.range()),
+            r#"""# => HeredocIdentifier::DoubleQuote(r#"""#, node.range().into()),
             "heredoc_start" => {
                 HeredocIdentifier::HeredocStart(Box::new(HeredocStartNode::parse(node, source)?))
             }
@@ -59,13 +55,10 @@ impl HeredocIdentifier {
             "comment" => HeredocIdentifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => HeredocIdentifier::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => HeredocIdentifier::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
-            r#"""# => HeredocIdentifier::DoubleQuote(r#"""#, node.range()),
+            r#"""# => HeredocIdentifier::DoubleQuote(r#"""#, node.range().into()),
             "heredoc_start" => {
                 HeredocIdentifier::HeredocStart(Box::new(HeredocStartNode::parse(node, source)?))
             }
@@ -175,7 +168,7 @@ pub struct HeredocNode {
 
 impl NodeParser for HeredocNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "heredoc" {
             return Err(ParseError::new(
                 range,

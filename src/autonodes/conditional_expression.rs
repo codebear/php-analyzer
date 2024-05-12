@@ -5,8 +5,8 @@ use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct ConditionalExpressionNode {
@@ -19,7 +19,7 @@ pub struct ConditionalExpressionNode {
 
 impl NodeParser for ConditionalExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "conditional_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [conditional_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }

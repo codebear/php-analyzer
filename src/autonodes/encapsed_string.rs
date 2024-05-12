@@ -4,31 +4,31 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::dynamic_variable_name::DynamicVariableNameNode;
 use crate::autonodes::escape_sequence::EscapeSequenceNode;
+use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::member_access_expression::MemberAccessExpressionNode;
+use crate::autonodes::name::NameNode;
 use crate::autonodes::string_value::StringValueNode;
-use crate::autonodes::subscript_expression::SubscriptExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum EncapsedStringChildren {
     _Expression(Box<_ExpressionNode>),
     DynamicVariableName(Box<DynamicVariableNameNode>),
     EscapeSequence(Box<EscapeSequenceNode>),
+    Integer(Box<IntegerNode>),
     MemberAccessExpression(Box<MemberAccessExpressionNode>),
+    Name(Box<NameNode>),
     StringValue(Box<StringValueNode>),
-    SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
     Extra(ExtraChild),
 }
@@ -39,9 +39,6 @@ impl NodeParser for EncapsedStringChildren {
             "comment" => EncapsedStringChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => EncapsedStringChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => EncapsedStringChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -51,15 +48,16 @@ impl NodeParser for EncapsedStringChildren {
             "escape_sequence" => EncapsedStringChildren::EscapeSequence(Box::new(
                 EscapeSequenceNode::parse(node, source)?,
             )),
+            "integer" => {
+                EncapsedStringChildren::Integer(Box::new(IntegerNode::parse(node, source)?))
+            }
             "member_access_expression" => EncapsedStringChildren::MemberAccessExpression(Box::new(
                 MemberAccessExpressionNode::parse(node, source)?,
             )),
+            "name" => EncapsedStringChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "string_value" => {
                 EncapsedStringChildren::StringValue(Box::new(StringValueNode::parse(node, source)?))
             }
-            "subscript_expression" => EncapsedStringChildren::SubscriptExpression(Box::new(
-                SubscriptExpressionNode::parse(node, source)?,
-            )),
             "variable_name" => EncapsedStringChildren::VariableName(Box::new(
                 VariableNameNode::parse(node, source)?,
             )),
@@ -87,9 +85,6 @@ impl EncapsedStringChildren {
             "comment" => EncapsedStringChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => EncapsedStringChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => EncapsedStringChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -99,15 +94,16 @@ impl EncapsedStringChildren {
             "escape_sequence" => EncapsedStringChildren::EscapeSequence(Box::new(
                 EscapeSequenceNode::parse(node, source)?,
             )),
+            "integer" => {
+                EncapsedStringChildren::Integer(Box::new(IntegerNode::parse(node, source)?))
+            }
             "member_access_expression" => EncapsedStringChildren::MemberAccessExpression(Box::new(
                 MemberAccessExpressionNode::parse(node, source)?,
             )),
+            "name" => EncapsedStringChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "string_value" => {
                 EncapsedStringChildren::StringValue(Box::new(StringValueNode::parse(node, source)?))
             }
-            "subscript_expression" => EncapsedStringChildren::SubscriptExpression(Box::new(
-                SubscriptExpressionNode::parse(node, source)?,
-            )),
             "variable_name" => EncapsedStringChildren::VariableName(Box::new(
                 VariableNameNode::parse(node, source)?,
             )),
@@ -133,9 +129,10 @@ impl EncapsedStringChildren {
             EncapsedStringChildren::_Expression(y) => y.kind(),
             EncapsedStringChildren::DynamicVariableName(y) => y.kind(),
             EncapsedStringChildren::EscapeSequence(y) => y.kind(),
+            EncapsedStringChildren::Integer(y) => y.kind(),
             EncapsedStringChildren::MemberAccessExpression(y) => y.kind(),
+            EncapsedStringChildren::Name(y) => y.kind(),
             EncapsedStringChildren::StringValue(y) => y.kind(),
-            EncapsedStringChildren::SubscriptExpression(y) => y.kind(),
             EncapsedStringChildren::VariableName(y) => y.kind(),
         }
     }
@@ -161,9 +158,10 @@ impl EncapsedStringChildren {
             EncapsedStringChildren::_Expression(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.get_utype(state, emitter),
+            EncapsedStringChildren::Integer(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::MemberAccessExpression(x) => x.get_utype(state, emitter),
+            EncapsedStringChildren::Name(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::StringValue(x) => x.get_utype(state, emitter),
-            EncapsedStringChildren::SubscriptExpression(x) => x.get_utype(state, emitter),
             EncapsedStringChildren::VariableName(x) => x.get_utype(state, emitter),
         }
     }
@@ -178,9 +176,10 @@ impl EncapsedStringChildren {
             EncapsedStringChildren::_Expression(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.get_php_value(state, emitter),
+            EncapsedStringChildren::Integer(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::MemberAccessExpression(x) => x.get_php_value(state, emitter),
+            EncapsedStringChildren::Name(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::StringValue(x) => x.get_php_value(state, emitter),
-            EncapsedStringChildren::SubscriptExpression(x) => x.get_php_value(state, emitter),
             EncapsedStringChildren::VariableName(x) => x.get_php_value(state, emitter),
         }
     }
@@ -191,9 +190,10 @@ impl EncapsedStringChildren {
             EncapsedStringChildren::_Expression(x) => x.read_from(state, emitter),
             EncapsedStringChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             EncapsedStringChildren::EscapeSequence(x) => x.read_from(state, emitter),
+            EncapsedStringChildren::Integer(x) => x.read_from(state, emitter),
             EncapsedStringChildren::MemberAccessExpression(x) => x.read_from(state, emitter),
+            EncapsedStringChildren::Name(x) => x.read_from(state, emitter),
             EncapsedStringChildren::StringValue(x) => x.read_from(state, emitter),
-            EncapsedStringChildren::SubscriptExpression(x) => x.read_from(state, emitter),
             EncapsedStringChildren::VariableName(x) => x.read_from(state, emitter),
         }
     }
@@ -216,17 +216,19 @@ impl NodeAccess for EncapsedStringChildren {
                 "EncapsedStringChildren::escape_sequence({})",
                 x.brief_desc()
             ),
+            EncapsedStringChildren::Integer(x) => {
+                format!("EncapsedStringChildren::integer({})", x.brief_desc())
+            }
             EncapsedStringChildren::MemberAccessExpression(x) => format!(
                 "EncapsedStringChildren::member_access_expression({})",
                 x.brief_desc()
             ),
+            EncapsedStringChildren::Name(x) => {
+                format!("EncapsedStringChildren::name({})", x.brief_desc())
+            }
             EncapsedStringChildren::StringValue(x) => {
                 format!("EncapsedStringChildren::string_value({})", x.brief_desc())
             }
-            EncapsedStringChildren::SubscriptExpression(x) => format!(
-                "EncapsedStringChildren::subscript_expression({})",
-                x.brief_desc()
-            ),
             EncapsedStringChildren::VariableName(x) => {
                 format!("EncapsedStringChildren::variable_name({})", x.brief_desc())
             }
@@ -239,9 +241,10 @@ impl NodeAccess for EncapsedStringChildren {
             EncapsedStringChildren::_Expression(x) => x.as_any(),
             EncapsedStringChildren::DynamicVariableName(x) => x.as_any(),
             EncapsedStringChildren::EscapeSequence(x) => x.as_any(),
+            EncapsedStringChildren::Integer(x) => x.as_any(),
             EncapsedStringChildren::MemberAccessExpression(x) => x.as_any(),
+            EncapsedStringChildren::Name(x) => x.as_any(),
             EncapsedStringChildren::StringValue(x) => x.as_any(),
-            EncapsedStringChildren::SubscriptExpression(x) => x.as_any(),
             EncapsedStringChildren::VariableName(x) => x.as_any(),
         }
     }
@@ -252,9 +255,10 @@ impl NodeAccess for EncapsedStringChildren {
             EncapsedStringChildren::_Expression(x) => x.children_any(),
             EncapsedStringChildren::DynamicVariableName(x) => x.children_any(),
             EncapsedStringChildren::EscapeSequence(x) => x.children_any(),
+            EncapsedStringChildren::Integer(x) => x.children_any(),
             EncapsedStringChildren::MemberAccessExpression(x) => x.children_any(),
+            EncapsedStringChildren::Name(x) => x.children_any(),
             EncapsedStringChildren::StringValue(x) => x.children_any(),
-            EncapsedStringChildren::SubscriptExpression(x) => x.children_any(),
             EncapsedStringChildren::VariableName(x) => x.children_any(),
         }
     }
@@ -265,9 +269,10 @@ impl NodeAccess for EncapsedStringChildren {
             EncapsedStringChildren::_Expression(x) => x.range(),
             EncapsedStringChildren::DynamicVariableName(x) => x.range(),
             EncapsedStringChildren::EscapeSequence(x) => x.range(),
+            EncapsedStringChildren::Integer(x) => x.range(),
             EncapsedStringChildren::MemberAccessExpression(x) => x.range(),
+            EncapsedStringChildren::Name(x) => x.range(),
             EncapsedStringChildren::StringValue(x) => x.range(),
-            EncapsedStringChildren::SubscriptExpression(x) => x.range(),
             EncapsedStringChildren::VariableName(x) => x.range(),
         }
     }
@@ -282,7 +287,7 @@ pub struct EncapsedStringNode {
 
 impl NodeParser for EncapsedStringNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "encapsed_string" {
             return Err(ParseError::new(
                 range,

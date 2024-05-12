@@ -163,6 +163,9 @@ impl BinaryOperator for BinaryExpressionOperator {
                 operator.get_operator_utype(operands, state, emitter)
             }
             BinaryExpressionOperator::Extra(_) => None,
+            BinaryExpressionOperator::Exponential(operator) => {
+                operator.get_operator_utype(operands, state, emitter)
+            }
         }
     }
 
@@ -254,6 +257,10 @@ impl BinaryOperator for BinaryExpressionOperator {
             BinaryExpressionOperator::BooleanOr(operator) => {
                 operator.get_operator_php_value(operands, state, emitter)
             }
+            BinaryExpressionOperator::Exponential(operator) => {
+                operator.get_operator_php_value(operands, state, emitter)
+            }
+
             BinaryExpressionOperator::Extra(_) => None,
         }
     }
@@ -289,11 +296,12 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::LogicalXor(op) => op.brief_desc(),
             BinaryExpressionOperator::BinaryOr(op) => op.brief_desc(),
             BinaryExpressionOperator::BooleanOr(op) => op.brief_desc(),
+            BinaryExpressionOperator::Exponential(ex) => ex.brief_desc(),
             BinaryExpressionOperator::Extra(ex) => ex.brief_desc(),
         }
     }
 
-    fn range(&self) -> tree_sitter::Range {
+    fn range(&self) -> crate::parser::Range {
         match self {
             BinaryExpressionOperator::NotEqual(op) => op.range(),
             BinaryExpressionOperator::NotIdentical(op) => op.range(),
@@ -322,6 +330,7 @@ impl NodeAccess for BinaryExpressionOperator {
             BinaryExpressionOperator::LogicalXor(op) => op.range(),
             BinaryExpressionOperator::BinaryOr(op) => op.range(),
             BinaryExpressionOperator::BooleanOr(op) => op.range(),
+            BinaryExpressionOperator::Exponential(ex) => ex.range(),
             BinaryExpressionOperator::Extra(ex) => ex.range(),
         }
     }

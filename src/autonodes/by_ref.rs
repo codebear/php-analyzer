@@ -9,19 +9,17 @@ use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExp
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum ByRefChildren {
@@ -43,9 +41,6 @@ impl NodeParser for ByRefChildren {
             "comment" => ByRefChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => ByRefChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            ))),
             "ERROR" => {
                 ByRefChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -93,9 +88,6 @@ impl ByRefChildren {
             "comment" => ByRefChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => ByRefChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            ))),
             "ERROR" => {
                 ByRefChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -304,7 +296,7 @@ pub struct ByRefNode {
 
 impl NodeParser for ByRefNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "by_ref" {
             return Err(ParseError::new(
                 range,

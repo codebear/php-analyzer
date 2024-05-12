@@ -1,23 +1,19 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
-use crate::autonodes::integer::IntegerNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
-
 use crate::operators::add::AddOperator;
 use crate::operators::binary_not::BinaryNotOperator;
 use crate::operators::not::NotOperator;
 use crate::operators::operator::Operator;
 use crate::operators::sub::SubOperator;
-
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum UnaryOpExpressionOperator {
@@ -34,18 +30,13 @@ impl NodeParser for UnaryOpExpressionOperator {
             "comment" => UnaryOpExpressionOperator::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                UnaryOpExpressionOperator::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => UnaryOpExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "!" => UnaryOpExpressionOperator::Not(NotOperator(node.range())),
-            "+" => UnaryOpExpressionOperator::Add(AddOperator(node.range())),
-            "-" => UnaryOpExpressionOperator::Sub(SubOperator(node.range())),
-            "~" => UnaryOpExpressionOperator::BinaryNot(BinaryNotOperator(node.range())),
+            "!" => UnaryOpExpressionOperator::Not(NotOperator(node.range().into())),
+            "+" => UnaryOpExpressionOperator::Add(AddOperator(node.range().into())),
+            "-" => UnaryOpExpressionOperator::Sub(SubOperator(node.range().into())),
+            "~" => UnaryOpExpressionOperator::BinaryNot(BinaryNotOperator(node.range().into())),
 
             _ => {
                 return Err(ParseError::new(
@@ -63,18 +54,13 @@ impl UnaryOpExpressionOperator {
             "comment" => UnaryOpExpressionOperator::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                UnaryOpExpressionOperator::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => UnaryOpExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
-            "!" => UnaryOpExpressionOperator::Not(NotOperator(node.range())),
-            "+" => UnaryOpExpressionOperator::Add(AddOperator(node.range())),
-            "-" => UnaryOpExpressionOperator::Sub(SubOperator(node.range())),
-            "~" => UnaryOpExpressionOperator::BinaryNot(BinaryNotOperator(node.range())),
+            "!" => UnaryOpExpressionOperator::Not(NotOperator(node.range().into())),
+            "+" => UnaryOpExpressionOperator::Add(AddOperator(node.range().into())),
+            "-" => UnaryOpExpressionOperator::Sub(SubOperator(node.range().into())),
+            "~" => UnaryOpExpressionOperator::BinaryNot(BinaryNotOperator(node.range().into())),
 
             _ => return Ok(None),
         }))
@@ -105,15 +91,14 @@ impl UnaryOpExpressionOperator {
 #[derive(Debug, Clone)]
 pub struct UnaryOpExpressionNode {
     pub range: Range,
-    pub expr: Option<_ExpressionNode>,
-    pub operator: Option<Box<UnaryOpExpressionOperator>>,
-    pub child: Option<Box<IntegerNode>>,
+    pub argument: _ExpressionNode,
+    pub operator: Box<UnaryOpExpressionOperator>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
 impl NodeParser for UnaryOpExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "unary_op_expression" {
             return Err(ParseError::new(
                 range,
@@ -125,36 +110,19 @@ impl NodeParser for UnaryOpExpressionNode {
                 ),
             ));
         }
-        let mut skip_nodes: Vec<usize> = vec![];
-        let expr: Option<_ExpressionNode> = Result::from(
-            node.parse_child("expr", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
-        )?;
-        let operator: Option<Box<UnaryOpExpressionOperator>> = Result::from(
-            node.parse_child("operator", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
-        )?;
+        let argument: _ExpressionNode = Result::from(node.parse_child("argument", source).into())?;
+        let operator: Box<UnaryOpExpressionOperator> =
+            Result::from(node.parse_child("operator", source).into())?;
         Ok(Self {
             range,
-            expr,
+            argument,
             operator,
-            child: node
-                .named_children(&mut node.walk())
-                .filter(|node| !skip_nodes.contains(&node.id()))
-                .filter(|node| node.kind() != "comment")
-                .map(|k| IntegerNode::parse(k, source))
-                .collect::<Result<Vec<IntegerNode>, ParseError>>()?
-                .drain(..)
-                .map(|j| Box::new(j))
-                .next(),
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
-                    .filter(|node| node.kind() == "comment")
-                    .filter(|node| !skip_nodes.contains(&node.id())),
+                    .filter(|node| node.kind() == "comment"),
                 source,
-            )?,
+            )
+            .unwrap(),
         })
     }
 }
@@ -178,16 +146,8 @@ impl NodeAccess for UnaryOpExpressionNode {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
         // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
-        if let Some(x) = &self.expr {
-            child_vec.push(x.as_any());
-        }
-        if let Some(x) = &self.operator {
-            child_vec.push(x.as_any());
-        }
-        if let Some(x) = &self.child {
-            child_vec.push(x.as_any());
-        }
-        child_vec.extend(self.extras.iter().map(|n| n.as_any()));
+        child_vec.push(self.argument.as_any());
+        child_vec.push(self.operator.as_any());
 
         child_vec.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
         child_vec

@@ -1,6 +1,7 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::_type::_TypeNode;
 use crate::autonodes::any::AnyNodeRef;
+use crate::autonodes::attribute_list::AttributeListNode;
 use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
@@ -9,12 +10,13 @@ use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct PropertyPromotionParameterNode {
     pub range: Range,
+    pub attributes: Option<AttributeListNode>,
     pub default_value: Option<_ExpressionNode>,
     pub name: VariableNameNode,
     pub readonly: Option<ReadonlyModifierNode>,
@@ -25,10 +27,12 @@ pub struct PropertyPromotionParameterNode {
 
 impl NodeParser for PropertyPromotionParameterNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "property_promotion_parameter" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [property_promotion_parameter] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
+        let attributes: Option<AttributeListNode> =
+            Result::from(node.parse_child("attributes", source).into())?;
         let default_value: Option<_ExpressionNode> =
             Result::from(node.parse_child("default_value", source).into())?;
         let name: VariableNameNode = Result::from(node.parse_child("name", source).into())?;
@@ -39,6 +43,7 @@ impl NodeParser for PropertyPromotionParameterNode {
             Result::from(node.parse_child("visibility", source).into())?;
         Ok(Self {
             range,
+            attributes,
             default_value,
             name,
             readonly,
@@ -73,6 +78,9 @@ impl NodeAccess for PropertyPromotionParameterNode {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
         // let any_children: Vec<AnyNodeRef<'a>> = self.children.iter().map(|x| x.as_any()).collect();
+        if let Some(x) = &self.attributes {
+            child_vec.push(x.as_any());
+        }
         if let Some(x) = &self.default_value {
             child_vec.push(x.as_any());
         }

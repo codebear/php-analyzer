@@ -1,7 +1,7 @@
 import fs from 'fs';
 
 
-const raw_json = fs.readFileSync("tree-sitter-php/src/node-types.json");
+const raw_json = fs.readFileSync("tree-sitter-php/php/src/node-types.json");
 
 const additional_properties = {
     "class_declaration": "crate::nodeanalysis::class_declaration::ClassDeclarationState",
@@ -53,6 +53,7 @@ let operators = {
     "xor": "LogicalXor",
     "|": "BinaryOr",
     "||": "BooleanOr",
+    "**": "Exponential",
 
     "++": "Increment",
     "--": "Decrement",
@@ -63,6 +64,10 @@ let operators = {
     "!": "Not",
     "@": "Squelch",
     "~": "BinaryNot",
+
+    // Noe
+    "{": "OpenBrace",
+    "}": "CloseBrace",
 };
 let type_name_map = {
     ...operators,
@@ -150,7 +155,8 @@ function get_enum_matches(enum_name, types, callback) {
 
 function create_enum_for_types(name, types) {
     let enum_uses = [
-        "tree_sitter::Range",
+        //"tree_sitter::Range",
+        "crate::parser::Range",
         "crate::autotree::NodeAccess",
         "crate::autotree::ParseError",
         "crate::autonodes::any::AnyNodeRef",
@@ -194,7 +200,7 @@ function create_enum_for_types(name, types) {
     // uses.push("crate::autonodes::any::AnyNode");
     enum_uses.push("crate::autonodes::comment::CommentNode");
     enum_uses.push("crate::errornode::ErrorNode");
-    enum_uses.push("crate::autonodes::text_interpolation::TextInterpolationNode");
+    // enum_uses.push("crate::autonodes::text_interpolation::TextInterpolationNode");
     // child_enum_buffer += "   Unknown(Box<AnyNode>),\n";
     child_enum_buffer += "  Extra(ExtraChild),\n";
 
@@ -206,7 +212,7 @@ function create_enum_for_types(name, types) {
 
     let match_enum_buffer = "";
     match_enum_buffer += `      "comment" => ${name}::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(node, source)?))),` + "\n";
-    match_enum_buffer += `      "text_interpolation" => ${name}::Extra(ExtraChild::TextInterpolation(Box::new(TextInterpolationNode::parse(node, source)?))),` + "\n";
+    // match_enum_buffer += `      "text_interpolation" => ${name}::Extra(ExtraChild::TextInterpolation(Box::new(TextInterpolationNode::parse(node, source)?))),` + "\n";
     match_enum_buffer += `      "ERROR" => ${name}::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?))),` + "\n";
     let opt_wildcard = "";
     let new_wildcard = "";
@@ -217,10 +223,10 @@ function create_enum_for_types(name, types) {
         let parsing = `${child_type}::parse(node, source)?`;
         if (child_type.match(/'static/)) {
             parsing = rust_str(type.type);
-            parsing += ", node.range()";
+            parsing += ", node.range().into()";
             opt_parsing = 'Some(todo!("Det lyt fiksas"))';
         } else if (child_type.match(/Operator$/)) {
-            parsing = child_type + "(node.range())";
+            parsing = child_type + "(node.range().into())";
             opt_parsing = 'Some(todo!("Det lyt fiksas"))';
         } else {
             parsing = "Box::new(" + parsing + ")";
@@ -444,7 +450,8 @@ for (const node_def of node_defs) {
         uses["tree_sitter::Node"] = "";
 
     } else {
-        uses["tree_sitter::Range"] = "";
+        //uses["tree_sitter::Range"] = "";
+        uses["crate::parser::Range"] = "";
         uses["crate::autotree::NodeAccess"] = "";
         uses["crate::autotree::NodeParser"] = "";
         uses["crate::autotree::ChildNodeParser"] = "";
@@ -688,7 +695,7 @@ for (const node_def of node_defs) {
 
 impl NodeParser for ${node_name} {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "${node_def.type}" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [${node_def.type}] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
@@ -779,7 +786,8 @@ any_buffer += "}\n";
 
 any_uses["crate::autotree::NodeAccess"] = "";
 any_uses["crate::autotree::ParseError"] = "";
-any_uses["tree_sitter::Range"] = "";
+//any_uses["tree_sitter::Range"] = "";
+any_uses["crate::parser::Range"] = "";
 any_uses["tree_sitter::Node"] = "";
 
 any_buffer += `

@@ -1,12 +1,11 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::attribute::AttributeNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct AttributeGroupNode {
@@ -17,7 +16,7 @@ pub struct AttributeGroupNode {
 
 impl NodeParser for AttributeGroupNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "attribute_group" {
             return Err(ParseError::new(
                 range,

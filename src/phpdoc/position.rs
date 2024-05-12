@@ -7,7 +7,9 @@ use std::{
 };
 
 use nom::{FindSubstring, InputIter, InputLength, InputTake, Slice, UnspecializedInput};
-use tree_sitter::{Point, Range};
+use tree_sitter::Point;
+
+use crate::parser::Range;
 
 #[derive(Clone, Debug)]
 pub struct PHPDocInput<'a>(pub &'a [u8], pub Range);

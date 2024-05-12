@@ -8,15 +8,13 @@ use crate::autonodes::cast_expression::CastExpressionNode;
 use crate::autonodes::clone_expression::CloneExpressionNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::conditional_expression::ConditionalExpressionNode;
-use crate::autonodes::exponentiation_expression::ExponentiationExpressionNode;
+use crate::autonodes::error_suppression_expression::ErrorSuppressionExpressionNode;
 use crate::autonodes::include_expression::IncludeExpressionNode;
 use crate::autonodes::include_once_expression::IncludeOnceExpressionNode;
 use crate::autonodes::match_expression::MatchExpressionNode;
 use crate::autonodes::reference_assignment_expression::ReferenceAssignmentExpressionNode;
 use crate::autonodes::require_expression::RequireExpressionNode;
 use crate::autonodes::require_once_expression::RequireOnceExpressionNode;
-use crate::autonodes::silence_expression::SilenceExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
 use crate::autonodes::yield_expression::YieldExpressionNode;
 use crate::autotree::NodeAccess;
@@ -25,10 +23,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum _ExpressionNode {
@@ -39,14 +37,13 @@ pub enum _ExpressionNode {
     CastExpression(Box<CastExpressionNode>),
     CloneExpression(Box<CloneExpressionNode>),
     ConditionalExpression(Box<ConditionalExpressionNode>),
-    ExponentiationExpression(Box<ExponentiationExpressionNode>),
+    ErrorSuppressionExpression(Box<ErrorSuppressionExpressionNode>),
     IncludeExpression(Box<IncludeExpressionNode>),
     IncludeOnceExpression(Box<IncludeOnceExpressionNode>),
     MatchExpression(Box<MatchExpressionNode>),
     ReferenceAssignmentExpression(Box<ReferenceAssignmentExpressionNode>),
     RequireExpression(Box<RequireExpressionNode>),
     RequireOnceExpression(Box<RequireOnceExpressionNode>),
-    SilenceExpression(Box<SilenceExpressionNode>),
     UnaryOpExpression(Box<UnaryOpExpressionNode>),
     YieldExpression(Box<YieldExpressionNode>),
     Extra(ExtraChild),
@@ -58,9 +55,6 @@ impl NodeParser for _ExpressionNode {
             "comment" => _ExpressionNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => _ExpressionNode::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => {
                 _ExpressionNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -82,9 +76,9 @@ impl NodeParser for _ExpressionNode {
             "conditional_expression" => _ExpressionNode::ConditionalExpression(Box::new(
                 ConditionalExpressionNode::parse(node, source)?,
             )),
-            "exponentiation_expression" => _ExpressionNode::ExponentiationExpression(Box::new(
-                ExponentiationExpressionNode::parse(node, source)?,
-            )),
+            "error_suppression_expression" => _ExpressionNode::ErrorSuppressionExpression(
+                Box::new(ErrorSuppressionExpressionNode::parse(node, source)?),
+            ),
             "include_expression" => _ExpressionNode::IncludeExpression(Box::new(
                 IncludeExpressionNode::parse(node, source)?,
             )),
@@ -102,9 +96,6 @@ impl NodeParser for _ExpressionNode {
             )),
             "require_once_expression" => _ExpressionNode::RequireOnceExpression(Box::new(
                 RequireOnceExpressionNode::parse(node, source)?,
-            )),
-            "silence_expression" => _ExpressionNode::SilenceExpression(Box::new(
-                SilenceExpressionNode::parse(node, source)?,
             )),
             "unary_op_expression" => _ExpressionNode::UnaryOpExpression(Box::new(
                 UnaryOpExpressionNode::parse(node, source)?,
@@ -136,9 +127,6 @@ impl _ExpressionNode {
             "comment" => _ExpressionNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => _ExpressionNode::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => {
                 _ExpressionNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -160,9 +148,9 @@ impl _ExpressionNode {
             "conditional_expression" => _ExpressionNode::ConditionalExpression(Box::new(
                 ConditionalExpressionNode::parse(node, source)?,
             )),
-            "exponentiation_expression" => _ExpressionNode::ExponentiationExpression(Box::new(
-                ExponentiationExpressionNode::parse(node, source)?,
-            )),
+            "error_suppression_expression" => _ExpressionNode::ErrorSuppressionExpression(
+                Box::new(ErrorSuppressionExpressionNode::parse(node, source)?),
+            ),
             "include_expression" => _ExpressionNode::IncludeExpression(Box::new(
                 IncludeExpressionNode::parse(node, source)?,
             )),
@@ -180,9 +168,6 @@ impl _ExpressionNode {
             )),
             "require_once_expression" => _ExpressionNode::RequireOnceExpression(Box::new(
                 RequireOnceExpressionNode::parse(node, source)?,
-            )),
-            "silence_expression" => _ExpressionNode::SilenceExpression(Box::new(
-                SilenceExpressionNode::parse(node, source)?,
             )),
             "unary_op_expression" => _ExpressionNode::UnaryOpExpression(Box::new(
                 UnaryOpExpressionNode::parse(node, source)?,
@@ -216,14 +201,13 @@ impl _ExpressionNode {
             _ExpressionNode::CastExpression(y) => y.kind(),
             _ExpressionNode::CloneExpression(y) => y.kind(),
             _ExpressionNode::ConditionalExpression(y) => y.kind(),
-            _ExpressionNode::ExponentiationExpression(y) => y.kind(),
+            _ExpressionNode::ErrorSuppressionExpression(y) => y.kind(),
             _ExpressionNode::IncludeExpression(y) => y.kind(),
             _ExpressionNode::IncludeOnceExpression(y) => y.kind(),
             _ExpressionNode::MatchExpression(y) => y.kind(),
             _ExpressionNode::ReferenceAssignmentExpression(y) => y.kind(),
             _ExpressionNode::RequireExpression(y) => y.kind(),
             _ExpressionNode::RequireOnceExpression(y) => y.kind(),
-            _ExpressionNode::SilenceExpression(y) => y.kind(),
             _ExpressionNode::UnaryOpExpression(y) => y.kind(),
             _ExpressionNode::YieldExpression(y) => y.kind(),
         }
@@ -254,14 +238,13 @@ impl _ExpressionNode {
             _ExpressionNode::CastExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::CloneExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::ConditionalExpression(x) => x.get_utype(state, emitter),
-            _ExpressionNode::ExponentiationExpression(x) => x.get_utype(state, emitter),
+            _ExpressionNode::ErrorSuppressionExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::IncludeExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::IncludeOnceExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::MatchExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::ReferenceAssignmentExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::RequireExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::RequireOnceExpression(x) => x.get_utype(state, emitter),
-            _ExpressionNode::SilenceExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::UnaryOpExpression(x) => x.get_utype(state, emitter),
             _ExpressionNode::YieldExpression(x) => x.get_utype(state, emitter),
         }
@@ -281,14 +264,13 @@ impl _ExpressionNode {
             _ExpressionNode::CastExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::CloneExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::ConditionalExpression(x) => x.get_php_value(state, emitter),
-            _ExpressionNode::ExponentiationExpression(x) => x.get_php_value(state, emitter),
+            _ExpressionNode::ErrorSuppressionExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::IncludeExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::IncludeOnceExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::MatchExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::ReferenceAssignmentExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::RequireExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::RequireOnceExpression(x) => x.get_php_value(state, emitter),
-            _ExpressionNode::SilenceExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::UnaryOpExpression(x) => x.get_php_value(state, emitter),
             _ExpressionNode::YieldExpression(x) => x.get_php_value(state, emitter),
         }
@@ -304,14 +286,13 @@ impl _ExpressionNode {
             _ExpressionNode::CastExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::CloneExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::ConditionalExpression(x) => x.read_from(state, emitter),
-            _ExpressionNode::ExponentiationExpression(x) => x.read_from(state, emitter),
+            _ExpressionNode::ErrorSuppressionExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::IncludeExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::IncludeOnceExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::MatchExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::ReferenceAssignmentExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::RequireExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::RequireOnceExpression(x) => x.read_from(state, emitter),
-            _ExpressionNode::SilenceExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::UnaryOpExpression(x) => x.read_from(state, emitter),
             _ExpressionNode::YieldExpression(x) => x.read_from(state, emitter),
         }
@@ -345,8 +326,8 @@ impl NodeAccess for _ExpressionNode {
                 "_ExpressionNode::conditional_expression({})",
                 x.brief_desc()
             ),
-            _ExpressionNode::ExponentiationExpression(x) => format!(
-                "_ExpressionNode::exponentiation_expression({})",
+            _ExpressionNode::ErrorSuppressionExpression(x) => format!(
+                "_ExpressionNode::error_suppression_expression({})",
                 x.brief_desc()
             ),
             _ExpressionNode::IncludeExpression(x) => {
@@ -370,9 +351,6 @@ impl NodeAccess for _ExpressionNode {
                 "_ExpressionNode::require_once_expression({})",
                 x.brief_desc()
             ),
-            _ExpressionNode::SilenceExpression(x) => {
-                format!("_ExpressionNode::silence_expression({})", x.brief_desc())
-            }
             _ExpressionNode::UnaryOpExpression(x) => {
                 format!("_ExpressionNode::unary_op_expression({})", x.brief_desc())
             }
@@ -392,14 +370,13 @@ impl NodeAccess for _ExpressionNode {
             _ExpressionNode::CastExpression(x) => x.as_any(),
             _ExpressionNode::CloneExpression(x) => x.as_any(),
             _ExpressionNode::ConditionalExpression(x) => x.as_any(),
-            _ExpressionNode::ExponentiationExpression(x) => x.as_any(),
+            _ExpressionNode::ErrorSuppressionExpression(x) => x.as_any(),
             _ExpressionNode::IncludeExpression(x) => x.as_any(),
             _ExpressionNode::IncludeOnceExpression(x) => x.as_any(),
             _ExpressionNode::MatchExpression(x) => x.as_any(),
             _ExpressionNode::ReferenceAssignmentExpression(x) => x.as_any(),
             _ExpressionNode::RequireExpression(x) => x.as_any(),
             _ExpressionNode::RequireOnceExpression(x) => x.as_any(),
-            _ExpressionNode::SilenceExpression(x) => x.as_any(),
             _ExpressionNode::UnaryOpExpression(x) => x.as_any(),
             _ExpressionNode::YieldExpression(x) => x.as_any(),
         }
@@ -415,14 +392,13 @@ impl NodeAccess for _ExpressionNode {
             _ExpressionNode::CastExpression(x) => x.children_any(),
             _ExpressionNode::CloneExpression(x) => x.children_any(),
             _ExpressionNode::ConditionalExpression(x) => x.children_any(),
-            _ExpressionNode::ExponentiationExpression(x) => x.children_any(),
+            _ExpressionNode::ErrorSuppressionExpression(x) => x.children_any(),
             _ExpressionNode::IncludeExpression(x) => x.children_any(),
             _ExpressionNode::IncludeOnceExpression(x) => x.children_any(),
             _ExpressionNode::MatchExpression(x) => x.children_any(),
             _ExpressionNode::ReferenceAssignmentExpression(x) => x.children_any(),
             _ExpressionNode::RequireExpression(x) => x.children_any(),
             _ExpressionNode::RequireOnceExpression(x) => x.children_any(),
-            _ExpressionNode::SilenceExpression(x) => x.children_any(),
             _ExpressionNode::UnaryOpExpression(x) => x.children_any(),
             _ExpressionNode::YieldExpression(x) => x.children_any(),
         }
@@ -438,14 +414,13 @@ impl NodeAccess for _ExpressionNode {
             _ExpressionNode::CastExpression(x) => x.range(),
             _ExpressionNode::CloneExpression(x) => x.range(),
             _ExpressionNode::ConditionalExpression(x) => x.range(),
-            _ExpressionNode::ExponentiationExpression(x) => x.range(),
+            _ExpressionNode::ErrorSuppressionExpression(x) => x.range(),
             _ExpressionNode::IncludeExpression(x) => x.range(),
             _ExpressionNode::IncludeOnceExpression(x) => x.range(),
             _ExpressionNode::MatchExpression(x) => x.range(),
             _ExpressionNode::ReferenceAssignmentExpression(x) => x.range(),
             _ExpressionNode::RequireExpression(x) => x.range(),
             _ExpressionNode::RequireOnceExpression(x) => x.range(),
-            _ExpressionNode::SilenceExpression(x) => x.range(),
             _ExpressionNode::UnaryOpExpression(x) => x.range(),
             _ExpressionNode::YieldExpression(x) => x.range(),
         }

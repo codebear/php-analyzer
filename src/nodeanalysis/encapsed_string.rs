@@ -25,7 +25,7 @@ impl EncapsedStringNode {
         for child in &self.children {
             match &**child {
                 EncapsedStringChildren::Extra(ExtraChild::Comment(_))
-                | EncapsedStringChildren::Extra(ExtraChild::TextInterpolation(_)) => continue,
+                /*| EncapsedStringChildren::Extra(ExtraChild::TextInterpolation(_))*/ => continue,
 
                 _ => parts.push(child.get_php_value(state, emitter)?.as_php_string()?),
             }

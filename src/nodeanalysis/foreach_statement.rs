@@ -2,14 +2,13 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{
         any::AnyNodeRef,
-        foreach_statement::{ForeachStatementNode, ForeachStatementValue},
+        foreach_statement::{ForeachStatementEntry, ForeachStatementNode},
     },
     issue::{Issue, IssueEmitter},
     types::{
         traversable::{get_key_type, get_value_type},
         union::UnionType,
     },
-    value::PHPValue,
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -35,6 +34,40 @@ impl ForeachStatementNode {
     ) -> Option<UnionType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
+
+    fn get_key_node(&self) -> Option<&AnyNodeRef> {
+        /*match &self.key {
+            Some(k) => Some(k),
+            None => None,
+        }*/
+        self.entry.get_key_node()
+    }
+
+    fn get_value_node(&self) -> Option<&AnyNodeRef> {
+        self.entry.get_value_node()
+    }
+}
+
+impl ForeachStatementEntry {
+    pub fn get_key_node(&self) -> Option<&AnyNodeRef> {
+        match self {
+            ForeachStatementEntry::_Expression(_) => todo!(),
+            ForeachStatementEntry::ByRef(_) => todo!(),
+            ForeachStatementEntry::ListLiteral(_) => todo!(),
+            ForeachStatementEntry::Pair(_) => todo!(),
+            ForeachStatementEntry::Extra(_) => todo!(),
+        }
+    }
+
+    pub fn get_value_node(&self) -> Option<&AnyNodeRef> {
+        match self {
+            ForeachStatementEntry::_Expression(_) => todo!(),
+            ForeachStatementEntry::ByRef(_) => todo!(),
+            ForeachStatementEntry::ListLiteral(_) => todo!(),
+            ForeachStatementEntry::Pair(_) => todo!(),
+            ForeachStatementEntry::Extra(_) => todo!(),
+        }
+    }
 }
 
 impl ThirdPassAnalyzeableNode for ForeachStatementNode {
@@ -54,7 +87,7 @@ impl ThirdPassAnalyzeableNode for ForeachStatementNode {
             None
         };
         let value_type = if let Some(trav) = traversable_type {
-            if let Some(key) = &self.key {
+            if let Some(key) = self.get_key_node() {
                 let key_type = get_key_type(&trav, state.symbol_data.clone());
 
                 key.write_to(state, emitter, key_type, None);
@@ -65,12 +98,15 @@ impl ThirdPassAnalyzeableNode for ForeachStatementNode {
             None
         };
 
-        self.value.write_to(state, emitter, value_type, None);
+        if let Some(value) = self.get_value_node() {
+            value.write_to(state, emitter, value_type, None);
+        }
 
         self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }
 
+/*
 impl ForeachStatementValue {
     pub fn write_to(
         &self,
@@ -88,3 +124,4 @@ impl ForeachStatementValue {
         }
     }
 }
+*/

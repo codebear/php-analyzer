@@ -1,12 +1,11 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::named_type::NamedTypeNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct TypeListNode {
@@ -17,7 +16,7 @@ pub struct TypeListNode {
 
 impl NodeParser for TypeListNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "type_list" {
             return Err(ParseError::new(
                 range,

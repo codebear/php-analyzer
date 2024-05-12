@@ -4,7 +4,8 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 use tree_sitter::Point;
-use tree_sitter::Range;
+//use tree_sitter::Range;
+use crate::parser::Range;
 
 use crate::autonodes::any::AnyNodeRef;
 use crate::config::PHPAnalyzeConfig;

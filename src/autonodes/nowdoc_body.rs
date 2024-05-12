@@ -1,12 +1,11 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::nowdoc_string::NowdocStringNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct NowdocBodyNode {
@@ -17,7 +16,7 @@ pub struct NowdocBodyNode {
 
 impl NodeParser for NowdocBodyNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "nowdoc_body" {
             return Err(ParseError::new(
                 range,

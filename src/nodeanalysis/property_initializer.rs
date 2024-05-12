@@ -1,4 +1,3 @@
-/*
 use crate::{
     analysis::state::AnalysisState, autonodes::property_initializer::PropertyInitializerNode,
     issue::IssueEmitter, types::union::UnionType,
@@ -25,4 +24,3 @@ impl PropertyInitializerNode {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }
-*/

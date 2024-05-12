@@ -1,11 +1,12 @@
 use crate::{
-    analysis::state::AnalysisState, autonodes::silence_expression::SilenceExpressionNode,
-    issue::IssueEmitter, types::union::UnionType,
+    analysis::state::AnalysisState,
+    autonodes::error_suppression_expression::ErrorSuppressionExpressionNode, issue::IssueEmitter,
+    types::union::UnionType,
 };
 
-impl SilenceExpressionNode {
+impl ErrorSuppressionExpressionNode {
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        self.expr.read_from(state, emitter)
+        self.child.read_from(state, emitter)
         //crate::missing!("{}.read_from(..)", self.kind());
     }
 
@@ -14,7 +15,7 @@ impl SilenceExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
-        self.expr.get_php_value(state, emitter)
+        self.child.get_php_value(state, emitter)
         //crate::missing_none!("{}.get_php_value(..)", self.kind())
     }
 
@@ -23,7 +24,7 @@ impl SilenceExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
-        self.expr.get_utype(state, emitter)
+        self.child.get_utype(state, emitter)
         //crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

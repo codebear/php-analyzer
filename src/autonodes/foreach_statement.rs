@@ -6,7 +6,7 @@ use crate::autonodes::by_ref::ByRefNode;
 use crate::autonodes::colon_block::ColonBlockNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::list_literal::ListLiteralNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
+use crate::autonodes::pair::PairNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -14,10 +14,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum ForeachStatementBody {
@@ -32,9 +32,6 @@ impl NodeParser for ForeachStatementBody {
             "comment" => ForeachStatementBody::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ForeachStatementBody::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ForeachStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -65,9 +62,6 @@ impl ForeachStatementBody {
             "comment" => ForeachStatementBody::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ForeachStatementBody::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ForeachStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -183,34 +177,33 @@ impl NodeAccess for ForeachStatementBody {
 }
 
 #[derive(Debug, Clone)]
-pub enum ForeachStatementValue {
+pub enum ForeachStatementEntry {
     _Expression(Box<_ExpressionNode>),
     ByRef(Box<ByRefNode>),
     ListLiteral(Box<ListLiteralNode>),
+    Pair(Box<PairNode>),
     Extra(ExtraChild),
 }
 
-impl NodeParser for ForeachStatementValue {
+impl NodeParser for ForeachStatementEntry {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
         Ok(match node.kind() {
-            "comment" => ForeachStatementValue::Extra(ExtraChild::Comment(Box::new(
+            "comment" => ForeachStatementEntry::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ForeachStatementValue::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
-            "ERROR" => ForeachStatementValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+            "ERROR" => ForeachStatementEntry::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
-            "by_ref" => ForeachStatementValue::ByRef(Box::new(ByRefNode::parse(node, source)?)),
+            "by_ref" => ForeachStatementEntry::ByRef(Box::new(ByRefNode::parse(node, source)?)),
             "list_literal" => {
-                ForeachStatementValue::ListLiteral(Box::new(ListLiteralNode::parse(node, source)?))
+                ForeachStatementEntry::ListLiteral(Box::new(ListLiteralNode::parse(node, source)?))
             }
+            "pair" => ForeachStatementEntry::Pair(Box::new(PairNode::parse(node, source)?)),
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
                     .map(|x| Box::new(x))
-                    .map(|y| ForeachStatementValue::_Expression(y))
+                    .map(|y| ForeachStatementEntry::_Expression(y))
                 {
                     x
                 } else {
@@ -224,28 +217,26 @@ impl NodeParser for ForeachStatementValue {
     }
 }
 
-impl ForeachStatementValue {
+impl ForeachStatementEntry {
     pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
-            "comment" => ForeachStatementValue::Extra(ExtraChild::Comment(Box::new(
+            "comment" => ForeachStatementEntry::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ForeachStatementValue::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
-            "ERROR" => ForeachStatementValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
+            "ERROR" => ForeachStatementEntry::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
-            "by_ref" => ForeachStatementValue::ByRef(Box::new(ByRefNode::parse(node, source)?)),
+            "by_ref" => ForeachStatementEntry::ByRef(Box::new(ByRefNode::parse(node, source)?)),
             "list_literal" => {
-                ForeachStatementValue::ListLiteral(Box::new(ListLiteralNode::parse(node, source)?))
+                ForeachStatementEntry::ListLiteral(Box::new(ListLiteralNode::parse(node, source)?))
             }
+            "pair" => ForeachStatementEntry::Pair(Box::new(PairNode::parse(node, source)?)),
 
             _ => {
                 return Ok(
                     if let Some(x) = _ExpressionNode::parse_opt(node, source)?
                         .map(|x| Box::new(x))
-                        .map(|y| ForeachStatementValue::_Expression(y))
+                        .map(|y| ForeachStatementEntry::_Expression(y))
                     {
                         Some(x)
                     } else {
@@ -258,10 +249,11 @@ impl ForeachStatementValue {
 
     pub fn kind(&self) -> &'static str {
         match self {
-            ForeachStatementValue::Extra(y) => y.kind(),
-            ForeachStatementValue::_Expression(y) => y.kind(),
-            ForeachStatementValue::ByRef(y) => y.kind(),
-            ForeachStatementValue::ListLiteral(y) => y.kind(),
+            ForeachStatementEntry::Extra(y) => y.kind(),
+            ForeachStatementEntry::_Expression(y) => y.kind(),
+            ForeachStatementEntry::ByRef(y) => y.kind(),
+            ForeachStatementEntry::ListLiteral(y) => y.kind(),
+            ForeachStatementEntry::Pair(y) => y.kind(),
         }
     }
 
@@ -282,10 +274,11 @@ impl ForeachStatementValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         match self {
-            ForeachStatementValue::Extra(x) => x.get_utype(state, emitter),
-            ForeachStatementValue::_Expression(x) => x.get_utype(state, emitter),
-            ForeachStatementValue::ByRef(x) => x.get_utype(state, emitter),
-            ForeachStatementValue::ListLiteral(x) => x.get_utype(state, emitter),
+            ForeachStatementEntry::Extra(x) => x.get_utype(state, emitter),
+            ForeachStatementEntry::_Expression(x) => x.get_utype(state, emitter),
+            ForeachStatementEntry::ByRef(x) => x.get_utype(state, emitter),
+            ForeachStatementEntry::ListLiteral(x) => x.get_utype(state, emitter),
+            ForeachStatementEntry::Pair(x) => x.get_utype(state, emitter),
         }
     }
 
@@ -295,65 +288,73 @@ impl ForeachStatementValue {
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
         match self {
-            ForeachStatementValue::Extra(x) => x.get_php_value(state, emitter),
-            ForeachStatementValue::_Expression(x) => x.get_php_value(state, emitter),
-            ForeachStatementValue::ByRef(x) => x.get_php_value(state, emitter),
-            ForeachStatementValue::ListLiteral(x) => x.get_php_value(state, emitter),
+            ForeachStatementEntry::Extra(x) => x.get_php_value(state, emitter),
+            ForeachStatementEntry::_Expression(x) => x.get_php_value(state, emitter),
+            ForeachStatementEntry::ByRef(x) => x.get_php_value(state, emitter),
+            ForeachStatementEntry::ListLiteral(x) => x.get_php_value(state, emitter),
+            ForeachStatementEntry::Pair(x) => x.get_php_value(state, emitter),
         }
     }
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
-            ForeachStatementValue::Extra(x) => x.read_from(state, emitter),
-            ForeachStatementValue::_Expression(x) => x.read_from(state, emitter),
-            ForeachStatementValue::ByRef(x) => x.read_from(state, emitter),
-            ForeachStatementValue::ListLiteral(x) => x.read_from(state, emitter),
+            ForeachStatementEntry::Extra(x) => x.read_from(state, emitter),
+            ForeachStatementEntry::_Expression(x) => x.read_from(state, emitter),
+            ForeachStatementEntry::ByRef(x) => x.read_from(state, emitter),
+            ForeachStatementEntry::ListLiteral(x) => x.read_from(state, emitter),
+            ForeachStatementEntry::Pair(x) => x.read_from(state, emitter),
         }
     }
 }
 
-impl NodeAccess for ForeachStatementValue {
+impl NodeAccess for ForeachStatementEntry {
     fn brief_desc(&self) -> String {
         match self {
-            ForeachStatementValue::Extra(x) => {
-                format!("ForeachStatementValue::extra({})", x.brief_desc())
+            ForeachStatementEntry::Extra(x) => {
+                format!("ForeachStatementEntry::extra({})", x.brief_desc())
             }
-            ForeachStatementValue::_Expression(x) => {
-                format!("ForeachStatementValue::_expression({})", x.brief_desc())
+            ForeachStatementEntry::_Expression(x) => {
+                format!("ForeachStatementEntry::_expression({})", x.brief_desc())
             }
-            ForeachStatementValue::ByRef(x) => {
-                format!("ForeachStatementValue::by_ref({})", x.brief_desc())
+            ForeachStatementEntry::ByRef(x) => {
+                format!("ForeachStatementEntry::by_ref({})", x.brief_desc())
             }
-            ForeachStatementValue::ListLiteral(x) => {
-                format!("ForeachStatementValue::list_literal({})", x.brief_desc())
+            ForeachStatementEntry::ListLiteral(x) => {
+                format!("ForeachStatementEntry::list_literal({})", x.brief_desc())
+            }
+            ForeachStatementEntry::Pair(x) => {
+                format!("ForeachStatementEntry::pair({})", x.brief_desc())
             }
         }
     }
 
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
-            ForeachStatementValue::Extra(x) => x.as_any(),
-            ForeachStatementValue::_Expression(x) => x.as_any(),
-            ForeachStatementValue::ByRef(x) => x.as_any(),
-            ForeachStatementValue::ListLiteral(x) => x.as_any(),
+            ForeachStatementEntry::Extra(x) => x.as_any(),
+            ForeachStatementEntry::_Expression(x) => x.as_any(),
+            ForeachStatementEntry::ByRef(x) => x.as_any(),
+            ForeachStatementEntry::ListLiteral(x) => x.as_any(),
+            ForeachStatementEntry::Pair(x) => x.as_any(),
         }
     }
 
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
-            ForeachStatementValue::Extra(x) => x.children_any(),
-            ForeachStatementValue::_Expression(x) => x.children_any(),
-            ForeachStatementValue::ByRef(x) => x.children_any(),
-            ForeachStatementValue::ListLiteral(x) => x.children_any(),
+            ForeachStatementEntry::Extra(x) => x.children_any(),
+            ForeachStatementEntry::_Expression(x) => x.children_any(),
+            ForeachStatementEntry::ByRef(x) => x.children_any(),
+            ForeachStatementEntry::ListLiteral(x) => x.children_any(),
+            ForeachStatementEntry::Pair(x) => x.children_any(),
         }
     }
 
     fn range(&self) -> Range {
         match self {
-            ForeachStatementValue::Extra(x) => x.range(),
-            ForeachStatementValue::_Expression(x) => x.range(),
-            ForeachStatementValue::ByRef(x) => x.range(),
-            ForeachStatementValue::ListLiteral(x) => x.range(),
+            ForeachStatementEntry::Extra(x) => x.range(),
+            ForeachStatementEntry::_Expression(x) => x.range(),
+            ForeachStatementEntry::ByRef(x) => x.range(),
+            ForeachStatementEntry::ListLiteral(x) => x.range(),
+            ForeachStatementEntry::Pair(x) => x.range(),
         }
     }
 }
@@ -362,15 +363,14 @@ impl NodeAccess for ForeachStatementValue {
 pub struct ForeachStatementNode {
     pub range: Range,
     pub body: Option<Box<ForeachStatementBody>>,
-    pub key: Option<_ExpressionNode>,
+    pub entry: Box<ForeachStatementEntry>,
     pub traversable: _ExpressionNode,
-    pub value: Box<ForeachStatementValue>,
     pub extras: Vec<Box<ExtraChild>>,
 }
 
 impl NodeParser for ForeachStatementNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "foreach_statement" {
             return Err(ParseError::new(
                 range,
@@ -384,17 +384,15 @@ impl NodeParser for ForeachStatementNode {
         }
         let body: Option<Box<ForeachStatementBody>> =
             Result::from(node.parse_child("body", source).into())?;
-        let key: Option<_ExpressionNode> = Result::from(node.parse_child("key", source).into())?;
+        let entry: Box<ForeachStatementEntry> =
+            Result::from(node.parse_child("entry", source).into())?;
         let traversable: _ExpressionNode =
             Result::from(node.parse_child("traversable", source).into())?;
-        let value: Box<ForeachStatementValue> =
-            Result::from(node.parse_child("value", source).into())?;
         Ok(Self {
             range,
             body,
-            key,
+            entry,
             traversable,
-            value,
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
                     .filter(|node| node.kind() == "comment"),
@@ -427,11 +425,8 @@ impl NodeAccess for ForeachStatementNode {
         if let Some(x) = &self.body {
             child_vec.push(x.as_any());
         }
-        if let Some(x) = &self.key {
-            child_vec.push(x.as_any());
-        }
+        child_vec.push(self.entry.as_any());
         child_vec.push(self.traversable.as_any());
-        child_vec.push(self.value.as_any());
 
         child_vec.sort_by(|a, b| a.range().start_byte.cmp(&b.range().start_byte));
         child_vec

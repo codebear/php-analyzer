@@ -129,14 +129,13 @@ impl BranchTypeHardening for _ExpressionNode {
             _ExpressionNode::CastExpression(_) => crate::missing!(),
             _ExpressionNode::CloneExpression(_) => crate::missing!(),
             _ExpressionNode::ConditionalExpression(_) => crate::missing!(),
-            _ExpressionNode::ExponentiationExpression(_) => crate::missing!(),
             _ExpressionNode::IncludeExpression(_) => crate::missing!(),
             _ExpressionNode::IncludeOnceExpression(_) => crate::missing!(),
             _ExpressionNode::MatchExpression(_) => crate::missing!(),
             _ExpressionNode::ReferenceAssignmentExpression(_) => crate::missing!(),
             _ExpressionNode::RequireExpression(_) => crate::missing!(),
             _ExpressionNode::RequireOnceExpression(_) => crate::missing!(),
-            _ExpressionNode::SilenceExpression(_) => crate::missing!(),
+            _ExpressionNode::ErrorSuppressionExpression(_) => crate::missing!(),
             _ExpressionNode::UnaryOpExpression(u) => {
                 return u.branch_with_hardened_types_base_on_conditional_node(
                     scope,
@@ -303,6 +302,9 @@ impl BranchTypeHardening for BinaryExpressionNode {
                 crate::missing!("BinaryExpressionOperator::NullCoalescing")
             }
 
+            BinaryExpressionOperator::Exponential(_) => {
+                crate::missing!("BinaryExpressionOperator::Exponential")
+            }
             BinaryExpressionOperator::Extra(_) => (),
         }
 
@@ -317,24 +319,22 @@ impl BranchTypeHardening for UnaryOpExpressionNode {
         branch_side: BranchSide,
         state: &mut AnalysisState,
     ) -> Arc<RwLock<Scope>> {
-        if let Some(op) = &self.operator {
-            match &**op {
-                UnaryOpExpressionOperator::Not(_) => {
-                    if let Some(e) = &self.expr {
-                        return e.branch_with_hardened_types_base_on_conditional_node(
-                            scope,
-                            branch_side.inverse(),
-                            state,
-                        );
-                    }
-                }
-                UnaryOpExpressionOperator::Add(_) => crate::missing!(),
-                UnaryOpExpressionOperator::Sub(_) => crate::missing!(),
-                UnaryOpExpressionOperator::BinaryNot(_) => crate::missing!(),
-
-                UnaryOpExpressionOperator::Extra(_) => crate::missing!(),
+        match &*self.operator {
+            UnaryOpExpressionOperator::Not(_) => {
+                self.argument
+                    .branch_with_hardened_types_base_on_conditional_node(
+                        scope.clone(),
+                        branch_side.inverse(),
+                        state,
+                    );
             }
+            UnaryOpExpressionOperator::Add(_) => crate::missing!(),
+            UnaryOpExpressionOperator::Sub(_) => crate::missing!(),
+            UnaryOpExpressionOperator::BinaryNot(_) => crate::missing!(),
+
+            UnaryOpExpressionOperator::Extra(_) => crate::missing!(),
         }
+
         scope.branch()
     }
 }

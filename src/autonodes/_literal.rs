@@ -9,17 +9,16 @@ use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::null::NullNode;
 use crate::autonodes::string::StringNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum _LiteralNode {
@@ -40,9 +39,6 @@ impl NodeParser for _LiteralNode {
             "comment" => _LiteralNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => _LiteralNode::Extra(ExtraChild::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            ))),
             "ERROR" => {
                 _LiteralNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -73,9 +69,6 @@ impl _LiteralNode {
             "comment" => _LiteralNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => _LiteralNode::Extra(ExtraChild::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            ))),
             "ERROR" => {
                 _LiteralNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }

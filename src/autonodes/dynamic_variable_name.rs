@@ -2,19 +2,17 @@ use crate::analysis::state::AnalysisState;
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum DynamicVariableNameChildren {
@@ -30,11 +28,6 @@ impl NodeParser for DynamicVariableNameChildren {
             "comment" => DynamicVariableNameChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                DynamicVariableNameChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => DynamicVariableNameChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -68,11 +61,6 @@ impl DynamicVariableNameChildren {
             "comment" => DynamicVariableNameChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                DynamicVariableNameChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => DynamicVariableNameChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -212,7 +200,7 @@ pub struct DynamicVariableNameNode {
 
 impl NodeParser for DynamicVariableNameNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "dynamic_variable_name" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [dynamic_variable_name] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }

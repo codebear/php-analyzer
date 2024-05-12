@@ -3,6 +3,8 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::issue::IssueEmitter;
 use crate::nodeanalysis::analysis::FirstPassAnalyzeableNode;
 use crate::nodeanalysis::analysis::IntoFirstPassAnalyzeable;
+use crate::types::union::UnionType;
+use crate::value::PHPValue;
 
 use super::analysis::IntoSecondPassAnalyzeable;
 use super::analysis::SecondPassAnalyzeableNode;
@@ -169,5 +171,17 @@ impl ThirdPassAnalyzeableNode for AnyNodeRef<'_> {
         } else {
             self.analyze_third_pass_children(self, state, emitter, path)
         }
+    }
+}
+
+impl AnyNodeRef<'_> {
+    pub fn write_to(
+        &self,
+        _state: &mut crate::analysis::state::AnalysisState,
+        _emitter: &dyn IssueEmitter,
+        _val_type: Option<UnionType>,
+        _value: Option<PHPValue>,
+    ) {
+        crate::missing!();
     }
 }

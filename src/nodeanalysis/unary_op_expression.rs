@@ -13,9 +13,7 @@ use crate::{
 
 impl UnaryOpExpressionNode {
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if let Some(e) = &self.expr {
-            e.read_from(state, emitter);
-        }
+        self.argument.read_from(state, emitter);
     }
 
     pub fn get_utype(
@@ -23,17 +21,15 @@ impl UnaryOpExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
-        match &**self.operator.as_ref()? {
+        match &*self.operator {
             UnaryOpExpressionOperator::Not(_) => Some(DiscreteType::Bool.into()),
             UnaryOpExpressionOperator::Add(_) => self
-                .expr
-                .as_ref()?
+                .argument
                 .get_php_value(state, emitter)?
                 .as_php_num()?
                 .get_utype(),
             UnaryOpExpressionOperator::Sub(_) => self
-                .expr
-                .as_ref()?
+                .argument
                 .get_php_value(state, emitter)?
                 .as_php_num()?
                 .get_utype(),
@@ -48,17 +44,9 @@ impl UnaryOpExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
-        let operator = if let Some(oper) = &self.operator {
-            oper
-        } else {
-            return None;
-        };
+        let operator = &self.operator;
 
-        let value = if let Some(v) = self
-            .expr
-            .as_ref()
-            .and_then(|x| x.get_php_value(state, emitter))
-        {
+        let value = if let Some(v) = self.argument.get_php_value(state, emitter) {
             v
         } else {
             return None;
@@ -95,7 +83,7 @@ impl NodeAccess for UnaryOpExpressionOperator {
         }
     }
 
-    fn range(&self) -> tree_sitter::Range {
+    fn range(&self) -> crate::parser::Range {
         match self {
             UnaryOpExpressionOperator::Not(op) => op.range(),
             UnaryOpExpressionOperator::Add(op) => op.range(),

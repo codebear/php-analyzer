@@ -3,7 +3,7 @@ use crate::{
     autonodes::{
         any::AnyNodeRef,
         update_expression::{
-            UpdateExpressionExpr, UpdateExpressionNode, UpdateExpressionPostfix,
+            UpdateExpressionArgument, UpdateExpressionNode, UpdateExpressionPostfix,
             UpdateExpressionPrefix,
         },
     },
@@ -20,8 +20,7 @@ enum Operator {
     Increment,
     Decrement,
 }
-
-impl UpdateExpressionExpr {
+impl UpdateExpressionArgument {
     pub fn write_to(
         &self,
         state: &mut crate::analysis::state::AnalysisState,
@@ -30,46 +29,46 @@ impl UpdateExpressionExpr {
         value: Option<PHPValue>,
     ) {
         match self {
-            UpdateExpressionExpr::CastExpression(_) => {
+            Self::CastExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::DynamicVariableName(_) => {
+            Self::DynamicVariableName(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::FunctionCallExpression(_) => {
+            Self::FunctionCallExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::MemberAccessExpression(_) => {
+            Self::MemberAccessExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::MemberCallExpression(_) => {
+            Self::MemberCallExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::NullsafeMemberAccessExpression(_) => {
+            Self::NullsafeMemberAccessExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::NullsafeMemberCallExpression(_) => {
+            Self::NullsafeMemberCallExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::ScopedCallExpression(_) => {
+            Self::ScopedCallExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::ScopedPropertyAccessExpression(_) => {
+            Self::ScopedPropertyAccessExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::SubscriptExpression(_) => {
+            Self::SubscriptExpression(_) => {
                 crate::missing!("{}.write_to(..)", self.kind())
             }
-            UpdateExpressionExpr::VariableName(vn) => vn.write_to(state, emitter, val_type, value),
+            Self::VariableName(vn) => vn.write_to(state, emitter, val_type, value),
 
-            UpdateExpressionExpr::Extra(_) => (),
+            Self::Extra(_) => (),
         }
     }
 }
 
 impl UpdateExpressionNode {
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        self.expr.read_from(state, emitter)
+        self.argument.read_from(state, emitter)
     }
 
     pub fn get_php_value(
@@ -77,7 +76,7 @@ impl UpdateExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
-        let val = self.expr.get_php_value(state, emitter)?;
+        let val = self.argument.get_php_value(state, emitter)?;
 
         if let Some(prefix) = &self.prefix {
             match (&**prefix, &val) {
@@ -120,7 +119,7 @@ impl UpdateExpressionNode {
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         if let Some(prefix) = &self.prefix {
-            let expr_type = self.expr.get_utype(state, emitter)?.single_type()?;
+            let expr_type = self.argument.get_utype(state, emitter)?.single_type()?;
 
             match (&**prefix, expr_type) {
                 (UpdateExpressionPrefix::Increment(_), DiscreteType::Int)
@@ -155,7 +154,7 @@ impl UpdateExpressionNode {
             }
         } else {
             // we're a postfix-operator, we'll return the type of the expr
-            self.expr.get_utype(state, emitter)
+            self.argument.get_utype(state, emitter)
         }
     }
 
@@ -195,7 +194,7 @@ impl NodeAccess for UpdateExpressionPostfix {
         }
     }
 
-    fn range(&self) -> tree_sitter::Range {
+    fn range(&self) -> crate::parser::Range {
         match self {
             UpdateExpressionPostfix::Increment(op) => {
                 crate::operators::operator::Operator::range(op)
@@ -229,7 +228,7 @@ impl NodeAccess for UpdateExpressionPrefix {
         }
     }
 
-    fn range(&self) -> tree_sitter::Range {
+    fn range(&self) -> crate::parser::Range {
         match self {
             UpdateExpressionPrefix::Increment(op) => {
                 crate::operators::operator::Operator::range(op)
@@ -268,7 +267,7 @@ impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
             return false;
         }
 
-        if let Some(val) = self.expr.get_php_value(state, emitter) {
+        if let Some(val) = self.argument.get_php_value(state, emitter) {
             let new_value = match self.op() {
                 Some(Operator::Increment) => match val {
                     PHPValue::NULL => Some(PHPValue::Int(1)),
@@ -323,7 +322,7 @@ impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
                 _ => None,
             };
             if let Some(value) = new_value {
-                self.expr
+                self.argument
                     .write_to(state, emitter, value.get_utype(), Some(value));
             }
 

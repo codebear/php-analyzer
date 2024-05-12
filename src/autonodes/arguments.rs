@@ -2,19 +2,17 @@ use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::argument::ArgumentNode;
 use crate::autonodes::comment::CommentNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variadic_placeholder::VariadicPlaceholderNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum ArgumentsChildren {
@@ -29,9 +27,6 @@ impl NodeParser for ArgumentsChildren {
             "comment" => ArgumentsChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ArgumentsChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ArgumentsChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -56,9 +51,6 @@ impl ArgumentsChildren {
             "comment" => ArgumentsChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => ArgumentsChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => ArgumentsChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -171,7 +163,7 @@ pub struct ArgumentsNode {
 
 impl NodeParser for ArgumentsNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "arguments" {
             return Err(ParseError::new(
                 range,

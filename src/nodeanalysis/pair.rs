@@ -1,10 +1,7 @@
-use crate::{
-    analysis::state::AnalysisState,
-    autonodes::exponentiation_expression::ExponentiationExpressionNode, issue::IssueEmitter,
-    types::union::UnionType,
-};
+use crate::autonodes::pair::PairNode;
+use crate::{analysis::state::AnalysisState, issue::IssueEmitter, types::union::UnionType};
 
-impl ExponentiationExpressionNode {
+impl PairNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         crate::missing!("{}.read_from(..)", self.kind());
     }

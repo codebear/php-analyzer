@@ -22,10 +22,7 @@ impl SubscriptExpressionNode {
         if let Some(val) = self.get_php_value(state, emitter) {
             return val.get_utype();
         }
-        let array_type = self
-            .dereferenceable
-            .as_ref()
-            .map(|deref| deref.get_utype(state, emitter))??;
+        let array_type = self.dereferenceable.get_utype(state, emitter)?;
 
         let index = self.index.as_ref()?;
         let index_type = if let Some(itype) = index.get_utype(state, emitter) {
@@ -90,9 +87,7 @@ impl SubscriptExpressionNode {
     }
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        self.dereferenceable
-            .as_ref()
-            .map(|x| x.read_from(state, emitter));
+        self.dereferenceable.read_from(state, emitter);
         self.index.as_ref().map(|x| x.read_from(state, emitter));
     }
 
@@ -111,10 +106,7 @@ impl SubscriptExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
-        let val = self
-            .dereferenceable
-            .as_ref()
-            .and_then(|x| x.get_php_value(state, emitter));
+        let val = self.dereferenceable.get_php_value(state, emitter);
 
         let idx = self.get_key_value(state, emitter);
         match (val, idx) {
@@ -138,9 +130,7 @@ impl SubscriptExpressionNode {
         _value: Option<PHPValue>,
     ) {
         // FIXME determine have this should be done...
-        self.dereferenceable
-            .as_ref()
-            .map(|x| x.write_to(state, emitter, None, None));
+        self.dereferenceable.write_to(state, emitter, None, None);
 
         if let Some(_) = self.get_key_value(state, emitter) {
             crate::missing!("write_to subscript_expression_node with known index needs more logic");

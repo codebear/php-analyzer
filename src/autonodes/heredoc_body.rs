@@ -4,31 +4,31 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::dynamic_variable_name::DynamicVariableNameNode;
 use crate::autonodes::escape_sequence::EscapeSequenceNode;
+use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::member_access_expression::MemberAccessExpressionNode;
+use crate::autonodes::name::NameNode;
 use crate::autonodes::string_value::StringValueNode;
-use crate::autonodes::subscript_expression::SubscriptExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum HeredocBodyChildren {
     _Expression(Box<_ExpressionNode>),
     DynamicVariableName(Box<DynamicVariableNameNode>),
     EscapeSequence(Box<EscapeSequenceNode>),
+    Integer(Box<IntegerNode>),
     MemberAccessExpression(Box<MemberAccessExpressionNode>),
+    Name(Box<NameNode>),
     StringValue(Box<StringValueNode>),
-    SubscriptExpression(Box<SubscriptExpressionNode>),
     VariableName(Box<VariableNameNode>),
     Extra(ExtraChild),
 }
@@ -39,9 +39,6 @@ impl NodeParser for HeredocBodyChildren {
             "comment" => HeredocBodyChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => HeredocBodyChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => HeredocBodyChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -51,15 +48,14 @@ impl NodeParser for HeredocBodyChildren {
             "escape_sequence" => HeredocBodyChildren::EscapeSequence(Box::new(
                 EscapeSequenceNode::parse(node, source)?,
             )),
+            "integer" => HeredocBodyChildren::Integer(Box::new(IntegerNode::parse(node, source)?)),
             "member_access_expression" => HeredocBodyChildren::MemberAccessExpression(Box::new(
                 MemberAccessExpressionNode::parse(node, source)?,
             )),
+            "name" => HeredocBodyChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "string_value" => {
                 HeredocBodyChildren::StringValue(Box::new(StringValueNode::parse(node, source)?))
             }
-            "subscript_expression" => HeredocBodyChildren::SubscriptExpression(Box::new(
-                SubscriptExpressionNode::parse(node, source)?,
-            )),
             "variable_name" => {
                 HeredocBodyChildren::VariableName(Box::new(VariableNameNode::parse(node, source)?))
             }
@@ -87,9 +83,6 @@ impl HeredocBodyChildren {
             "comment" => HeredocBodyChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => HeredocBodyChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => HeredocBodyChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -99,15 +92,14 @@ impl HeredocBodyChildren {
             "escape_sequence" => HeredocBodyChildren::EscapeSequence(Box::new(
                 EscapeSequenceNode::parse(node, source)?,
             )),
+            "integer" => HeredocBodyChildren::Integer(Box::new(IntegerNode::parse(node, source)?)),
             "member_access_expression" => HeredocBodyChildren::MemberAccessExpression(Box::new(
                 MemberAccessExpressionNode::parse(node, source)?,
             )),
+            "name" => HeredocBodyChildren::Name(Box::new(NameNode::parse(node, source)?)),
             "string_value" => {
                 HeredocBodyChildren::StringValue(Box::new(StringValueNode::parse(node, source)?))
             }
-            "subscript_expression" => HeredocBodyChildren::SubscriptExpression(Box::new(
-                SubscriptExpressionNode::parse(node, source)?,
-            )),
             "variable_name" => {
                 HeredocBodyChildren::VariableName(Box::new(VariableNameNode::parse(node, source)?))
             }
@@ -133,9 +125,10 @@ impl HeredocBodyChildren {
             HeredocBodyChildren::_Expression(y) => y.kind(),
             HeredocBodyChildren::DynamicVariableName(y) => y.kind(),
             HeredocBodyChildren::EscapeSequence(y) => y.kind(),
+            HeredocBodyChildren::Integer(y) => y.kind(),
             HeredocBodyChildren::MemberAccessExpression(y) => y.kind(),
+            HeredocBodyChildren::Name(y) => y.kind(),
             HeredocBodyChildren::StringValue(y) => y.kind(),
-            HeredocBodyChildren::SubscriptExpression(y) => y.kind(),
             HeredocBodyChildren::VariableName(y) => y.kind(),
         }
     }
@@ -161,9 +154,10 @@ impl HeredocBodyChildren {
             HeredocBodyChildren::_Expression(x) => x.get_utype(state, emitter),
             HeredocBodyChildren::DynamicVariableName(x) => x.get_utype(state, emitter),
             HeredocBodyChildren::EscapeSequence(x) => x.get_utype(state, emitter),
+            HeredocBodyChildren::Integer(x) => x.get_utype(state, emitter),
             HeredocBodyChildren::MemberAccessExpression(x) => x.get_utype(state, emitter),
+            HeredocBodyChildren::Name(x) => x.get_utype(state, emitter),
             HeredocBodyChildren::StringValue(x) => x.get_utype(state, emitter),
-            HeredocBodyChildren::SubscriptExpression(x) => x.get_utype(state, emitter),
             HeredocBodyChildren::VariableName(x) => x.get_utype(state, emitter),
         }
     }
@@ -178,9 +172,10 @@ impl HeredocBodyChildren {
             HeredocBodyChildren::_Expression(x) => x.get_php_value(state, emitter),
             HeredocBodyChildren::DynamicVariableName(x) => x.get_php_value(state, emitter),
             HeredocBodyChildren::EscapeSequence(x) => x.get_php_value(state, emitter),
+            HeredocBodyChildren::Integer(x) => x.get_php_value(state, emitter),
             HeredocBodyChildren::MemberAccessExpression(x) => x.get_php_value(state, emitter),
+            HeredocBodyChildren::Name(x) => x.get_php_value(state, emitter),
             HeredocBodyChildren::StringValue(x) => x.get_php_value(state, emitter),
-            HeredocBodyChildren::SubscriptExpression(x) => x.get_php_value(state, emitter),
             HeredocBodyChildren::VariableName(x) => x.get_php_value(state, emitter),
         }
     }
@@ -191,9 +186,10 @@ impl HeredocBodyChildren {
             HeredocBodyChildren::_Expression(x) => x.read_from(state, emitter),
             HeredocBodyChildren::DynamicVariableName(x) => x.read_from(state, emitter),
             HeredocBodyChildren::EscapeSequence(x) => x.read_from(state, emitter),
+            HeredocBodyChildren::Integer(x) => x.read_from(state, emitter),
             HeredocBodyChildren::MemberAccessExpression(x) => x.read_from(state, emitter),
+            HeredocBodyChildren::Name(x) => x.read_from(state, emitter),
             HeredocBodyChildren::StringValue(x) => x.read_from(state, emitter),
-            HeredocBodyChildren::SubscriptExpression(x) => x.read_from(state, emitter),
             HeredocBodyChildren::VariableName(x) => x.read_from(state, emitter),
         }
     }
@@ -215,17 +211,19 @@ impl NodeAccess for HeredocBodyChildren {
             HeredocBodyChildren::EscapeSequence(x) => {
                 format!("HeredocBodyChildren::escape_sequence({})", x.brief_desc())
             }
+            HeredocBodyChildren::Integer(x) => {
+                format!("HeredocBodyChildren::integer({})", x.brief_desc())
+            }
             HeredocBodyChildren::MemberAccessExpression(x) => format!(
                 "HeredocBodyChildren::member_access_expression({})",
                 x.brief_desc()
             ),
+            HeredocBodyChildren::Name(x) => {
+                format!("HeredocBodyChildren::name({})", x.brief_desc())
+            }
             HeredocBodyChildren::StringValue(x) => {
                 format!("HeredocBodyChildren::string_value({})", x.brief_desc())
             }
-            HeredocBodyChildren::SubscriptExpression(x) => format!(
-                "HeredocBodyChildren::subscript_expression({})",
-                x.brief_desc()
-            ),
             HeredocBodyChildren::VariableName(x) => {
                 format!("HeredocBodyChildren::variable_name({})", x.brief_desc())
             }
@@ -238,9 +236,10 @@ impl NodeAccess for HeredocBodyChildren {
             HeredocBodyChildren::_Expression(x) => x.as_any(),
             HeredocBodyChildren::DynamicVariableName(x) => x.as_any(),
             HeredocBodyChildren::EscapeSequence(x) => x.as_any(),
+            HeredocBodyChildren::Integer(x) => x.as_any(),
             HeredocBodyChildren::MemberAccessExpression(x) => x.as_any(),
+            HeredocBodyChildren::Name(x) => x.as_any(),
             HeredocBodyChildren::StringValue(x) => x.as_any(),
-            HeredocBodyChildren::SubscriptExpression(x) => x.as_any(),
             HeredocBodyChildren::VariableName(x) => x.as_any(),
         }
     }
@@ -251,9 +250,10 @@ impl NodeAccess for HeredocBodyChildren {
             HeredocBodyChildren::_Expression(x) => x.children_any(),
             HeredocBodyChildren::DynamicVariableName(x) => x.children_any(),
             HeredocBodyChildren::EscapeSequence(x) => x.children_any(),
+            HeredocBodyChildren::Integer(x) => x.children_any(),
             HeredocBodyChildren::MemberAccessExpression(x) => x.children_any(),
+            HeredocBodyChildren::Name(x) => x.children_any(),
             HeredocBodyChildren::StringValue(x) => x.children_any(),
-            HeredocBodyChildren::SubscriptExpression(x) => x.children_any(),
             HeredocBodyChildren::VariableName(x) => x.children_any(),
         }
     }
@@ -264,9 +264,10 @@ impl NodeAccess for HeredocBodyChildren {
             HeredocBodyChildren::_Expression(x) => x.range(),
             HeredocBodyChildren::DynamicVariableName(x) => x.range(),
             HeredocBodyChildren::EscapeSequence(x) => x.range(),
+            HeredocBodyChildren::Integer(x) => x.range(),
             HeredocBodyChildren::MemberAccessExpression(x) => x.range(),
+            HeredocBodyChildren::Name(x) => x.range(),
             HeredocBodyChildren::StringValue(x) => x.range(),
-            HeredocBodyChildren::SubscriptExpression(x) => x.range(),
             HeredocBodyChildren::VariableName(x) => x.range(),
         }
     }
@@ -281,7 +282,7 @@ pub struct HeredocBodyNode {
 
 impl NodeParser for HeredocBodyNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "heredoc_body" {
             return Err(ParseError::new(
                 range,

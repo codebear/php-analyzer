@@ -1,8 +1,9 @@
 use std::ffi::OsString;
 
-use tree_sitter::{Point, Range};
+use tree_sitter::Point;
 
 use crate::{
+    parser::Range,
     phpdoc::{
         position::fake_range,
         types::{PHPDocComment, PHPDocEntry},

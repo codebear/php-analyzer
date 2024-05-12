@@ -1,4 +1,5 @@
-use tree_sitter::Range;
+//use tree_sitter::Range;
+use crate::parser::Range;
 
 use crate::{symbols::Name, types::union::UnionType, value::PHPValue};
 

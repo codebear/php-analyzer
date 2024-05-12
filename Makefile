@@ -4,7 +4,8 @@ all:
 	@echo
 
 autonodes:
-	cd tree-sitter-php && tree-sitter generate
+	cd tree-sitter-php/php && tree-sitter generate
+	rm src/autonodes/*.rs
 	node gennodes.mjs
 	rustfmt src/autonodes/*.rs
 

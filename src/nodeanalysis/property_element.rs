@@ -189,7 +189,8 @@ impl PropertyElementNode {
         };
 
         let mut data = data_handle.write().unwrap();
-        data.default_value = if let Some(init) = &self.initializer {
+
+        data.default_value = if let Some(init) = &self.child {
             init.get_php_value(state, emitter)
         } else {
             None

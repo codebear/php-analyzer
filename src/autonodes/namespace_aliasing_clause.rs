@@ -1,12 +1,11 @@
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::name::NameNode;
-
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
 use crate::extra::ExtraChild;
+use crate::parser::Range;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub struct NamespaceAliasingClauseNode {
@@ -17,7 +16,7 @@ pub struct NamespaceAliasingClauseNode {
 
 impl NodeParser for NamespaceAliasingClauseNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "namespace_aliasing_clause" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [namespace_aliasing_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }

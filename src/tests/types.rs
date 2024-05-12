@@ -1,10 +1,11 @@
 use std::ffi::OsString;
 
-use tree_sitter::{Point, Range};
+use tree_sitter::Point;
 
 use crate::{
     analysis::state::AnalysisState,
     issue::VoidEmitter,
+    parser::Range,
     types::union::{DiscreteType, UnionType},
 };
 

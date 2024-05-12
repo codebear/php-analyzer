@@ -4,11 +4,8 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::cast_type::CastTypeNode;
 use crate::autonodes::clone_expression::CloneExpressionNode;
 use crate::autonodes::comment::CommentNode;
-use crate::autonodes::exponentiation_expression::ExponentiationExpressionNode;
 use crate::autonodes::include_expression::IncludeExpressionNode;
 use crate::autonodes::include_once_expression::IncludeOnceExpressionNode;
-use crate::autonodes::silence_expression::SilenceExpressionNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -17,19 +14,17 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum CastExpressionValue {
     _PrimaryExpression(Box<_PrimaryExpressionNode>),
     CloneExpression(Box<CloneExpressionNode>),
-    ExponentiationExpression(Box<ExponentiationExpressionNode>),
     IncludeExpression(Box<IncludeExpressionNode>),
     IncludeOnceExpression(Box<IncludeOnceExpressionNode>),
-    SilenceExpression(Box<SilenceExpressionNode>),
     UnaryOpExpression(Box<UnaryOpExpressionNode>),
     Extra(ExtraChild),
 }
@@ -40,26 +35,17 @@ impl NodeParser for CastExpressionValue {
             "comment" => CastExpressionValue::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => CastExpressionValue::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => CastExpressionValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
             "clone_expression" => CastExpressionValue::CloneExpression(Box::new(
                 CloneExpressionNode::parse(node, source)?,
             )),
-            "exponentiation_expression" => CastExpressionValue::ExponentiationExpression(Box::new(
-                ExponentiationExpressionNode::parse(node, source)?,
-            )),
             "include_expression" => CastExpressionValue::IncludeExpression(Box::new(
                 IncludeExpressionNode::parse(node, source)?,
             )),
             "include_once_expression" => CastExpressionValue::IncludeOnceExpression(Box::new(
                 IncludeOnceExpressionNode::parse(node, source)?,
-            )),
-            "silence_expression" => CastExpressionValue::SilenceExpression(Box::new(
-                SilenceExpressionNode::parse(node, source)?,
             )),
             "unary_op_expression" => CastExpressionValue::UnaryOpExpression(Box::new(
                 UnaryOpExpressionNode::parse(node, source)?,
@@ -88,26 +74,17 @@ impl CastExpressionValue {
             "comment" => CastExpressionValue::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => CastExpressionValue::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => CastExpressionValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
             "clone_expression" => CastExpressionValue::CloneExpression(Box::new(
                 CloneExpressionNode::parse(node, source)?,
             )),
-            "exponentiation_expression" => CastExpressionValue::ExponentiationExpression(Box::new(
-                ExponentiationExpressionNode::parse(node, source)?,
-            )),
             "include_expression" => CastExpressionValue::IncludeExpression(Box::new(
                 IncludeExpressionNode::parse(node, source)?,
             )),
             "include_once_expression" => CastExpressionValue::IncludeOnceExpression(Box::new(
                 IncludeOnceExpressionNode::parse(node, source)?,
-            )),
-            "silence_expression" => CastExpressionValue::SilenceExpression(Box::new(
-                SilenceExpressionNode::parse(node, source)?,
             )),
             "unary_op_expression" => CastExpressionValue::UnaryOpExpression(Box::new(
                 UnaryOpExpressionNode::parse(node, source)?,
@@ -133,10 +110,8 @@ impl CastExpressionValue {
             CastExpressionValue::Extra(y) => y.kind(),
             CastExpressionValue::_PrimaryExpression(y) => y.kind(),
             CastExpressionValue::CloneExpression(y) => y.kind(),
-            CastExpressionValue::ExponentiationExpression(y) => y.kind(),
             CastExpressionValue::IncludeExpression(y) => y.kind(),
             CastExpressionValue::IncludeOnceExpression(y) => y.kind(),
-            CastExpressionValue::SilenceExpression(y) => y.kind(),
             CastExpressionValue::UnaryOpExpression(y) => y.kind(),
         }
     }
@@ -161,10 +136,8 @@ impl CastExpressionValue {
             CastExpressionValue::Extra(x) => x.get_utype(state, emitter),
             CastExpressionValue::_PrimaryExpression(x) => x.get_utype(state, emitter),
             CastExpressionValue::CloneExpression(x) => x.get_utype(state, emitter),
-            CastExpressionValue::ExponentiationExpression(x) => x.get_utype(state, emitter),
             CastExpressionValue::IncludeExpression(x) => x.get_utype(state, emitter),
             CastExpressionValue::IncludeOnceExpression(x) => x.get_utype(state, emitter),
-            CastExpressionValue::SilenceExpression(x) => x.get_utype(state, emitter),
             CastExpressionValue::UnaryOpExpression(x) => x.get_utype(state, emitter),
         }
     }
@@ -178,10 +151,8 @@ impl CastExpressionValue {
             CastExpressionValue::Extra(x) => x.get_php_value(state, emitter),
             CastExpressionValue::_PrimaryExpression(x) => x.get_php_value(state, emitter),
             CastExpressionValue::CloneExpression(x) => x.get_php_value(state, emitter),
-            CastExpressionValue::ExponentiationExpression(x) => x.get_php_value(state, emitter),
             CastExpressionValue::IncludeExpression(x) => x.get_php_value(state, emitter),
             CastExpressionValue::IncludeOnceExpression(x) => x.get_php_value(state, emitter),
-            CastExpressionValue::SilenceExpression(x) => x.get_php_value(state, emitter),
             CastExpressionValue::UnaryOpExpression(x) => x.get_php_value(state, emitter),
         }
     }
@@ -191,10 +162,8 @@ impl CastExpressionValue {
             CastExpressionValue::Extra(x) => x.read_from(state, emitter),
             CastExpressionValue::_PrimaryExpression(x) => x.read_from(state, emitter),
             CastExpressionValue::CloneExpression(x) => x.read_from(state, emitter),
-            CastExpressionValue::ExponentiationExpression(x) => x.read_from(state, emitter),
             CastExpressionValue::IncludeExpression(x) => x.read_from(state, emitter),
             CastExpressionValue::IncludeOnceExpression(x) => x.read_from(state, emitter),
-            CastExpressionValue::SilenceExpression(x) => x.read_from(state, emitter),
             CastExpressionValue::UnaryOpExpression(x) => x.read_from(state, emitter),
         }
     }
@@ -213,20 +182,12 @@ impl NodeAccess for CastExpressionValue {
             CastExpressionValue::CloneExpression(x) => {
                 format!("CastExpressionValue::clone_expression({})", x.brief_desc())
             }
-            CastExpressionValue::ExponentiationExpression(x) => format!(
-                "CastExpressionValue::exponentiation_expression({})",
-                x.brief_desc()
-            ),
             CastExpressionValue::IncludeExpression(x) => format!(
                 "CastExpressionValue::include_expression({})",
                 x.brief_desc()
             ),
             CastExpressionValue::IncludeOnceExpression(x) => format!(
                 "CastExpressionValue::include_once_expression({})",
-                x.brief_desc()
-            ),
-            CastExpressionValue::SilenceExpression(x) => format!(
-                "CastExpressionValue::silence_expression({})",
                 x.brief_desc()
             ),
             CastExpressionValue::UnaryOpExpression(x) => format!(
@@ -241,10 +202,8 @@ impl NodeAccess for CastExpressionValue {
             CastExpressionValue::Extra(x) => x.as_any(),
             CastExpressionValue::_PrimaryExpression(x) => x.as_any(),
             CastExpressionValue::CloneExpression(x) => x.as_any(),
-            CastExpressionValue::ExponentiationExpression(x) => x.as_any(),
             CastExpressionValue::IncludeExpression(x) => x.as_any(),
             CastExpressionValue::IncludeOnceExpression(x) => x.as_any(),
-            CastExpressionValue::SilenceExpression(x) => x.as_any(),
             CastExpressionValue::UnaryOpExpression(x) => x.as_any(),
         }
     }
@@ -254,10 +213,8 @@ impl NodeAccess for CastExpressionValue {
             CastExpressionValue::Extra(x) => x.children_any(),
             CastExpressionValue::_PrimaryExpression(x) => x.children_any(),
             CastExpressionValue::CloneExpression(x) => x.children_any(),
-            CastExpressionValue::ExponentiationExpression(x) => x.children_any(),
             CastExpressionValue::IncludeExpression(x) => x.children_any(),
             CastExpressionValue::IncludeOnceExpression(x) => x.children_any(),
-            CastExpressionValue::SilenceExpression(x) => x.children_any(),
             CastExpressionValue::UnaryOpExpression(x) => x.children_any(),
         }
     }
@@ -267,10 +224,8 @@ impl NodeAccess for CastExpressionValue {
             CastExpressionValue::Extra(x) => x.range(),
             CastExpressionValue::_PrimaryExpression(x) => x.range(),
             CastExpressionValue::CloneExpression(x) => x.range(),
-            CastExpressionValue::ExponentiationExpression(x) => x.range(),
             CastExpressionValue::IncludeExpression(x) => x.range(),
             CastExpressionValue::IncludeOnceExpression(x) => x.range(),
-            CastExpressionValue::SilenceExpression(x) => x.range(),
             CastExpressionValue::UnaryOpExpression(x) => x.range(),
         }
     }
@@ -286,7 +241,7 @@ pub struct CastExpressionNode {
 
 impl NodeParser for CastExpressionNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "cast_expression" {
             return Err(ParseError::new(
                 range,

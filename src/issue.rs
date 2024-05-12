@@ -4,7 +4,8 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use tree_sitter::Range;
+//use tree_sitter::Range;
+use crate::parser::Range;
 
 use crate::{
     symbols::{FullyQualifiedName, Name},

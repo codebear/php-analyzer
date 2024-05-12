@@ -12,7 +12,6 @@ use crate::autonodes::name::NameNode;
 use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::var_modifier::VarModifierNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autotree::ChildNodeParser;
@@ -22,11 +21,11 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use std::sync::OnceLock;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum MethodDeclarationReturnType {
@@ -41,11 +40,6 @@ impl NodeParser for MethodDeclarationReturnType {
             "comment" => MethodDeclarationReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                MethodDeclarationReturnType::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => MethodDeclarationReturnType::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -76,11 +70,6 @@ impl MethodDeclarationReturnType {
             "comment" => MethodDeclarationReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                MethodDeclarationReturnType::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => MethodDeclarationReturnType::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -213,11 +202,6 @@ impl NodeParser for MethodDeclarationChildren {
             "comment" => MethodDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                MethodDeclarationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => MethodDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -256,11 +240,6 @@ impl MethodDeclarationChildren {
             "comment" => MethodDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => {
-                MethodDeclarationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
-                    TextInterpolationNode::parse(node, source)?,
-                )))
-            }
             "ERROR" => MethodDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -441,7 +420,7 @@ pub struct MethodDeclarationNode {
 
 impl NodeParser for MethodDeclarationNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "method_declaration" {
             return Err(ParseError::new(
                 range,

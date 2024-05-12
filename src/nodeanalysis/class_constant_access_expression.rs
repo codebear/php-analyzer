@@ -1,18 +1,14 @@
 use std::os::unix::prelude::OsStrExt;
 
+use crate::autonodes::class_constant_access_expression::ClassConstantAccessExpressionClass;
 use crate::autotree::NodeAccess;
 use crate::issue::{Issue, VoidEmitter};
 use crate::symbols::Name;
 use crate::types::union::{DiscreteType, SpecialType};
 use crate::{
     analysis::state::AnalysisState,
-    autonodes::class_constant_access_expression::{
-        ClassConstantAccessExpressionClass, ClassConstantAccessExpressionNode,
-    },
-    issue::IssueEmitter,
-    symboldata::class::ClassName,
-    types::union::UnionType,
-    value::PHPValue,
+    autonodes::class_constant_access_expression::ClassConstantAccessExpressionNode,
+    issue::IssueEmitter, symboldata::class::ClassName, types::union::UnionType, value::PHPValue,
 };
 
 use super::analysis::SecondPassAnalyzeableNode;

@@ -2,10 +2,12 @@ use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::attribute_list::AttributeListNode;
 use crate::autonodes::comment::CommentNode;
+use crate::autonodes::encapsed_string::EncapsedStringNode;
+use crate::autonodes::heredoc::HeredocNode;
 use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::string::StringNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -13,14 +15,17 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum EnumCaseValue {
+    EncapsedString(Box<EncapsedStringNode>),
+    Heredoc(Box<HeredocNode>),
     Integer(Box<IntegerNode>),
+    Nowdoc(Box<NowdocNode>),
     String(Box<StringNode>),
     Extra(ExtraChild),
 }
@@ -31,13 +36,15 @@ impl NodeParser for EnumCaseValue {
             "comment" => EnumCaseValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => EnumCaseValue::Extra(ExtraChild::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            ))),
             "ERROR" => {
                 EnumCaseValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
+            "encapsed_string" => {
+                EnumCaseValue::EncapsedString(Box::new(EncapsedStringNode::parse(node, source)?))
+            }
+            "heredoc" => EnumCaseValue::Heredoc(Box::new(HeredocNode::parse(node, source)?)),
             "integer" => EnumCaseValue::Integer(Box::new(IntegerNode::parse(node, source)?)),
+            "nowdoc" => EnumCaseValue::Nowdoc(Box::new(NowdocNode::parse(node, source)?)),
             "string" => EnumCaseValue::String(Box::new(StringNode::parse(node, source)?)),
 
             _ => {
@@ -56,13 +63,15 @@ impl EnumCaseValue {
             "comment" => EnumCaseValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
-            "text_interpolation" => EnumCaseValue::Extra(ExtraChild::TextInterpolation(Box::new(
-                TextInterpolationNode::parse(node, source)?,
-            ))),
             "ERROR" => {
                 EnumCaseValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
+            "encapsed_string" => {
+                EnumCaseValue::EncapsedString(Box::new(EncapsedStringNode::parse(node, source)?))
+            }
+            "heredoc" => EnumCaseValue::Heredoc(Box::new(HeredocNode::parse(node, source)?)),
             "integer" => EnumCaseValue::Integer(Box::new(IntegerNode::parse(node, source)?)),
+            "nowdoc" => EnumCaseValue::Nowdoc(Box::new(NowdocNode::parse(node, source)?)),
             "string" => EnumCaseValue::String(Box::new(StringNode::parse(node, source)?)),
 
             _ => return Ok(None),
@@ -72,7 +81,10 @@ impl EnumCaseValue {
     pub fn kind(&self) -> &'static str {
         match self {
             EnumCaseValue::Extra(y) => y.kind(),
+            EnumCaseValue::EncapsedString(y) => y.kind(),
+            EnumCaseValue::Heredoc(y) => y.kind(),
             EnumCaseValue::Integer(y) => y.kind(),
+            EnumCaseValue::Nowdoc(y) => y.kind(),
             EnumCaseValue::String(y) => y.kind(),
         }
     }
@@ -95,7 +107,10 @@ impl EnumCaseValue {
     ) -> Option<UnionType> {
         match self {
             EnumCaseValue::Extra(x) => x.get_utype(state, emitter),
+            EnumCaseValue::EncapsedString(x) => x.get_utype(state, emitter),
+            EnumCaseValue::Heredoc(x) => x.get_utype(state, emitter),
             EnumCaseValue::Integer(x) => x.get_utype(state, emitter),
+            EnumCaseValue::Nowdoc(x) => x.get_utype(state, emitter),
             EnumCaseValue::String(x) => x.get_utype(state, emitter),
         }
     }
@@ -107,7 +122,10 @@ impl EnumCaseValue {
     ) -> Option<PHPValue> {
         match self {
             EnumCaseValue::Extra(x) => x.get_php_value(state, emitter),
+            EnumCaseValue::EncapsedString(x) => x.get_php_value(state, emitter),
+            EnumCaseValue::Heredoc(x) => x.get_php_value(state, emitter),
             EnumCaseValue::Integer(x) => x.get_php_value(state, emitter),
+            EnumCaseValue::Nowdoc(x) => x.get_php_value(state, emitter),
             EnumCaseValue::String(x) => x.get_php_value(state, emitter),
         }
     }
@@ -115,7 +133,10 @@ impl EnumCaseValue {
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         match self {
             EnumCaseValue::Extra(x) => x.read_from(state, emitter),
+            EnumCaseValue::EncapsedString(x) => x.read_from(state, emitter),
+            EnumCaseValue::Heredoc(x) => x.read_from(state, emitter),
             EnumCaseValue::Integer(x) => x.read_from(state, emitter),
+            EnumCaseValue::Nowdoc(x) => x.read_from(state, emitter),
             EnumCaseValue::String(x) => x.read_from(state, emitter),
         }
     }
@@ -125,7 +146,12 @@ impl NodeAccess for EnumCaseValue {
     fn brief_desc(&self) -> String {
         match self {
             EnumCaseValue::Extra(x) => format!("EnumCaseValue::extra({})", x.brief_desc()),
+            EnumCaseValue::EncapsedString(x) => {
+                format!("EnumCaseValue::encapsed_string({})", x.brief_desc())
+            }
+            EnumCaseValue::Heredoc(x) => format!("EnumCaseValue::heredoc({})", x.brief_desc()),
             EnumCaseValue::Integer(x) => format!("EnumCaseValue::integer({})", x.brief_desc()),
+            EnumCaseValue::Nowdoc(x) => format!("EnumCaseValue::nowdoc({})", x.brief_desc()),
             EnumCaseValue::String(x) => format!("EnumCaseValue::string({})", x.brief_desc()),
         }
     }
@@ -133,7 +159,10 @@ impl NodeAccess for EnumCaseValue {
     fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
         match self {
             EnumCaseValue::Extra(x) => x.as_any(),
+            EnumCaseValue::EncapsedString(x) => x.as_any(),
+            EnumCaseValue::Heredoc(x) => x.as_any(),
             EnumCaseValue::Integer(x) => x.as_any(),
+            EnumCaseValue::Nowdoc(x) => x.as_any(),
             EnumCaseValue::String(x) => x.as_any(),
         }
     }
@@ -141,7 +170,10 @@ impl NodeAccess for EnumCaseValue {
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         match self {
             EnumCaseValue::Extra(x) => x.children_any(),
+            EnumCaseValue::EncapsedString(x) => x.children_any(),
+            EnumCaseValue::Heredoc(x) => x.children_any(),
             EnumCaseValue::Integer(x) => x.children_any(),
+            EnumCaseValue::Nowdoc(x) => x.children_any(),
             EnumCaseValue::String(x) => x.children_any(),
         }
     }
@@ -149,7 +181,10 @@ impl NodeAccess for EnumCaseValue {
     fn range(&self) -> Range {
         match self {
             EnumCaseValue::Extra(x) => x.range(),
+            EnumCaseValue::EncapsedString(x) => x.range(),
+            EnumCaseValue::Heredoc(x) => x.range(),
             EnumCaseValue::Integer(x) => x.range(),
+            EnumCaseValue::Nowdoc(x) => x.range(),
             EnumCaseValue::String(x) => x.range(),
         }
     }
@@ -166,7 +201,7 @@ pub struct EnumCaseNode {
 
 impl NodeParser for EnumCaseNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "enum_case" {
             return Err(ParseError::new(
                 range,

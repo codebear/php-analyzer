@@ -6,7 +6,6 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::enum_declaration_list::EnumDeclarationListNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::primitive_type::PrimitiveTypeNode;
-use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -14,10 +13,10 @@ use crate::autotree::ParseError;
 use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
+use crate::parser::Range;
 use crate::types::union::UnionType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
-use tree_sitter::Range;
 
 #[derive(Debug, Clone)]
 pub enum EnumDeclarationChildren {
@@ -32,9 +31,6 @@ impl NodeParser for EnumDeclarationChildren {
             "comment" => EnumDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => EnumDeclarationChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => EnumDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -61,9 +57,6 @@ impl EnumDeclarationChildren {
             "comment" => EnumDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
-            "text_interpolation" => EnumDeclarationChildren::Extra(ExtraChild::TextInterpolation(
-                Box::new(TextInterpolationNode::parse(node, source)?),
-            )),
             "ERROR" => EnumDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -184,7 +177,7 @@ pub struct EnumDeclarationNode {
 
 impl NodeParser for EnumDeclarationNode {
     fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
-        let range = node.range();
+        let range: Range = node.range().into();
         if node.kind() != "enum_declaration" {
             return Err(ParseError::new(
                 range,
