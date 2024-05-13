@@ -37,11 +37,10 @@ impl CastExpressionNode {
         match cast.as_bytes() {
             b"string" => Some(DiscreteType::String.into()),
             b"int" => Some(DiscreteType::Int.into()),
-            b"float" |
-            b"double" => Some(DiscreteType::Float.into()),
+            b"float" | b"double" => Some(DiscreteType::Float.into()),
             b"array" => Some(DiscreteType::Array.into()),
             b"bool" => Some(DiscreteType::Bool.into()),
-            b"object" | // What!?
+            b"object" => crate::missing_none!("{}.get_utype(..) cast to {:?}", self.kind(), cast),
             _ => crate::missing_none!("{}.get_utype(..) cast to {:?}", self.kind(), cast),
         }
     }

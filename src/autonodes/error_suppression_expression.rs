@@ -15,7 +15,7 @@ pub struct ErrorSuppressionExpressionNode {
 }
 
 impl NodeParser for ErrorSuppressionExpressionNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "error_suppression_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [error_suppression_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));

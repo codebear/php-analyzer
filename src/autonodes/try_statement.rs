@@ -24,7 +24,7 @@ pub enum TryStatementChildren {
 }
 
 impl NodeParser for TryStatementChildren {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -50,7 +50,7 @@ impl NodeParser for TryStatementChildren {
 }
 
 impl TryStatementChildren {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -77,7 +77,7 @@ impl TryStatementChildren {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -170,7 +170,7 @@ pub struct TryStatementNode {
 }
 
 impl NodeParser for TryStatementNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "try_statement" {
             return Err(ParseError::new(

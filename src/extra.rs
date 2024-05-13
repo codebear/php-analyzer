@@ -18,7 +18,7 @@ pub enum ExtraChild {
 }
 
 impl ExtraChild {
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -29,7 +29,7 @@ impl ExtraChild {
         Ok(res)
     }
 
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    pub fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ExtraChild::Comment(Box::new(CommentNode::parse(node, source)?)),
             "ERROR" => ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)),

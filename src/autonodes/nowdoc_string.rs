@@ -15,7 +15,7 @@ pub struct NowdocStringNode {
 }
 
 impl NodeParser for NowdocStringNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "nowdoc_string" {
             return Err(ParseError::new(

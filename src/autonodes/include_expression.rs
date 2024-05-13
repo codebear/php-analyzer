@@ -15,7 +15,7 @@ pub struct IncludeExpressionNode {
 }
 
 impl NodeParser for IncludeExpressionNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "include_expression" {
             return Err(ParseError::new(

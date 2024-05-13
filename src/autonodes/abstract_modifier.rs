@@ -15,7 +15,7 @@ pub struct AbstractModifierNode {
 }
 
 impl NodeParser for AbstractModifierNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "abstract_modifier" {
             return Err(ParseError::new(

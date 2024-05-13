@@ -22,7 +22,7 @@ pub enum OptionalTypeChildren {
 }
 
 impl NodeParser for OptionalTypeChildren {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => OptionalTypeChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -48,7 +48,7 @@ impl NodeParser for OptionalTypeChildren {
 }
 
 impl OptionalTypeChildren {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => OptionalTypeChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -75,7 +75,7 @@ impl OptionalTypeChildren {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -167,7 +167,7 @@ pub struct OptionalTypeNode {
 }
 
 impl NodeParser for OptionalTypeNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "optional_type" {
             return Err(ParseError::new(

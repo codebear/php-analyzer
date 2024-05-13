@@ -79,16 +79,15 @@ impl AutoTree {
                 node.kind().to_string()
             }
         );
-        let mut idx = 0;
-        for child in node.children(&mut node.walk()) {
+        for (idx, child) in node.children(&mut node.walk()).enumerate() {
             let field_name = if level > 0 {
-                node.field_name_for_child(idx)
+                let u32_idx: u32 = idx as u32;
+                node.field_name_for_child(u32_idx)
             } else {
                 None
             };
 
             Self::debug_dump_node(&child, field_name, level + 1);
-            idx += 1;
         }
     }
 }
@@ -228,11 +227,11 @@ pub trait NodeAccess {
 }
 
 pub trait NodeParser {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError>
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError>
     where
         Self: Sized;
 
-    fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
         Self: Sized,
@@ -251,7 +250,7 @@ pub trait NodeParser {
 pub struct ChildNodeParserHelper<'node, 'source, 'skipped, T> {
     node: &'node Node<'node>,
     fieldname: &'static str,
-    source: &'source Vec<u8>,
+    source: &'source [u8],
     mark_skipped_node: Option<&'skipped mut Vec<usize>>,
     _marker: std::marker::PhantomData<T>,
 }
@@ -273,7 +272,7 @@ pub trait ChildNodeParser<'node, 'source, 'skipped> {
     fn parse_child<T>(
         &'node self,
         fieldname: &'static str,
-        source: &'source Vec<u8>,
+        source: &'source [u8],
     ) -> ChildNodeParserHelper<'node, 'source, 'skipped, T>
     where
         T: NodeParser;
@@ -283,7 +282,7 @@ impl<'node, 'source, 'skipped> ChildNodeParser<'node, 'source, 'skipped> for Nod
     fn parse_child<T>(
         &'node self,
         fieldname: &'static str,
-        source: &'source Vec<u8>,
+        source: &'source [u8],
     ) -> ChildNodeParserHelper<'node, 'source, 'skipped, T>
     where
         T: NodeParser,

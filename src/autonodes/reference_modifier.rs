@@ -15,7 +15,7 @@ pub struct ReferenceModifierNode {
 }
 
 impl NodeParser for ReferenceModifierNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "reference_modifier" {
             return Err(ParseError::new(

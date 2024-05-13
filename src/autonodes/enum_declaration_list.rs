@@ -24,7 +24,7 @@ pub enum EnumDeclarationListChildren {
 }
 
 impl NodeParser for EnumDeclarationListChildren {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => EnumDeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -53,7 +53,7 @@ impl NodeParser for EnumDeclarationListChildren {
 }
 
 impl EnumDeclarationListChildren {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => EnumDeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -84,7 +84,7 @@ impl EnumDeclarationListChildren {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -187,7 +187,7 @@ pub struct EnumDeclarationListNode {
 }
 
 impl NodeParser for EnumDeclarationListNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "enum_declaration_list" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [enum_declaration_list] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));

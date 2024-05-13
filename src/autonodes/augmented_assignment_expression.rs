@@ -56,7 +56,7 @@ pub enum AugmentedAssignmentExpressionLeft {
 }
 
 impl NodeParser for AugmentedAssignmentExpressionLeft {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -119,7 +119,7 @@ impl NodeParser for AugmentedAssignmentExpressionLeft {
 }
 
 impl AugmentedAssignmentExpressionLeft {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -192,7 +192,7 @@ impl AugmentedAssignmentExpressionLeft {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -446,7 +446,7 @@ pub enum AugmentedAssignmentExpressionOperator {
 }
 
 impl NodeParser for AugmentedAssignmentExpressionOperator {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
@@ -505,7 +505,7 @@ impl NodeParser for AugmentedAssignmentExpressionOperator {
 }
 
 impl AugmentedAssignmentExpressionOperator {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
@@ -576,7 +576,7 @@ impl AugmentedAssignmentExpressionOperator {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -598,7 +598,7 @@ pub struct AugmentedAssignmentExpressionNode {
 }
 
 impl NodeParser for AugmentedAssignmentExpressionNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "augmented_assignment_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [augmented_assignment_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));

@@ -31,16 +31,13 @@ impl Scope {
     }
 
     pub fn has_var(&self, var_name: &Name) -> bool {
-        match &self.parent {
-            Some(p) => {
-                let read = p.read().unwrap();
-                if read.has_var(var_name) {
-                    return true;
-                }
+        if let Some(p) = &self.parent {
+            let read = p.read().unwrap();
+            if read.has_var(var_name) {
+                return true;
             }
-            _ => (),
         }
-        self.vars.get(var_name).is_some()
+        self.vars.contains_key(var_name)
     }
 
     pub fn get_or_create_var(&mut self, var_name: Name) -> Arc<RwLock<VarData>> {
@@ -51,14 +48,11 @@ impl Scope {
                 .cloned()
                 .expect("We just confirmed the entry is there");
         }
-        match &self.parent {
-            Some(p) => {
-                let read = p.read().unwrap();
-                if read.has_var(&var_name) {
-                    return read.get_var(&var_name).expect("has_var returned true");
-                }
+        if let Some(p) = &self.parent {
+            let read = p.read().unwrap();
+            if read.has_var(&var_name) {
+                return read.get_var(&var_name).expect("has_var returned true");
             }
-            _ => (),
         }
 
         self.get_or_create_local_var(var_name)
@@ -82,14 +76,11 @@ impl Scope {
         if self.vars.contains_key(var_name) {
             return self.vars.get(var_name).cloned();
         }
-        match &self.parent {
-            Some(p) => {
-                let read = p.read().unwrap();
-                if read.has_var(var_name) {
-                    return read.get_var(var_name);
-                }
+        if let Some(p) = &self.parent {
+            let read = p.read().unwrap();
+            if read.has_var(var_name) {
+                return read.get_var(var_name);
             }
-            _ => (),
         }
 
         self.vars.get(var_name).cloned()

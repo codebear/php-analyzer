@@ -16,7 +16,7 @@ pub struct PropertyInitializerNode {
 }
 
 impl NodeParser for PropertyInitializerNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "property_initializer" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [property_initializer] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));

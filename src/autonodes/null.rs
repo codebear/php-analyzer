@@ -15,7 +15,7 @@ pub struct NullNode {
 }
 
 impl NodeParser for NullNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "null" {
             return Err(ParseError::new(

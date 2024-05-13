@@ -15,7 +15,7 @@ pub struct FloatNode {
 }
 
 impl NodeParser for FloatNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "float" {
             return Err(ParseError::new(

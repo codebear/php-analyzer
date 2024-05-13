@@ -15,7 +15,7 @@ pub struct MatchConditionListNode {
 }
 
 impl NodeParser for MatchConditionListNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "match_condition_list" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [match_condition_list] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));

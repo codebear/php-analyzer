@@ -24,7 +24,7 @@ pub enum ForStatementCondition {
 }
 
 impl NodeParser for ForStatementCondition {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ForStatementCondition::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -54,7 +54,7 @@ impl NodeParser for ForStatementCondition {
 }
 
 impl ForStatementCondition {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ForStatementCondition::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -82,7 +82,7 @@ impl ForStatementCondition {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -175,7 +175,7 @@ pub enum ForStatementIncrement {
 }
 
 impl NodeParser for ForStatementIncrement {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ForStatementIncrement::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -205,7 +205,7 @@ impl NodeParser for ForStatementIncrement {
 }
 
 impl ForStatementIncrement {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ForStatementIncrement::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -233,7 +233,7 @@ impl ForStatementIncrement {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -326,7 +326,7 @@ pub enum ForStatementInitialize {
 }
 
 impl NodeParser for ForStatementInitialize {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ForStatementInitialize::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -356,7 +356,7 @@ impl NodeParser for ForStatementInitialize {
 }
 
 impl ForStatementInitialize {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ForStatementInitialize::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -384,7 +384,7 @@ impl ForStatementInitialize {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -480,7 +480,7 @@ pub struct ForStatementNode {
 }
 
 impl NodeParser for ForStatementNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "for_statement" {
             return Err(ParseError::new(

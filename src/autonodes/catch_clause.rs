@@ -20,7 +20,7 @@ pub struct CatchClauseNode {
 }
 
 impl NodeParser for CatchClauseNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "catch_clause" {
             return Err(ParseError::new(

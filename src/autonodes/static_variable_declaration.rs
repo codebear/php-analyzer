@@ -18,7 +18,7 @@ pub struct StaticVariableDeclarationNode {
 }
 
 impl NodeParser for StaticVariableDeclarationNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "static_variable_declaration" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [static_variable_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));

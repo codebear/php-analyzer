@@ -45,7 +45,7 @@ pub enum ScopedCallExpressionName {
 }
 
 impl NodeParser for ScopedCallExpressionName {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ScopedCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -79,7 +79,7 @@ impl NodeParser for ScopedCallExpressionName {
 }
 
 impl ScopedCallExpressionName {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ScopedCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -113,7 +113,7 @@ impl ScopedCallExpressionName {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -244,7 +244,7 @@ pub enum ScopedCallExpressionScope {
 }
 
 impl NodeParser for ScopedCallExpressionScope {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => ScopedCallExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -333,7 +333,7 @@ impl NodeParser for ScopedCallExpressionScope {
 }
 
 impl ScopedCallExpressionScope {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => ScopedCallExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -442,7 +442,7 @@ impl ScopedCallExpressionScope {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -752,7 +752,7 @@ pub struct ScopedCallExpressionNode {
 }
 
 impl NodeParser for ScopedCallExpressionNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "scoped_call_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [scoped_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));

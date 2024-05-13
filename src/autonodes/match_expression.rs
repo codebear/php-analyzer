@@ -18,7 +18,7 @@ pub struct MatchExpressionNode {
 }
 
 impl NodeParser for MatchExpressionNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "match_expression" {
             return Err(ParseError::new(

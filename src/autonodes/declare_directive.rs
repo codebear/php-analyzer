@@ -15,7 +15,7 @@ pub struct DeclareDirectiveNode {
 }
 
 impl NodeParser for DeclareDirectiveNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "declare_directive" {
             return Err(ParseError::new(

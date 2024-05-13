@@ -15,7 +15,7 @@ pub struct VisibilityModifierNode {
 }
 
 impl NodeParser for VisibilityModifierNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "visibility_modifier" {
             return Err(ParseError::new(

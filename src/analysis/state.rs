@@ -56,9 +56,7 @@ impl ConstantData {
         if self.values.len() != 1 {
             return None;
         }
-        let Some((_, (_, val))) = self.values.iter().next() else {
-            return None;
-        };
+        let (_, (_, val)) = self.values.iter().next()?;
         val.clone()
     }
 }

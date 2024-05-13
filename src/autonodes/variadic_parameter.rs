@@ -22,7 +22,7 @@ pub struct VariadicParameterNode {
 }
 
 impl NodeParser for VariadicParameterNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "variadic_parameter" {
             return Err(ParseError::new(

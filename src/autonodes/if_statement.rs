@@ -26,7 +26,7 @@ pub enum IfStatementAlternative {
 }
 
 impl NodeParser for IfStatementAlternative {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -52,7 +52,7 @@ impl NodeParser for IfStatementAlternative {
 }
 
 impl IfStatementAlternative {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -79,7 +79,7 @@ impl IfStatementAlternative {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -171,7 +171,7 @@ pub enum IfStatementBody {
 }
 
 impl NodeParser for IfStatementBody {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -201,7 +201,7 @@ impl NodeParser for IfStatementBody {
 }
 
 impl IfStatementBody {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
@@ -229,7 +229,7 @@ impl IfStatementBody {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -321,7 +321,7 @@ pub struct IfStatementNode {
 }
 
 impl NodeParser for IfStatementNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "if_statement" {
             return Err(ParseError::new(

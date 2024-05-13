@@ -26,7 +26,7 @@ pub enum DisjunctiveNormalFormTypeChildren {
 }
 
 impl NodeParser for DisjunctiveNormalFormTypeChildren {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         Ok(match node.kind() {
             "comment" => DisjunctiveNormalFormTypeChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -58,7 +58,7 @@ impl NodeParser for DisjunctiveNormalFormTypeChildren {
 }
 
 impl DisjunctiveNormalFormTypeChildren {
-    pub fn parse_opt(node: Node, source: &Vec<u8>) -> Result<Option<Self>, ParseError> {
+    pub fn parse_opt(node: Node, source: &[u8]) -> Result<Option<Self>, ParseError> {
         Ok(Some(match node.kind() {
             "comment" => DisjunctiveNormalFormTypeChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
@@ -93,7 +93,7 @@ impl DisjunctiveNormalFormTypeChildren {
         }
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
@@ -210,7 +210,7 @@ pub struct DisjunctiveNormalFormTypeNode {
 }
 
 impl NodeParser for DisjunctiveNormalFormTypeNode {
-    fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "disjunctive_normal_form_type" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [disjunctive_normal_form_type] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));

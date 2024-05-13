@@ -17,7 +17,7 @@ pub struct ErrorNode {
 }
 
 impl ErrorNode {
-    pub fn parse(node: Node, source: &Vec<u8>) -> Result<Self, ParseError> {
+    pub fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range = node.range();
         if node.kind() != "ERROR" {
             return Err(ParseError::new(
@@ -36,7 +36,7 @@ impl ErrorNode {
         })
     }
 
-    pub fn parse_vec<'a, I>(children: I, source: &Vec<u8>) -> Result<Vec<Box<Self>>, ParseError>
+    pub fn parse_vec<'a, I>(children: I, source: &[u8]) -> Result<Vec<Box<Self>>, ParseError>
     where
         I: Iterator<Item = Node<'a>>,
     {
