@@ -274,10 +274,10 @@ fn test_property_doccomment_class_type_in_ns() {
                 Some(DiscreteType::String.into())
             );
         } else {
-            assert!(false, "mangler func_data");
+            unreachable!("mangler func_data");
         }
     } else {
-        assert!(false, "mangler symbol_data");
+        unreachable!("mangler symbol_data");
     }
 }
 

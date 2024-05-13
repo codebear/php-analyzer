@@ -175,7 +175,7 @@ fn evaluate_php_code_in_function<T: Into<OsString>>(
 
     let mut result = EvaluationResult::new();
     let func_name = FullyQualifiedName::from("\\test_output");
-    if let Some(functions_handle) = state.symbol_data.functions.read().ok() {
+    if let Ok(functions_handle) = state.symbol_data.functions.read() {
         if let Some(func_data_handle) = functions_handle.get(&func_name).cloned() {
             let func_data = func_data_handle.read().unwrap();
             result.function_data = Some(func_data.clone());

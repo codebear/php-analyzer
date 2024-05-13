@@ -38,13 +38,12 @@ pub fn test_var() {
             )]
         );
     } else {
-        assert!(false, "Unable to parse doccomment");
+        unreachable!("Unable to parse doccomment");
     }
 }
 
 #[test]
 pub fn test_var2() {
-    assert!(true);
     // void
     if let Ok(phpdoc) = test_parse(
         "/** 
