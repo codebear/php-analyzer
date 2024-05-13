@@ -867,6 +867,7 @@ impl NodeAccess for NullsafeMemberAccessExpressionNode {
         AnyNodeRef::NullsafeMemberAccessExpression(self)
     }
 
+    #[allow(clippy::vec_init_then_push)]
     fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
         let mut child_vec: Vec<AnyNodeRef<'a>> = vec![];
 
