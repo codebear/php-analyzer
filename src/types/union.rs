@@ -1174,7 +1174,7 @@ fn from_type_struct(
 
     let mut utype = UnionType::new();
 
-    utype.push(base_type.into());
+    utype.push(base_type);
     Some(utype)
 }
 

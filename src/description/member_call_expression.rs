@@ -31,12 +31,12 @@ impl NodeDescription for MemberCallExpressionNode {
         }
         for maybe in methods {
             if let Some((class_name, method_data)) = maybe {
-                buffer.push_str("----  <br />\n ".into());
+                buffer.push_str("----  <br />\n ");
                 buffer.push_str(&describe_method(&class_name, &method_data));
             } else {
                 // FIXME this could probably supply partial info with class or method name, indicating
                 // more precisely WHY this is missing. This will probably allready have emitted some issue.
-                buffer.push_str("Unknown method<br />\n ".into());
+                buffer.push_str("Unknown method<br />\n ");
             }
         }
         Some(buffer)

@@ -335,7 +335,7 @@ where
             ));
         };
 
-        Ok(T::parse(first, self.source)?)
+        T::parse(first, self.source)
     }
 }
 

@@ -39,7 +39,7 @@ impl UnionTypeNode {
                     state.pos_from_range(child.range()),
                     r"unable to  extract valid type".into(),
                 ));
-                utype.push(DiscreteType::Unknown.into());
+                utype.push(DiscreteType::Unknown);
             }
         }
         if utype.len() > 0 {
