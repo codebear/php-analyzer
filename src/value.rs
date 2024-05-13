@@ -13,7 +13,7 @@ use crate::{
 
 use std::hash::Hash;
 
-#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
+#[derive(Clone, Debug, PartialOrd, PartialEq, Eq, Hash)]
 pub struct ObjectInstance {
     pub fq_name: FullyQualifiedName,
     pub constructor_args: Option<Vec<Option<PHPValue>>>,
@@ -52,7 +52,7 @@ impl ObjectInstance {
 
 /// We separate float into a separate type to handle eq and ord
 /// more easily in a separate way
-#[derive(Clone, Debug, PartialOrd)]
+#[derive(Clone, Debug)]
 pub enum PHPFloat {
     Real(f64),
     NaN,
@@ -97,7 +97,22 @@ impl PartialEq for PHPFloat {
 // FIXME verify that this holds
 impl Eq for PHPFloat {}
 
-impl Ord for PHPFloat {
+impl PartialOrd for PHPFloat {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Self::Real(l0), Self::Real(r0)) => l0.partial_cmp(r0),
+            (Self::Real(_), Self::NaN) => None,
+            (Self::Real(_), Self::Infinite) => Some(Ordering::Less),
+            (Self::NaN, Self::Real(_)) => None,
+            (Self::Infinite, Self::Real(_)) => Some(Ordering::Greater),
+            (Self::NaN, Self::NaN) => None,
+            (Self::Infinite, Self::Infinite) => None,
+            _ => None,
+        }
+    }
+}
+
+/*impl Ord for PHPFloat {
     fn cmp(&self, other: &Self) -> Ordering {
         if let Some(ord) = self.partial_cmp(other) {
             ord
@@ -105,16 +120,16 @@ impl Ord for PHPFloat {
             todo!();
         }
     }
-}
+}*/
 
-#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialOrd, PartialEq, Hash)]
 pub enum PHPArray {
     Empty,
     Vector(Vec<PHPValue>),
     HashMap(Vec<(PHPValue, PHPValue)>),
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialOrd, PartialEq, Hash)]
 pub enum PHPValue {
     NULL,
     Boolean(bool),
@@ -143,26 +158,23 @@ impl PHPValue {
     }
 
     pub fn as_php_string(&self) -> Option<PHPValue> {
-        Some(
-            match self {
-                PHPValue::NULL => PHPValue::String(OsString::new()),
-                PHPValue::Boolean(b) => PHPValue::String(if *b {
-                    OsStr::from_bytes(b"1").to_os_string()
-                } else {
-                    OsString::new()
-                }),
-                PHPValue::Int(i) => {
-                    let x = format!("{}", i);
+        Some(match self {
+            PHPValue::NULL => PHPValue::String(OsString::new()),
+            PHPValue::Boolean(b) => PHPValue::String(if *b {
+                OsStr::from_bytes(b"1").to_os_string()
+            } else {
+                OsString::new()
+            }),
+            PHPValue::Int(i) => {
+                let x = format!("{}", i);
 
-                    PHPValue::String(OsStr::from_bytes(x.as_bytes()).to_os_string())
-                }
-                PHPValue::Float(_) => return crate::missing_none!("Cast float to string?"),
-                PHPValue::String(s) => PHPValue::String(s.clone()),
-                PHPValue::Array(_) => PHPValue::String(OsStr::from_bytes(b"Array").to_os_string()),
-                PHPValue::ObjectInstance(_) => return crate::missing_none!("ObjectInstance?"),
+                PHPValue::String(OsStr::from_bytes(x.as_bytes()).to_os_string())
             }
-            .into(),
-        )
+            PHPValue::Float(_) => return crate::missing_none!("Cast float to string?"),
+            PHPValue::String(s) => PHPValue::String(s.clone()),
+            PHPValue::Array(_) => PHPValue::String(OsStr::from_bytes(b"Array").to_os_string()),
+            PHPValue::ObjectInstance(_) => return crate::missing_none!("ObjectInstance?"),
+        })
     }
 
     pub fn as_os_string(&self) -> Option<OsString> {

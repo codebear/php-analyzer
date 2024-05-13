@@ -54,7 +54,7 @@ impl<'a> Slice<RangeTo<usize>> for PHPDocInput<'a> {
         out_range.end_byte = out_range.start_byte + range.end;
         let buffer = self.0.slice(range);
         out_range.end_point.row = out_range.start_point.row;
-        out_range.end_point.column = out_range.end_point.column;
+        out_range.end_point.column = out_range.start_point.column;
         adjust_point_based_on_buffer(&mut out_range.end_point, buffer);
         // FIXME adjust end_point
         Self(buffer, out_range)
@@ -153,7 +153,7 @@ impl<'a> InputTake for PHPDocInput<'a> {
         let buffer = self.0.take(count);
         out_range.end_byte = out_range.start_byte + buffer.len();
         out_range.end_point.column = out_range.start_point.column;
-        out_range.end_point.row = out_range.end_point.row;
+        out_range.end_point.row = out_range.start_point.row;
         adjust_point_based_on_buffer(&mut out_range.end_point, buffer);
         Self(buffer, out_range)
     }

@@ -1,3 +1,4 @@
+#![allow(clippy::from_over_into)]
 use std::marker::PhantomData;
 
 use crate::autonodes::program::ProgramNode;
@@ -306,14 +307,15 @@ where
     T: NodeParser,
 {
     fn into(self) -> Result<Option<T>, ParseError> {
-        for noe in self
-            .node
-            .children_by_field_name(self.fieldname, &mut self.node.walk())
-        {
-            let parsed = T::parse(noe, self.source)?;
-            return Ok(Some(parsed));
-        }
-        Ok(None)
+        let cursor = &mut self.node.walk();
+
+        let mut traversable = self.node.children_by_field_name(self.fieldname, cursor);
+
+        let Some(first) = traversable.next() else {
+            return Ok(None);
+        };
+
+        Ok(Some(T::parse(first, self.source)?))
     }
 }
 
@@ -322,20 +324,18 @@ where
     T: NodeParser,
 {
     fn into(self) -> Result<T, ParseError> {
-        for noe in self
-            .node
-            .children_by_field_name(self.fieldname, &mut self.node.walk())
-        {
-            let parsed = T::parse(noe, self.source)?;
-            return Ok(parsed);
-        }
-        Err(ParseError::new(
-            self.node.range(),
-            format!(
-                "Expected child node with fieldname {}",
-                self.fieldname
-            ),
-        ))
+        let cursor = &mut self.node.walk();
+
+        let mut traversable = self.node.children_by_field_name(self.fieldname, cursor);
+
+        let Some(first) = traversable.next() else {
+            return Err(ParseError::new(
+                self.node.range(),
+                format!("Expected child node with fieldname {}", self.fieldname),
+            ));
+        };
+
+        Ok(T::parse(first, self.source)?)
     }
 }
 
@@ -344,21 +344,20 @@ where
     T: NodeParser,
 {
     fn into(mut self) -> Result<Box<T>, ParseError> {
-        for noe in self
-            .node
-            .children_by_field_name(self.fieldname, &mut self.node.walk())
-        {
-            self.maybe_mark_skipped_node(noe.id());
-            let parsed = T::parse(noe, self.source)?;
-            return Ok(Box::new(parsed));
-        }
-        Err(ParseError::new(
-            self.node.range(),
-            format!(
-                "Expected child node with fieldname {}",
-                self.fieldname
-            ),
-        ))
+        let cursor = &mut self.node.walk();
+
+        let mut traversable = self.node.children_by_field_name(self.fieldname, cursor);
+
+        let Some(first) = traversable.next() else {
+            return Err(ParseError::new(
+                self.node.range(),
+                format!("Expected child node with fieldname {}", self.fieldname),
+            ));
+        };
+
+        self.maybe_mark_skipped_node(first.id());
+        let parsed = T::parse(first, self.source)?;
+        Ok(Box::new(parsed))
     }
 }
 
@@ -443,14 +442,14 @@ where
     T: NodeParser,
 {
     fn into(self) -> Result<Option<Box<T>>, ParseError> {
-        for noe in self
-            .node
-            .children_by_field_name(self.fieldname, &mut self.node.walk())
-        {
-            let parsed = T::parse(noe, self.source)?;
-            return Ok(Some(Box::new(parsed)));
-        }
-        Ok(None)
+        let cursor = &mut self.node.walk();
+        let mut traversable = self.node.children_by_field_name(self.fieldname, cursor);
+        let Some(first) = traversable.next() else {
+            return Ok(None);
+        };
+
+        let parsed = T::parse(first, self.source)?;
+        Ok(Some(Box::new(parsed)))
     }
 }
 

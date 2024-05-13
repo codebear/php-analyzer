@@ -42,7 +42,7 @@ impl PHPParser {
 
 use tree_sitter::Range as TSRange;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Range {
     pub start_byte: usize,
     pub end_byte: usize,
@@ -63,6 +63,16 @@ impl From<TSRange> for Range {
 
 impl PartialOrd for Range {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.start_byte.cmp(&other.start_byte))
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Range {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if self.start_byte.eq(&other.start_byte) {
+            self.end_byte.cmp(&other.end_byte)
+        } else {
+            self.start_byte.cmp(&other.start_byte)
+        }
     }
 }

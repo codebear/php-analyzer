@@ -53,12 +53,13 @@ impl ConstantData {
     ///
     /// Returns a value if there is only one known definition of the constant
     pub fn get_value(&self) -> Option<PHPValue> {
-        if self.values.len() == 1 {
-            for (_, (_, val)) in &self.values {
-                return val.clone();
-            }
+        if self.values.len() != 1 {
+            return None;
         }
-        None
+        let Some((_, (_, val))) = self.values.iter().next() else {
+            return None;
+        };
+        val.clone()
     }
 }
 
@@ -278,7 +279,7 @@ impl AnalysisState {
         fq_name
     }
 
-    ///
+    //
     pub fn get_fq_symbol_name_from_local_name(&self, symbol_name: &Name) -> FullyQualifiedName {
         // eprintln!("AnalysisState.get_fq_symbol_name({:?}). use_map: {:?}", symbol_name, &self.use_map);
         let lc_symbol_name = symbol_name.to_ascii_lowercase();

@@ -20,7 +20,7 @@ use crate::types::union::from_vec_parsed_type;
 
 type MethodName = Name;
 
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialOrd)]
 pub struct ClassName {
     pub name: Name,
     pub fq_name: FullyQualifiedName,
@@ -29,6 +29,12 @@ pub struct ClassName {
 impl PartialEq for ClassName {
     fn eq(&self, other: &Self) -> bool {
         self.fq_name == other.fq_name
+    }
+}
+use std::hash::{Hash, Hasher};
+impl Hash for ClassName {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.fq_name.hash(state);
     }
 }
 
@@ -731,7 +737,7 @@ impl TraitData {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct FunctionArgumentData {
     pub name: Name,
     pub arg_type: Option<UnionType>,
@@ -743,6 +749,19 @@ pub struct FunctionArgumentData {
     pub phpdoc_type: Option<UnionType>,
     pub variadic: bool,
 }
+
+impl Ord for FunctionArgumentData {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+
+impl PartialOrd for FunctionArgumentData {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl FunctionArgumentData {
     pub fn get_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
         // FIXME somewhere there needs to be emitted
