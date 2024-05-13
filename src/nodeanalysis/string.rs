@@ -1,8 +1,11 @@
-use std::{ffi::OsStr, os::unix::prelude::OsStrExt};
+use std::{
+    ffi::{OsStr, OsString},
+    os::unix::prelude::OsStrExt,
+};
 
 use crate::{
     analysis::state::AnalysisState,
-    autonodes::string::StringNode,
+    autonodes::string::{StringChildren, StringNode},
     issue::IssueEmitter,
     types::union::{DiscreteType, UnionType},
     value::PHPValue,
@@ -18,15 +21,12 @@ impl StringNode {
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
     ) -> Option<PHPValue> {
-        todo!();
-        let raw = b""; // &self.child.raw;
-        let len = raw.len();
-        if len < 2 {
-            return None;
+        let mut buf = OsString::new();
+        for part in &self.children {
+            buf.push(OsStr::from_bytes(part.get_string_value()?));
         }
-        let raw = &raw[1..len - 1];
-        let str = OsStr::from_bytes(raw).to_os_string();
-        Some(PHPValue::String(str))
+
+        Some(PHPValue::String(buf))
     }
 
     pub fn get_utype(
@@ -35,5 +35,22 @@ impl StringNode {
         _emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
         Some(DiscreteType::String.into())
+    }
+}
+
+impl StringChildren {
+    pub fn get_string_value(&self) -> Option<&[u8]> {
+        match self {
+            StringChildren::Extra(y) => todo!(),
+            StringChildren::EscapeSequence(y) => todo!(),
+            StringChildren::StringValue(y) => {
+                let len = y.raw.len();
+                if len < 2 {
+                    return None;
+                }
+                let raw = &y.raw[1..len - 1];
+                Some(&raw)
+            }
+        }
     }
 }
