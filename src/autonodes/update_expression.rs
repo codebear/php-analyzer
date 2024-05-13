@@ -520,11 +520,11 @@ impl NodeParser for UpdateExpressionNode {
             ));
         }
         let argument: Box<UpdateExpressionArgument> =
-            Result::from(node.parse_child("argument", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("argument", source))?;
         let postfix: Option<Box<UpdateExpressionPostfix>> =
-            Result::from(node.parse_child("postfix", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("postfix", source))?;
         let prefix: Option<Box<UpdateExpressionPrefix>> =
-            Result::from(node.parse_child("prefix", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("prefix", source))?;
         Ok(Self {
             range,
             argument,

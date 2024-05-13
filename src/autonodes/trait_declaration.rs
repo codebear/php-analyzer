@@ -31,8 +31,9 @@ impl NodeParser for TraitDeclarationNode {
                 ),
             ));
         }
-        let body: DeclarationListNode = Result::from(node.parse_child("body", source).into())?;
-        let name: NameNode = Result::from(node.parse_child("name", source).into())?;
+        let body: DeclarationListNode =
+            Into::<Result<_, _>>::into(node.parse_child("body", source))?;
+        let name: NameNode = Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         Ok(Self {
             range,
             body,

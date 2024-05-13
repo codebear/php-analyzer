@@ -604,10 +604,10 @@ impl NodeParser for AugmentedAssignmentExpressionNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [augmented_assignment_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let left: Box<AugmentedAssignmentExpressionLeft> =
-            Result::from(node.parse_child("left", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("left", source))?;
         let operator: Box<AugmentedAssignmentExpressionOperator> =
-            Result::from(node.parse_child("operator", source).into())?;
-        let right: _ExpressionNode = Result::from(node.parse_child("right", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("operator", source))?;
+        let right: _ExpressionNode = Into::<Result<_, _>>::into(node.parse_child("right", source))?;
         Ok(Self {
             range,
             left,

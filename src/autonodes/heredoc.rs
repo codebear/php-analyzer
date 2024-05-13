@@ -180,11 +180,12 @@ impl NodeParser for HeredocNode {
                 ),
             ));
         }
-        let end_tag: HeredocEndNode = Result::from(node.parse_child("end_tag", source).into())?;
+        let end_tag: HeredocEndNode =
+            Into::<Result<_, _>>::into(node.parse_child("end_tag", source))?;
         let identifier: Vec<Box<HeredocIdentifier>> =
-            Result::from(node.parse_child("identifier", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("identifier", source))?;
         let value: Option<HeredocBodyNode> =
-            Result::from(node.parse_child("value", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("value", source))?;
         Ok(Self {
             range,
             end_tag,

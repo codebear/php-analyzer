@@ -757,11 +757,12 @@ impl NodeParser for ScopedCallExpressionNode {
         if node.kind() != "scoped_call_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [scoped_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let arguments: ArgumentsNode = Result::from(node.parse_child("arguments", source).into())?;
+        let arguments: ArgumentsNode =
+            Into::<Result<_, _>>::into(node.parse_child("arguments", source))?;
         let name: Box<ScopedCallExpressionName> =
-            Result::from(node.parse_child("name", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         let scope: Box<ScopedCallExpressionScope> =
-            Result::from(node.parse_child("scope", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("scope", source))?;
         Ok(Self {
             range,
             arguments,

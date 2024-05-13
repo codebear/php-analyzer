@@ -369,11 +369,11 @@ impl NodeParser for ForeachStatementNode {
             ));
         }
         let body: Option<Box<ForeachStatementBody>> =
-            Result::from(node.parse_child("body", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         let entry: Box<ForeachStatementEntry> =
-            Result::from(node.parse_child("entry", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("entry", source))?;
         let traversable: _ExpressionNode =
-            Result::from(node.parse_child("traversable", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("traversable", source))?;
         Ok(Self {
             range,
             body,

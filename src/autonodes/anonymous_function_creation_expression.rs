@@ -202,31 +202,27 @@ impl NodeParser for AnonymousFunctionCreationExpressionNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [anonymous_function_creation_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let attributes: Option<AttributeListNode> = Result::from(
+        let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(
             node.parse_child("attributes", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let body: CompoundStatementNode = Result::from(
+        let body: CompoundStatementNode = Into::<Result<_, _>>::into(
             node.parse_child("body", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let parameters: FormalParametersNode = Result::from(
+        let parameters: FormalParametersNode = Into::<Result<_, _>>::into(
             node.parse_child("parameters", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let reference_modifier: Option<ReferenceModifierNode> = Result::from(
+        let reference_modifier: Option<ReferenceModifierNode> = Into::<Result<_, _>>::into(
             node.parse_child("reference_modifier", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let return_type: Option<Box<AnonymousFunctionCreationExpressionReturnType>> = Result::from(
-            node.parse_child("return_type", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
-        )?;
+        let return_type: Option<Box<AnonymousFunctionCreationExpressionReturnType>> =
+            Into::<Result<_, _>>::into(
+                node.parse_child("return_type", source)
+                    .mark_skipped_node(&mut skip_nodes),
+            )?;
         Ok(Self {
             range,
             attributes,

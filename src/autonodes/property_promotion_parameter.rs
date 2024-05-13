@@ -32,15 +32,16 @@ impl NodeParser for PropertyPromotionParameterNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [property_promotion_parameter] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let attributes: Option<AttributeListNode> =
-            Result::from(node.parse_child("attributes", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("attributes", source))?;
         let default_value: Option<_ExpressionNode> =
-            Result::from(node.parse_child("default_value", source).into())?;
-        let name: VariableNameNode = Result::from(node.parse_child("name", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("default_value", source))?;
+        let name: VariableNameNode = Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         let readonly: Option<ReadonlyModifierNode> =
-            Result::from(node.parse_child("readonly", source).into())?;
-        let type_: Option<_TypeNode> = Result::from(node.parse_child("type", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("readonly", source))?;
+        let type_: Option<_TypeNode> =
+            Into::<Result<_, _>>::into(node.parse_child("type", source))?;
         let visibility: VisibilityModifierNode =
-            Result::from(node.parse_child("visibility", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("visibility", source))?;
         Ok(Self {
             range,
             attributes,

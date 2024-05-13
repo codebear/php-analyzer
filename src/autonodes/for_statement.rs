@@ -494,20 +494,17 @@ impl NodeParser for ForStatementNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let condition: Option<Box<ForStatementCondition>> = Result::from(
+        let condition: Option<Box<ForStatementCondition>> = Into::<Result<_, _>>::into(
             node.parse_child("condition", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let increment: Option<Box<ForStatementIncrement>> = Result::from(
+        let increment: Option<Box<ForStatementIncrement>> = Into::<Result<_, _>>::into(
             node.parse_child("increment", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let initialize: Option<Box<ForStatementInitialize>> = Result::from(
+        let initialize: Option<Box<ForStatementInitialize>> = Into::<Result<_, _>>::into(
             node.parse_child("initialize", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

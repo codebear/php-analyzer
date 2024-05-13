@@ -184,7 +184,8 @@ impl NodeParser for ElseClauseNode {
                 ),
             ));
         }
-        let body: Box<ElseClauseBody> = Result::from(node.parse_child("body", source).into())?;
+        let body: Box<ElseClauseBody> =
+            Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         Ok(Self {
             range,
             body,

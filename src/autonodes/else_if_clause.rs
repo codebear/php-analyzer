@@ -186,9 +186,10 @@ impl NodeParser for ElseIfClauseNode {
                 ),
             ));
         }
-        let body: Box<ElseIfClauseBody> = Result::from(node.parse_child("body", source).into())?;
+        let body: Box<ElseIfClauseBody> =
+            Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         let condition: ParenthesizedExpressionNode =
-            Result::from(node.parse_child("condition", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("condition", source))?;
         Ok(Self {
             range,
             body,

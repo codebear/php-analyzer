@@ -456,9 +456,10 @@ impl NodeParser for FunctionCallExpressionNode {
         if node.kind() != "function_call_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [function_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let arguments: ArgumentsNode = Result::from(node.parse_child("arguments", source).into())?;
+        let arguments: ArgumentsNode =
+            Into::<Result<_, _>>::into(node.parse_child("arguments", source))?;
         let function: Box<FunctionCallExpressionFunction> =
-            Result::from(node.parse_child("function", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("function", source))?;
         Ok(Self {
             range,
             arguments,

@@ -214,10 +214,10 @@ impl NodeParser for EnumCaseNode {
             ));
         }
         let attributes: Option<AttributeListNode> =
-            Result::from(node.parse_child("attributes", source).into())?;
-        let name: NameNode = Result::from(node.parse_child("name", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("attributes", source))?;
+        let name: NameNode = Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         let value: Option<Box<EnumCaseValue>> =
-            Result::from(node.parse_child("value", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("value", source))?;
         Ok(Self {
             range,
             attributes,

@@ -193,8 +193,8 @@ impl NodeParser for PairNode {
                 ),
             ));
         }
-        let key: _ExpressionNode = Result::from(node.parse_child("key", source).into())?;
-        let value: Box<PairValue> = Result::from(node.parse_child("value", source).into())?;
+        let key: _ExpressionNode = Into::<Result<_, _>>::into(node.parse_child("key", source))?;
+        let value: Box<PairValue> = Into::<Result<_, _>>::into(node.parse_child("value", source))?;
         Ok(Self {
             range,
             key,

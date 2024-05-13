@@ -31,9 +31,9 @@ impl NodeParser for DoStatementNode {
                 ),
             ));
         }
-        let body: _StatementNode = Result::from(node.parse_child("body", source).into())?;
+        let body: _StatementNode = Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         let condition: ParenthesizedExpressionNode =
-            Result::from(node.parse_child("condition", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("condition", source))?;
         Ok(Self {
             range,
             body,

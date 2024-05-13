@@ -110,9 +110,10 @@ impl NodeParser for UnaryOpExpressionNode {
                 ),
             ));
         }
-        let argument: _ExpressionNode = Result::from(node.parse_child("argument", source).into())?;
+        let argument: _ExpressionNode =
+            Into::<Result<_, _>>::into(node.parse_child("argument", source))?;
         let operator: Box<UnaryOpExpressionOperator> =
-            Result::from(node.parse_child("operator", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("operator", source))?;
         Ok(Self {
             range,
             argument,

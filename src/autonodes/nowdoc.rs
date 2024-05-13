@@ -33,10 +33,12 @@ impl NodeParser for NowdocNode {
                 ),
             ));
         }
-        let end_tag: HeredocEndNode = Result::from(node.parse_child("end_tag", source).into())?;
+        let end_tag: HeredocEndNode =
+            Into::<Result<_, _>>::into(node.parse_child("end_tag", source))?;
         let identifier: HeredocStartNode =
-            Result::from(node.parse_child("identifier", source).into())?;
-        let value: Option<NowdocBodyNode> = Result::from(node.parse_child("value", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("identifier", source))?;
+        let value: Option<NowdocBodyNode> =
+            Into::<Result<_, _>>::into(node.parse_child("value", source))?;
         Ok(Self {
             range,
             end_tag,

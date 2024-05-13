@@ -404,10 +404,9 @@ impl NodeParser for ObjectCreationExpressionNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [object_creation_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let attributes: Option<AttributeListNode> = Result::from(
+        let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(
             node.parse_child("attributes", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

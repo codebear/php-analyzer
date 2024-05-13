@@ -653,9 +653,9 @@ impl NodeParser for ClassConstantAccessExpressionNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [class_constant_access_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let class: Box<ClassConstantAccessExpressionClass> =
-            Result::from(node.parse_child("class", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("class", source))?;
         let constant: ClassConstantAccessIdentifierNode =
-            Result::from(node.parse_child("constant", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("constant", source))?;
         Ok(Self {
             range,
             class,

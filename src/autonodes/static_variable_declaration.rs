@@ -23,9 +23,9 @@ impl NodeParser for StaticVariableDeclarationNode {
         if node.kind() != "static_variable_declaration" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [static_variable_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let name: VariableNameNode = Result::from(node.parse_child("name", source).into())?;
+        let name: VariableNameNode = Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         let value: Option<_ExpressionNode> =
-            Result::from(node.parse_child("value", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("value", source))?;
         Ok(Self {
             range,
             name,

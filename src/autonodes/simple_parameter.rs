@@ -38,13 +38,14 @@ impl NodeParser for SimpleParameterNode {
             ));
         }
         let attributes: Option<AttributeListNode> =
-            Result::from(node.parse_child("attributes", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("attributes", source))?;
         let default_value: Option<_ExpressionNode> =
-            Result::from(node.parse_child("default_value", source).into())?;
-        let name: VariableNameNode = Result::from(node.parse_child("name", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("default_value", source))?;
+        let name: VariableNameNode = Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         let reference_modifier: Option<ReferenceModifierNode> =
-            Result::from(node.parse_child("reference_modifier", source).into())?;
-        let type_: Option<_TypeNode> = Result::from(node.parse_child("type", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("reference_modifier", source))?;
+        let type_: Option<_TypeNode> =
+            Into::<Result<_, _>>::into(node.parse_child("type", source))?;
         Ok(Self {
             range,
             attributes,

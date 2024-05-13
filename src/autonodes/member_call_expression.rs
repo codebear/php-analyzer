@@ -742,11 +742,12 @@ impl NodeParser for MemberCallExpressionNode {
         if node.kind() != "member_call_expression" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [member_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let arguments: ArgumentsNode = Result::from(node.parse_child("arguments", source).into())?;
+        let arguments: ArgumentsNode =
+            Into::<Result<_, _>>::into(node.parse_child("arguments", source))?;
         let name: Box<MemberCallExpressionName> =
-            Result::from(node.parse_child("name", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         let object: Box<MemberCallExpressionObject> =
-            Result::from(node.parse_child("object", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("object", source))?;
         Ok(Self {
             range,
             arguments,

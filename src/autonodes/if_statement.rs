@@ -335,10 +335,11 @@ impl NodeParser for IfStatementNode {
             ));
         }
         let alternative: Option<Vec<Box<IfStatementAlternative>>> =
-            Result::from(node.parse_child("alternative", source).into())?;
-        let body: Box<IfStatementBody> = Result::from(node.parse_child("body", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("alternative", source))?;
+        let body: Box<IfStatementBody> =
+            Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         let condition: ParenthesizedExpressionNode =
-            Result::from(node.parse_child("condition", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("condition", source))?;
         Ok(Self {
             range,
             alternative,

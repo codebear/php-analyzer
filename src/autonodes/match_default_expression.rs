@@ -22,7 +22,7 @@ impl NodeParser for MatchDefaultExpressionNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [match_default_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let return_expression: _ExpressionNode =
-            Result::from(node.parse_child("return_expression", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("return_expression", source))?;
         Ok(Self {
             range,
             return_expression,

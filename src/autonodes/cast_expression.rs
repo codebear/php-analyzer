@@ -246,9 +246,9 @@ impl NodeParser for CastExpressionNode {
                 ),
             ));
         }
-        let type_: CastTypeNode = Result::from(node.parse_child("type", source).into())?;
+        let type_: CastTypeNode = Into::<Result<_, _>>::into(node.parse_child("type", source))?;
         let value: Box<CastExpressionValue> =
-            Result::from(node.parse_child("value", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("value", source))?;
         Ok(Self {
             range,
             type_,

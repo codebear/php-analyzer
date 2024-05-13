@@ -547,11 +547,11 @@ impl NodeParser for BinaryExpressionNode {
                 ),
             ));
         }
-        let left: _ExpressionNode = Result::from(node.parse_child("left", source).into())?;
+        let left: _ExpressionNode = Into::<Result<_, _>>::into(node.parse_child("left", source))?;
         let operator: Box<BinaryExpressionOperator> =
-            Result::from(node.parse_child("operator", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("operator", source))?;
         let right: Box<BinaryExpressionRight> =
-            Result::from(node.parse_child("right", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("right", source))?;
         Ok(Self {
             range,
             left,

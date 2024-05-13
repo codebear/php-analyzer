@@ -190,20 +190,17 @@ impl NodeParser for ConstDeclarationNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let attributes: Option<AttributeListNode> = Result::from(
+        let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(
             node.parse_child("attributes", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let modifier: Option<FinalModifierNode> = Result::from(
+        let modifier: Option<FinalModifierNode> = Into::<Result<_, _>>::into(
             node.parse_child("modifier", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let type_: Option<_TypeNode> = Result::from(
+        let type_: Option<_TypeNode> = Into::<Result<_, _>>::into(
             node.parse_child("type", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

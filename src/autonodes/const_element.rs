@@ -31,8 +31,8 @@ impl NodeParser for ConstElementNode {
                 ),
             ));
         }
-        let name: NameNode = Result::from(node.parse_child("name", source).into())?;
-        let value: _ExpressionNode = Result::from(node.parse_child("value", source).into())?;
+        let name: NameNode = Into::<Result<_, _>>::into(node.parse_child("name", source))?;
+        let value: _ExpressionNode = Into::<Result<_, _>>::into(node.parse_child("value", source))?;
         Ok(Self {
             range,
             name,

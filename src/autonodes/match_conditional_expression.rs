@@ -24,9 +24,9 @@ impl NodeParser for MatchConditionalExpressionNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [match_conditional_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let conditional_expressions: MatchConditionListNode =
-            Result::from(node.parse_child("conditional_expressions", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("conditional_expressions", source))?;
         let return_expression: _ExpressionNode =
-            Result::from(node.parse_child("return_expression", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("return_expression", source))?;
         Ok(Self {
             range,
             conditional_expressions,

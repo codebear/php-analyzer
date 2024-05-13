@@ -24,10 +24,11 @@ impl NodeParser for ConditionalExpressionNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [conditional_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let alternative: _ExpressionNode =
-            Result::from(node.parse_child("alternative", source).into())?;
-        let body: Option<_ExpressionNode> = Result::from(node.parse_child("body", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("alternative", source))?;
+        let body: Option<_ExpressionNode> =
+            Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         let condition: _ExpressionNode =
-            Result::from(node.parse_child("condition", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("condition", source))?;
         Ok(Self {
             range,
             alternative,

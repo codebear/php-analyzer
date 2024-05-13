@@ -176,10 +176,9 @@ impl NodeParser for AttributeNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let parameters: Option<ArgumentsNode> = Result::from(
+        let parameters: Option<ArgumentsNode> = Into::<Result<_, _>>::into(
             node.parse_child("parameters", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

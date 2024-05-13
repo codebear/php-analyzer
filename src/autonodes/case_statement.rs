@@ -32,10 +32,9 @@ impl NodeParser for CaseStatementNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let value: _ExpressionNode = Result::from(
+        let value: _ExpressionNode = Into::<Result<_, _>>::into(
             node.parse_child("value", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

@@ -32,10 +32,9 @@ impl NodeParser for PropertyElementNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let name: VariableNameNode = Result::from(
+        let name: VariableNameNode = Into::<Result<_, _>>::into(
             node.parse_child("name", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

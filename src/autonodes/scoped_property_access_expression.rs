@@ -812,9 +812,9 @@ impl NodeParser for ScopedPropertyAccessExpressionNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [scoped_property_access_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let name: Box<ScopedPropertyAccessExpressionName> =
-            Result::from(node.parse_child("name", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         let scope: Box<ScopedPropertyAccessExpressionScope> =
-            Result::from(node.parse_child("scope", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("scope", source))?;
         Ok(Self {
             range,
             name,

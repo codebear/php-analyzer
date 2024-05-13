@@ -184,10 +184,9 @@ impl NodeParser for TryStatementNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let body: CompoundStatementNode = Result::from(
+        let body: CompoundStatementNode = Into::<Result<_, _>>::into(
             node.parse_child("body", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

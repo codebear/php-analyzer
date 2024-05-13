@@ -33,9 +33,11 @@ impl NodeParser for CatchClauseNode {
                 ),
             ));
         }
-        let body: CompoundStatementNode = Result::from(node.parse_child("body", source).into())?;
-        let name: Option<VariableNameNode> = Result::from(node.parse_child("name", source).into())?;
-        let type_: TypeListNode = Result::from(node.parse_child("type", source).into())?;
+        let body: CompoundStatementNode =
+            Into::<Result<_, _>>::into(node.parse_child("body", source))?;
+        let name: Option<VariableNameNode> =
+            Into::<Result<_, _>>::into(node.parse_child("name", source))?;
+        let type_: TypeListNode = Into::<Result<_, _>>::into(node.parse_child("type", source))?;
         Ok(Self {
             range,
             body,

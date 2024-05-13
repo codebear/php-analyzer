@@ -29,7 +29,8 @@ impl NodeParser for FinallyClauseNode {
                 ),
             ));
         }
-        let body: CompoundStatementNode = Result::from(node.parse_child("body", source).into())?;
+        let body: CompoundStatementNode =
+            Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         Ok(Self {
             range,
             body,

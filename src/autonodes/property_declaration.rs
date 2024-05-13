@@ -258,20 +258,17 @@ impl NodeParser for PropertyDeclarationNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [property_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let attributes: Option<AttributeListNode> = Result::from(
+        let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(
             node.parse_child("attributes", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let modifiers: Vec<Box<PropertyDeclarationModifiers>> = Result::from(
+        let modifiers: Vec<Box<PropertyDeclarationModifiers>> = Into::<Result<_, _>>::into(
             node.parse_child("modifiers", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let type_: Option<_TypeNode> = Result::from(
+        let type_: Option<_TypeNode> = Into::<Result<_, _>>::into(
             node.parse_child("type", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

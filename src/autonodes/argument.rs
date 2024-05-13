@@ -200,15 +200,13 @@ impl NodeParser for ArgumentNode {
             ));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let name: Option<NameNode> = Result::from(
+        let name: Option<NameNode> = Into::<Result<_, _>>::into(
             node.parse_child("name", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let reference_modifier: Option<ReferenceModifierNode> = Result::from(
+        let reference_modifier: Option<ReferenceModifierNode> = Into::<Result<_, _>>::into(
             node.parse_child("reference_modifier", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

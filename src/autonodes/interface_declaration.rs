@@ -26,15 +26,13 @@ impl NodeParser for InterfaceDeclarationNode {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [interface_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
-        let body: DeclarationListNode = Result::from(
+        let body: DeclarationListNode = Into::<Result<_, _>>::into(
             node.parse_child("body", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
-        let name: NameNode = Result::from(
+        let name: NameNode = Into::<Result<_, _>>::into(
             node.parse_child("name", source)
-                .mark_skipped_node(&mut skip_nodes)
-                .into(),
+                .mark_skipped_node(&mut skip_nodes),
         )?;
         Ok(Self {
             range,

@@ -182,11 +182,12 @@ impl NodeParser for ArrayElementInitializerNode {
         if node.kind() != "array_element_initializer" {
             return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [array_element_initializer] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
-        let key: Option<_ExpressionNode> = Result::from(node.parse_child("key", source).into())?;
+        let key: Option<_ExpressionNode> =
+            Into::<Result<_, _>>::into(node.parse_child("key", source))?;
         let spread: Option<VariadicUnpackingNode> =
-            Result::from(node.parse_child("spread", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("spread", source))?;
         let value: Option<Box<ArrayElementInitializerValue>> =
-            Result::from(node.parse_child("value", source).into())?;
+            Into::<Result<_, _>>::into(node.parse_child("value", source))?;
         Ok(Self {
             range,
             key,
