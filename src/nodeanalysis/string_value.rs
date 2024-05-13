@@ -5,7 +5,7 @@ use crate::{analysis::state::AnalysisState, issue::IssueEmitter, value::PHPValue
 
 impl StringValueNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
-        ()
+        
     }
 
     pub fn get_php_value(

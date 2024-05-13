@@ -159,7 +159,7 @@ impl NodeAccess for ClassDeclarationModifier {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ClassDeclarationModifier::Extra(x) => x.as_any(),
             ClassDeclarationModifier::AbstractModifier(x) => x.as_any(),
@@ -168,7 +168,7 @@ impl NodeAccess for ClassDeclarationModifier {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ClassDeclarationModifier::Extra(x) => x.children_any(),
             ClassDeclarationModifier::AbstractModifier(x) => x.children_any(),
@@ -308,7 +308,7 @@ impl NodeAccess for ClassDeclarationChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ClassDeclarationChildren::Extra(x) => x.as_any(),
             ClassDeclarationChildren::BaseClause(x) => x.as_any(),
@@ -316,7 +316,7 @@ impl NodeAccess for ClassDeclarationChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ClassDeclarationChildren::Extra(x) => x.children_any(),
             ClassDeclarationChildren::BaseClause(x) => x.children_any(),
@@ -414,7 +414,7 @@ impl NodeAccess for ClassDeclarationNode {
         "ClassDeclarationNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ClassDeclaration(self)
     }
 

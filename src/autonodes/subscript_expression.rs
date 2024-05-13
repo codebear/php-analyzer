@@ -534,7 +534,7 @@ impl NodeAccess for SubscriptExpressionDereferenceable {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             SubscriptExpressionDereferenceable::Extra(x) => x.as_any(),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => x.as_any(),
@@ -560,7 +560,7 @@ impl NodeAccess for SubscriptExpressionDereferenceable {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             SubscriptExpressionDereferenceable::Extra(x) => x.children_any(),
             SubscriptExpressionDereferenceable::ArrayCreationExpression(x) => x.children_any(),
@@ -662,7 +662,7 @@ impl NodeAccess for SubscriptExpressionNode {
         "SubscriptExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::SubscriptExpression(self)
     }
 

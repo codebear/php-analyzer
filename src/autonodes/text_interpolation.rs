@@ -130,7 +130,7 @@ impl NodeAccess for TextInterpolationChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             TextInterpolationChildren::Extra(x) => x.as_any(),
             TextInterpolationChildren::PhpTag(x) => x.as_any(),
@@ -138,7 +138,7 @@ impl NodeAccess for TextInterpolationChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             TextInterpolationChildren::Extra(x) => x.children_any(),
             TextInterpolationChildren::PhpTag(x) => x.children_any(),
@@ -204,7 +204,7 @@ impl NodeAccess for TextInterpolationNode {
         "TextInterpolationNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::TextInterpolation(self)
     }
 

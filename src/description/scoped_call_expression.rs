@@ -54,7 +54,7 @@ pub fn describe_method(class_name: &ClassName, data: &MethodData) -> String {
         any_known_type = true;
     }
     if !any_known_type {
-        buffer.push_str(&format!("| No known return-type | |\n"));
+        buffer.push_str("| No known return-type | |\n");
     }
     buffer
 }

@@ -35,8 +35,8 @@ impl NodeParser for SequenceExpressionChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| SequenceExpressionChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(SequenceExpressionChildren::_Expression)
                 {
                     x
                 } else {
@@ -65,14 +65,9 @@ impl SequenceExpressionChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| SequenceExpressionChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(SequenceExpressionChildren::_Expression),
                 )
             }
         }))
@@ -147,7 +142,7 @@ impl NodeAccess for SequenceExpressionChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             SequenceExpressionChildren::Extra(x) => x.as_any(),
             SequenceExpressionChildren::_Expression(x) => x.as_any(),
@@ -155,7 +150,7 @@ impl NodeAccess for SequenceExpressionChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             SequenceExpressionChildren::Extra(x) => x.children_any(),
             SequenceExpressionChildren::_Expression(x) => x.children_any(),
@@ -221,7 +216,7 @@ impl NodeAccess for SequenceExpressionNode {
         "SequenceExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::SequenceExpression(self)
     }
 

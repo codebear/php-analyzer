@@ -47,7 +47,7 @@ impl NamespaceDefinitionNode {
 
 impl FirstPassAnalyzeableNode for NamespaceDefinitionNode {
     fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if let Some(_) = &self.name {
+        if self.name.is_some() {
             let namespace = self.get_namespace();
             state.namespace = Some(namespace);
         } else {
@@ -61,7 +61,7 @@ impl FirstPassAnalyzeableNode for NamespaceDefinitionNode {
 
 impl SecondPassAnalyzeableNode for NamespaceDefinitionNode {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if let Some(_) = &self.name {
+        if self.name.is_some() {
             let namespace = self.get_namespace();
             state.namespace = Some(namespace);
         } else {
@@ -80,7 +80,7 @@ impl ThirdPassAnalyzeableNode for NamespaceDefinitionNode {
         emitter: &dyn IssueEmitter,
         _path: &Vec<AnyNodeRef>,
     ) -> bool {
-        if let Some(_) = &self.name {
+        if self.name.is_some() {
             let namespace = self.get_namespace();
             state.namespace = Some(namespace);
         } else {

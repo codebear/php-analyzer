@@ -37,8 +37,8 @@ impl NodeParser for ProgramChildren {
 
             _ => {
                 if let Some(x) = _StatementNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ProgramChildren::_Statement(y))
+                    .map(Box::new)
+                    .map(ProgramChildren::_Statement)
                 {
                     x
                 } else {
@@ -66,14 +66,9 @@ impl ProgramChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _StatementNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ProgramChildren::_Statement(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _StatementNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ProgramChildren::_Statement),
                 )
             }
         }))
@@ -147,7 +142,7 @@ impl NodeAccess for ProgramChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ProgramChildren::Extra(x) => x.as_any(),
             ProgramChildren::_Statement(x) => x.as_any(),
@@ -156,7 +151,7 @@ impl NodeAccess for ProgramChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ProgramChildren::Extra(x) => x.children_any(),
             ProgramChildren::_Statement(x) => x.children_any(),
@@ -224,7 +219,7 @@ impl NodeAccess for ProgramNode {
         "ProgramNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Program(self)
     }
 

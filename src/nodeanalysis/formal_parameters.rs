@@ -171,8 +171,8 @@ impl FormalParametersNode {
                 return None;
             };
 
-        let utype = UnionType::parse(content.clone(), range.clone(), state, emitter)?;
+        let utype = UnionType::parse(content.clone(), *range, state, emitter)?;
 
-        Some((range.clone(), utype))
+        Some((*range, utype))
     }
 }

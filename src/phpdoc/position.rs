@@ -22,7 +22,7 @@ impl<'a> PHPDocInput<'a> {
 
 impl<'a> Slice<std::ops::Range<usize>> for PHPDocInput<'a> {
     fn slice(&self, range: std::ops::Range<usize>) -> Self {
-        let mut out_range = self.1.clone();
+        let mut out_range = self.1;
 
         if range.start > 0 {
             // Adjust for what we have skipped
@@ -50,7 +50,7 @@ impl<'a> Slice<std::ops::Range<usize>> for PHPDocInput<'a> {
 
 impl<'a> Slice<RangeTo<usize>> for PHPDocInput<'a> {
     fn slice(&self, range: RangeTo<usize>) -> Self {
-        let mut out_range = self.1.clone();
+        let mut out_range = self.1;
         out_range.end_byte = out_range.start_byte + range.end;
         let buffer = self.0.slice(range);
         out_range.end_point.row = out_range.start_point.row;
@@ -97,7 +97,7 @@ impl LFind<u8> for &[u8] {
 
 pub fn fake_range(buffer: &OsString) -> Range {
     let start_point = Point { row: 0, column: 0 };
-    let mut end_point = start_point.clone();
+    let mut end_point = start_point;
     let bytes = buffer.as_bytes();
     adjust_point_based_on_buffer(&mut end_point, bytes);
 
@@ -137,7 +137,7 @@ pub fn adjust_point_based_on_buffer(point: &mut Point, buffer: &[u8]) {
 
 impl<'a> Slice<RangeFrom<usize>> for PHPDocInput<'a> {
     fn slice(&self, range: RangeFrom<usize>) -> Self {
-        let mut out_range = self.1.clone();
+        let mut out_range = self.1;
         out_range.start_byte = self.1.start_byte + range.start;
         let skipped = &self.0[0..range.start];
         let buffer = self.0.slice(range);
@@ -149,7 +149,7 @@ impl<'a> Slice<RangeFrom<usize>> for PHPDocInput<'a> {
 
 impl<'a> InputTake for PHPDocInput<'a> {
     fn take(&self, count: usize) -> Self {
-        let mut out_range = self.1.clone();
+        let mut out_range = self.1;
         let buffer = self.0.take(count);
         out_range.end_byte = out_range.start_byte + buffer.len();
         out_range.end_point.column = out_range.start_point.column;
@@ -159,8 +159,8 @@ impl<'a> InputTake for PHPDocInput<'a> {
     }
 
     fn take_split(&self, count: usize) -> (Self, Self) {
-        let mut out_range_suffix = self.1.clone();
-        let mut out_range_prefix = self.1.clone();
+        let mut out_range_suffix = self.1;
+        let mut out_range_prefix = self.1;
         //         todo!();
         let (buffer_suffix, buffer_prefix) = self.0.take_split(count);
 

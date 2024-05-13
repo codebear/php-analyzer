@@ -205,7 +205,7 @@ impl BranchTypeHardening for _PrimaryExpressionNode {
 
             _PrimaryExpressionNode::Extra(_) => crate::missing!(),
         }
-        return scope.branch();
+        scope.branch()
     }
 }
 
@@ -398,6 +398,6 @@ impl BranchTypeHardening for AssignmentExpressionNode {
             }
             AssignmentExpressionLeft::Extra(_) => crate::missing!(),
         }
-        return scope.branch();
+        scope.branch()
     }
 }

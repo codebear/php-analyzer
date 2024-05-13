@@ -135,7 +135,7 @@ pub fn test_inline_generics() -> Result<(), &'static str> {
                 .get_property(&"klorin".into(), &state)
                 .ok_or("Missing klorin property")?;
 
-            eprintln!("");
+            eprintln!();
             eprintln!("Comment: {:?}", property.comment_type);
             eprintln!("Declared: {:?}", property.declared_type);
             eprintln!("Constructor: {:?}", property.constructor_type);

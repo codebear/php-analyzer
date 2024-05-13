@@ -42,14 +42,14 @@ impl ExtraChild {
         })
     }
     pub fn kind(&self) -> &'static str {
-        return match self {
+        match self {
             ExtraChild::Comment(c) => c.kind(),
             ExtraChild::Error(e) => e.kind(),
-        };
+        }
     }
 }
 impl NodeAccess for ExtraChild {
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ExtraChild::Comment(c) => c.as_any(),
             ExtraChild::Error(e) => e.as_any(),
@@ -70,7 +70,7 @@ impl NodeAccess for ExtraChild {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ExtraChild::Comment(c) => c.children_any(),
             ExtraChild::Error(e) => e.children_any(),

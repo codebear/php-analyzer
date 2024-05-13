@@ -37,7 +37,7 @@ impl NodeParser for CloneExpressionNode {
                 .map(|k| _PrimaryExpressionNode::parse(k, source))
                 .collect::<Result<Vec<_PrimaryExpressionNode>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -60,7 +60,7 @@ impl NodeAccess for CloneExpressionNode {
         "CloneExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::CloneExpression(self)
     }
 

@@ -49,8 +49,8 @@ impl NodeParser for MethodDeclarationReturnType {
 
             _ => {
                 if let Some(x) = _TypeNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| MethodDeclarationReturnType::_Type(y))
+                    .map(Box::new)
+                    .map(MethodDeclarationReturnType::_Type)
                 {
                     x
                 } else {
@@ -79,14 +79,9 @@ impl MethodDeclarationReturnType {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _TypeNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| MethodDeclarationReturnType::_Type(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _TypeNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(MethodDeclarationReturnType::_Type),
                 )
             }
         }))
@@ -160,7 +155,7 @@ impl NodeAccess for MethodDeclarationReturnType {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             MethodDeclarationReturnType::Extra(x) => x.as_any(),
             MethodDeclarationReturnType::_Type(x) => x.as_any(),
@@ -168,7 +163,7 @@ impl NodeAccess for MethodDeclarationReturnType {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             MethodDeclarationReturnType::Extra(x) => x.children_any(),
             MethodDeclarationReturnType::_Type(x) => x.children_any(),
@@ -367,7 +362,7 @@ impl NodeAccess for MethodDeclarationChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             MethodDeclarationChildren::Extra(x) => x.as_any(),
             MethodDeclarationChildren::AbstractModifier(x) => x.as_any(),
@@ -379,7 +374,7 @@ impl NodeAccess for MethodDeclarationChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             MethodDeclarationChildren::Extra(x) => x.children_any(),
             MethodDeclarationChildren::AbstractModifier(x) => x.children_any(),
@@ -499,7 +494,7 @@ impl NodeAccess for MethodDeclarationNode {
         "MethodDeclarationNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::MethodDeclaration(self)
     }
 

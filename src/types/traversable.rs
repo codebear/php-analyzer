@@ -10,7 +10,7 @@ pub fn get_key_type(
 ) -> Option<UnionType> {
     let mut types = UnionType::new();
     for ttype in &traversable_type.types {
-        let vtype = match get_key_type_from_discrete_type(&ttype, symbol_data.clone()) {
+        let vtype = match get_key_type_from_discrete_type(ttype, symbol_data.clone()) {
             Some(t) => t,
             None => {
                 return crate::missing_none!("Failed to extract key-type from traversable-type")
@@ -55,7 +55,7 @@ pub fn get_value_type(
 ) -> Option<UnionType> {
     let mut types = UnionType::new();
     for ttype in &traversable_type.types {
-        let vtype = match get_value_type_from_discrete_type(&ttype, symbol_data.clone()) {
+        let vtype = match get_value_type_from_discrete_type(ttype, symbol_data.clone()) {
             Some(t) => t,
             None => {
                 return crate::missing_none!("Failed to extract value-type from traversable-type")

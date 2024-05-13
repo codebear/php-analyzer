@@ -29,6 +29,6 @@ impl BinaryAssignmentOperator for ModAssignOperator {
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
     ) -> Option<crate::types::union::UnionType> {
-        return None;
+        None
     }
 }

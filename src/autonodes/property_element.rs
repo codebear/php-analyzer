@@ -47,7 +47,7 @@ impl NodeParser for PropertyElementNode {
                 .map(|k| PropertyInitializerNode::parse(k, source))
                 .collect::<Result<Vec<PropertyInitializerNode>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next(),
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
@@ -70,7 +70,7 @@ impl NodeAccess for PropertyElementNode {
         "PropertyElementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::PropertyElement(self)
     }
 

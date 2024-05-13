@@ -305,7 +305,7 @@ impl NodeAccess for UnsetStatementChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             UnsetStatementChildren::Extra(x) => x.as_any(),
             UnsetStatementChildren::CastExpression(x) => x.as_any(),
@@ -322,7 +322,7 @@ impl NodeAccess for UnsetStatementChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             UnsetStatementChildren::Extra(x) => x.children_any(),
             UnsetStatementChildren::CastExpression(x) => x.children_any(),
@@ -406,7 +406,7 @@ impl NodeAccess for UnsetStatementNode {
         "UnsetStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::UnsetStatement(self)
     }
 

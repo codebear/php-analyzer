@@ -36,8 +36,8 @@ impl NodeParser for EchoStatementChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| EchoStatementChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(EchoStatementChildren::_Expression)
                 {
                     x
                 } else {
@@ -66,14 +66,9 @@ impl EchoStatementChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| EchoStatementChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(EchoStatementChildren::_Expression),
                 )
             }
         }))
@@ -147,7 +142,7 @@ impl NodeAccess for EchoStatementChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             EchoStatementChildren::Extra(x) => x.as_any(),
             EchoStatementChildren::_Expression(x) => x.as_any(),
@@ -155,7 +150,7 @@ impl NodeAccess for EchoStatementChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             EchoStatementChildren::Extra(x) => x.children_any(),
             EchoStatementChildren::_Expression(x) => x.children_any(),
@@ -202,7 +197,7 @@ impl NodeParser for EchoStatementNode {
                 .map(|k| EchoStatementChildren::parse(k, source))
                 .collect::<Result<Vec<EchoStatementChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -225,7 +220,7 @@ impl NodeAccess for EchoStatementNode {
         "EchoStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::EchoStatement(self)
     }
 

@@ -35,7 +35,7 @@ impl IssuePosition {
             uri: fname
                 .as_ref()
                 .map(|x| x.as_os_str().to_os_string())
-                .unwrap_or_else(|| OsString::new()),
+                .unwrap_or_default(),
         }
     }
 }
@@ -300,10 +300,10 @@ impl Issue {
             Self::DecrementIsIllegalOnType(_, n) => format!("<expr>-- is illegal on {}", n),
             Self::IncrementIsIllegalOnType(_, n) => format!("<expr>++ is illegal on {}", n),
             Self::UnknownConstant(_, c) => format!("Unknown constant {}", c),
-            Self::UnreachableCode(_) => format!("Unreachable code"),
+            Self::UnreachableCode(_) => "Unreachable code".to_string(),
             Self::MethodCallOnUnknownType(_, cname, mname) => {
-                let mname = mname.clone().unwrap_or_else(|| Name::new());
-                let cname = cname.clone().unwrap_or_else(|| FullyQualifiedName::new());
+                let mname = mname.clone().unwrap_or_else(Name::new);
+                let cname = cname.clone().unwrap_or_else(FullyQualifiedName::new);
                 format!(
                     "Method call {} on a target with unidentifiyable type {}",
                     mname, cname
@@ -313,9 +313,9 @@ impl Issue {
                 format!("Method call {:?} on a target which can be null", mname)
             }
             Self::UnknownMethod(_, c, m) => format!("Unknown method {} on {}", m, c),
-            Self::TraversalOfUnknownType(_) => format!("Traversal of unknown type"),
+            Self::TraversalOfUnknownType(_) => "Traversal of unknown type".to_string(),
             Self::ConditionalConstantDeclaration(_) => {
-                format!("Conditional declaration of constant is not recommended")
+                "Conditional declaration of constant is not recommended".to_string()
             }
             Self::WrongNumberOfArguments(_, fname, expected_argcount, got_argcount) => format!(
                 "Wrong number of arguments to {}, got {}, expected {}",
@@ -333,7 +333,7 @@ impl Issue {
             Self::DuplicateDeclaration(_, desc) => {
                 format!("Duplicate declaration: {}", desc.to_string_lossy())
             }
-            Self::UnknownIndexType(_) => format!("Unknown index type"),
+            Self::UnknownIndexType(_) => "Unknown index type".to_string(),
             Self::ParseAnomaly(_, pa) => format!("Arrived at an unexpected parse state: {:?}", pa),
             Self::VariableNotInitializedInAllBranhces(_, vname) => {
                 format!("Variable ${} is not initialized in all branches", vname)
@@ -360,7 +360,7 @@ impl Issue {
                 "Unable to determine the name of the property, accessed on {:?}",
                 cname
             ),
-            Self::PHPDocParseError(_) => format!("Unable to parse PHP Doc-comment"),
+            Self::PHPDocParseError(_) => "Unable to parse PHP Doc-comment".to_string(),
             Self::PHPDocTypeError(_, err) => {
                 format!("Parse error while parsing type in phpdoc-comment: {}", err)
             }
@@ -385,7 +385,7 @@ impl Issue {
         let mut desc = self.as_string();
         let fname: String = self
             .filename()
-            .unwrap_or(OsString::new())
+            .unwrap_or_default()
             .to_string_lossy()
             .to_string();
         desc.push_str(&format!(
@@ -407,6 +407,12 @@ pub trait IssueEmitter {
 
 pub struct VoidEmitter {
     pub count: AtomicUsize,
+}
+
+impl Default for VoidEmitter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl VoidEmitter {

@@ -136,7 +136,7 @@ impl NodeAccess for TryStatementChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             TryStatementChildren::Extra(x) => x.as_any(),
             TryStatementChildren::CatchClause(x) => x.as_any(),
@@ -144,7 +144,7 @@ impl NodeAccess for TryStatementChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             TryStatementChildren::Extra(x) => x.children_any(),
             TryStatementChildren::CatchClause(x) => x.children_any(),
@@ -219,7 +219,7 @@ impl NodeAccess for TryStatementNode {
         "TryStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::TryStatement(self)
     }
 

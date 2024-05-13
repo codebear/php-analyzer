@@ -28,7 +28,7 @@ pub trait FirstPassAnalyzeableNode {
                 } else {
                     None
                 }
-            } else if let Some(_) = state.last_doc_comment {
+            } else if state.last_doc_comment.is_some() {
                 state.last_doc_comment = None;
             }
         }
@@ -50,7 +50,7 @@ pub trait SecondPassAnalyzeableNode {
         for child in node_ref.children_any() {
             child.analyze_second_pass(state, emitter);
         }
-        return true;
+        true
     }
 }
 
@@ -94,11 +94,11 @@ pub trait ThirdPassAnalyzeableNode {
 
             if let AnyNodeRef::Comment(c) = &child {
                 state.last_doc_comment = Some((c.get_raw(), c.range()));
-            } else if let Some(_) = state.last_doc_comment {
+            } else if state.last_doc_comment.is_some() {
                 state.last_doc_comment = None;
             }
         }
-        return true;
+        true
     }
 }
 

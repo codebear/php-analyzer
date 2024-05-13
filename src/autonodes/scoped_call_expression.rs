@@ -63,8 +63,8 @@ impl NodeParser for ScopedCallExpressionName {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ScopedCallExpressionName::_Expression(y))
+                    .map(Box::new)
+                    .map(ScopedCallExpressionName::_Expression)
                 {
                     x
                 } else {
@@ -97,14 +97,9 @@ impl ScopedCallExpressionName {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ScopedCallExpressionName::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ScopedCallExpressionName::_Expression),
                 )
             }
         }))
@@ -193,7 +188,7 @@ impl NodeAccess for ScopedCallExpressionName {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ScopedCallExpressionName::Extra(x) => x.as_any(),
             ScopedCallExpressionName::_Expression(x) => x.as_any(),
@@ -203,7 +198,7 @@ impl NodeAccess for ScopedCallExpressionName {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ScopedCallExpressionName::Extra(x) => x.children_any(),
             ScopedCallExpressionName::_Expression(x) => x.children_any(),
@@ -667,7 +662,7 @@ impl NodeAccess for ScopedCallExpressionScope {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ScopedCallExpressionScope::Extra(x) => x.as_any(),
             ScopedCallExpressionScope::ArrayCreationExpression(x) => x.as_any(),
@@ -694,7 +689,7 @@ impl NodeAccess for ScopedCallExpressionScope {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ScopedCallExpressionScope::Extra(x) => x.children_any(),
             ScopedCallExpressionScope::ArrayCreationExpression(x) => x.children_any(),
@@ -795,7 +790,7 @@ impl NodeAccess for ScopedCallExpressionNode {
         "ScopedCallExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ScopedCallExpression(self)
     }
 

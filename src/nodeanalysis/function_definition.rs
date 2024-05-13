@@ -116,7 +116,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
         let mut is_dup = false;
         {
             let read = state.symbol_data.functions.read().unwrap();
-            if let Some(_) = read.get(&fname.to_ascii_lowercase()) {
+            if read.get(&fname.to_ascii_lowercase()).is_some() {
                 emitter.emit(Issue::DuplicateFunction(self.pos(state), fname.clone()));
                 is_dup = true;
             }
@@ -138,15 +138,15 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                                     emitter,
                                     Some(&function_template_params),
                                 )
-                                .map(|x| (x, range.clone()));
+                                .map(|x| (x, *range));
                             }
                             PHPDocEntry::Param(_, _, osstr_name, _) => {
                                 if let Some(osstr_name) = osstr_name {
                                     let name = osstr_name.into();
-                                    if param_map.contains_key(&name) {
-                                        crate::missing!("Emit duplicate phpdoc param name");
+                                    if let std::collections::hash_map::Entry::Vacant(e) = param_map.entry(name) {
+                                        e.insert(entry.clone());
                                     } else {
-                                        param_map.insert(name, entry.clone());
+                                        crate::missing!("Emit duplicate phpdoc param name");
                                     }
                                 } else {
                                     crate::missing!("Emit phpdoc param without name");
@@ -154,7 +154,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                             }
                             PHPDocEntry::Var(range, _, _, _) => {
                                 emitter.emit(Issue::MisplacedPHPDocEntry(
-                                    state.pos_from_range(range.clone()),
+                                    state.pos_from_range(*range),
                                     "@var can't be used on a function-declaration".into(),
                                 ));
                             }
@@ -168,12 +168,12 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                     //phpdoc = Some(doc_comment);
                 }
                 Err(_) => {
-                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(range.clone())))
+                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(*range)))
                 }
             }
         }
 
-        if let None = comment_return_type {
+        if comment_return_type.is_none() {
             comment_return_type = self.get_inline_phpdoc_return_type(state);
         }
 
@@ -189,7 +189,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
         let mut maybe_fdata = None;
         if !is_dup {
             let mut write = state.symbol_data.functions.write().unwrap();
-            if let Some(_) = write.get(&fname.to_ascii_lowercase()) {
+            if write.get(&fname.to_ascii_lowercase()).is_some() {
                 // Someone beat us to it
                 emitter.emit(Issue::DuplicateFunction(self.pos(state), fname.clone()));
             } else {
@@ -206,7 +206,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                     deterministic: false,
                     return_value: None,
                     overload_map: HashMap::new(),
-                    generic_templates: if function_template_params.len() > 0 {
+                    generic_templates: if !function_template_params.is_empty() {
                         Some(function_template_params)
                     } else {
                         None
@@ -266,7 +266,7 @@ impl ThirdPassAnalyzeableNode for FunctionDefinitionNode {
                 break;
             }
         }
-        let return_value = if values.len() > 0 {
+        let return_value = if !values.is_empty() {
             PHPValue::common_value(values.iter().collect::<Vec<&PHPValue>>())
         } else {
             None
@@ -289,8 +289,8 @@ impl ThirdPassAnalyzeableNode for FunctionDefinitionNode {
 
         if let Some(function) = self.get_function_data(state, emitter) {
             let mut function_data = function.write().unwrap();
-            (*function_data).inferred_return_type = Some(ret_type);
-            (*function_data).return_value = return_value;
+            function_data.inferred_return_type = Some(ret_type);
+            function_data.return_value = return_value;
         }
         true
     }

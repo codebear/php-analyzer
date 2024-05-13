@@ -168,7 +168,7 @@ impl NodeAccess for DeclarationListChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             DeclarationListChildren::Extra(x) => x.as_any(),
             DeclarationListChildren::ConstDeclaration(x) => x.as_any(),
@@ -178,7 +178,7 @@ impl NodeAccess for DeclarationListChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             DeclarationListChildren::Extra(x) => x.children_any(),
             DeclarationListChildren::ConstDeclaration(x) => x.children_any(),
@@ -248,7 +248,7 @@ impl NodeAccess for DeclarationListNode {
         "DeclarationListNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::DeclarationList(self)
     }
 

@@ -56,7 +56,7 @@ impl NodeAccess for AttributeListNode {
         "AttributeListNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::AttributeList(self)
     }
 

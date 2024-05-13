@@ -136,7 +136,7 @@ impl NodeAccess for MatchBlockChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             MatchBlockChildren::Extra(x) => x.as_any(),
             MatchBlockChildren::MatchConditionalExpression(x) => x.as_any(),
@@ -144,7 +144,7 @@ impl NodeAccess for MatchBlockChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             MatchBlockChildren::Extra(x) => x.children_any(),
             MatchBlockChildren::MatchConditionalExpression(x) => x.children_any(),
@@ -210,7 +210,7 @@ impl NodeAccess for MatchBlockNode {
         "MatchBlockNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::MatchBlock(self)
     }
 

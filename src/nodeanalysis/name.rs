@@ -15,7 +15,7 @@ impl NameNode {
 
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         // FIXME kanskje registrere lesing fra konstanter, men det er kanskje egen node som bør ta den
-        ()
+        
         // crate::missing!("{}.read_from(..)", self.kind());
     }
 

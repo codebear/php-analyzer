@@ -9,7 +9,7 @@ impl NamespaceNameNode {
         for part in &self.children {
             fq_name.push(part.get_name());
         }
-        return fq_name;
+        fq_name
     }
 
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {

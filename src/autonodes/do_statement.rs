@@ -59,7 +59,7 @@ impl NodeAccess for DoStatementNode {
         "DoStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::DoStatement(self)
     }
 

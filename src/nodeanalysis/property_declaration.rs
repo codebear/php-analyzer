@@ -62,7 +62,7 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
 
             match extra_comment {
                 Some(c) => {
-                    if let None = state.last_doc_comment {
+                    if state.last_doc_comment.is_none() {
                         state.last_doc_comment = Some((c.get_raw(), c.range()));
                         inline_doc_comment = true;
                     }

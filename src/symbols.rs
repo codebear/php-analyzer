@@ -12,6 +12,12 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Name(OsString);
 
+impl Default for Name {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Name {
     pub fn new() -> Self {
         Self(OsString::new())
@@ -23,7 +29,7 @@ impl Name {
 
     pub(crate) fn starts_with(&self, arg: u8) -> bool {
         let b = self.0.as_bytes();
-        if b.len() < 1 {
+        if b.is_empty() {
             return false;
         }
         b[0] == arg
@@ -133,6 +139,12 @@ impl PartialEq<&[u8]> for FullyQualifiedName {
     }
 }
 
+impl Default for FullyQualifiedName {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FullyQualifiedName {
     pub fn new() -> Self {
         Self { path: vec![] }
@@ -208,7 +220,7 @@ impl Display for FullyQualifiedName {
 impl From<OsString> for FullyQualifiedName {
     fn from(fq_name: OsString) -> Self {
         let b_vec = fq_name.as_bytes();
-        if b_vec.len() == 0 {
+        if b_vec.is_empty() {
             return FullyQualifiedName::new();
         }
         let mut res_fq_name = FullyQualifiedName::new();

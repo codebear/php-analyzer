@@ -200,7 +200,7 @@ impl ThirdPassAnalyzeableNode for MemberAccessExpressionNode {
         let maybe_class_name = self.object.get_class_name(state, emitter);
 
         let maybe_property_name = self.get_property_name(state, emitter);
-        if let Some(_) = &maybe_property_name {
+        if maybe_property_name.is_some() {
         } else {
             // FIXME should emit unable to determine member-name on round three
             emitter.emit(Issue::IndeterminablePropertyName(
@@ -210,7 +210,7 @@ impl ThirdPassAnalyzeableNode for MemberAccessExpressionNode {
         }
 
         if let Some(cname) = &maybe_class_name {
-            if let Some(cdata_handle) = state.symbol_data.get_class(&cname) {
+            if let Some(cdata_handle) = state.symbol_data.get_class(cname) {
                 if let Some(property_name) = maybe_property_name {
                     match &*(cdata_handle.read().unwrap()) {
                         ClassType::Class(c) => {
@@ -305,7 +305,7 @@ impl MemberAccessExpressionObject {
             MemberAccessExpressionObject::QualifiedName(qn) => {
                 let fq_name = qn.get_fq_name(state);
                 Some(ClassName::new_with_names(
-                    fq_name.get_name().unwrap_or_else(|| Name::new()),
+                    fq_name.get_name().unwrap_or_else(Name::new),
                     fq_name,
                 ))
             }
@@ -329,7 +329,7 @@ impl MemberAccessExpressionObject {
                     }
                     DiscreteType::Unknown => None,
 
-                    t @ _ => crate::missing_none!(
+                    t => crate::missing_none!(
                         "{}.get_class_name(..) har et objekt av typen {:?}",
                         self.kind(),
                         t

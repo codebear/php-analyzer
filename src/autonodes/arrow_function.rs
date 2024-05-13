@@ -42,8 +42,8 @@ impl NodeParser for ArrowFunctionReturnType {
 
             _ => {
                 if let Some(x) = _TypeNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ArrowFunctionReturnType::_Type(y))
+                    .map(Box::new)
+                    .map(ArrowFunctionReturnType::_Type)
                 {
                     x
                 } else {
@@ -72,14 +72,9 @@ impl ArrowFunctionReturnType {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _TypeNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ArrowFunctionReturnType::_Type(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _TypeNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ArrowFunctionReturnType::_Type),
                 )
             }
         }))
@@ -152,7 +147,7 @@ impl NodeAccess for ArrowFunctionReturnType {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ArrowFunctionReturnType::Extra(x) => x.as_any(),
             ArrowFunctionReturnType::_Type(x) => x.as_any(),
@@ -160,7 +155,7 @@ impl NodeAccess for ArrowFunctionReturnType {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ArrowFunctionReturnType::Extra(x) => x.children_any(),
             ArrowFunctionReturnType::_Type(x) => x.children_any(),
@@ -243,7 +238,7 @@ impl NodeParser for ArrowFunctionNode {
                 .map(|k| StaticModifierNode::parse(k, source))
                 .collect::<Result<Vec<StaticModifierNode>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next(),
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
@@ -266,7 +261,7 @@ impl NodeAccess for ArrowFunctionNode {
         "ArrowFunctionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ArrowFunction(self)
     }
 

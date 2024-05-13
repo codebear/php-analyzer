@@ -15,7 +15,7 @@ use crate::{
 
 impl ArrayCreationExpressionNode {
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if self.children.len() == 0 {
+        if self.children.is_empty() {
             return;
         }
         for child in &self.children {
@@ -28,7 +28,7 @@ impl ArrayCreationExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
-        if self.children.len() == 0 {
+        if self.children.is_empty() {
             return Some(DiscreteType::Array.into());
         }
 
@@ -121,7 +121,7 @@ impl ArrayCreationExpressionNode {
                 return None;
             }
         }
-        if entries.len() > 0 {
+        if !entries.is_empty() {
             if hashmap {
                 Some(PHPValue::Array(PHPArray::HashMap(entries)))
             } else {

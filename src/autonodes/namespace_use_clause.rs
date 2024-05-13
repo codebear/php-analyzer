@@ -149,7 +149,7 @@ impl NodeAccess for NamespaceUseClauseChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             NamespaceUseClauseChildren::Extra(x) => x.as_any(),
             NamespaceUseClauseChildren::Name(x) => x.as_any(),
@@ -158,7 +158,7 @@ impl NodeAccess for NamespaceUseClauseChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             NamespaceUseClauseChildren::Extra(x) => x.children_any(),
             NamespaceUseClauseChildren::Name(x) => x.children_any(),
@@ -218,7 +218,7 @@ impl NodeAccess for NamespaceUseClauseNode {
         "NamespaceUseClauseNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::NamespaceUseClause(self)
     }
 

@@ -42,8 +42,8 @@ impl NodeParser for AnonymousFunctionCreationExpressionReturnType {
 
             _ => {
                 if let Some(x) = _TypeNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| AnonymousFunctionCreationExpressionReturnType::_Type(y))
+                    .map(Box::new)
+                    .map(AnonymousFunctionCreationExpressionReturnType::_Type)
                 {
                     x
                 } else {
@@ -72,14 +72,9 @@ impl AnonymousFunctionCreationExpressionReturnType {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _TypeNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| AnonymousFunctionCreationExpressionReturnType::_Type(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _TypeNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(AnonymousFunctionCreationExpressionReturnType::_Type),
                 )
             }
         }))
@@ -165,7 +160,7 @@ impl NodeAccess for AnonymousFunctionCreationExpressionReturnType {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             AnonymousFunctionCreationExpressionReturnType::Extra(x) => x.as_any(),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.as_any(),
@@ -173,7 +168,7 @@ impl NodeAccess for AnonymousFunctionCreationExpressionReturnType {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             AnonymousFunctionCreationExpressionReturnType::Extra(x) => x.children_any(),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.children_any(),
@@ -248,7 +243,7 @@ impl NodeParser for AnonymousFunctionCreationExpressionNode {
                 .map(|k| AnonymousFunctionUseClauseNode::parse(k, source))
                 .collect::<Result<Vec<AnonymousFunctionUseClauseNode>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next(),
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
@@ -271,7 +266,7 @@ impl NodeAccess for AnonymousFunctionCreationExpressionNode {
         "AnonymousFunctionCreationExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::AnonymousFunctionCreationExpression(self)
     }
 

@@ -132,7 +132,7 @@ impl NodeAccess for UseListChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             UseListChildren::Extra(x) => x.as_any(),
             UseListChildren::UseAsClause(x) => x.as_any(),
@@ -140,7 +140,7 @@ impl NodeAccess for UseListChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             UseListChildren::Extra(x) => x.children_any(),
             UseListChildren::UseAsClause(x) => x.children_any(),
@@ -206,7 +206,7 @@ impl NodeAccess for UseListNode {
         "UseListNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::UseList(self)
     }
 

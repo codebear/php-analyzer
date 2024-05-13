@@ -67,7 +67,7 @@ impl QualifiedNameNode {
             match &**x {
                 QualifiedNameChildren::NamespaceNameAsPrefix(_) => (),
                 QualifiedNameChildren::Name(n) => {
-                    if let Some(_) = name {
+                    if name.is_some() {
                         panic!("Vi har funnet flere name-noder?");
                     }
                     name = Some(n.get_name())
@@ -81,7 +81,7 @@ impl QualifiedNameNode {
 
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         // FIXME report usage of constant
-        ()
+        
         //        crate::missing!("{}.read_from(..)", self.kind());
     }
 

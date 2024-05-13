@@ -38,8 +38,8 @@ impl NodeParser for ArrayElementInitializerValue {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ArrayElementInitializerValue::_Expression(y))
+                    .map(Box::new)
+                    .map(ArrayElementInitializerValue::_Expression)
                 {
                     x
                 } else {
@@ -68,14 +68,9 @@ impl ArrayElementInitializerValue {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ArrayElementInitializerValue::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ArrayElementInitializerValue::_Expression),
                 )
             }
         }))
@@ -149,7 +144,7 @@ impl NodeAccess for ArrayElementInitializerValue {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ArrayElementInitializerValue::Extra(x) => x.as_any(),
             ArrayElementInitializerValue::_Expression(x) => x.as_any(),
@@ -157,7 +152,7 @@ impl NodeAccess for ArrayElementInitializerValue {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ArrayElementInitializerValue::Extra(x) => x.children_any(),
             ArrayElementInitializerValue::_Expression(x) => x.children_any(),
@@ -220,7 +215,7 @@ impl NodeAccess for ArrayElementInitializerNode {
         "ArrayElementInitializerNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ArrayElementInitializer(self)
     }
 

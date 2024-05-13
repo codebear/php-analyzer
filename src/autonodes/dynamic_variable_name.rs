@@ -40,8 +40,8 @@ impl NodeParser for DynamicVariableNameChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| DynamicVariableNameChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(DynamicVariableNameChildren::_Expression)
                 {
                     x
                 } else {
@@ -73,14 +73,9 @@ impl DynamicVariableNameChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| DynamicVariableNameChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(DynamicVariableNameChildren::_Expression),
                 )
             }
         }))
@@ -163,7 +158,7 @@ impl NodeAccess for DynamicVariableNameChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             DynamicVariableNameChildren::Extra(x) => x.as_any(),
             DynamicVariableNameChildren::_Expression(x) => x.as_any(),
@@ -172,7 +167,7 @@ impl NodeAccess for DynamicVariableNameChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             DynamicVariableNameChildren::Extra(x) => x.children_any(),
             DynamicVariableNameChildren::_Expression(x) => x.children_any(),
@@ -213,7 +208,7 @@ impl NodeParser for DynamicVariableNameNode {
                 .map(|k| DynamicVariableNameChildren::parse(k, source))
                 .collect::<Result<Vec<DynamicVariableNameChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -236,7 +231,7 @@ impl NodeAccess for DynamicVariableNameNode {
         "DynamicVariableNameNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::DynamicVariableName(self)
     }
 

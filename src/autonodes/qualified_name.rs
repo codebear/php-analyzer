@@ -131,7 +131,7 @@ impl NodeAccess for QualifiedNameChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             QualifiedNameChildren::Extra(x) => x.as_any(),
             QualifiedNameChildren::Name(x) => x.as_any(),
@@ -139,7 +139,7 @@ impl NodeAccess for QualifiedNameChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             QualifiedNameChildren::Extra(x) => x.children_any(),
             QualifiedNameChildren::Name(x) => x.children_any(),
@@ -205,7 +205,7 @@ impl NodeAccess for QualifiedNameNode {
         "QualifiedNameNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::QualifiedName(self)
     }
 

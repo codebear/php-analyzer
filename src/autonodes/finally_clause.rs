@@ -54,7 +54,7 @@ impl NodeAccess for FinallyClauseNode {
         "FinallyClauseNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::FinallyClause(self)
     }
 

@@ -37,7 +37,7 @@ impl NodeParser for VariableNameNode {
                 .map(|k| NameNode::parse(k, source))
                 .collect::<Result<Vec<NameNode>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -60,7 +60,7 @@ impl NodeAccess for VariableNameNode {
         "VariableNameNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::VariableName(self)
     }
 

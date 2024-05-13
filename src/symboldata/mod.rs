@@ -104,6 +104,12 @@ pub struct SymbolData {
     pub functions: Arc<RwLock<HashMap<FullyQualifiedName, Arc<RwLock<FunctionData>>>>>,
 }
 
+impl Default for SymbolData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SymbolData {
     pub fn new() -> Self {
         SymbolData {
@@ -157,7 +163,7 @@ impl SymbolData {
             }
             let cd = Arc::new(RwLock::new(ClassType::None));
             writer.insert(name.get_fq_name().to_ascii_lowercase().clone(), cd.clone());
-            return cd;
+            cd
         }
     }
 
@@ -186,11 +192,13 @@ impl SymbolData {
 
         let cdata = handle
             .get(&class.get_fq_name().to_ascii_lowercase())
-            .expect(&format!(
-                "The class {:?} must exist when attempting to register method {:?}",
-                class.fq_name.clone(),
-                method
-            ));
+            .unwrap_or_else(|| {
+                panic!(
+                    "The class {:?} must exist when attempting to register method {:?}",
+                    class.fq_name.clone(),
+                    method
+                )
+            });
 
         let mut writable_cdata = cdata.write().unwrap();
         writable_cdata.get_or_create_method(method, location)
@@ -206,11 +214,13 @@ impl SymbolData {
 
         let cdata = handle
             .get(&class.get_fq_name().to_ascii_lowercase())
-            .expect(&format!(
-                "The class {:?} must exist when attempting to register property {:?}",
-                class.fq_name.clone(),
-                property_name
-            ));
+            .unwrap_or_else(|| {
+                panic!(
+                    "The class {:?} must exist when attempting to register property {:?}",
+                    class.fq_name.clone(),
+                    property_name
+                )
+            });
 
         let mut writable_cdata = cdata.write().unwrap();
         writable_cdata.get_or_create_property(property_name, location)

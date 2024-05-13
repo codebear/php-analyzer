@@ -134,7 +134,7 @@ impl NodeAccess for SwitchBlockChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             SwitchBlockChildren::Extra(x) => x.as_any(),
             SwitchBlockChildren::CaseStatement(x) => x.as_any(),
@@ -142,7 +142,7 @@ impl NodeAccess for SwitchBlockChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             SwitchBlockChildren::Extra(x) => x.children_any(),
             SwitchBlockChildren::CaseStatement(x) => x.children_any(),
@@ -208,7 +208,7 @@ impl NodeAccess for SwitchBlockNode {
         "SwitchBlockNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::SwitchBlock(self)
     }
 

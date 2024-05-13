@@ -66,8 +66,8 @@ impl NodeParser for ShellCommandExpressionChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ShellCommandExpressionChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(ShellCommandExpressionChildren::_Expression)
                 {
                     x
                 } else {
@@ -114,14 +114,9 @@ impl ShellCommandExpressionChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ShellCommandExpressionChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ShellCommandExpressionChildren::_Expression),
                 )
             }
         }))
@@ -251,7 +246,7 @@ impl NodeAccess for ShellCommandExpressionChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ShellCommandExpressionChildren::Extra(x) => x.as_any(),
             ShellCommandExpressionChildren::_Expression(x) => x.as_any(),
@@ -265,7 +260,7 @@ impl NodeAccess for ShellCommandExpressionChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ShellCommandExpressionChildren::Extra(x) => x.children_any(),
             ShellCommandExpressionChildren::_Expression(x) => x.children_any(),
@@ -335,7 +330,7 @@ impl NodeAccess for ShellCommandExpressionNode {
         "ShellCommandExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ShellCommandExpression(self)
     }
 

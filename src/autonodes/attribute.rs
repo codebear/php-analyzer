@@ -128,7 +128,7 @@ impl NodeAccess for AttributeChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             AttributeChildren::Extra(x) => x.as_any(),
             AttributeChildren::Name(x) => x.as_any(),
@@ -136,7 +136,7 @@ impl NodeAccess for AttributeChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             AttributeChildren::Extra(x) => x.children_any(),
             AttributeChildren::Name(x) => x.children_any(),
@@ -191,7 +191,7 @@ impl NodeParser for AttributeNode {
                 .map(|k| AttributeChildren::parse(k, source))
                 .collect::<Result<Vec<AttributeChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -215,7 +215,7 @@ impl NodeAccess for AttributeNode {
         "AttributeNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Attribute(self)
     }
 

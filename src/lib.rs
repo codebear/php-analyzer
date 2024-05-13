@@ -47,14 +47,14 @@ macro_rules! missing {
     () => {
         {
             let s = std::format!("{}:{}: missing", std::file!(), std::line!());
-            if crate::VERBOSE_MISSING {std::eprintln!("{}", &s);}
-            *crate::MISSING_FEATURES.write().unwrap().entry(s).or_insert(0) += 1;
+            if $crate::VERBOSE_MISSING {std::eprintln!("{}", &s);}
+            *$crate::MISSING_FEATURES.write().unwrap().entry(s).or_insert(0) += 1;
         }
     };
     ($($arg:tt)+) => {
         {
             let s = std::format!("{}:{}: missing: {}", std::file!(), std::line!(), std::format_args!($($arg)+));
-            if crate::VERBOSE_MISSING { std::eprintln!("{}", &s);
+            if $crate::VERBOSE_MISSING { std::eprintln!("{}", &s);
         }
             *crate::MISSING_FEATURES.write().unwrap().entry(s).or_insert(0) += 1;
         }
@@ -66,16 +66,16 @@ macro_rules! missing_none {
     () => {
         {
             let s = std::format!("{}:{}: missing", std::file!(), std::line!());
-            if crate::VERBOSE_MISSING { std::eprintln!("{}", &s);
+            if $crate::VERBOSE_MISSING { std::eprintln!("{}", &s);
         }
-            *crate::MISSING_FEATURES.write().unwrap().entry(s).or_insert(0) += 1;
+            *$crate::MISSING_FEATURES.write().unwrap().entry(s).or_insert(0) += 1;
             None
         }
     };
     ($($arg:tt)+) => {
         {
             let s = std::format!("{}:{}: missing: {}", std::file!(), std::line!(), std::format_args!($($arg)+));
-            if crate::VERBOSE_MISSING { std::eprintln!("{}", &s); }
+            if $crate::VERBOSE_MISSING { std::eprintln!("{}", &s); }
             *crate::MISSING_FEATURES.write().unwrap().entry(s).or_insert(0) += 1;
             None
         }

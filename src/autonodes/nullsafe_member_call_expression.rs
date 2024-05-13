@@ -64,8 +64,8 @@ impl NodeParser for NullsafeMemberCallExpressionName {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| NullsafeMemberCallExpressionName::_Expression(y))
+                    .map(Box::new)
+                    .map(NullsafeMemberCallExpressionName::_Expression)
                 {
                     x
                 } else {
@@ -100,14 +100,9 @@ impl NullsafeMemberCallExpressionName {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| NullsafeMemberCallExpressionName::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(NullsafeMemberCallExpressionName::_Expression),
                 )
             }
         }))
@@ -200,7 +195,7 @@ impl NodeAccess for NullsafeMemberCallExpressionName {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             NullsafeMemberCallExpressionName::Extra(x) => x.as_any(),
             NullsafeMemberCallExpressionName::_Expression(x) => x.as_any(),
@@ -210,7 +205,7 @@ impl NodeAccess for NullsafeMemberCallExpressionName {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             NullsafeMemberCallExpressionName::Extra(x) => x.children_any(),
             NullsafeMemberCallExpressionName::_Expression(x) => x.children_any(),
@@ -732,7 +727,7 @@ impl NodeAccess for NullsafeMemberCallExpressionObject {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             NullsafeMemberCallExpressionObject::Extra(x) => x.as_any(),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => x.as_any(),
@@ -758,7 +753,7 @@ impl NodeAccess for NullsafeMemberCallExpressionObject {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             NullsafeMemberCallExpressionObject::Extra(x) => x.children_any(),
             NullsafeMemberCallExpressionObject::ArrayCreationExpression(x) => x.children_any(),
@@ -863,7 +858,7 @@ impl NodeAccess for NullsafeMemberCallExpressionNode {
         "NullsafeMemberCallExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::NullsafeMemberCallExpression(self)
     }
 

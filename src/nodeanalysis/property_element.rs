@@ -147,12 +147,12 @@ impl PropertyElementNode {
                     PHPDocEntry::Var(range, property_type, _opt_name, _opt_desc) => {
                         comment_type =
                             UnionType::from_parsed_type(property_type.clone(), state, emitter, None)
-                                .map(|x| (x, range.clone()))
+                                .map(|x| (x, *range))
                     }
                     PHPDocEntry::Anything(range, comment) if doc_comment.entries.len() == 1 => {
                         comment_type =
-                            UnionType::parse(comment.clone(), range.clone(), state, emitter)
-                                .map(|x| (x, range.clone()));
+                            UnionType::parse(comment.clone(), *range, state, emitter)
+                                .map(|x| (x, *range));
                     }
                     _ => (),
                 }
@@ -195,11 +195,9 @@ impl PropertyElementNode {
         } else {
             None
         };
-        data.comment_type
-            .as_ref()
-            .map(|x| x.0.check_type_casing(x.1, state, emitter));
-        data.declared_type
-            .as_ref()
-            .map(|x| x.check_type_casing(self.range(), state, emitter));
+        if let Some(x) = data.comment_type
+            .as_ref() { x.0.check_type_casing(x.1, state, emitter) }
+        if let Some(x) = data.declared_type
+            .as_ref() { x.check_type_casing(self.range(), state, emitter) }
     }
 }

@@ -154,7 +154,7 @@ impl NodeAccess for FormalParametersChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             FormalParametersChildren::Extra(x) => x.as_any(),
             FormalParametersChildren::PropertyPromotionParameter(x) => x.as_any(),
@@ -163,7 +163,7 @@ impl NodeAccess for FormalParametersChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             FormalParametersChildren::Extra(x) => x.children_any(),
             FormalParametersChildren::PropertyPromotionParameter(x) => x.children_any(),
@@ -231,7 +231,7 @@ impl NodeAccess for FormalParametersNode {
         "FormalParametersNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::FormalParameters(self)
     }
 

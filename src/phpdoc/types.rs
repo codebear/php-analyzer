@@ -76,7 +76,7 @@ pub struct PHPDocComment {
 impl PHPDocComment {
     pub fn parse(input: &OsString, range: &Range) -> Result<Self, OsString> {
         // -> IResult<&[u8], Vec<PHPDocEntry>> {
-        let parse_result = parse_phpdoc(PHPDocInput(input.as_bytes(), range.clone()))
+        let parse_result = parse_phpdoc(PHPDocInput(input.as_bytes(), *range))
             .map_err(|e| e.map_input(|i| OsStr::from_bytes(i.0)))
             .finish();
         match parse_result {
@@ -123,9 +123,9 @@ impl PHPDocComment {
     ) -> Option<(Vec<Option<UnionType>>, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
-        let utype = UnionType::parse_generics(content.clone(), range.clone(), state, emitter)?;
+        let utype = UnionType::parse_generics(content.clone(), range, state, emitter)?;
 
-        Some((utype, range.clone()))
+        Some((utype, range))
     }
 
     pub fn parse_inline_type(
@@ -136,9 +136,9 @@ impl PHPDocComment {
     ) -> Option<(UnionType, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
-        let utype = UnionType::parse(content.clone(), range.clone(), state, emitter)?;
+        let utype = UnionType::parse(content.clone(), range, state, emitter)?;
 
-        Some((utype, range.clone()))
+        Some((utype, range))
     }
 
     pub fn parse_inline_return_type(
@@ -149,8 +149,8 @@ impl PHPDocComment {
     ) -> Option<(UnionType, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
-        let utype = UnionType::parse_with_colon(content.clone(), range.clone(), state, emitter)?;
+        let utype = UnionType::parse_with_colon(content.clone(), range, state, emitter)?;
 
-        Some((utype, range.clone()))
+        Some((utype, range))
     }
 }

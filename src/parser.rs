@@ -12,13 +12,19 @@ pub struct PHPParser {
     parser: Parser,
 }
 
+impl Default for PHPParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PHPParser {
     pub fn new() -> Self {
         let mut parser = Parser::new();
 
         let language = unsafe { tree_sitter_php() };
         parser.set_language(&language).unwrap();
-        PHPParser { parser: parser }
+        PHPParser { parser }
     }
 
     pub fn parse(&mut self, text: impl AsRef<[u8]>, old_tree: Option<&Tree>) -> Option<Tree> {

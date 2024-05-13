@@ -68,7 +68,7 @@ impl BinaryExpressionNode {
             BinaryExpressionOperator::Extra(_) => None,
             // Mulig denne bør få Option<UnionType> her for å få
             // bedre sluttresultat
-            op @ _ => op.get_operator_utype(self, state, emitter),
+            op => op.get_operator_utype(self, state, emitter),
         }
     }
 }
@@ -335,11 +335,11 @@ impl NodeAccess for BinaryExpressionOperator {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Operator(Operators::Binary(self))
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         vec![]
     }
 }

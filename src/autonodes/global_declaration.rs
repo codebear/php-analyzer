@@ -136,7 +136,7 @@ impl NodeAccess for GlobalDeclarationChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             GlobalDeclarationChildren::Extra(x) => x.as_any(),
             GlobalDeclarationChildren::DynamicVariableName(x) => x.as_any(),
@@ -144,7 +144,7 @@ impl NodeAccess for GlobalDeclarationChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             GlobalDeclarationChildren::Extra(x) => x.children_any(),
             GlobalDeclarationChildren::DynamicVariableName(x) => x.children_any(),
@@ -210,7 +210,7 @@ impl NodeAccess for GlobalDeclarationNode {
         "GlobalDeclarationNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::GlobalDeclaration(self)
     }
 

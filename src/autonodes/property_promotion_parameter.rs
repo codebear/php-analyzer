@@ -70,7 +70,7 @@ impl NodeAccess for PropertyPromotionParameterNode {
         "PropertyPromotionParameterNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::PropertyPromotionParameter(self)
     }
 

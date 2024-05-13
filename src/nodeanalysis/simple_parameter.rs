@@ -112,7 +112,7 @@ impl ThirdPassAnalyzeableNode for SimpleParameterNode {
         let mut write_scope = scope.write().expect("Sucess");
         let write_ax = write_scope.get_or_create_var(var_name);
         let mut var_data = write_ax.write().unwrap();
-        var_data.referenced_ranges.push(self.range.clone());
+        var_data.referenced_ranges.push(self.range);
         var_data.php_declared_type = declared_type;
         var_data.is_argument = true;
         // FIXME extract comment types

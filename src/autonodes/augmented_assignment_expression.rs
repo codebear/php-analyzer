@@ -371,7 +371,7 @@ impl NodeAccess for AugmentedAssignmentExpressionLeft {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             AugmentedAssignmentExpressionLeft::Extra(x) => x.as_any(),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.as_any(),
@@ -388,7 +388,7 @@ impl NodeAccess for AugmentedAssignmentExpressionLeft {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             AugmentedAssignmentExpressionLeft::Extra(x) => x.children_any(),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.children_any(),
@@ -634,7 +634,7 @@ impl NodeAccess for AugmentedAssignmentExpressionNode {
         "AugmentedAssignmentExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::AugmentedAssignmentExpression(self)
     }
 

@@ -550,7 +550,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ClassConstantAccessExpressionClass::Extra(x) => x.as_any(),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => x.as_any(),
@@ -577,7 +577,7 @@ impl NodeAccess for ClassConstantAccessExpressionClass {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ClassConstantAccessExpressionClass::Extra(x) => x.children_any(),
             ClassConstantAccessExpressionClass::ArrayCreationExpression(x) => x.children_any(),
@@ -681,7 +681,7 @@ impl NodeAccess for ClassConstantAccessExpressionNode {
         "ClassConstantAccessExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ClassConstantAccessExpression(self)
     }
 

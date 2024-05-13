@@ -13,7 +13,7 @@ use crate::{
 
 impl StringNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
-        ()
+        
     }
 
     pub fn get_php_value(
@@ -49,7 +49,7 @@ impl StringChildren {
                     return None;
                 }
                 let raw = &y.raw[1..len - 1];
-                Some(&raw)
+                Some(raw)
             }
         }
     }

@@ -36,8 +36,8 @@ impl NodeParser for YieldExpressionChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| YieldExpressionChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(YieldExpressionChildren::_Expression)
                 {
                     x
                 } else {
@@ -66,14 +66,9 @@ impl YieldExpressionChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| YieldExpressionChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(YieldExpressionChildren::_Expression),
                 )
             }
         }))
@@ -147,7 +142,7 @@ impl NodeAccess for YieldExpressionChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             YieldExpressionChildren::Extra(x) => x.as_any(),
             YieldExpressionChildren::_Expression(x) => x.as_any(),
@@ -155,7 +150,7 @@ impl NodeAccess for YieldExpressionChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             YieldExpressionChildren::Extra(x) => x.children_any(),
             YieldExpressionChildren::_Expression(x) => x.children_any(),
@@ -202,7 +197,7 @@ impl NodeParser for YieldExpressionNode {
                 .map(|k| YieldExpressionChildren::parse(k, source))
                 .collect::<Result<Vec<YieldExpressionChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next(),
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
@@ -224,7 +219,7 @@ impl NodeAccess for YieldExpressionNode {
         "YieldExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::YieldExpression(self)
     }
 

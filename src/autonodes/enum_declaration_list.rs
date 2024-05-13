@@ -151,7 +151,7 @@ impl NodeAccess for EnumDeclarationListChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             EnumDeclarationListChildren::Extra(x) => x.as_any(),
             EnumDeclarationListChildren::EnumCase(x) => x.as_any(),
@@ -160,7 +160,7 @@ impl NodeAccess for EnumDeclarationListChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             EnumDeclarationListChildren::Extra(x) => x.children_any(),
             EnumDeclarationListChildren::EnumCase(x) => x.children_any(),
@@ -220,7 +220,7 @@ impl NodeAccess for EnumDeclarationListNode {
         "EnumDeclarationListNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::EnumDeclarationList(self)
     }
 

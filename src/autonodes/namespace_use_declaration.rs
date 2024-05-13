@@ -156,7 +156,7 @@ impl NodeAccess for NamespaceUseDeclarationChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             NamespaceUseDeclarationChildren::Extra(x) => x.as_any(),
             NamespaceUseDeclarationChildren::NamespaceName(x) => x.as_any(),
@@ -165,7 +165,7 @@ impl NodeAccess for NamespaceUseDeclarationChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             NamespaceUseDeclarationChildren::Extra(x) => x.children_any(),
             NamespaceUseDeclarationChildren::NamespaceName(x) => x.children_any(),
@@ -225,7 +225,7 @@ impl NodeAccess for NamespaceUseDeclarationNode {
         "NamespaceUseDeclarationNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::NamespaceUseDeclaration(self)
     }
 

@@ -62,8 +62,8 @@ impl NodeParser for HeredocBodyChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| HeredocBodyChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(HeredocBodyChildren::_Expression)
                 {
                     x
                 } else {
@@ -106,14 +106,9 @@ impl HeredocBodyChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| HeredocBodyChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(HeredocBodyChildren::_Expression),
                 )
             }
         }))
@@ -230,7 +225,7 @@ impl NodeAccess for HeredocBodyChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             HeredocBodyChildren::Extra(x) => x.as_any(),
             HeredocBodyChildren::_Expression(x) => x.as_any(),
@@ -244,7 +239,7 @@ impl NodeAccess for HeredocBodyChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             HeredocBodyChildren::Extra(x) => x.children_any(),
             HeredocBodyChildren::_Expression(x) => x.children_any(),
@@ -322,7 +317,7 @@ impl NodeAccess for HeredocBodyNode {
         "HeredocBodyNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::HeredocBody(self)
     }
 

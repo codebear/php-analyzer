@@ -37,7 +37,7 @@ impl NodeParser for BreakStatementNode {
                 .map(|k| _ExpressionNode::parse(k, source))
                 .collect::<Result<Vec<_ExpressionNode>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next(),
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
@@ -59,7 +59,7 @@ impl NodeAccess for BreakStatementNode {
         "BreakStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::BreakStatement(self)
     }
 

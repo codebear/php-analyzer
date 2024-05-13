@@ -8,7 +8,7 @@ use crate::{
 impl ShellCommandExpressionNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         // FIXME, maybe tree-sitter-parsing of this is icomplete? It should have children as there might be inlined variables?
-        ()
+        
         //        crate::missing!("{}.read_from(..)", self.kind());
     }
 

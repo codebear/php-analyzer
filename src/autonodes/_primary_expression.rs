@@ -154,8 +154,8 @@ impl NodeParser for _PrimaryExpressionNode {
 
             _ => {
                 if let Some(x) = _LiteralNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| _PrimaryExpressionNode::_Literal(y))
+                    .map(Box::new)
+                    .map(_PrimaryExpressionNode::_Literal)
                 {
                     x
                 } else {
@@ -258,14 +258,9 @@ impl _PrimaryExpressionNode {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _LiteralNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| _PrimaryExpressionNode::_Literal(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _LiteralNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(_PrimaryExpressionNode::_Literal),
                 )
             }
         }))
@@ -533,7 +528,7 @@ impl NodeAccess for _PrimaryExpressionNode {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             _PrimaryExpressionNode::Extra(x) => x.as_any(),
             _PrimaryExpressionNode::_Literal(x) => x.as_any(),
@@ -563,7 +558,7 @@ impl NodeAccess for _PrimaryExpressionNode {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             _PrimaryExpressionNode::Extra(x) => x.children_any(),
             _PrimaryExpressionNode::_Literal(x) => x.children_any(),

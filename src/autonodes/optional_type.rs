@@ -134,7 +134,7 @@ impl NodeAccess for OptionalTypeChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             OptionalTypeChildren::Extra(x) => x.as_any(),
             OptionalTypeChildren::NamedType(x) => x.as_any(),
@@ -142,7 +142,7 @@ impl NodeAccess for OptionalTypeChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             OptionalTypeChildren::Extra(x) => x.children_any(),
             OptionalTypeChildren::NamedType(x) => x.children_any(),
@@ -189,7 +189,7 @@ impl NodeParser for OptionalTypeNode {
                 .map(|k| OptionalTypeChildren::parse(k, source))
                 .collect::<Result<Vec<OptionalTypeChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -212,7 +212,7 @@ impl NodeAccess for OptionalTypeNode {
         "OptionalTypeNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::OptionalType(self)
     }
 

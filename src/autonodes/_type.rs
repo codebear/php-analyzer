@@ -177,7 +177,7 @@ impl NodeAccess for _TypeNode {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             _TypeNode::Extra(x) => x.as_any(),
             _TypeNode::DisjunctiveNormalFormType(x) => x.as_any(),
@@ -189,7 +189,7 @@ impl NodeAccess for _TypeNode {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             _TypeNode::Extra(x) => x.children_any(),
             _TypeNode::DisjunctiveNormalFormType(x) => x.children_any(),

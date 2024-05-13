@@ -75,7 +75,7 @@ impl AutoTree {
             if node.is_named() {
                 format!("\"{}\"", node.kind())
             } else {
-                format!("{}", node.kind())
+                node.kind().to_string()
             }
         );
         let mut idx = 0;
@@ -97,9 +97,9 @@ pub trait NodeAccess {
 
     fn range(&self) -> Range;
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a>;
+    fn as_any(&self) -> AnyNodeRef<'_>;
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         vec![]
     }
 
@@ -222,7 +222,7 @@ pub trait NodeAccess {
         if line == pos.end_point.row && character > pos.end_point.column {
             return false;
         }
-        return true;
+        true
     }
 }
 
@@ -313,7 +313,7 @@ where
             let parsed = T::parse(noe, self.source)?;
             return Ok(Some(parsed));
         }
-        return Ok(None);
+        Ok(None)
     }
 }
 
@@ -329,13 +329,13 @@ where
             let parsed = T::parse(noe, self.source)?;
             return Ok(parsed);
         }
-        return Err(ParseError::new(
+        Err(ParseError::new(
             self.node.range(),
             format!(
                 "Expected child node with fieldname {}",
-                self.fieldname.to_string()
+                self.fieldname
             ),
-        ));
+        ))
     }
 }
 
@@ -352,13 +352,13 @@ where
             let parsed = T::parse(noe, self.source)?;
             return Ok(Box::new(parsed));
         }
-        return Err(ParseError::new(
+        Err(ParseError::new(
             self.node.range(),
             format!(
                 "Expected child node with fieldname {}",
-                self.fieldname.to_string()
+                self.fieldname
             ),
-        ));
+        ))
     }
 }
 
@@ -409,7 +409,7 @@ where
             let parsed = T::parse(noe, self.source)?;
             result.push(parsed);
         }
-        if result.len() > 0 {
+        if !result.is_empty() {
             Ok(Some(result))
         } else {
             Ok(None)
@@ -430,7 +430,7 @@ where
             let parsed = T::parse(noe, self.source)?;
             result.push(Box::new(parsed));
         }
-        if result.len() > 0 {
+        if !result.is_empty() {
             Ok(Some(result))
         } else {
             Ok(None)
@@ -450,7 +450,7 @@ where
             let parsed = T::parse(noe, self.source)?;
             return Ok(Some(Box::new(parsed)));
         }
-        return Ok(None);
+        Ok(None)
     }
 }
 
@@ -524,8 +524,8 @@ where
     pub fn many(self) -> Result<Vec<TParseResult>, ParseError> {
         let fieldname = self.fieldname;
         let node = self.node;
-        let mut tree_cursor = &mut node.walk();
-        let iter = node.children_by_field_name(fieldname, &mut tree_cursor);
+        let tree_cursor = &mut node.walk();
+        let iter = node.children_by_field_name(fieldname, tree_cursor);
 
         let nodevec = if let Some(maybe_mark_skipped_node) = self.skip_nodes {
             iter.map(|chnode| {
@@ -542,7 +542,7 @@ where
     }
     pub fn maybe_many(self) -> Result<Option<Vec<TParseResult>>, ParseError> {
         let nodevec = self.many()?;
-        if nodevec.len() > 0 {
+        if !nodevec.is_empty() {
             Ok(Some(nodevec))
         } else {
             Ok(None)

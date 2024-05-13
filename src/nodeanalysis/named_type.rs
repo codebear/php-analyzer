@@ -32,7 +32,7 @@ impl NamedTypeNode {
             NamedTypeChildren::QualifiedName(fq) => {
                 let fq_name = fq.get_fq_name(state);
                 UnionType::from(DiscreteType::Named(
-                    fq_name.get_name().unwrap_or_else(|| Name::new()),
+                    fq_name.get_name().unwrap_or_else(Name::new),
                     fq_name,
                 ))
             }

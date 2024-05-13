@@ -162,7 +162,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionName {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ScopedPropertyAccessExpressionName::Extra(x) => x.as_any(),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => x.as_any(),
@@ -170,7 +170,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionName {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ScopedPropertyAccessExpressionName::Extra(x) => x.children_any(),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => x.children_any(),
@@ -707,7 +707,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ScopedPropertyAccessExpressionScope::Extra(x) => x.as_any(),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => x.as_any(),
@@ -734,7 +734,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionScope {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ScopedPropertyAccessExpressionScope::Extra(x) => x.children_any(),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => x.children_any(),
@@ -840,7 +840,7 @@ impl NodeAccess for ScopedPropertyAccessExpressionNode {
         "ScopedPropertyAccessExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ScopedPropertyAccessExpression(self)
     }
 

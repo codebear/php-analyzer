@@ -36,8 +36,8 @@ impl NodeParser for ClassConstantAccessIdentifierChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ClassConstantAccessIdentifierChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(ClassConstantAccessIdentifierChildren::_Expression)
                 {
                     x
                 } else {
@@ -66,14 +66,9 @@ impl ClassConstantAccessIdentifierChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ClassConstantAccessIdentifierChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ClassConstantAccessIdentifierChildren::_Expression),
                 )
             }
         }))
@@ -151,7 +146,7 @@ impl NodeAccess for ClassConstantAccessIdentifierChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ClassConstantAccessIdentifierChildren::Extra(x) => x.as_any(),
             ClassConstantAccessIdentifierChildren::_Expression(x) => x.as_any(),
@@ -159,7 +154,7 @@ impl NodeAccess for ClassConstantAccessIdentifierChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ClassConstantAccessIdentifierChildren::Extra(x) => x.children_any(),
             ClassConstantAccessIdentifierChildren::_Expression(x) => x.children_any(),
@@ -198,7 +193,7 @@ impl NodeParser for ClassConstantAccessIdentifierNode {
                 .map(|k| ClassConstantAccessIdentifierChildren::parse(k, source))
                 .collect::<Result<Vec<ClassConstantAccessIdentifierChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next(),
             extras: ExtraChild::parse_vec(
                 node.named_children(&mut node.walk())
@@ -220,7 +215,7 @@ impl NodeAccess for ClassConstantAccessIdentifierNode {
         "ClassConstantAccessIdentifierNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ClassConstantAccessIdentifier(self)
     }
 

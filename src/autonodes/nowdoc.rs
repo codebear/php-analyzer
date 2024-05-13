@@ -63,7 +63,7 @@ impl NodeAccess for NowdocNode {
         "NowdocNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Nowdoc(self)
     }
 

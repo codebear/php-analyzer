@@ -64,8 +64,8 @@ impl NodeParser for EncapsedStringChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| EncapsedStringChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(EncapsedStringChildren::_Expression)
                 {
                     x
                 } else {
@@ -110,14 +110,9 @@ impl EncapsedStringChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| EncapsedStringChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(EncapsedStringChildren::_Expression),
                 )
             }
         }))
@@ -235,7 +230,7 @@ impl NodeAccess for EncapsedStringChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             EncapsedStringChildren::Extra(x) => x.as_any(),
             EncapsedStringChildren::_Expression(x) => x.as_any(),
@@ -249,7 +244,7 @@ impl NodeAccess for EncapsedStringChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             EncapsedStringChildren::Extra(x) => x.children_any(),
             EncapsedStringChildren::_Expression(x) => x.children_any(),
@@ -327,7 +322,7 @@ impl NodeAccess for EncapsedStringNode {
         "EncapsedStringNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::EncapsedString(self)
     }
 

@@ -62,7 +62,7 @@ pub enum PHPFloat {
 impl PHPFloat {
     pub fn new(fval: f64) -> Self {
         if fval.is_infinite() {
-            return Self::Infinite;
+            Self::Infinite
         } else if fval.is_nan() {
             return Self::NaN;
         } else {
@@ -221,14 +221,10 @@ impl PHPValue {
         Some(match self {
             PHPValue::NULL => PHPValue::Boolean(false),
             PHPValue::Boolean(b) => PHPValue::Boolean(*b),
-            PHPValue::Int(i) => PHPValue::Boolean(if *i != 0 { true } else { false }),
+            PHPValue::Int(i) => PHPValue::Boolean(*i != 0),
             PHPValue::Float(PHPFloat::Real(f)) => PHPValue::Boolean(if *f == 0.0 {
                 false
-            } else if *f == -0.0 {
-                false
-            } else {
-                true
-            }),
+            } else { *f != -0.0 }),
             PHPValue::Float(_) => return crate::missing_none!("Non real float .as_php_bool()"),
             PHPValue::String(s) => {
                 if s.len() == 0 {
@@ -390,7 +386,7 @@ impl PHPValue {
         if unique_values.len() != 1 {
             return None;
         }
-        unique_values.iter().next().cloned()
+        unique_values.first().cloned()
     }
 }
 

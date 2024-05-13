@@ -39,7 +39,7 @@ impl Display for SpecialType {
             Self::Self_ => write!(f, "self"),
             Self::ClassString(class) => {
                 if let Some(c) = class {
-                    write!(f, "class-string<{}>", c.to_string())
+                    write!(f, "class-string<{}>", c)
                 } else {
                     write!(f, "class-string")
                 }
@@ -81,6 +81,12 @@ pub struct ShapeTypeValue {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ShapeType {
     pub map: BTreeMap<ShapeTypeKey, ShapeTypeValue>,
+}
+
+impl Default for ShapeType {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ShapeType {
@@ -190,6 +196,12 @@ impl PartialOrd for UnionType {
 }
 */
 
+impl Default for UnionType {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UnionType {
     pub fn new() -> Self {
         UnionType {
@@ -223,7 +235,7 @@ impl UnionType {
                 _ => return false,
             }
         }
-        self.types.len() > 0
+        !self.types.is_empty()
     }
 
     pub(crate) fn is_float(&self) -> bool {
@@ -233,7 +245,7 @@ impl UnionType {
                 _ => return false,
             }
         }
-        self.types.len() > 0
+        !self.types.is_empty()
     }
 
     pub(crate) fn is_int(&self) -> bool {
@@ -243,7 +255,7 @@ impl UnionType {
                 _ => return false,
             }
         }
-        self.types.len() > 0
+        !self.types.is_empty()
     }
 
     pub fn len(&self) -> usize {
@@ -287,13 +299,13 @@ impl UnionType {
         emitter: &dyn IssueEmitter,
         temp_generics: Option<&Vec<Name>>,
     ) -> (Option<Vec<Option<UnionType>>>, Option<OsString>) {
-        let (rest, parsed_types) = if let Some((rest, parsed_type)) = parse_result.ok() {
+        let (rest, parsed_types) = if let Ok((rest, parsed_type)) = parse_result {
             (rest, parsed_type)
         } else {
             return (None, Some(type_str.clone()));
         };
 
-        let remainder = if rest.len() > 0 {
+        let remainder = if !rest.is_empty() {
             let rest_str: OsString = OsStr::from_bytes(rest).into();
             Some(rest_str)
         } else {
@@ -326,13 +338,13 @@ impl UnionType {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> (Option<UnionType>, Option<OsString>) {
-        let (rest, parsed_type) = if let Some((rest, parsed_type)) = parse_result.ok() {
+        let (rest, parsed_type) = if let Ok((rest, parsed_type)) = parse_result {
             (rest, parsed_type)
         } else {
             return (None, Some(type_str.clone()));
         };
 
-        let remainder = if rest.len() > 0 {
+        let remainder = if !rest.is_empty() {
             let rest_str: OsString = OsStr::from_bytes(rest).into();
             Some(rest_str)
         } else {
@@ -462,7 +474,7 @@ impl UnionType {
                 _ => (),
             }
         }
-        return false;
+        false
     }
 
     pub(crate) fn ensure_valid(
@@ -622,7 +634,7 @@ impl DiscreteType {
 
                     // eprintln!("BALLE3 Unknown class {}, {:?}", fqnames, fqname);
                     emitter.emit(Issue::UnknownClass(
-                        state.pos_from_range(range.clone()),
+                        state.pos_from_range(*range),
                         fqname.clone(),
                     ))
                 }
@@ -633,7 +645,7 @@ impl DiscreteType {
                 // As calling this from two different points would result in all other bad types to be emitted twice
                 if !allow_unforfilled_templates {
                     emitter.emit(Issue::EmptyTemplate(
-                        state.pos_from_range(range.clone()),
+                        state.pos_from_range(*range),
                         t.clone(),
                     ))
                 }
@@ -650,7 +662,7 @@ impl DiscreteType {
 
                             // eprintln!("BALLE4 Unknown class {}, {:?}", fqnames, fqname);
                             emitter.emit(Issue::UnknownClass(
-                                state.pos_from_range(range.clone()),
+                                state.pos_from_range(*range),
                                 fqname.clone(),
                             ))
                         }
@@ -766,7 +778,7 @@ impl DiscreteType {
                         .unwrap()
                         .instanceof(&check_cname, symbol_data.clone());
                 }
-                return false;
+                false
             }
             DiscreteType::Generic(_, _) => {
                 crate::missing!();
@@ -812,14 +824,12 @@ impl DiscreteType {
             DiscreteType::Unknown => (),
             DiscreteType::Named(name, fqname) => {
                 if let Some(fq_last_name) = fqname.get_name() {
-                    if fq_last_name.eq_ignore_ascii_case(name.to_os_string()) {
-                        if *name != fq_last_name {
-                            emitter.emit(Issue::WrongClassNameCasing(
-                                state.pos_from_range(range),
-                                name.clone(),
-                                fqname.clone(),
-                            ));
-                        }
+                    if fq_last_name.eq_ignore_ascii_case(name.to_os_string()) && *name != fq_last_name {
+                        emitter.emit(Issue::WrongClassNameCasing(
+                            state.pos_from_range(range),
+                            name.clone(),
+                            fqname.clone(),
+                        ));
                     }
                 }
             }
@@ -894,7 +904,7 @@ fn from_parsed_type(
         }
         ParsedType::Callable(args, cond_return) => {
             let return_type = match cond_return {
-                Some(rt) if rt.len() > 0 => {
+                Some(rt) if !rt.is_empty() => {
                     match from_vec_parsed_type(rt, state, maybe_emitter, temp_generics) {
                         Some(t) => t,
                         None => {
@@ -1053,7 +1063,7 @@ fn from_type_struct(
     if type_struct.generics.is_none() {
         if let TypeName::Name(x) = &type_struct.type_name {
             if let Some(data) = &generic_templates {
-                if data.contains(&x) {
+                if data.contains(x) {
                     return Some(DiscreteType::Template(x.clone()).into());
                 }
             }
@@ -1201,9 +1211,9 @@ impl Display for DiscreteType {
                     return_type
                 ),
                 DiscreteType::Special(s) => s.to_string(),
-                DiscreteType::Vector(t) => format!("array<{}>", t.to_string()),
+                DiscreteType::Vector(t) => format!("array<{}>", t),
                 DiscreteType::HashMap(k, v) =>
-                    format!("array<{},{}>", k.to_string(), v.to_string()),
+                    format!("array<{},{}>", k, v),
                 DiscreteType::Unknown => "*unknown*".to_string(),
                 DiscreteType::Named(_, t) => t.to_string(),
                 DiscreteType::Object => "object".to_string(),
@@ -1223,7 +1233,7 @@ impl Display for DiscreteType {
                         ));
                     }
                     buf.push_str(&parts.join(","));
-                    buf.push_str("}");
+                    buf.push('}');
                     buf
                 }
                 DiscreteType::Generic(base_type, v) => {

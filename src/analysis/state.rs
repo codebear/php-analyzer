@@ -68,6 +68,12 @@ pub struct GlobalState {
     pub constants: RwLock<HashMap<FullyQualifiedName, ConstantData>>,
 }
 
+impl Default for GlobalState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GlobalState {
     pub fn new() -> Self {
         GlobalState {
@@ -166,7 +172,7 @@ impl FunctionState {
         Self::new(
             Some(name),
             false,
-            function_data.map(|x| FunctionDataPointer::Function(x)),
+            function_data.map(FunctionDataPointer::Function),
         )
     }
 
@@ -186,7 +192,7 @@ pub struct LookingForNode {
         RwLock<
             Option<
                 Box<
-                    dyn FnOnce(AnyNodeRef, &mut AnalysisState, &Vec<AnyNodeRef>) -> ()
+                    dyn FnOnce(AnyNodeRef, &mut AnalysisState, &Vec<AnyNodeRef>)
                         + Send
                         + Sync,
                 >,
@@ -219,6 +225,12 @@ pub struct AnalysisState {
     pub in_conditional_branch: bool,
     pub looking_for_node: Option<LookingForNode>,
     pub config: PHPAnalyzeConfig,
+}
+
+impl Default for AnalysisState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AnalysisState {

@@ -32,7 +32,7 @@ fn our_tag_no_case<'a>(
 }
 
 pub fn parse_phpdoc(input: PHPDocInput) -> IResult<PHPDocInput, Vec<PHPDocEntry>> {
-    let input_range = input.1.clone();
+    let input_range = input.1;
 
     let (input, _) = our_tag(b"/**")(input)?;
     let mut end = input.len();
@@ -52,8 +52,8 @@ pub fn parse_phpdoc(input: PHPDocInput) -> IResult<PHPDocInput, Vec<PHPDocEntry>
     let end_range = Range {
         start_byte: input_range.end_byte,
         end_byte: input_range.end_byte,
-        start_point: input_range.end_point.clone(),
-        end_point: input_range.end_point.clone(),
+        start_point: input_range.end_point,
+        end_point: input_range.end_point,
     };
     Ok((PHPDocInput(&[], end_range), entries))
 }
@@ -160,9 +160,9 @@ fn see(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
     let uri = words
         .next()
         .map(|x| OsStr::from_bytes(x).into())
-        .unwrap_or_else(|| OsString::new());
+        .unwrap_or_else(OsString::new);
     let words: Vec<_> = words.collect();
-    let desc = if words.len() > 0 {
+    let desc = if !words.is_empty() {
         let parts = words.join(&b' ');
         Some(OsStr::from_bytes(&parts).into())
     } else {
@@ -244,13 +244,13 @@ fn parse_abstract(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
 
 fn desc(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
     let (input, (range, desc)) = _simple_tagged_no_case_with_opt_data(b"@desc")(input)?;
-    let desc = desc.unwrap_or_else(|| OsString::new());
+    let desc = desc.unwrap_or_else(OsString::new);
     Ok((input, PHPDocEntry::Description(range, desc)))
 }
 
 fn copyright(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
     let (input, (range, desc)) = _simple_tagged_no_case_with_opt_data(b"@copyright")(input)?;
-    let desc = desc.unwrap_or_else(|| OsString::new());
+    let desc = desc.unwrap_or_else(OsString::new);
     Ok((input, PHPDocEntry::Description(range, desc)))
 }
 
@@ -273,13 +273,13 @@ fn param(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
 
 pub fn our_union_type(input: PHPDocInput) -> IResult<PHPDocInput, UnionOfTypes> {
     let pre_length = input.0.len();
-    let pre_range = input.1.clone();
+    let pre_range = input.1;
     match union_type(false)(input.0) {
         Ok((remainder, utype)) => {
             let post_length = remainder.len();
             let consumed = pre_length - post_length;
 
-            let mut range = input.1.clone();
+            let mut range = input.1;
             // We're using the union_type-parser in single-line-mode, therefore we shouldn't
             // have experienced any line changes. We're only realigning intraline
             range.start_byte += consumed;

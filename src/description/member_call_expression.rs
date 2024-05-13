@@ -12,7 +12,7 @@ impl NodeDescription for MemberCallExpressionNode {
         state: &mut AnalysisState,
     ) -> Option<String> {
         let methods = self.get_methods_data(state);
-        if methods.len() == 0 {
+        if methods.is_empty() {
             return if let Some(mname) = self.name.get_method_name(state) {
                 Some(format!(
                     "Dynamic method call to method {} with no known data",

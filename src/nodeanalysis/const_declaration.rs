@@ -45,7 +45,7 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                 ConstDeclarationChildren::ConstElement(c) => {
                     let name = c.get_const_name();
                     let maybe_value = c.get_php_value(state, emitter);
-                    if let None = &maybe_value {
+                    if maybe_value.is_none() {
                         emitter.emit(Issue::ParseAnomaly(
                             self.pos(state),
                             format!("Couldn't resolve class const content for {:?}", name).into(),
@@ -70,7 +70,7 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                     let mut mutable = class_data.write().unwrap();
                     match &mut (*mutable) {
                         ClassType::Class(c) => {
-                            if let Some(_) = c.constants.get(&name) {
+                            if c.constants.get(&name).is_some() {
                                 emitter.emit(Issue::DuplicateClassConstant(
                                     self.pos(state),
                                     class_state.get_name().get_fq_name().clone(),
@@ -88,7 +88,7 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                         }
                         ClassType::None => todo!(),
                         ClassType::Interface(intf) => {
-                            if let Some(_) = intf.constants.get(&name) {
+                            if intf.constants.get(&name).is_some() {
                                 emitter.emit(Issue::DuplicateClassConstant(
                                     self.pos(state),
                                     class_state.get_name().get_fq_name().clone(),

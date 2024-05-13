@@ -138,7 +138,7 @@ impl NodeAccess for IfStatementAlternative {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             IfStatementAlternative::Extra(x) => x.as_any(),
             IfStatementAlternative::ElseClause(x) => x.as_any(),
@@ -146,7 +146,7 @@ impl NodeAccess for IfStatementAlternative {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             IfStatementAlternative::Extra(x) => x.children_any(),
             IfStatementAlternative::ElseClause(x) => x.children_any(),
@@ -185,8 +185,8 @@ impl NodeParser for IfStatementBody {
 
             _ => {
                 if let Some(x) = _StatementNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| IfStatementBody::_Statement(y))
+                    .map(Box::new)
+                    .map(IfStatementBody::_Statement)
                 {
                     x
                 } else {
@@ -215,14 +215,9 @@ impl IfStatementBody {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _StatementNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| IfStatementBody::_Statement(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _StatementNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(IfStatementBody::_Statement),
                 )
             }
         }))
@@ -293,7 +288,7 @@ impl NodeAccess for IfStatementBody {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             IfStatementBody::Extra(x) => x.as_any(),
             IfStatementBody::_Statement(x) => x.as_any(),
@@ -301,7 +296,7 @@ impl NodeAccess for IfStatementBody {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             IfStatementBody::Extra(x) => x.children_any(),
             IfStatementBody::_Statement(x) => x.children_any(),
@@ -372,7 +367,7 @@ impl NodeAccess for IfStatementNode {
         "IfStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::IfStatement(self)
     }
 

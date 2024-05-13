@@ -45,7 +45,7 @@ pub struct ClassDeclarationState {
 
 impl ClassDeclarationNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
-        ()
+        
     }
 
     pub fn get_php_value(
@@ -72,9 +72,8 @@ impl ClassDeclarationNode {
     fn get_class_name(&self, state: &mut AnalysisState) -> ClassName {
         let decl_class_name = self.get_declared_name();
         // new_with_analysis_state går nok via use-map, og deklarert klassenavn bør ikke det...
-        let class_name =
-            ClassName::new_with_analysis_state_without_aliasing(&decl_class_name, state);
-        class_name
+        
+        ClassName::new_with_analysis_state_without_aliasing(&decl_class_name, state)
     }
 
     fn get_class_data(&self, state: &mut AnalysisState) -> Arc<RwLock<ClassType>> {
@@ -184,7 +183,7 @@ impl AnalysisOfClassLikeNode for ClassDeclarationNode {
                 }
             }
         }
-        if ifs.len() > 0 {
+        if !ifs.is_empty() {
             Some(ifs)
         } else {
             None
@@ -241,9 +240,9 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                             }
                             PHPDocEntry::Deprecated(dep_range, desc) => {
                                 // void
-                                if let Some(_) = deprecated {
+                                if deprecated.is_some() {
                                     emitter.emit(Issue::DuplicateDeclaration(
-                                        state.pos_from_range(dep_range.clone()),
+                                        state.pos_from_range(*dep_range),
                                         "@deprecated".into(),
                                     ));
                                 }
@@ -282,12 +281,12 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                     // FIXME emit hint to declare class as abstract for real
                                 } else if class_modifier == ClassModifier::Abstract {
                                     emitter.emit(Issue::RedundantPHPDocEntry(
-                                        state.pos_from_range(range.clone()),
+                                        state.pos_from_range(*range),
                                         "Class is already declared abstract".into(),
                                     ));
                                 } else if class_modifier == ClassModifier::Final {
                                     emitter.emit(Issue::InvalidPHPDocEntry(
-                                        state.pos_from_range(range.clone()),
+                                        state.pos_from_range(*range),
                                         "Can't declare a final class as abstract".into(),
                                     ));
                                 }
@@ -301,7 +300,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                     b"extends" | b"implements" | b"inherits" | b"mixin" => {
                                         if let Some(ptype) = UnionType::parse(
                                             data.clone(),
-                                            range.clone(),
+                                            *range,
                                             state,
                                             emitter,
                                         ) {
@@ -315,7 +314,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                                             emitter.emit(
                                                                 Issue::InvalidPHPDocEntry(
                                                                     state.pos_from_range(
-                                                                        range.clone(),
+                                                                        *range,
                                                                     ),
                                                                     "Can't @extend a union-type"
                                                                         .into(),
@@ -324,7 +323,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                                         }
                                                     } else {
                                                         emitter.emit(Issue::InvalidPHPDocEntry(
-                                                            state.pos_from_range(range.clone()),
+                                                            state.pos_from_range(*range),
                                                             "Duplicate @extends-entry".into(),
                                                         ));
                                                     }
@@ -355,7 +354,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                         let sparam: &str = &param.to_string_lossy();
                                         if !state.config.phpdoc.known_tags.contains(&sparam) {
                                             emitter.emit(Issue::UnknownPHPDocEntry(
-                                                state.pos_from_range(range.clone()),
+                                                state.pos_from_range(*range),
                                                 format!(
                                                     "Unknown PHPDoc-entry @{}",
                                                     param.to_string_lossy()
@@ -374,7 +373,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                 let sparam: &str = &param.to_string_lossy();
                                 if !state.config.phpdoc.known_tags.contains(&sparam) {
                                     emitter.emit(Issue::UnknownPHPDocEntry(
-                                        state.pos_from_range(range.clone()),
+                                        state.pos_from_range(*range),
                                         format!(
                                             "Unknown PHPDoc-entry @{}",
                                             param.to_string_lossy()
@@ -395,7 +394,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                     }
                 }
                 Err(_) => emitter.emit(Issue::PHPDocParseError(
-                    state.pos_from_range(php_doc_range.clone()),
+                    state.pos_from_range(php_doc_range),
                 )),
             }
         }
@@ -412,11 +411,11 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
             ClassData::new(FileLocation::new(self.name.pos(state)), class_name.clone());
         class_data.modifier = class_modifier;
         class_data.read_only = is_read_only;
-        if let Some(_) = &base_name {
+        if base_name.is_some() {
             class_data.base_class_name = base_name;
         }
         class_data.deprecated = deprecated;
-        if generic_templates.len() > 0 {
+        if !generic_templates.is_empty() {
             class_data.generic_templates = Some(generic_templates);
         }
         class_data.phpdoc_base_class_name = phpdoc_base_class_name;
@@ -426,7 +425,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                 .iter()
                 .map(|iname| {
                     ClassName::new_with_names(
-                        iname.get_name().unwrap_or_else(|| Name::new()),
+                        iname.get_name().unwrap_or_default(),
                         iname.clone(),
                     )
                 })

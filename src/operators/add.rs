@@ -22,7 +22,7 @@ impl Operator for AddOperator {
     }
 
     fn operator(&self) -> &'static str {
-        return "+";
+        "+"
     }
 }
 

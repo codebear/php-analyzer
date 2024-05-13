@@ -54,6 +54,12 @@ pub struct ShapeStruct {
     pub map: HashMap<ShapeKey, ConcreteType>,
 }
 
+impl Default for ShapeStruct {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShapeStruct {
     pub fn new() -> Self {
         Self {

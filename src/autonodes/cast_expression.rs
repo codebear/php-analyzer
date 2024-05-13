@@ -53,8 +53,8 @@ impl NodeParser for CastExpressionValue {
 
             _ => {
                 if let Some(x) = _PrimaryExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| CastExpressionValue::_PrimaryExpression(y))
+                    .map(Box::new)
+                    .map(CastExpressionValue::_PrimaryExpression)
                 {
                     x
                 } else {
@@ -92,14 +92,9 @@ impl CastExpressionValue {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _PrimaryExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| CastExpressionValue::_PrimaryExpression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _PrimaryExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(CastExpressionValue::_PrimaryExpression),
                 )
             }
         }))
@@ -197,7 +192,7 @@ impl NodeAccess for CastExpressionValue {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             CastExpressionValue::Extra(x) => x.as_any(),
             CastExpressionValue::_PrimaryExpression(x) => x.as_any(),
@@ -208,7 +203,7 @@ impl NodeAccess for CastExpressionValue {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             CastExpressionValue::Extra(x) => x.children_any(),
             CastExpressionValue::_PrimaryExpression(x) => x.children_any(),
@@ -281,7 +276,7 @@ impl NodeAccess for CastExpressionNode {
         "CastExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::CastExpression(self)
     }
 

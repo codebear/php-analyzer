@@ -132,7 +132,7 @@ impl NodeAccess for StringChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             StringChildren::Extra(x) => x.as_any(),
             StringChildren::EscapeSequence(x) => x.as_any(),
@@ -140,7 +140,7 @@ impl NodeAccess for StringChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             StringChildren::Extra(x) => x.children_any(),
             StringChildren::EscapeSequence(x) => x.children_any(),
@@ -206,7 +206,7 @@ impl NodeAccess for StringNode {
         "StringNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::String(self)
     }
 

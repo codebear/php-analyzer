@@ -836,11 +836,11 @@ impl<'a> NodeAccess for AnyNodeRef<'a> {
         }
     }
 
-    fn as_any<'b>(&'b self) -> AnyNodeRef<'b> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         self.clone()
     }
 
-    fn children_any<'b>(&'b self) -> Vec<AnyNodeRef<'b>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             AnyNodeRef::StaticExpr(_, _) => vec![],
             AnyNodeRef::Error(e) => e.children_any(),
@@ -1956,7 +1956,7 @@ impl NodeAccess for AnyNode {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             AnyNode::_Expression(x) => x.as_any(),
             AnyNode::_Literal(x) => x.as_any(),
@@ -2130,7 +2130,7 @@ impl NodeAccess for AnyNode {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         todo!("NEKJ");
     }
 }

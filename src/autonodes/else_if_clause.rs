@@ -38,8 +38,8 @@ impl NodeParser for ElseIfClauseBody {
 
             _ => {
                 if let Some(x) = _StatementNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ElseIfClauseBody::_Statement(y))
+                    .map(Box::new)
+                    .map(ElseIfClauseBody::_Statement)
                 {
                     x
                 } else {
@@ -68,14 +68,9 @@ impl ElseIfClauseBody {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _StatementNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ElseIfClauseBody::_Statement(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _StatementNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ElseIfClauseBody::_Statement),
                 )
             }
         }))
@@ -146,7 +141,7 @@ impl NodeAccess for ElseIfClauseBody {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ElseIfClauseBody::Extra(x) => x.as_any(),
             ElseIfClauseBody::_Statement(x) => x.as_any(),
@@ -154,7 +149,7 @@ impl NodeAccess for ElseIfClauseBody {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ElseIfClauseBody::Extra(x) => x.children_any(),
             ElseIfClauseBody::_Statement(x) => x.children_any(),
@@ -221,7 +216,7 @@ impl NodeAccess for ElseIfClauseNode {
         "ElseIfClauseNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ElseIfClause(self)
     }
 

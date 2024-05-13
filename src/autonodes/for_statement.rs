@@ -38,8 +38,8 @@ impl NodeParser for ForStatementCondition {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ForStatementCondition::_Expression(y))
+                    .map(Box::new)
+                    .map(ForStatementCondition::_Expression)
                 {
                     x
                 } else {
@@ -68,14 +68,9 @@ impl ForStatementCondition {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ForStatementCondition::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ForStatementCondition::_Expression),
                 )
             }
         }))
@@ -149,7 +144,7 @@ impl NodeAccess for ForStatementCondition {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ForStatementCondition::Extra(x) => x.as_any(),
             ForStatementCondition::_Expression(x) => x.as_any(),
@@ -157,7 +152,7 @@ impl NodeAccess for ForStatementCondition {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ForStatementCondition::Extra(x) => x.children_any(),
             ForStatementCondition::_Expression(x) => x.children_any(),
@@ -196,8 +191,8 @@ impl NodeParser for ForStatementIncrement {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ForStatementIncrement::_Expression(y))
+                    .map(Box::new)
+                    .map(ForStatementIncrement::_Expression)
                 {
                     x
                 } else {
@@ -226,14 +221,9 @@ impl ForStatementIncrement {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ForStatementIncrement::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ForStatementIncrement::_Expression),
                 )
             }
         }))
@@ -307,7 +297,7 @@ impl NodeAccess for ForStatementIncrement {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ForStatementIncrement::Extra(x) => x.as_any(),
             ForStatementIncrement::_Expression(x) => x.as_any(),
@@ -315,7 +305,7 @@ impl NodeAccess for ForStatementIncrement {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ForStatementIncrement::Extra(x) => x.children_any(),
             ForStatementIncrement::_Expression(x) => x.children_any(),
@@ -354,8 +344,8 @@ impl NodeParser for ForStatementInitialize {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ForStatementInitialize::_Expression(y))
+                    .map(Box::new)
+                    .map(ForStatementInitialize::_Expression)
                 {
                     x
                 } else {
@@ -384,14 +374,9 @@ impl ForStatementInitialize {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ForStatementInitialize::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ForStatementInitialize::_Expression),
                 )
             }
         }))
@@ -465,7 +450,7 @@ impl NodeAccess for ForStatementInitialize {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ForStatementInitialize::Extra(x) => x.as_any(),
             ForStatementInitialize::_Expression(x) => x.as_any(),
@@ -473,7 +458,7 @@ impl NodeAccess for ForStatementInitialize {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ForStatementInitialize::Extra(x) => x.children_any(),
             ForStatementInitialize::_Expression(x) => x.children_any(),
@@ -562,7 +547,7 @@ impl NodeAccess for ForStatementNode {
         "ForStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ForStatement(self)
     }
 

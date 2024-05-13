@@ -43,7 +43,7 @@ impl MemberCallExpressionNode {
         for maybe_method in methods {
             if let Some((_class, method_data)) = maybe_method {
                 // eprintln!("METHOD_DATA: {:#?}", &method_data);
-                if let Some(_) = &method_data.generic_templates {
+                if method_data.generic_templates.is_some() {
                     crate::missing!("Need to do something with generic_templates");
                 }
 
@@ -216,7 +216,7 @@ impl MemberCallExpressionNode {
                 Some(class_data)
             }
             DiscreteType::Generic(dtype, concrete_template_types) => {
-                let class_name = self.get_class_name_from_discrete_type(&*dtype)?;
+                let class_name = self.get_class_name_from_discrete_type(&dtype)?;
                 let cdata = state.symbol_data.get_class(&class_name)?;
                 let mut class_data = {
                     let unlocked = cdata.read().unwrap();
@@ -255,7 +255,7 @@ impl MemberCallExpressionNode {
                 let cname = ClassName::new_with_names(lname.clone(), fq_name.clone());
                 Some(cname)
             }
-            DiscreteType::Generic(btype, _) => self.get_class_name_from_discrete_type(&**btype),
+            DiscreteType::Generic(btype, _) => self.get_class_name_from_discrete_type(btype),
             DiscreteType::NULL
             | DiscreteType::Unknown
             | DiscreteType::Void

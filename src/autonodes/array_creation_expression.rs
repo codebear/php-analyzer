@@ -48,7 +48,7 @@ impl NodeAccess for ArrayCreationExpressionNode {
         "ArrayCreationExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ArrayCreationExpression(self)
     }
 

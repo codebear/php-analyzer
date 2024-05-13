@@ -171,7 +171,7 @@ impl NodeAccess for DisjunctiveNormalFormTypeChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             DisjunctiveNormalFormTypeChildren::Extra(x) => x.as_any(),
             DisjunctiveNormalFormTypeChildren::IntersectionType(x) => x.as_any(),
@@ -181,7 +181,7 @@ impl NodeAccess for DisjunctiveNormalFormTypeChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             DisjunctiveNormalFormTypeChildren::Extra(x) => x.children_any(),
             DisjunctiveNormalFormTypeChildren::IntersectionType(x) => x.children_any(),
@@ -243,7 +243,7 @@ impl NodeAccess for DisjunctiveNormalFormTypeNode {
         "DisjunctiveNormalFormTypeNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::DisjunctiveNormalFormType(self)
     }
 

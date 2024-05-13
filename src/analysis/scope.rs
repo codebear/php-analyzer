@@ -16,6 +16,12 @@ pub struct Scope {
     parent: Option<Arc<RwLock<Scope>>>,
 }
 
+impl Default for Scope {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Scope {
     pub fn new() -> Self {
         Scope {
@@ -28,7 +34,7 @@ impl Scope {
         match &self.parent {
             Some(p) => {
                 let read = p.read().unwrap();
-                if read.has_var(&var_name) {
+                if read.has_var(var_name) {
                     return true;
                 }
             }
@@ -73,8 +79,8 @@ impl Scope {
     }
 
     pub fn get_var(&self, var_name: &Name) -> Option<Arc<RwLock<VarData>>> {
-        if self.vars.contains_key(&var_name) {
-            return self.vars.get(&var_name).cloned();
+        if self.vars.contains_key(var_name) {
+            return self.vars.get(var_name).cloned();
         }
         match &self.parent {
             Some(p) => {
@@ -86,7 +92,7 @@ impl Scope {
             _ => (),
         }
 
-        self.vars.get(var_name).map(|x| x.clone())
+        self.vars.get(var_name).cloned()
     }
 }
 /*
@@ -160,7 +166,7 @@ impl BranchableScope for Arc<RwLock<Scope>> {
             let scope = b.read().unwrap();
             for (var, data) in &scope.vars {
                 let key = var.clone();
-                let entry = vars.entry(key).or_insert_with(|| vec![]);
+                let entry = vars.entry(key).or_insert_with(std::vec::Vec::new);
                 entry.push(data.clone());
             }
         }
@@ -178,7 +184,7 @@ impl BranchableScope for Arc<RwLock<Scope>> {
                     write_var.is_partial |= reader.is_partial;
 
                     written_data.extend(reader.all_written_data.iter().cloned());
-                    last_data.push(reader.last_written_data.iter().cloned().collect());
+                    last_data.push(reader.last_written_data.to_vec());
                     //   eprintln!("Har data for var {:?}: {:?}", key, *reader);
                     // FIXME written_data
                 }
@@ -248,12 +254,12 @@ impl BranchableScope for Arc<RwLock<Scope>> {
                     for range in &data.referenced_ranges {
                         if data.is_argument {
                             emitter.emit(Issue::UnusedArgument(
-                                IssuePosition::new(&state.filename, range.clone()),
+                                IssuePosition::new(&state.filename, *range),
                                 var_name.clone(),
                             ));
                         } else {
                             emitter.emit(Issue::UnusedVariable(
-                                IssuePosition::new(&state.filename, range.clone()),
+                                IssuePosition::new(&state.filename, *range),
                                 var_name.clone(),
                             ));
                         }
@@ -267,6 +273,12 @@ impl BranchableScope for Arc<RwLock<Scope>> {
 #[derive(Debug)]
 pub struct ScopeStack {
     pub stack: Vec<Arc<RwLock<Scope>>>,
+}
+
+impl Default for ScopeStack {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ScopeStack {

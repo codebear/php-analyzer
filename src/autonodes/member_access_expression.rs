@@ -61,8 +61,8 @@ impl NodeParser for MemberAccessExpressionName {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| MemberAccessExpressionName::_Expression(y))
+                    .map(Box::new)
+                    .map(MemberAccessExpressionName::_Expression)
                 {
                     x
                 } else {
@@ -95,14 +95,9 @@ impl MemberAccessExpressionName {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| MemberAccessExpressionName::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(MemberAccessExpressionName::_Expression),
                 )
             }
         }))
@@ -192,7 +187,7 @@ impl NodeAccess for MemberAccessExpressionName {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             MemberAccessExpressionName::Extra(x) => x.as_any(),
             MemberAccessExpressionName::_Expression(x) => x.as_any(),
@@ -202,7 +197,7 @@ impl NodeAccess for MemberAccessExpressionName {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             MemberAccessExpressionName::Extra(x) => x.children_any(),
             MemberAccessExpressionName::_Expression(x) => x.children_any(),
@@ -659,7 +654,7 @@ impl NodeAccess for MemberAccessExpressionObject {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             MemberAccessExpressionObject::Extra(x) => x.as_any(),
             MemberAccessExpressionObject::ArrayCreationExpression(x) => x.as_any(),
@@ -685,7 +680,7 @@ impl NodeAccess for MemberAccessExpressionObject {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             MemberAccessExpressionObject::Extra(x) => x.children_any(),
             MemberAccessExpressionObject::ArrayCreationExpression(x) => x.children_any(),
@@ -781,7 +776,7 @@ impl NodeAccess for MemberAccessExpressionNode {
         "MemberAccessExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::MemberAccessExpression(self)
     }
 

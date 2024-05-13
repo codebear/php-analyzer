@@ -38,7 +38,7 @@ impl ClassName {
     }
 
     pub fn new_with_fq_name(fq_name: FullyQualifiedName) -> Self {
-        let name = fq_name.get_name().unwrap_or_else(|| Name::new());
+        let name = fq_name.get_name().unwrap_or_default();
         Self { name, fq_name }
     }
 
@@ -183,7 +183,7 @@ impl ClassType {
         }
     }
     pub fn with_generic_args(&self, generic_args: &Vec<UnionType>) -> Self {
-        if generic_args.len() > 0 {
+        if !generic_args.is_empty() {
             crate::missing!("Gi ut en type som er typesatt med generiske argumenter");
         }
         self.clone()
@@ -332,7 +332,7 @@ impl ClassData {
     ) -> Option<MethodData> {
         if let Some(m) = self.methods.get(&method_name.to_ascii_lowercase()) {
             let mut mdata = m.read().unwrap().clone();
-            mdata.generic_concretes = self.generic_concretes.clone();
+            mdata.generic_concretes.clone_from(&self.generic_concretes);
             return Some(mdata);
         }
 
@@ -359,12 +359,12 @@ impl ClassData {
 
         for iface in &self.interfaces {
             if let Some(iface_data) = &symbol_data.get_interface(iface) {
-                if let Some(mdata) = &iface_data.get_method(&method_name, symbol_data.clone()) {
+                if let Some(mdata) = &iface_data.get_method(method_name, symbol_data.clone()) {
                     set.insert(mdata.clone());
                 }
             }
         }
-        if set.len() > 0 {
+        if !set.is_empty() {
             Some(set.iter().cloned().collect())
         } else {
             None
@@ -429,7 +429,7 @@ impl ClassData {
                 let cdata = cdata_handle.read().unwrap();
                 match &*cdata {
                     ClassType::Class(c) => {
-                        return c.get_property(&property_name, state);
+                        return c.get_property(property_name, state);
                     }
                     _ => (),
                 }
@@ -458,7 +458,7 @@ impl ClassData {
                 return cdata.implements(iname, symbol_data);
             }
         }
-        return false;
+        false
     }
 
     fn instanceof(&self, tname: &ClassName, symbol_data: Arc<SymbolData>) -> bool {
@@ -478,7 +478,7 @@ impl ClassData {
                 return cdata.instanceof(tname, symbol_data);
             }
         }
-        return false;
+        false
     }
 
     fn get_own_methods(&self, _symbol_data: Arc<SymbolData>) -> Vec<MethodData> {
@@ -611,7 +611,7 @@ impl InterfaceData {
             }
         }
         for parent_iname in parent_inames {
-            if let Some(idata) = symbol_data.get_interface(&parent_iname) {
+            if let Some(idata) = symbol_data.get_interface(parent_iname) {
                 if idata.implements(iname, symbol_data.clone()) {
                     return true;
                 }
@@ -642,7 +642,7 @@ impl InterfaceData {
             }
         }
         for parent_iname in parent_inames {
-            if let Some(idata) = symbol_data.get_interface(&parent_iname) {
+            if let Some(idata) = symbol_data.get_interface(parent_iname) {
                 if idata.instanceof(tname, symbol_data.clone()) {
                     return true;
                 }
@@ -829,7 +829,7 @@ impl MethodData {
                             result.push(DiscreteType::Template(name));
                         }
                     }
-                    t @ _ => result.push(t),
+                    t => result.push(t),
                 }
             }
 

@@ -36,11 +36,7 @@ impl ObjectCreationExpressionNode {
         let ctype = self.get_utype(state, emitter)?.single_type()?;
         let data = self.get_creation_data();
 
-        let constructor_args = if let Some(args) = &data.arguments {
-            Some(args.get_argument_values(state, emitter))
-        } else {
-            None
-        };
+        let constructor_args = data.arguments.as_ref().map(|args| args.get_argument_values(state, emitter));
 
         let (fq_name, generic_args) = match ctype {
             DiscreteType::Named(_n, fq) => (fq, None),
@@ -271,6 +267,6 @@ impl ObjectCreationExpressionNode {
             }
             _ => (),
         }
-        return None;
+        None
     }
 }

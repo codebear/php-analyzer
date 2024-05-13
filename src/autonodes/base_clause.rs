@@ -128,7 +128,7 @@ impl NodeAccess for BaseClauseChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             BaseClauseChildren::Extra(x) => x.as_any(),
             BaseClauseChildren::Name(x) => x.as_any(),
@@ -136,7 +136,7 @@ impl NodeAccess for BaseClauseChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             BaseClauseChildren::Extra(x) => x.children_any(),
             BaseClauseChildren::Name(x) => x.children_any(),
@@ -202,7 +202,7 @@ impl NodeAccess for BaseClauseNode {
         "BaseClauseNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::BaseClause(self)
     }
 

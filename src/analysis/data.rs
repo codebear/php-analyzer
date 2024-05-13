@@ -43,12 +43,12 @@ impl VarData {
     }
 
     pub fn get_declared_type(&self) -> Option<UnionType> {
-        return self.php_declared_type.clone();
+        self.php_declared_type.clone()
     }
 
     pub fn get_inferred_type(&self) -> Option<UnionType> {
         let types: Vec<_> = self.all_written_data.iter().map(|x| x.0.clone()).collect();
-        if types.len() > 0 {
+        if !types.is_empty() {
             Some(UnionType::reduce(types))
         } else {
             None

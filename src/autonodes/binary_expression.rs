@@ -294,8 +294,8 @@ impl NodeParser for BinaryExpressionRight {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| BinaryExpressionRight::_Expression(y))
+                    .map(Box::new)
+                    .map(BinaryExpressionRight::_Expression)
                 {
                     x
                 } else {
@@ -347,14 +347,9 @@ impl BinaryExpressionRight {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| BinaryExpressionRight::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(BinaryExpressionRight::_Expression),
                 )
             }
         }))
@@ -485,7 +480,7 @@ impl NodeAccess for BinaryExpressionRight {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             BinaryExpressionRight::Extra(x) => x.as_any(),
             BinaryExpressionRight::_Expression(x) => x.as_any(),
@@ -500,7 +495,7 @@ impl NodeAccess for BinaryExpressionRight {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             BinaryExpressionRight::Extra(x) => x.children_any(),
             BinaryExpressionRight::_Expression(x) => x.children_any(),
@@ -585,7 +580,7 @@ impl NodeAccess for BinaryExpressionNode {
         "BinaryExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::BinaryExpression(self)
     }
 

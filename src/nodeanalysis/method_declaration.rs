@@ -97,7 +97,7 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
                     let _cname = self.get_class_name(state);
                     todo!()
                 }
-                x @ _ => x,
+                x => x,
             })
             .collect();
         Some(utype)
@@ -151,7 +151,7 @@ impl MethodDeclarationNode {
                     if let Some(gen) = generic_templates {
                         if gen.contains(&temp_name) {
                             emitter.emit(Issue::DuplicateTemplate(
-                                state.pos_from_range(range.clone()),
+                                state.pos_from_range(*range),
                                 temp_name,
                             ))
                         } else {
@@ -209,22 +209,22 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                                     emitter,
                                     Some(&method_template_params),
                                 )
-                                .map(|x| (x, range.clone()));
+                                .map(|x| (x, *range));
                             }
                             PHPDocEntry::Param(range, vtype, osstr_name, desc) => {
                                 if let Some(osstr_name) = osstr_name {
                                     let name: Name = osstr_name.into();
-                                    if param_map.contains_key(&name) {
+                                    if let std::collections::hash_map::Entry::Vacant(e) = param_map.entry(name) {
+                                        e.insert(entry.clone());
+                                    } else {
                                         emitter.emit(Issue::InvalidPHPDocEntry(
-                                            state.pos_from_range(range.clone()),
+                                            state.pos_from_range(*range),
                                             "Duplicate @param-entry".into(),
                                         ))
-                                    } else {
-                                        param_map.insert(name, entry.clone());
                                     }
                                 } else {
                                     emitter.emit(Issue::InvalidPHPDocEntry(
-                                        state.pos_from_range(range.clone()),
+                                        state.pos_from_range(*range),
                                         format!(
                                             "@param-entry is missing $param-name, [{:?}] [{:?}] [{:?}]",
                                             vtype, osstr_name, desc
@@ -236,7 +236,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
 
                             PHPDocEntry::Var(range, _, _, _) => {
                                 emitter.emit(Issue::MisplacedPHPDocEntry(
-                                    state.pos_from_range(range.clone()),
+                                    state.pos_from_range(*range),
                                     "@var can't be used on a method-declaration".into(),
                                 ));
                             }
@@ -246,7 +246,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                     phpdoc = Some(doc_comment);
                 }
                 Err(_) => {
-                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(range.clone())))
+                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(*range)))
                 }
             }
         }
@@ -307,8 +307,8 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
             if let Some(phpdoc) = &method_data.phpdoc {
                 // First check for templates
                 let method_template_params_list =
-                    self.get_doc_comment_declared_templates(&phpdoc, state, emitter);
-                let method_template_params = if method_template_params_list.len() > 0 {
+                    self.get_doc_comment_declared_templates(phpdoc, state, emitter);
+                let method_template_params = if !method_template_params_list.is_empty() {
                     Some(&method_template_params_list)
                 } else {
                     None
@@ -330,7 +330,7 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
                         utype.ensure_valid(state, emitter, range, true);
                     } else {
                         emitter.emit(Issue::InvalidPHPDocEntry(
-                            state.pos_from_range(range.clone()),
+                            state.pos_from_range(*range),
                             "Invalid type".into(),
                         ));
                     }

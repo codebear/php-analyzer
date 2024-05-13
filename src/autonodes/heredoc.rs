@@ -132,7 +132,7 @@ impl NodeAccess for HeredocIdentifier {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             HeredocIdentifier::Extra(x) => x.as_any(),
             HeredocIdentifier::DoubleQuote(a, b) => AnyNodeRef::StaticExpr(a, *b),
@@ -140,7 +140,7 @@ impl NodeAccess for HeredocIdentifier {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             HeredocIdentifier::Extra(x) => x.children_any(),
             HeredocIdentifier::DoubleQuote(_, _) => todo!("Crap"),
@@ -211,7 +211,7 @@ impl NodeAccess for HeredocNode {
         "HeredocNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Heredoc(self)
     }
 

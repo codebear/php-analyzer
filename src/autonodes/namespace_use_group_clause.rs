@@ -146,7 +146,7 @@ impl NodeAccess for NamespaceUseGroupClauseChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             NamespaceUseGroupClauseChildren::Extra(x) => x.as_any(),
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => x.as_any(),
@@ -154,7 +154,7 @@ impl NodeAccess for NamespaceUseGroupClauseChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             NamespaceUseGroupClauseChildren::Extra(x) => x.children_any(),
             NamespaceUseGroupClauseChildren::NamespaceAliasingClause(x) => x.children_any(),
@@ -212,7 +212,7 @@ impl NodeAccess for NamespaceUseGroupClauseNode {
         "NamespaceUseGroupClauseNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::NamespaceUseGroupClause(self)
     }
 

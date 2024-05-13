@@ -29,7 +29,7 @@ impl BinaryOperator for BinaryXorOperator {
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
     ) -> Option<crate::types::union::UnionType> {
-        return Some(DiscreteType::Int.into());
+        Some(DiscreteType::Int.into())
     }
 
     fn get_operator_php_value(

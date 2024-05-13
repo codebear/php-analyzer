@@ -18,7 +18,7 @@ impl Operator for NullCoalesceOperator {
     }
 
     fn operator(&self) -> &'static str {
-        return "??";
+        "??"
     }
 }
 

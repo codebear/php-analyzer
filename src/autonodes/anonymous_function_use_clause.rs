@@ -137,7 +137,7 @@ impl NodeAccess for AnonymousFunctionUseClauseChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             AnonymousFunctionUseClauseChildren::Extra(x) => x.as_any(),
             AnonymousFunctionUseClauseChildren::ByRef(x) => x.as_any(),
@@ -145,7 +145,7 @@ impl NodeAccess for AnonymousFunctionUseClauseChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             AnonymousFunctionUseClauseChildren::Extra(x) => x.children_any(),
             AnonymousFunctionUseClauseChildren::ByRef(x) => x.children_any(),
@@ -203,7 +203,7 @@ impl NodeAccess for AnonymousFunctionUseClauseNode {
         "AnonymousFunctionUseClauseNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::AnonymousFunctionUseClause(self)
     }
 

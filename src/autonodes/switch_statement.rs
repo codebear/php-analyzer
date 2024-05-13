@@ -59,7 +59,7 @@ impl NodeAccess for SwitchStatementNode {
         "SwitchStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::SwitchStatement(self)
     }
 

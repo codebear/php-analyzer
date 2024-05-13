@@ -146,7 +146,7 @@ where
 
     let mut result = EvaluationResult::new();
     result.symbol_data = Some(symbols);
-    result.issues = emitter.issues.read().unwrap().clone();
+    result.issues.clone_from(&emitter.issues.read().unwrap());
     crate::dump_missing_stats();
 
     result
@@ -179,8 +179,8 @@ fn evaluate_php_code_in_function<T: Into<OsString>>(
         if let Some(func_data_handle) = functions_handle.get(&func_name).cloned() {
             let func_data = func_data_handle.read().unwrap();
             result.function_data = Some(func_data.clone());
-            result.return_type = func_data.inferred_return_type.clone();
-            result.return_value = func_data.return_value.clone();
+            result.return_type.clone_from(&func_data.inferred_return_type);
+            result.return_value.clone_from(&func_data.return_value);
         } else {
             eprintln!("Mangler data om funksjonen test_output");
         }
@@ -188,7 +188,7 @@ fn evaluate_php_code_in_function<T: Into<OsString>>(
         eprintln!("Failed reading function data");
     }
     result.symbol_data = Some(state.symbol_data);
-    result.issues = emitter.issues.read().unwrap().clone();
+    result.issues.clone_from(&emitter.issues.read().unwrap());
     crate::dump_missing_stats();
 
     result

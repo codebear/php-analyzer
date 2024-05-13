@@ -58,7 +58,7 @@ impl NodeAccess for ConstElementNode {
         "ConstElementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ConstElement(self)
     }
 

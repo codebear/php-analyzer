@@ -129,7 +129,7 @@ impl NodeAccess for ArgumentsChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ArgumentsChildren::Extra(x) => x.as_any(),
             ArgumentsChildren::Argument(x) => x.as_any(),
@@ -137,7 +137,7 @@ impl NodeAccess for ArgumentsChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ArgumentsChildren::Extra(x) => x.children_any(),
             ArgumentsChildren::Argument(x) => x.children_any(),
@@ -203,7 +203,7 @@ impl NodeAccess for ArgumentsNode {
         "ArgumentsNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Arguments(self)
     }
 

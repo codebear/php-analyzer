@@ -56,7 +56,7 @@ impl NodeAccess for NamespaceUseGroupNode {
         "NamespaceUseGroupNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::NamespaceUseGroup(self)
     }
 

@@ -8,7 +8,7 @@ use crate::{
 impl HeredocNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         // Tree-sitters heredoc-parsing is incomplete
-        ()
+        
         //        crate::missing!("{}.read_from(..)", self.kind());
     }
 

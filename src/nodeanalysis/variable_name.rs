@@ -37,7 +37,7 @@ impl VariableNameNode {
             .cloned()
             .map(|x| x.0)
             .collect();
-        if noe.len() > 0 {
+        if !noe.is_empty() {
             return Some(UnionType::from(noe));
         }
 
@@ -148,7 +148,7 @@ impl ThirdPassAnalyzeableNode for VariableNameNode {
         let mut scope = curr_scope.write().unwrap();
         let var_ref = scope.get_or_create_var(vname);
         let mut var_data = var_ref.write().unwrap();
-        (*var_data).referenced_ranges.push(self.range);
+        var_data.referenced_ranges.push(self.range);
         true
     }
 }
@@ -191,10 +191,10 @@ impl AnalysisOfType for VariableNameNode {
             .cloned()
             .map(|x| x.0)
             .collect();
-        if noe.len() > 0 {
+        if !noe.is_empty() {
             Some(UnionType::from(noe))
         } else {
-            return None;
+            None
         }
     }
 }

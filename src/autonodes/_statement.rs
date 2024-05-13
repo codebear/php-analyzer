@@ -524,7 +524,7 @@ impl NodeAccess for _StatementNode {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             _StatementNode::Extra(x) => x.as_any(),
             _StatementNode::BreakStatement(x) => x.as_any(),
@@ -558,7 +558,7 @@ impl NodeAccess for _StatementNode {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             _StatementNode::Extra(x) => x.children_any(),
             _StatementNode::BreakStatement(x) => x.children_any(),

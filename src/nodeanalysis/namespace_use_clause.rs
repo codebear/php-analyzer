@@ -16,7 +16,7 @@ use super::analysis::{
 
 impl NamespaceUseClauseNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
-        ()
+        
     }
 
     pub fn get_php_value(
@@ -117,7 +117,7 @@ impl FirstPassAnalyzeableNode for NamespaceUseClauseNode {
         match (use_fq_name, use_name) {
             (Some(fq_name), Some(name)) => {
                 let lc_name = name.to_ascii_lowercase();
-                if let Some(_) = state.use_map.get(&lc_name) {
+                if state.use_map.get(&lc_name).is_some() {
                     if state.pass == 1 {
                         emitter.emit(Issue::DuplicateSymbol(self.pos(state), name));
                     }

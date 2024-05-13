@@ -92,7 +92,7 @@ impl ListLiteralNode {
                             crate::missing!("Extract something fra value in list(...) = {:?}", v);
                         }
                         None => match &val_type {
-                            Some(x @ _) => {
+                            Some(x) => {
                                 crate::missing!("list(..) = type: {:?}", x);
                             }
                             None => (),

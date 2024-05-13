@@ -43,7 +43,7 @@ impl BinaryOperator for LessThanOrEqualOperator {
         match (left_value, right_value) {
             (PHPValue::Int(lint), PHPValue::Int(rint)) => Some(PHPValue::Boolean(lint <= rint)),
             (PHPValue::Float(lint), PHPValue::Float(rint)) => Some(PHPValue::Boolean(lint <= rint)),
-            (left @ _, right @ _) => crate::missing_none!(
+            (left, right) => crate::missing_none!(
                 "{}[{:?} {} {:?}].get_operator_php_value(..)",
                 self.brief_desc(),
                 left.get_utype(),

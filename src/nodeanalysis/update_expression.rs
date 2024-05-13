@@ -106,7 +106,7 @@ impl UpdateExpressionNode {
 
                 (UpdateExpressionPrefix::Extra(_), _) => None,
             }
-        } else if let Some(_) = &self.postfix {
+        } else if self.postfix.is_some() {
             Some(val)
         } else {
             None
@@ -206,11 +206,11 @@ impl NodeAccess for UpdateExpressionPostfix {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Operator(Operators::UpdateExpressionPostfix(self))
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         vec![]
     }
 }
@@ -240,11 +240,11 @@ impl NodeAccess for UpdateExpressionPrefix {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Operator(Operators::UpdateExpressionPrefix(self))
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         vec![]
     }
 }

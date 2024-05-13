@@ -38,8 +38,8 @@ impl NodeParser for WhileStatementBody {
 
             _ => {
                 if let Some(x) = _StatementNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| WhileStatementBody::_Statement(y))
+                    .map(Box::new)
+                    .map(WhileStatementBody::_Statement)
                 {
                     x
                 } else {
@@ -68,14 +68,9 @@ impl WhileStatementBody {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _StatementNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| WhileStatementBody::_Statement(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _StatementNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(WhileStatementBody::_Statement),
                 )
             }
         }))
@@ -148,7 +143,7 @@ impl NodeAccess for WhileStatementBody {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             WhileStatementBody::Extra(x) => x.as_any(),
             WhileStatementBody::_Statement(x) => x.as_any(),
@@ -156,7 +151,7 @@ impl NodeAccess for WhileStatementBody {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             WhileStatementBody::Extra(x) => x.children_any(),
             WhileStatementBody::_Statement(x) => x.children_any(),
@@ -223,7 +218,7 @@ impl NodeAccess for WhileStatementNode {
         "WhileStatementNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::WhileStatement(self)
     }
 

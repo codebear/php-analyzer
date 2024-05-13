@@ -58,7 +58,7 @@ impl NodeAccess for AugmentedAssignmentExpressionOperator {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Operator(Operators::AugmentedAssignment(self))
     }
 }
@@ -93,16 +93,8 @@ impl AugmentedAssignmentExpressionNode {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
-        let _left = if let Some(l) = self.left.get_php_value(state, emitter) {
-            l
-        } else {
-            return None;
-        };
-        let _right = if let Some(r) = self.right.get_php_value(state, emitter) {
-            r
-        } else {
-            return None;
-        };
+        let _left = self.left.get_php_value(state, emitter)?;
+        let _right = self.right.get_php_value(state, emitter)?;
         let _noe: Option<u32> = match *self.operator {
             AugmentedAssignmentExpressionOperator::ModAssign(_) => crate::missing_none!(
                 "{}.get_php_value(..) [op = {:?}]",

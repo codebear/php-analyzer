@@ -42,8 +42,8 @@ impl NodeParser for FunctionDefinitionReturnType {
 
             _ => {
                 if let Some(x) = _TypeNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| FunctionDefinitionReturnType::_Type(y))
+                    .map(Box::new)
+                    .map(FunctionDefinitionReturnType::_Type)
                 {
                     x
                 } else {
@@ -72,14 +72,9 @@ impl FunctionDefinitionReturnType {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _TypeNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| FunctionDefinitionReturnType::_Type(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _TypeNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(FunctionDefinitionReturnType::_Type),
                 )
             }
         }))
@@ -153,7 +148,7 @@ impl NodeAccess for FunctionDefinitionReturnType {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             FunctionDefinitionReturnType::Extra(x) => x.as_any(),
             FunctionDefinitionReturnType::_Type(x) => x.as_any(),
@@ -161,7 +156,7 @@ impl NodeAccess for FunctionDefinitionReturnType {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             FunctionDefinitionReturnType::Extra(x) => x.children_any(),
             FunctionDefinitionReturnType::_Type(x) => x.children_any(),
@@ -243,7 +238,7 @@ impl NodeAccess for FunctionDefinitionNode {
         "FunctionDefinitionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::FunctionDefinition(self)
     }
 

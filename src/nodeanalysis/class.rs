@@ -24,11 +24,7 @@ pub trait AnalysisOfClassBaseLikeNode: NodeAccess {
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
     ) -> Option<ClassName> {
-        let mut names = if let Some(names) = self.get_declared_base_class_names(state, emitter) {
-            names
-        } else {
-            return None;
-        };
+        let mut names = self.get_declared_base_class_names(state, emitter)?;
 
         if names.len() > 1 {
             emitter.emit(Issue::ParseAnomaly(
@@ -71,7 +67,7 @@ pub trait AnalysisOfClassBaseLikeNode: NodeAccess {
                     _ => continue,
                 }
             }
-            return if res.len() > 0 { Some(res) } else { None };
+            return if !res.is_empty() { Some(res) } else { None };
         }
         None
     }

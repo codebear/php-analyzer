@@ -141,7 +141,7 @@ impl NodeAccess for UseInsteadOfClauseChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             UseInsteadOfClauseChildren::Extra(x) => x.as_any(),
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => x.as_any(),
@@ -149,7 +149,7 @@ impl NodeAccess for UseInsteadOfClauseChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             UseInsteadOfClauseChildren::Extra(x) => x.children_any(),
             UseInsteadOfClauseChildren::ClassConstantAccessExpression(x) => x.children_any(),
@@ -207,7 +207,7 @@ impl NodeAccess for UseInsteadOfClauseNode {
         "UseInsteadOfClauseNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::UseInsteadOfClause(self)
     }
 

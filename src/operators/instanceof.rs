@@ -39,7 +39,7 @@ impl BinaryOperator for InstanceofOperator {
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
     ) -> Option<UnionType> {
-        return Some(DiscreteType::Bool.into());
+        Some(DiscreteType::Bool.into())
     }
 
     fn get_operator_php_value(
@@ -101,12 +101,11 @@ impl BinaryOperatorBranchTypeHardening for InstanceofOperator {
                                 let _emitter = VoidEmitter::new();
                                 new_scope_with_harden_variable_type_based_on_filter(
                                     scope,
-                                    &**var_name,
+                                    var_name,
                                     state,
                                     move |dtype: &&DiscreteType| {
-                                        let res =
-                                            dtype.can_be_instance_of(cname.clone(), &symbol_data);
-                                        res
+                                        
+                                        dtype.can_be_instance_of(cname.clone(), &symbol_data)
                                     },
                                     Some(Box::new(move |mut utype: UnionType| {
                                         if utype.len() == 0 {
@@ -125,7 +124,7 @@ impl BinaryOperatorBranchTypeHardening for InstanceofOperator {
                             BranchSide::FalseBranch => {
                                 new_scope_with_harden_variable_type_based_on_filter(
                                     scope,
-                                    &**var_name,
+                                    var_name,
                                     state,
                                     move |dtype: &&DiscreteType| {
                                         !dtype.can_be_instance_of(cname.clone(), &symbol_data)

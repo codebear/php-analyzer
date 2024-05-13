@@ -241,7 +241,7 @@ impl NodeAccess for ByRefChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ByRefChildren::Extra(x) => x.as_any(),
             ByRefChildren::DynamicVariableName(x) => x.as_any(),
@@ -256,7 +256,7 @@ impl NodeAccess for ByRefChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ByRefChildren::Extra(x) => x.children_any(),
             ByRefChildren::DynamicVariableName(x) => x.children_any(),
@@ -317,7 +317,7 @@ impl NodeParser for ByRefNode {
                 .map(|k| ByRefChildren::parse(k, source))
                 .collect::<Result<Vec<ByRefChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -340,7 +340,7 @@ impl NodeAccess for ByRefNode {
         "ByRefNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::ByRef(self)
     }
 

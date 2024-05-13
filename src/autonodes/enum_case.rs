@@ -156,7 +156,7 @@ impl NodeAccess for EnumCaseValue {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             EnumCaseValue::Extra(x) => x.as_any(),
             EnumCaseValue::EncapsedString(x) => x.as_any(),
@@ -167,7 +167,7 @@ impl NodeAccess for EnumCaseValue {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             EnumCaseValue::Extra(x) => x.children_any(),
             EnumCaseValue::EncapsedString(x) => x.children_any(),
@@ -244,7 +244,7 @@ impl NodeAccess for EnumCaseNode {
         "EnumCaseNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::EnumCase(self)
     }
 

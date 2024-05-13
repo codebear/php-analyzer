@@ -147,7 +147,7 @@ impl NodeAccess for UnionTypeChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             UnionTypeChildren::Extra(x) => x.as_any(),
             UnionTypeChildren::NamedType(x) => x.as_any(),
@@ -156,7 +156,7 @@ impl NodeAccess for UnionTypeChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             UnionTypeChildren::Extra(x) => x.children_any(),
             UnionTypeChildren::NamedType(x) => x.children_any(),
@@ -224,7 +224,7 @@ impl NodeAccess for UnionTypeNode {
         "UnionTypeNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::UnionType(self)
     }
 

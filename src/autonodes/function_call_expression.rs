@@ -378,7 +378,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             FunctionCallExpressionFunction::Extra(x) => x.as_any(),
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => x.as_any(),
@@ -399,7 +399,7 @@ impl NodeAccess for FunctionCallExpressionFunction {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             FunctionCallExpressionFunction::Extra(x) => x.children_any(),
             FunctionCallExpressionFunction::ArrayCreationExpression(x) => x.children_any(),
@@ -484,7 +484,7 @@ impl NodeAccess for FunctionCallExpressionNode {
         "FunctionCallExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::FunctionCallExpression(self)
     }
 

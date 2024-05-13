@@ -100,13 +100,9 @@ impl<'a> NodeDescription for AnyNodeRef<'a> {
         path: Option<&[AnyNodeRef]>,
         state: &mut AnalysisState,
     ) -> Option<String> {
-        if let Some(x) = self.with_describeable(Box::new(|x: &dyn NodeDescription| {
+        self.with_describeable(Box::new(|x: &dyn NodeDescription| {
             x.describe_node(path, state)
-        })) {
-            x
-        } else {
-            None
-        }
+        }))?
     }
 
     fn intersect_up_traversal(&self) -> bool {

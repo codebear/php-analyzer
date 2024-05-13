@@ -126,7 +126,7 @@ impl NodeAccess for NamedTypeChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             NamedTypeChildren::Extra(x) => x.as_any(),
             NamedTypeChildren::Name(x) => x.as_any(),
@@ -134,7 +134,7 @@ impl NodeAccess for NamedTypeChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             NamedTypeChildren::Extra(x) => x.children_any(),
             NamedTypeChildren::Name(x) => x.children_any(),
@@ -181,7 +181,7 @@ impl NodeParser for NamedTypeNode {
                 .map(|k| NamedTypeChildren::parse(k, source))
                 .collect::<Result<Vec<NamedTypeChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -204,7 +204,7 @@ impl NodeAccess for NamedTypeNode {
         "NamedTypeNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::NamedType(self)
     }
 

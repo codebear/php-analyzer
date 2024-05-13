@@ -46,11 +46,7 @@ impl UnaryOpExpressionNode {
     ) -> Option<PHPValue> {
         let operator = &self.operator;
 
-        let value = if let Some(v) = self.argument.get_php_value(state, emitter) {
-            v
-        } else {
-            return None;
-        };
+        let value = self.argument.get_php_value(state, emitter)?;
 
         match (&**operator, value) {
             (UnaryOpExpressionOperator::Not(_), v) => v.as_bool().map(|x| PHPValue::Boolean(!x)),
@@ -66,7 +62,7 @@ impl UnaryOpExpressionNode {
                 crate::missing_none!("unary binary not")
             }
 
-            (UnaryOpExpressionOperator::Extra(_), _) => return None,
+            (UnaryOpExpressionOperator::Extra(_), _) => None,
             _ => crate::missing_none!("get_php_value: {:?}", self),
         }
     }
@@ -93,11 +89,11 @@ impl NodeAccess for UnaryOpExpressionOperator {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Operator(Operators::Unary(self))
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         vec![]
     }
 }

@@ -20,7 +20,7 @@ pub trait BinaryOperator {
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
     ) -> Option<UnionType> {
-        return None;
+        None
     }
 
     fn get_operator_php_value(

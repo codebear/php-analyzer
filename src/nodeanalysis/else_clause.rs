@@ -6,7 +6,7 @@ use crate::{
 // use super::analysis::AnalyzeableRoundTwoNode;
 impl ElseClauseNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
-        ()
+        
         // crate::missing!("{}.read_from(..)", self.kind());
     }
 

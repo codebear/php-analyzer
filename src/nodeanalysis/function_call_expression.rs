@@ -1,5 +1,4 @@
 use std::{
-    ffi::OsString,
     os::unix::prelude::OsStrExt,
     sync::{Arc, RwLock},
 };
@@ -13,7 +12,7 @@ use crate::{
     issue::{Issue, IssueEmitter},
     nodeanalysis::lang::AnalysisOfType,
     symboldata::FunctionData,
-    symbols::{FullyQualifiedName, Name},
+    symbols::{FullyQualifiedName},
     types::union::{DiscreteType, UnionType},
     value::PHPValue,
 };
@@ -86,7 +85,7 @@ impl FunctionCallExpressionFunction {
         if state.symbol_data.get_function(&fq_name).is_some() {
             fq_name
         } else {
-            let name = fq_name.get_name().unwrap_or_else(|| Name::new());
+            let name = fq_name.get_name().unwrap_or_default();
             let root_name = FullyQualifiedName::from(name.clone());
             match name.to_os_string().as_bytes() {
                 b"empty" | b"isset" | b"unset" => {
@@ -190,7 +189,7 @@ fn analyze_define_call(
         return;
     }
 
-    if state.in_function_stack.len() > 0 {
+    if !state.in_function_stack.is_empty() {
         emitter.emit(Issue::ConditionalConstantDeclaration(call.pos(state)));
     }
 
@@ -232,7 +231,7 @@ fn analyze_define_call(
         .filename
         .as_ref()
         .map(|x| x.as_os_str().to_os_string())
-        .unwrap_or_else(|| OsString::new());
+        .unwrap_or_default();
 
     //if let Some(val) = value {
     let mut mutable = state.global.constants.write().unwrap();

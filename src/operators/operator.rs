@@ -24,7 +24,7 @@ pub trait Operator {
 
     fn brief_desc(&self) -> String;
 
-    fn children_any<'b>(&'b self) -> Vec<AnyNodeRef<'b>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         vec![]
     }
 }
@@ -107,7 +107,7 @@ impl<'a> NodeAccess for Operators<'a> {
         }
     }
 
-    fn as_any<'b>(&'b self) -> AnyNodeRef<'b> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             Operators::Binary(op) => op.as_any(),
             Operators::Unary(op) => op.as_any(),

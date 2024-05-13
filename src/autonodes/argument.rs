@@ -41,8 +41,8 @@ impl NodeParser for ArgumentChildren {
 
             _ => {
                 if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                    .map(|x| Box::new(x))
-                    .map(|y| ArgumentChildren::_Expression(y))
+                    .map(Box::new)
+                    .map(ArgumentChildren::_Expression)
                 {
                     x
                 } else {
@@ -72,14 +72,9 @@ impl ArgumentChildren {
 
             _ => {
                 return Ok(
-                    if let Some(x) = _ExpressionNode::parse_opt(node, source)?
-                        .map(|x| Box::new(x))
-                        .map(|y| ArgumentChildren::_Expression(y))
-                    {
-                        Some(x)
-                    } else {
-                        None
-                    },
+                    _ExpressionNode::parse_opt(node, source)?
+                        .map(Box::new)
+                        .map(ArgumentChildren::_Expression),
                 )
             }
         }))
@@ -155,7 +150,7 @@ impl NodeAccess for ArgumentChildren {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             ArgumentChildren::Extra(x) => x.as_any(),
             ArgumentChildren::_Expression(x) => x.as_any(),
@@ -164,7 +159,7 @@ impl NodeAccess for ArgumentChildren {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             ArgumentChildren::Extra(x) => x.children_any(),
             ArgumentChildren::_Expression(x) => x.children_any(),
@@ -228,7 +223,7 @@ impl NodeParser for ArgumentNode {
                 .map(|k| ArgumentChildren::parse(k, source))
                 .collect::<Result<Vec<ArgumentChildren>, ParseError>>()?
                 .drain(..)
-                .map(|j| Box::new(j))
+                .map(Box::new)
                 .next()
                 .expect("Should be a child"),
             extras: ExtraChild::parse_vec(
@@ -252,7 +247,7 @@ impl NodeAccess for ArgumentNode {
         "ArgumentNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::Argument(self)
     }
 

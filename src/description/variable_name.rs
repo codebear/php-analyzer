@@ -17,8 +17,8 @@ impl NodeDescription for VariableNameNode {
         let var_handle = scope_handle.get_var(&var_name)?;
         let var_data = var_handle.read().unwrap();
         let mut buf = String::new();
-        buf.push_str(&format!("|  |  |\n"));
-        buf.push_str(&format!("| --- | --- |\n"));
+        buf.push_str("|  |  |\n");
+        buf.push_str("| --- | --- |\n");
         buf.push_str(&format!("| Var-name |  `${}` |\n", var_data.name));
         if let Some(dtype) = var_data.get_declared_type() {
             buf.push_str(&format!("| Declared-type: |  {} |\n", dtype));

@@ -16,7 +16,7 @@ use super::analysis::SecondPassAnalyzeableNode;
 impl ClassConstantAccessExpressionNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         // FIXME marker en konstant som brukt
-        ()
+        
     }
 
     pub fn get_utype(
@@ -129,7 +129,7 @@ impl ClassConstantAccessExpressionNode {
             ClassConstantAccessExpressionClass::QualifiedName(n) => {
                 let fq_name = n.get_fq_name(state);
                 Some(vec![ClassName::new_with_names(
-                    fq_name.get_name().unwrap_or_else(|| Name::new()),
+                    fq_name.get_name().unwrap_or_else(Name::new),
                     fq_name,
                 )])
             }
@@ -138,23 +138,10 @@ impl ClassConstantAccessExpressionNode {
 
                 match rel_scope.to_ascii_lowercase().as_bytes() {
                     b"static" => {
-                        if let Some(cstate) = &state.in_class {
-                            // This one is actually wrong...
-                            // emitter.emit(self.range, format!("Refering to a constant with `static` is ilogical, as the constant can't be abstract, missing nor redefined in a subclass").into());
-                            // FIXME how to ve analyze this?
-                            Some(vec![cstate.get_name()])
-                        } else {
-                            // error-state?
-                            None
-                        }
+                        state.in_class.as_ref().map(|cstate| vec![cstate.get_name()])
                     }
                     b"self" => {
-                        if let Some(cstate) = &state.in_class {
-                            Some(vec![cstate.get_name()])
-                        } else {
-                            // error-state?
-                            None
-                        }
+                        state.in_class.as_ref().map(|cstate| vec![cstate.get_name()])
                     }
                     b"parent" => crate::missing_none!(),
                     _ => panic!("Should not get here"),
@@ -208,7 +195,7 @@ impl ClassConstantAccessExpressionNode {
                             }
                         }
                     }
-                    if names.len() > 0 {
+                    if !names.is_empty() {
                         return Some(names);
                     }
                     crate::missing_none!(
@@ -251,7 +238,7 @@ impl ClassConstantAccessExpressionNode {
 
             // FIXME handle SomeClass::class-constants
 
-            let class_data = state.symbol_data.get_class(&class_name)?;
+            let class_data = state.symbol_data.get_class(class_name)?;
             let classish = class_data.read().unwrap();
 
             if let Some(v) = classish.get_constant_value(&state.symbol_data, &constant_name) {
@@ -260,7 +247,7 @@ impl ClassConstantAccessExpressionNode {
                 return None;
             }
         }
-        if values.len() == 0 {
+        if values.is_empty() {
             return None;
         }
         PHPValue::single_unique(&values)
@@ -275,7 +262,7 @@ impl SecondPassAnalyzeableNode for ClassConstantAccessExpressionNode {
 
                 // FIXME handle SomeClass::class-constants
 
-                if let Some(class_data) = state.symbol_data.get_class(&class_name) {
+                if let Some(class_data) = state.symbol_data.get_class(class_name) {
                     if constant_name == b"class" as &[u8] {
                         continue;
                     }

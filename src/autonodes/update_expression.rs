@@ -314,7 +314,7 @@ impl NodeAccess for UpdateExpressionArgument {
         }
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         match self {
             UpdateExpressionArgument::Extra(x) => x.as_any(),
             UpdateExpressionArgument::CastExpression(x) => x.as_any(),
@@ -331,7 +331,7 @@ impl NodeAccess for UpdateExpressionArgument {
         }
     }
 
-    fn children_any<'a>(&'a self) -> Vec<AnyNodeRef<'a>> {
+    fn children_any(&self) -> Vec<AnyNodeRef<'_>> {
         match self {
             UpdateExpressionArgument::Extra(x) => x.children_any(),
             UpdateExpressionArgument::CastExpression(x) => x.children_any(),
@@ -551,7 +551,7 @@ impl NodeAccess for UpdateExpressionNode {
         "UpdateExpressionNode".into()
     }
 
-    fn as_any<'a>(&'a self) -> AnyNodeRef<'a> {
+    fn as_any(&self) -> AnyNodeRef<'_> {
         AnyNodeRef::UpdateExpression(self)
     }
 
