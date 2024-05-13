@@ -39,14 +39,14 @@ impl StringNode {
 impl StringChildren {
     pub fn get_string_value(&self) -> Option<&[u8]> {
         match self {
-            StringChildren::Extra(y) => todo!(),
-            StringChildren::EscapeSequence(y) => todo!(),
-            StringChildren::StringValue(y) => {
-                let len = y.raw.len();
+            StringChildren::Extra(_y) => todo!(),
+            StringChildren::EscapeSequence(_y) => todo!(),
+            StringChildren::StringValue(strval) => {
+                let len = strval.raw.len();
                 if len < 2 {
                     return None;
                 }
-                let raw = &y.raw[1..len - 1];
+                let raw = &strval.raw[1..len - 1];
                 Some(raw)
             }
         }

@@ -222,9 +222,9 @@ impl PHPValue {
             PHPValue::NULL => PHPValue::Boolean(false),
             PHPValue::Boolean(b) => PHPValue::Boolean(*b),
             PHPValue::Int(i) => PHPValue::Boolean(*i != 0),
-            PHPValue::Float(PHPFloat::Real(f)) => PHPValue::Boolean(if *f == 0.0 {
-                false
-            } else { *f != -0.0 }),
+            PHPValue::Float(PHPFloat::Real(f)) => {
+                PHPValue::Boolean(if *f == 0.0 { false } else { *f != -0.0 })
+            }
             PHPValue::Float(_) => return crate::missing_none!("Non real float .as_php_bool()"),
             PHPValue::String(s) => {
                 if s.len() == 0 {
@@ -235,7 +235,7 @@ impl PHPValue {
                     PHPValue::Boolean(true)
                 }
             }
-            PHPValue::Array(v) => PHPValue::Boolean(v.len() > 0),
+            PHPValue::Array(v) => PHPValue::Boolean(!v.is_empty()),
             PHPValue::ObjectInstance(_) => PHPValue::Boolean(true),
         })
     }
@@ -396,6 +396,14 @@ impl PHPArray {
             PHPArray::Empty => 0,
             PHPArray::Vector(v) => v.len(),
             PHPArray::HashMap(h) => h.len(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            PHPArray::Empty => true,
+            PHPArray::Vector(v) => v.is_empty(),
+            PHPArray::HashMap(h) => h.is_empty(),
         }
     }
 
