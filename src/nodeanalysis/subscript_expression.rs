@@ -88,7 +88,9 @@ impl SubscriptExpressionNode {
 
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         self.dereferenceable.read_from(state, emitter);
-        if let Some(x) = self.index.as_ref() { x.read_from(state, emitter) }
+        if let Some(x) = self.index.as_ref() {
+            x.read_from(state, emitter)
+        }
     }
 
     pub fn get_key_value(
@@ -224,7 +226,9 @@ impl ThirdPassAnalyzeableNode for SubscriptExpressionNode {
         emitter: &dyn IssueEmitter,
         path: &Vec<AnyNodeRef>,
     ) -> bool {
-        if let Some(i) = self.index.as_ref() { i.read_from(state, emitter) }
+        if let Some(i) = self.index.as_ref() {
+            i.read_from(state, emitter)
+        }
         self.analyze_third_pass_children(&self.as_any(), state, emitter, path)
     }
 }

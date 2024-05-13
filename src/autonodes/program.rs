@@ -65,11 +65,9 @@ impl ProgramChildren {
             "text" => ProgramChildren::Text(Box::new(TextNode::parse(node, source)?)),
 
             _ => {
-                return Ok(
-                    _StatementNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ProgramChildren::_Statement),
-                )
+                return Ok(_StatementNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ProgramChildren::_Statement))
             }
         }))
     }

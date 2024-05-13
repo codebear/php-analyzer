@@ -98,11 +98,9 @@ impl NullsafeMemberAccessExpressionName {
             )),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(NullsafeMemberAccessExpressionName::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(NullsafeMemberAccessExpressionName::_Expression))
             }
         }))
     }

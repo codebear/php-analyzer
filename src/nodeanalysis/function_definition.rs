@@ -143,7 +143,9 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                             PHPDocEntry::Param(_, _, osstr_name, _) => {
                                 if let Some(osstr_name) = osstr_name {
                                     let name = osstr_name.into();
-                                    if let std::collections::hash_map::Entry::Vacant(e) = param_map.entry(name) {
+                                    if let std::collections::hash_map::Entry::Vacant(e) =
+                                        param_map.entry(name)
+                                    {
                                         e.insert(entry.clone());
                                     } else {
                                         crate::missing!("Emit duplicate phpdoc param name");
@@ -167,9 +169,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                     }
                     //phpdoc = Some(doc_comment);
                 }
-                Err(_) => {
-                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(*range)))
-                }
+                Err(_) => emitter.emit(Issue::PHPDocParseError(state.pos_from_range(*range))),
             }
         }
 

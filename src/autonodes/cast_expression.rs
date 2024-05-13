@@ -91,11 +91,9 @@ impl CastExpressionValue {
             )),
 
             _ => {
-                return Ok(
-                    _PrimaryExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(CastExpressionValue::_PrimaryExpression),
-                )
+                return Ok(_PrimaryExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(CastExpressionValue::_PrimaryExpression))
             }
         }))
     }

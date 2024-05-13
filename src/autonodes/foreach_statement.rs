@@ -70,11 +70,9 @@ impl ForeachStatementBody {
             }
 
             _ => {
-                return Ok(
-                    _StatementNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ForeachStatementBody::_Statement),
-                )
+                return Ok(_StatementNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ForeachStatementBody::_Statement))
             }
         }))
     }
@@ -228,11 +226,9 @@ impl ForeachStatementEntry {
             "pair" => ForeachStatementEntry::Pair(Box::new(PairNode::parse(node, source)?)),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ForeachStatementEntry::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ForeachStatementEntry::_Expression))
             }
         }))
     }

@@ -94,11 +94,9 @@ impl MemberAccessExpressionName {
             )),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(MemberAccessExpressionName::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(MemberAccessExpressionName::_Expression))
             }
         }))
     }

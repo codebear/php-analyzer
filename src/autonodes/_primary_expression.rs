@@ -257,11 +257,9 @@ impl _PrimaryExpressionNode {
             )),
 
             _ => {
-                return Ok(
-                    _LiteralNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(_PrimaryExpressionNode::_Literal),
-                )
+                return Ok(_LiteralNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(_PrimaryExpressionNode::_Literal))
             }
         }))
     }

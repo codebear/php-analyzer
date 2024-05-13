@@ -190,13 +190,7 @@ pub struct LookingForNode {
     pub pos: Point,
     pub callback: Arc<
         RwLock<
-            Option<
-                Box<
-                    dyn FnOnce(AnyNodeRef, &mut AnalysisState, &Vec<AnyNodeRef>)
-                        + Send
-                        + Sync,
-                >,
-            >,
+            Option<Box<dyn FnOnce(AnyNodeRef, &mut AnalysisState, &Vec<AnyNodeRef>) + Send + Sync>>,
         >,
     >,
 }

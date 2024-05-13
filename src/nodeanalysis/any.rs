@@ -126,9 +126,11 @@ impl IntoThirdPassAnalyzeable for AnyNodeRef<'_> {
 
 impl FirstPassAnalyzeableNode for AnyNodeRef<'_> {
     fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if self.with_first_pass_analyzeable(&mut |x: &dyn FirstPassAnalyzeableNode| {
+        if self
+            .with_first_pass_analyzeable(&mut |x: &dyn FirstPassAnalyzeableNode| {
                 x.analyze_first_pass(state, emitter)
-            }).is_some()
+            })
+            .is_some()
         {
             // good
         } else {
@@ -139,9 +141,11 @@ impl FirstPassAnalyzeableNode for AnyNodeRef<'_> {
 
 impl SecondPassAnalyzeableNode for AnyNodeRef<'_> {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
-        if self.with_second_pass_analyzeable(&mut |x: &dyn SecondPassAnalyzeableNode| {
+        if self
+            .with_second_pass_analyzeable(&mut |x: &dyn SecondPassAnalyzeableNode| {
                 x.analyze_second_pass(state, emitter)
-            }).is_some()
+            })
+            .is_some()
         {
             // good
         } else {

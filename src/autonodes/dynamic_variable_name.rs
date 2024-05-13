@@ -72,11 +72,9 @@ impl DynamicVariableNameChildren {
             )),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(DynamicVariableNameChildren::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(DynamicVariableNameChildren::_Expression))
             }
         }))
     }

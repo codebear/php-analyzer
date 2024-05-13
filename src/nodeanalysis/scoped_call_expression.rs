@@ -137,7 +137,8 @@ impl ScopedCallExpressionNode {
 
         let noe = class_data_handle.read().unwrap();
 
-        noe.get_method(&method_name, state.symbol_data.clone()).map(|mdata| (class_name, mdata))
+        noe.get_method(&method_name, state.symbol_data.clone())
+            .map(|mdata| (class_name, mdata))
     }
 
     pub fn get_utype(

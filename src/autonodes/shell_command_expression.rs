@@ -113,11 +113,9 @@ impl ShellCommandExpressionChildren {
             )),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ShellCommandExpressionChildren::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ShellCommandExpressionChildren::_Expression))
             }
         }))
     }

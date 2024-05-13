@@ -177,11 +177,9 @@ impl _ExpressionNode {
             )),
 
             _ => {
-                return Ok(
-                    _PrimaryExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(_ExpressionNode::_PrimaryExpression),
-                )
+                return Ok(_PrimaryExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(_ExpressionNode::_PrimaryExpression))
             }
         }))
     }

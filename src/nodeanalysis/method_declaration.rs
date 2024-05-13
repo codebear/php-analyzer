@@ -214,7 +214,9 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                             PHPDocEntry::Param(range, vtype, osstr_name, desc) => {
                                 if let Some(osstr_name) = osstr_name {
                                     let name: Name = osstr_name.into();
-                                    if let std::collections::hash_map::Entry::Vacant(e) = param_map.entry(name) {
+                                    if let std::collections::hash_map::Entry::Vacant(e) =
+                                        param_map.entry(name)
+                                    {
                                         e.insert(entry.clone());
                                     } else {
                                         emitter.emit(Issue::InvalidPHPDocEntry(
@@ -245,9 +247,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                     }
                     phpdoc = Some(doc_comment);
                 }
-                Err(_) => {
-                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(*range)))
-                }
+                Err(_) => emitter.emit(Issue::PHPDocParseError(state.pos_from_range(*range))),
             }
         }
 

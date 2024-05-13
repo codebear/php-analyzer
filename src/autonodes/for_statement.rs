@@ -67,11 +67,9 @@ impl ForStatementCondition {
             )),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ForStatementCondition::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ForStatementCondition::_Expression))
             }
         }))
     }
@@ -220,11 +218,9 @@ impl ForStatementIncrement {
             )),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ForStatementIncrement::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ForStatementIncrement::_Expression))
             }
         }))
     }
@@ -373,11 +369,9 @@ impl ForStatementInitialize {
             )),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ForStatementInitialize::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ForStatementInitialize::_Expression))
             }
         }))
     }

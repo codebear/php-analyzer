@@ -67,11 +67,9 @@ impl ArrayElementInitializerValue {
             }
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ArrayElementInitializerValue::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ArrayElementInitializerValue::_Expression))
             }
         }))
     }

@@ -65,11 +65,9 @@ impl YieldExpressionChildren {
             ),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(YieldExpressionChildren::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(YieldExpressionChildren::_Expression))
             }
         }))
     }

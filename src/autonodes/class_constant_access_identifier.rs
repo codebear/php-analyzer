@@ -65,11 +65,9 @@ impl ClassConstantAccessIdentifierChildren {
             )?)),
 
             _ => {
-                return Ok(
-                    _ExpressionNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ClassConstantAccessIdentifierChildren::_Expression),
-                )
+                return Ok(_ExpressionNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ClassConstantAccessIdentifierChildren::_Expression))
             }
         }))
     }

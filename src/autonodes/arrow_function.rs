@@ -71,11 +71,9 @@ impl ArrowFunctionReturnType {
             }
 
             _ => {
-                return Ok(
-                    _TypeNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(ArrowFunctionReturnType::_Type),
-                )
+                return Ok(_TypeNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(ArrowFunctionReturnType::_Type))
             }
         }))
     }

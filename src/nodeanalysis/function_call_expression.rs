@@ -12,7 +12,7 @@ use crate::{
     issue::{Issue, IssueEmitter},
     nodeanalysis::lang::AnalysisOfType,
     symboldata::FunctionData,
-    symbols::{FullyQualifiedName},
+    symbols::FullyQualifiedName,
     types::union::{DiscreteType, UnionType},
     value::PHPValue,
 };

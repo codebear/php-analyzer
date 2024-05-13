@@ -824,7 +824,9 @@ impl DiscreteType {
             DiscreteType::Unknown => (),
             DiscreteType::Named(name, fqname) => {
                 if let Some(fq_last_name) = fqname.get_name() {
-                    if fq_last_name.eq_ignore_ascii_case(name.to_os_string()) && *name != fq_last_name {
+                    if fq_last_name.eq_ignore_ascii_case(name.to_os_string())
+                        && *name != fq_last_name
+                    {
                         emitter.emit(Issue::WrongClassNameCasing(
                             state.pos_from_range(range),
                             name.clone(),
@@ -1212,8 +1214,7 @@ impl Display for DiscreteType {
                 ),
                 DiscreteType::Special(s) => s.to_string(),
                 DiscreteType::Vector(t) => format!("array<{}>", t),
-                DiscreteType::HashMap(k, v) =>
-                    format!("array<{},{}>", k, v),
+                DiscreteType::HashMap(k, v) => format!("array<{},{}>", k, v),
                 DiscreteType::Unknown => "*unknown*".to_string(),
                 DiscreteType::Named(_, t) => t.to_string(),
                 DiscreteType::Object => "object".to_string(),

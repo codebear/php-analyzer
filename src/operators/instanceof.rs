@@ -104,7 +104,6 @@ impl BinaryOperatorBranchTypeHardening for InstanceofOperator {
                                     var_name,
                                     state,
                                     move |dtype: &&DiscreteType| {
-                                        
                                         dtype.can_be_instance_of(cname.clone(), &symbol_data)
                                     },
                                     Some(Box::new(move |mut utype: UnionType| {

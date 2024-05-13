@@ -78,11 +78,9 @@ impl MethodDeclarationReturnType {
             )),
 
             _ => {
-                return Ok(
-                    _TypeNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(MethodDeclarationReturnType::_Type),
-                )
+                return Ok(_TypeNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(MethodDeclarationReturnType::_Type))
             }
         }))
     }

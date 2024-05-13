@@ -16,7 +16,6 @@ use super::analysis::SecondPassAnalyzeableNode;
 impl ClassConstantAccessExpressionNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         // FIXME marker en konstant som brukt
-        
     }
 
     pub fn get_utype(
@@ -137,12 +136,14 @@ impl ClassConstantAccessExpressionNode {
                 let rel_scope = n.get_raw();
 
                 match rel_scope.to_ascii_lowercase().as_bytes() {
-                    b"static" => {
-                        state.in_class.as_ref().map(|cstate| vec![cstate.get_name()])
-                    }
-                    b"self" => {
-                        state.in_class.as_ref().map(|cstate| vec![cstate.get_name()])
-                    }
+                    b"static" => state
+                        .in_class
+                        .as_ref()
+                        .map(|cstate| vec![cstate.get_name()]),
+                    b"self" => state
+                        .in_class
+                        .as_ref()
+                        .map(|cstate| vec![cstate.get_name()]),
                     b"parent" => crate::missing_none!(),
                     _ => panic!("Should not get here"),
                 }

@@ -44,9 +44,7 @@ pub struct ClassDeclarationState {
 }
 
 impl ClassDeclarationNode {
-    pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
-        
-    }
+    pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {}
 
     pub fn get_php_value(
         &self,
@@ -72,7 +70,7 @@ impl ClassDeclarationNode {
     fn get_class_name(&self, state: &mut AnalysisState) -> ClassName {
         let decl_class_name = self.get_declared_name();
         // new_with_analysis_state går nok via use-map, og deklarert klassenavn bør ikke det...
-        
+
         ClassName::new_with_analysis_state_without_aliasing(&decl_class_name, state)
     }
 
@@ -298,12 +296,9 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                 let pname_u8v = lcparam.as_bytes();
                                 match pname_u8v {
                                     b"extends" | b"implements" | b"inherits" | b"mixin" => {
-                                        if let Some(ptype) = UnionType::parse(
-                                            data.clone(),
-                                            *range,
-                                            state,
-                                            emitter,
-                                        ) {
+                                        if let Some(ptype) =
+                                            UnionType::parse(data.clone(), *range, state, emitter)
+                                        {
                                             match pname_u8v {
                                                 b"extends" | b"inherits" => {
                                                     // TODO might emit
@@ -313,9 +308,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                                         } else {
                                                             emitter.emit(
                                                                 Issue::InvalidPHPDocEntry(
-                                                                    state.pos_from_range(
-                                                                        *range,
-                                                                    ),
+                                                                    state.pos_from_range(*range),
                                                                     "Can't @extend a union-type"
                                                                         .into(),
                                                                 ),
@@ -393,9 +386,9 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                         }
                     }
                 }
-                Err(_) => emitter.emit(Issue::PHPDocParseError(
-                    state.pos_from_range(php_doc_range),
-                )),
+                Err(_) => {
+                    emitter.emit(Issue::PHPDocParseError(state.pos_from_range(php_doc_range)))
+                }
             }
         }
 
@@ -424,10 +417,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
             class_data.interfaces = int
                 .iter()
                 .map(|iname| {
-                    ClassName::new_with_names(
-                        iname.get_name().unwrap_or_default(),
-                        iname.clone(),
-                    )
+                    ClassName::new_with_names(iname.get_name().unwrap_or_default(), iname.clone())
                 })
                 .collect();
         }

@@ -81,7 +81,7 @@ impl QualifiedNameNode {
 
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
         // FIXME report usage of constant
-        
+
         //        crate::missing!("{}.read_from(..)", self.kind());
     }
 

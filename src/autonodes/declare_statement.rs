@@ -65,11 +65,9 @@ impl DeclareStatementChildren {
             )),
 
             _ => {
-                return Ok(
-                    _StatementNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(DeclareStatementChildren::_Statement),
-                )
+                return Ok(_StatementNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(DeclareStatementChildren::_Statement))
             }
         }))
     }

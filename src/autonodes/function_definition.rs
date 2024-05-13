@@ -71,11 +71,9 @@ impl FunctionDefinitionReturnType {
             )),
 
             _ => {
-                return Ok(
-                    _TypeNode::parse_opt(node, source)?
-                        .map(Box::new)
-                        .map(FunctionDefinitionReturnType::_Type),
-                )
+                return Ok(_TypeNode::parse_opt(node, source)?
+                    .map(Box::new)
+                    .map(FunctionDefinitionReturnType::_Type))
             }
         }))
     }
