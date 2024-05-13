@@ -11,8 +11,7 @@ pub fn test_int_return() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("int", &return_type.to_string());
@@ -27,8 +26,7 @@ pub fn test_string_return() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("string", &return_type.to_string());
@@ -48,8 +46,7 @@ pub fn test_conditional_array_1_return() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("int", &return_type.to_string());
@@ -69,8 +66,7 @@ pub fn test_conditional_array_2_return() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("array<int>", &return_type.to_string());
@@ -92,8 +88,7 @@ pub fn test_conditional_array_3_return() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("int", &return_type.to_string());
@@ -115,8 +110,7 @@ pub fn test_conditional_array_4_return() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("int", &return_type.to_string());
@@ -132,8 +126,7 @@ pub fn test_var_usage_in_str() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("string", &return_type.to_string());
@@ -149,8 +142,7 @@ pub fn test_noe1() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("double", &return_type.to_string());
@@ -167,8 +159,7 @@ pub fn test_noe2() {
     )) {
         res_type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     assert_eq!("string", &return_type.to_string());

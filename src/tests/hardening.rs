@@ -28,7 +28,7 @@ fn test_hardening_true() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -64,7 +64,7 @@ fn test_hardening_false() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -100,7 +100,7 @@ fn test_hardening_single_false_branch() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -134,7 +134,7 @@ fn test_hardening_instanceoof() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -168,7 +168,7 @@ fn test_hardening_assignment() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -212,7 +212,7 @@ fn test_hardening_instanceoof_multipath_1() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -259,7 +259,7 @@ fn test_hardening_instanceoof_multipath_2() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));

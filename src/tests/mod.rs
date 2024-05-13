@@ -179,7 +179,9 @@ fn evaluate_php_code_in_function<T: Into<OsString>>(
         if let Some(func_data_handle) = functions_handle.get(&func_name).cloned() {
             let func_data = func_data_handle.read().unwrap();
             result.function_data = Some(func_data.clone());
-            result.return_type.clone_from(&func_data.inferred_return_type);
+            result
+                .return_type
+                .clone_from(&func_data.inferred_return_type);
             result.return_value.clone_from(&func_data.return_value);
         } else {
             eprintln!("Mangler data om funksjonen test_output");

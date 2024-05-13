@@ -43,7 +43,7 @@ fn test_interface_references() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));

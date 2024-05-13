@@ -17,8 +17,7 @@ fn return_array_sub() {
     ) {
         value
     } else {
-        assert!(false, "Didn't get proper value");
-        return;
+        unreachable!("Didn't get proper value");
     };
     assert_eq!(&PHPValue::Int(3), &returned_value);
 }

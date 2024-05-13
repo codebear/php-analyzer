@@ -28,8 +28,7 @@ fn object_type() {
     ) {
         _type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
 
     if let Some(DiscreteType::Named(_, fq)) = ret_type.single_type() {
@@ -81,8 +80,7 @@ fn object_method_call_2() {
     let ret_type = if let Some(_type) = res.return_type {
         _type
     } else {
-        assert!(false, "Didn't get proper type");
-        return;
+        unreachable!("Didn't get proper type");
     };
     assert_eq!(Some(DiscreteType::Int), ret_type.single_type());
 }

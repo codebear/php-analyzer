@@ -74,7 +74,7 @@ fn test_namespace_references() {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -167,7 +167,7 @@ fn test_namespace_interface_references() {
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
             // eprintln!("RESULT: {:?}", result);
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -207,7 +207,7 @@ fn test_new_class_type_in_ns() {
             )
         );
     } else {
-        assert!(false, "funksjonen mangler");
+        unreachable!("funksjonen mangler");
     }
 }
 
@@ -270,7 +270,7 @@ fn test_namespace_and_root_class_ref() -> Result<(), &'static str> {
     for issue in result.issues {
         match issue {
             Issue::WrongClassNameCasing(_, _, _) => assert!(true),
-            _ => assert!(false, "Should only be a WrongClassNameCasing issue here"),
+            _ => unreachable!("Should only be a WrongClassNameCasing issue here"),
         }
     }
     let fname = FullyQualifiedName::from(r"\bar\test_new_x");
@@ -385,7 +385,7 @@ fn test_new_class_type_with_non_fq_name() {
             )
         );
     } else {
-        assert!(false, "funksjonen mangler");
+        unreachable!("funksjonen mangler");
     }
     let fname = FullyQualifiedName::from(r"\na\me\test_output2");
     if let Some(func_name) = symbol_data.get_function(&fname) {
@@ -400,6 +400,6 @@ fn test_new_class_type_with_non_fq_name() {
             )
         );
     } else {
-        assert!(false, "funksjonen mangler");
+        unreachable!("funksjonen mangler");
     }
 }

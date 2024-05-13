@@ -143,7 +143,7 @@ fn test_method_template() -> Result<(), &'static str> {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));
@@ -251,7 +251,7 @@ fn test_gen_detect_duplicate_template() -> Result<(), &'static str> {
             let data = func.read().unwrap();
             assert_eq!(data.inferred_return_type, Some(DiscreteType::String.into()));
         } else {
-            assert!(false, "data of function test_return not found");
+            unreachable!("data of function test_return not found");
         }
     }*/
     // assert_eq!(result.return_type, Some(DiscreteType::String.into()));

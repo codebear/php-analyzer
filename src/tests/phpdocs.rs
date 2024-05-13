@@ -82,7 +82,7 @@ pub fn test_var2() {
             ]
         );
     } else {
-        assert!(false, "Unable to parse doccomment");
+        unreachable!("Unable to parse doccomment");
     }
 }
 

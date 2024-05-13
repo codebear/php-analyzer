@@ -14,8 +14,7 @@ fn return_int_42() {
     )) {
         value
     } else {
-        assert!(false, "Didn't get proper value");
-        return;
+        unreachable!("Didn't get proper value");
     };
 
     assert_eq!(&PHPValue::Int(42), &returned_value);
@@ -31,8 +30,7 @@ fn return_int_via_var() {
     )) {
         value
     } else {
-        assert!(false, "Didn't get proper value");
-        return;
+        unreachable!("Didn't get proper value");
     };
 
     assert_eq!(&PHPValue::Int(42), &returned_value);
@@ -49,8 +47,7 @@ fn return_var_incremented() {
     )) {
         value
     } else {
-        assert!(false, "Didn't get proper value");
-        return;
+        unreachable!("Didn't get proper value");
     };
 
     assert_eq!(&PHPValue::Int(43), &returned_value);
@@ -66,8 +63,7 @@ fn return_var_postfix_increment() {
     )) {
         value
     } else {
-        assert!(false, "Didn't get proper value");
-        return;
+        unreachable!("Didn't get proper value");
     };
 
     assert_eq!(&PHPValue::Int(42), &returned_value);
