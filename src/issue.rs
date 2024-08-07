@@ -139,6 +139,9 @@ pub enum Issue {
 
     /// The analyzer arrived at a parse-state it considers impossible
     ParseAnomaly(IssuePosition, OsString),
+
+    ParseError(IssuePosition, OsString),
+
     VariableNotInitializedInAllBranhces(IssuePosition, Name),
 
     PHPDocParseError(IssuePosition),
@@ -152,6 +155,8 @@ pub enum Issue {
     RedundantPHPDocEntry(IssuePosition, OsString),
 
     UnknownPHPDocEntry(IssuePosition, OsString),
+
+    IllegalTypeInInstanceof(IssuePosition, String),
 }
 
 impl Issue {
@@ -219,7 +224,9 @@ impl Issue {
             | Self::InvalidPHPDocEntry(pos, _)
             | Self::RedundantPHPDocEntry(pos, _)
             | Self::UnknownPHPDocEntry(pos, _)
-            | Self::EmptyTemplate(pos, _) => pos.clone(),
+            | Self::IllegalTypeInInstanceof(pos, _)
+            | Self::EmptyTemplate(pos, _)
+            | Self::ParseError(pos, _) => pos.clone(),
         }
     }
 
@@ -277,6 +284,8 @@ impl Issue {
             Self::RedundantPHPDocEntry(_, _) => "RedundantPHPDocEntry",
             Self::UnknownPHPDocEntry(_, _) => "UnknownPHPDocEntry",
             Self::EmptyTemplate(_, _) => "EmptyTemplate",
+            Self::IllegalTypeInInstanceof(_, _) => "IllegalTypeInInstanceof",
+            Self::ParseError(_, _) => "ParseError",
         }
     }
 
@@ -378,6 +387,12 @@ impl Issue {
                 format!("Unknown PHPDoc-entry: {}", reason.to_string_lossy())
             }
             Self::EmptyTemplate(_, name) => format!("Generic template {} is unforfilled", name),
+            Self::IllegalTypeInInstanceof(_, desc) => {
+                format!("Illegal type in instanceof-expression: {}", desc)
+            }
+            Self::ParseError(_, desc) => {
+                format!("Parse error: {}", desc.to_string_lossy())
+            }
         }
     }
 

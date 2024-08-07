@@ -35,6 +35,19 @@ pub trait FirstPassAnalyzeableNode {
     }
 }
 
+pub trait ErrorPassAnalyzableNode {
+    fn analyze_errors(
+        &self,
+        node_ref: &AnyNodeRef,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) {
+        for child in node_ref.children_any() {
+            child.analyze_errors(&child, state, emitter);
+        }
+    }
+}
+
 pub trait SecondPassAnalyzeableNode {
     ///
     /// Second round, iterative

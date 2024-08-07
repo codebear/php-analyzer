@@ -7,6 +7,7 @@ use crate::{
     issue::VoidEmitter,
     symboldata::class::ClassName,
     types::union::{DiscreteType, UnionType},
+    value::PHPValue,
     Range,
 };
 
@@ -44,15 +45,38 @@ impl BinaryOperator for InstanceofOperator {
 
     fn get_operator_php_value(
         &self,
-        _operands: &impl BinaryOperatorOperandAccess,
-        _state: &mut crate::analysis::state::AnalysisState,
-        _emitter: &dyn crate::issue::IssueEmitter,
+        operands: &impl BinaryOperatorOperandAccess,
+        state: &mut crate::analysis::state::AnalysisState,
+        emitter: &dyn crate::issue::IssueEmitter,
     ) -> Option<crate::value::PHPValue> {
+        let Some(expected_fq_name) = operands.get_right_symbol(state) else {
+            return crate::missing_none!(
+                "{}[{}].get_operator_php_value(..)",
+                self.brief_desc(),
+                self.operator()
+            );
+        };
+
+        let subject_type = operands.get_left_type(state)?;
+
+        let is_instanceof = subject_type.is_instanceof(expected_fq_name)?;
+
+        Some(PHPValue::Boolean(is_instanceof))
+        /*
+        let subject = operands.get_left_value(state);
+        let expected_class = operands.get_right_value(state);
+        eprintln!("[{subject:?}] instanceof [{expected_class:?}]");
+
+        let expected_class_type = operands.get_right_type(state);
+        eprintln!("[{subject_type:?}] instanceof [{expected_class_type:?}]");
+
+        eprintln!("Right symbol: {:?}", operands.get_right_symbol(state));
+
         crate::missing_none!(
             "{}[{}].get_operator_php_value(..)",
             self.brief_desc(),
             self.operator()
-        )
+        )*/
     }
 }
 

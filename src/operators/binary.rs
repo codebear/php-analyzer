@@ -2,15 +2,29 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{_expression::_ExpressionNode, binary_expression::BinaryExpressionRight},
     issue::IssueEmitter,
+    symbols::FullyQualifiedName,
     types::union::UnionType,
     value::PHPValue,
 };
+
+#[derive(Debug)]
+pub enum InstanceOfSymbol {
+    FullyQualifiedName(FullyQualifiedName),
+}
 
 pub trait BinaryOperatorOperandAccess {
     fn get_left_value(&self, state: &mut AnalysisState) -> Option<PHPValue>;
     fn get_right_value(&self, state: &mut AnalysisState) -> Option<PHPValue>;
     fn get_left_type(&self, state: &mut AnalysisState) -> Option<UnionType>;
     fn get_right_type(&self, state: &mut AnalysisState) -> Option<UnionType>;
+
+    ///
+    /// Instanceof has some special needs that we chose to handle with a separate
+    /// support-method in the trait.
+    ///
+    fn get_right_symbol(&self, state: &mut AnalysisState) -> Option<InstanceOfSymbol> {
+        None
+    }
 }
 
 pub trait BinaryOperator {

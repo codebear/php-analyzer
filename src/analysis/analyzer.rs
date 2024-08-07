@@ -6,6 +6,7 @@ use crate::autotree::AutoTree;
 use crate::autotree::NodeAccess;
 use crate::config::PHPAnalyzeConfig;
 use crate::issue::IssueEmitter;
+use crate::nodeanalysis::analysis::ErrorPassAnalyzableNode;
 use crate::nodeanalysis::analysis::FirstPassAnalyzeableNode;
 use crate::nodeanalysis::analysis::SecondPassAnalyzeableNode;
 use crate::nodeanalysis::analysis::ThirdPassAnalyzeableNode;
@@ -108,7 +109,9 @@ impl Analyzer {
 
     pub fn first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
         if let Some(tree) = &self.tree {
-            tree.root.as_any().analyze_first_pass(state, emitter);
+            let any_root = tree.root.as_any();
+            any_root.analyze_errors(&any_root, state, emitter);
+            any_root.analyze_first_pass(state, emitter);
         }
     }
 

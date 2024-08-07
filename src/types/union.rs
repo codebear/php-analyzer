@@ -13,6 +13,7 @@ use nom::error::Error;
 use crate::{
     analysis::state::AnalysisState,
     issue::{Issue, IssueEmitter, VoidEmitter},
+    operators::binary::InstanceOfSymbol,
     parser::Range,
     phpdoc::position::fake_range,
     symboldata::{class::ClassName, SymbolData},
@@ -170,7 +171,7 @@ impl Display for UnionType {
                 .iter()
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
-                .join(" -or- ")
+                .join("|")
         )
     }
 }
@@ -256,6 +257,33 @@ impl UnionType {
             }
         }
         !self.types.is_empty()
+    }
+
+    pub(crate) fn is_instanceof(&self, fqname: InstanceOfSymbol) -> Option<bool> {
+        for t in &self.types {
+            match t {
+                DiscreteType::Named(a, b) => {
+                    crate::missing!("Check named against InstanceOfSymbol");
+                    //return false;
+                }
+                DiscreteType::Generic(a, b) => {
+                    crate::missing!("Check generic against InstanceOfSymbol");
+                    //return false;
+                }
+                DiscreteType::ClassType(a, b) => {
+                    crate::missing!("Check ClassType against InstanceOfSymbol");
+                    //return false;
+                }
+                DiscreteType::Unknown => {
+                    return None;
+                }
+                _ => {
+                    return crate::missing_none!("Check ClassType against {:?}", t);
+                }
+            }
+        }
+        None
+        //        !self.types.is_empty()
     }
 
     pub fn len(&self) -> usize {

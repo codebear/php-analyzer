@@ -35,36 +35,32 @@ impl ForeachStatementNode {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 
-    fn get_key_node(&self) -> Option<&AnyNodeRef> {
-        /*match &self.key {
-            Some(k) => Some(k),
-            None => None,
-        }*/
+    fn get_key_node(&self) -> Option<AnyNodeRef> {
         self.entry.get_key_node()
     }
 
-    fn get_value_node(&self) -> Option<&AnyNodeRef> {
+    fn get_value_node(&self) -> Option<AnyNodeRef> {
         self.entry.get_value_node()
     }
 }
 
 impl ForeachStatementEntry {
-    pub fn get_key_node(&self) -> Option<&AnyNodeRef> {
+    pub fn get_key_node(&self) -> Option<AnyNodeRef> {
         match self {
-            ForeachStatementEntry::_Expression(_) => todo!(),
-            ForeachStatementEntry::ByRef(_) => todo!(),
+            ForeachStatementEntry::_Expression(e) => None,
+            ForeachStatementEntry::ByRef(_) => None,
             ForeachStatementEntry::ListLiteral(_) => todo!(),
-            ForeachStatementEntry::Pair(_) => todo!(),
+            ForeachStatementEntry::Pair(p) => Some(p.key.as_any()),
             ForeachStatementEntry::Extra(_) => todo!(),
         }
     }
 
-    pub fn get_value_node(&self) -> Option<&AnyNodeRef> {
+    pub fn get_value_node(&self) -> Option<AnyNodeRef> {
         match self {
-            ForeachStatementEntry::_Expression(_) => todo!(),
+            ForeachStatementEntry::_Expression(e) => Some(e.as_any()),
             ForeachStatementEntry::ByRef(_) => todo!(),
             ForeachStatementEntry::ListLiteral(_) => todo!(),
-            ForeachStatementEntry::Pair(_) => todo!(),
+            ForeachStatementEntry::Pair(p) => Some(p.value.as_any()),
             ForeachStatementEntry::Extra(_) => todo!(),
         }
     }

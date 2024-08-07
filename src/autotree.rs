@@ -305,7 +305,7 @@ impl<T> Into<Result<Option<T>, ParseError>> for ChildNodeParserHelper<'_, '_, '_
 where
     T: NodeParser,
 {
-    fn into(self) -> Result<Option<T>, ParseError> {
+    fn into(mut self) -> Result<Option<T>, ParseError> {
         let cursor = &mut self.node.walk();
 
         let mut traversable = self.node.children_by_field_name(self.fieldname, cursor);
@@ -313,6 +313,7 @@ where
         let Some(first) = traversable.next() else {
             return Ok(None);
         };
+        self.maybe_mark_skipped_node(first.id());
 
         Ok(Some(T::parse(first, self.source)?))
     }
@@ -322,7 +323,7 @@ impl<T> Into<Result<T, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T>
 where
     T: NodeParser,
 {
-    fn into(self) -> Result<T, ParseError> {
+    fn into(mut self) -> Result<T, ParseError> {
         let cursor = &mut self.node.walk();
 
         let mut traversable = self.node.children_by_field_name(self.fieldname, cursor);
@@ -334,7 +335,9 @@ where
             ));
         };
 
-        T::parse(first, self.source)
+        let parsed = T::parse(first, self.source)?;
+        self.maybe_mark_skipped_node(first.id());
+        Ok(parsed)
     }
 }
 
@@ -354,8 +357,8 @@ where
             ));
         };
 
-        self.maybe_mark_skipped_node(first.id());
         let parsed = T::parse(first, self.source)?;
+        self.maybe_mark_skipped_node(first.id());
         Ok(Box::new(parsed))
     }
 }
@@ -364,13 +367,14 @@ impl<T> Into<Result<Vec<T>, ParseError>> for ChildNodeParserHelper<'_, '_, '_, T
 where
     T: NodeParser,
 {
-    fn into(self) -> Result<Vec<T>, ParseError> {
+    fn into(mut self) -> Result<Vec<T>, ParseError> {
         let mut result = vec![];
         for noe in self
             .node
             .children_by_field_name(self.fieldname, &mut self.node.walk())
         {
             let parsed = T::parse(noe, self.source)?;
+            self.maybe_mark_skipped_node(noe.id());
             result.push(parsed);
         }
         Ok(result)
@@ -381,13 +385,15 @@ impl<T> Into<Result<Vec<Box<T>>, ParseError>> for ChildNodeParserHelper<'_, '_, 
 where
     T: NodeParser,
 {
-    fn into(self) -> Result<Vec<Box<T>>, ParseError> {
+    fn into(mut self) -> Result<Vec<Box<T>>, ParseError> {
         let mut result = vec![];
         for noe in self
             .node
             .children_by_field_name(self.fieldname, &mut self.node.walk())
         {
             let parsed = T::parse(noe, self.source)?;
+            self.maybe_mark_skipped_node(noe.id());
+
             result.push(Box::new(parsed));
         }
         Ok(result)
@@ -398,13 +404,15 @@ impl<T> Into<Result<Option<Vec<T>>, ParseError>> for ChildNodeParserHelper<'_, '
 where
     T: NodeParser,
 {
-    fn into(self) -> Result<Option<Vec<T>>, ParseError> {
+    fn into(mut self) -> Result<Option<Vec<T>>, ParseError> {
         let mut result = vec![];
         for noe in self
             .node
             .children_by_field_name(self.fieldname, &mut self.node.walk())
         {
             let parsed = T::parse(noe, self.source)?;
+            self.maybe_mark_skipped_node(noe.id());
+
             result.push(parsed);
         }
         if !result.is_empty() {
@@ -419,13 +427,15 @@ impl<T> Into<Result<Option<Vec<Box<T>>>, ParseError>> for ChildNodeParserHelper<
 where
     T: NodeParser,
 {
-    fn into(self) -> Result<Option<Vec<Box<T>>>, ParseError> {
+    fn into(mut self) -> Result<Option<Vec<Box<T>>>, ParseError> {
         let mut result = vec![];
         for noe in self
             .node
             .children_by_field_name(self.fieldname, &mut self.node.walk())
         {
             let parsed = T::parse(noe, self.source)?;
+            self.maybe_mark_skipped_node(noe.id());
+
             result.push(Box::new(parsed));
         }
         if !result.is_empty() {
@@ -440,7 +450,7 @@ impl<T> Into<Result<Option<Box<T>>, ParseError>> for ChildNodeParserHelper<'_, '
 where
     T: NodeParser,
 {
-    fn into(self) -> Result<Option<Box<T>>, ParseError> {
+    fn into(mut self) -> Result<Option<Box<T>>, ParseError> {
         let cursor = &mut self.node.walk();
         let mut traversable = self.node.children_by_field_name(self.fieldname, cursor);
         let Some(first) = traversable.next() else {
@@ -448,6 +458,8 @@ where
         };
 
         let parsed = T::parse(first, self.source)?;
+        self.maybe_mark_skipped_node(first.id());
+
         Ok(Some(Box::new(parsed)))
     }
 }

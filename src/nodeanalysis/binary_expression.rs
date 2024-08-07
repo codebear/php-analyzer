@@ -1,22 +1,24 @@
 use crate::{
     analysis::state::AnalysisState,
     autonodes::{
+        _expression::_ExpressionNode,
+        _primary_expression::_PrimaryExpressionNode,
         any::AnyNodeRef,
         binary_expression::{
             BinaryExpressionNode, BinaryExpressionOperator, BinaryExpressionRight,
         },
     },
-    issue::{IssueEmitter, VoidEmitter},
+    issue::{Issue, IssueEmitter, VoidEmitter},
     missing,
     operators::{
-        binary::{BinaryOperator, BinaryOperatorOperandAccess},
+        binary::{BinaryOperator, BinaryOperatorOperandAccess, InstanceOfSymbol},
         operator::{Operator, Operators},
     },
     types::union::UnionType,
     value::PHPValue,
 };
 
-use super::analysis::ThirdPassAnalyzeableNode;
+use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
 use crate::autotree::NodeAccess;
 
 impl BinaryExpressionNode {
@@ -369,6 +371,41 @@ impl BinaryExpressionRight {
     }
 }
 
+impl FirstPassAnalyzeableNode for BinaryExpressionNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        // thing to check:
+        //
+        // Dependening on versions, a left-hand side of instanceof can not be a constant
+        // > As of PHP 7.3.0, constants are allowed on the left-hand-side of the instanceof operator.
+        //
+        // The right hand side can also be verified to some extent
+        // > As of PHP 8.0.0, instanceof can now be used with arbitrary expressions.
+        // > The expression must be wrapped in parentheses and produce a string.
+        //
+
+        if !state.config.php_version.is_less_than(7, 3, 0) {
+            return;
+        };
+
+        let _ExpressionNode::_PrimaryExpression(p) = &self.left else {
+            return;
+        };
+
+        let (_PrimaryExpressionNode::ClassConstantAccessExpression(_)
+        | _PrimaryExpressionNode::Name(_)
+        | _PrimaryExpressionNode::QualifiedName(_)) = &**p
+        else {
+            return;
+        };
+
+        emitter.emit(Issue::IllegalTypeInInstanceof(
+            self.pos(state),
+            "In PHP less than 7.3.0 constants can not be on the left side of instanceof"
+                .to_string(),
+        ));
+    }
+}
+
 impl ThirdPassAnalyzeableNode for BinaryExpressionNode {
     fn analyze_third_pass(
         &self,
@@ -430,5 +467,24 @@ impl BinaryOperatorOperandAccess for BinaryExpressionNode {
 
     fn get_right_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
         self.right.get_utype(state, &VoidEmitter::new())
+    }
+
+    fn get_right_symbol(&self, state: &mut AnalysisState) -> Option<InstanceOfSymbol> {
+        match &*self.right {
+            BinaryExpressionRight::_Expression(_) => todo!(),
+            BinaryExpressionRight::DynamicVariableName(_) => todo!(),
+            BinaryExpressionRight::MemberAccessExpression(_) => todo!(),
+            BinaryExpressionRight::Name(n) => Some(InstanceOfSymbol::FullyQualifiedName(
+                state.get_fq_symbol_name_from_local_name(&n.get_name()),
+            )),
+            BinaryExpressionRight::NullsafeMemberAccessExpression(_) => todo!(),
+            BinaryExpressionRight::QualifiedName(q) => {
+                Some(InstanceOfSymbol::FullyQualifiedName(q.get_fq_name(state)))
+            }
+            BinaryExpressionRight::ScopedPropertyAccessExpression(_) => todo!(),
+            BinaryExpressionRight::SubscriptExpression(_) => todo!(),
+            BinaryExpressionRight::VariableName(_) => todo!(),
+            BinaryExpressionRight::Extra(_) => todo!(),
+        }
     }
 }
