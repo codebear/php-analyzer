@@ -56,7 +56,7 @@ impl FormalParametersNode {
                 ChildNode::ExtraNode(extra) => match &**extra {
                     ExtraChild::Comment(c) => raw_comment = Some((c.get_raw(), c.range())),
                     ExtraChild::Error(_) => (),
-                    //ExtraChild::TextInterpolation(_) | ExtraChild::Error(_) => (),
+                    ExtraChild::TextInterpolation(_) => (),
                 },
                 ChildNode::ChildNode(child) => match &**child {
                     FormalParametersChildren::PropertyPromotionParameter(_) => {

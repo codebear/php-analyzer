@@ -18,7 +18,7 @@ impl NodeParser for RequireOnceExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "require_once_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [require_once_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("RequireOnceExpressionNode: Node is of the wrong kind [{}] vs expected [require_once_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

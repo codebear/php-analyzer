@@ -3,6 +3,7 @@ use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
@@ -27,6 +28,11 @@ impl NodeParser for ClassConstantAccessIdentifierChildren {
             "comment" => ClassConstantAccessIdentifierChildren::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
             )),
+            "text_interpolation" => {
+                ClassConstantAccessIdentifierChildren::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
+                ))
+            }
             "ERROR" => ClassConstantAccessIdentifierChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -41,10 +47,7 @@ impl NodeParser for ClassConstantAccessIdentifierChildren {
                 {
                     x
                 } else {
-                    return Err(ParseError::new(
-                        node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
-                    ));
+                    return Err(ParseError::new(node.range(), format!("ClassConstantAccessIdentifierChildren: Parse error, unexpected node-type: {}", node.kind())));
                 }
             }
         })
@@ -57,6 +60,11 @@ impl ClassConstantAccessIdentifierChildren {
             "comment" => ClassConstantAccessIdentifierChildren::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
             )),
+            "text_interpolation" => {
+                ClassConstantAccessIdentifierChildren::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
+                ))
+            }
             "ERROR" => ClassConstantAccessIdentifierChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -180,7 +188,7 @@ impl NodeParser for ClassConstantAccessIdentifierNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "class_constant_access_identifier" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [class_constant_access_identifier] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("ClassConstantAccessIdentifierNode: Node is of the wrong kind [{}] vs expected [class_constant_access_identifier] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

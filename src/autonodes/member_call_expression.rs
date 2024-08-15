@@ -21,6 +21,7 @@ use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -49,6 +50,9 @@ impl NodeParser for MemberCallExpressionName {
             "comment" => MemberCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => MemberCallExpressionName::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => MemberCallExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -69,7 +73,10 @@ impl NodeParser for MemberCallExpressionName {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "MemberCallExpressionName: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -83,6 +90,9 @@ impl MemberCallExpressionName {
             "comment" => MemberCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => MemberCallExpressionName::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => MemberCallExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -247,6 +257,11 @@ impl NodeParser for MemberCallExpressionObject {
             "comment" => MemberCallExpressionObject::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                MemberCallExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => MemberCallExpressionObject::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -320,7 +335,10 @@ impl NodeParser for MemberCallExpressionObject {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "MemberCallExpressionObject: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -333,6 +351,11 @@ impl MemberCallExpressionObject {
             "comment" => MemberCallExpressionObject::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                MemberCallExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => MemberCallExpressionObject::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -740,7 +763,7 @@ impl NodeParser for MemberCallExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "member_call_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [member_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("MemberCallExpressionNode: Node is of the wrong kind [{}] vs expected [member_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let arguments: ArgumentsNode =
             Into::<Result<_, _>>::into(node.parse_child("arguments", source))?;

@@ -3,6 +3,7 @@ use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::array_element_initializer::ArrayElementInitializerNode;
 use crate::autonodes::comment::CommentNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
@@ -27,6 +28,9 @@ impl NodeParser for YieldExpressionChildren {
             "comment" => YieldExpressionChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => YieldExpressionChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => YieldExpressionChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -43,7 +47,10 @@ impl NodeParser for YieldExpressionChildren {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "YieldExpressionChildren: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -57,6 +64,9 @@ impl YieldExpressionChildren {
             "comment" => YieldExpressionChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => YieldExpressionChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => YieldExpressionChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -176,15 +186,7 @@ impl NodeParser for YieldExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "yield_expression" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [yield_expression] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("YieldExpressionNode: Node is of the wrong kind [{}] vs expected [yield_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

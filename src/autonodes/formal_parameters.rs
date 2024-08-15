@@ -3,6 +3,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::property_promotion_parameter::PropertyPromotionParameterNode;
 use crate::autonodes::simple_parameter::SimpleParameterNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variadic_parameter::VariadicParameterNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -29,6 +30,9 @@ impl NodeParser for FormalParametersChildren {
             "comment" => FormalParametersChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => FormalParametersChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => FormalParametersChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -45,7 +49,10 @@ impl NodeParser for FormalParametersChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "FormalParametersChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -58,6 +65,9 @@ impl FormalParametersChildren {
             "comment" => FormalParametersChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => FormalParametersChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => FormalParametersChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -193,15 +203,7 @@ impl NodeParser for FormalParametersNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "formal_parameters" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [formal_parameters] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("FormalParametersNode: Node is of the wrong kind [{}] vs expected [formal_parameters] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

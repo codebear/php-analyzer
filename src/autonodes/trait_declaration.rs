@@ -21,15 +21,7 @@ impl NodeParser for TraitDeclarationNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "trait_declaration" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [trait_declaration] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("TraitDeclarationNode: Node is of the wrong kind [{}] vs expected [trait_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let body: DeclarationListNode =
             Into::<Result<_, _>>::into(node.parse_child("body", source))?;

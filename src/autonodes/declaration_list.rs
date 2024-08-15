@@ -4,6 +4,7 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::const_declaration::ConstDeclarationNode;
 use crate::autonodes::method_declaration::MethodDeclarationNode;
 use crate::autonodes::property_declaration::PropertyDeclarationNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::use_declaration::UseDeclarationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -31,6 +32,9 @@ impl NodeParser for DeclarationListChildren {
             "comment" => DeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => DeclarationListChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => DeclarationListChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -50,7 +54,10 @@ impl NodeParser for DeclarationListChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "DeclarationListChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -63,6 +70,9 @@ impl DeclarationListChildren {
             "comment" => DeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => DeclarationListChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => DeclarationListChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -210,15 +220,7 @@ impl NodeParser for DeclarationListNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "declaration_list" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [declaration_list] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("DeclarationListNode: Node is of the wrong kind [{}] vs expected [declaration_list] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

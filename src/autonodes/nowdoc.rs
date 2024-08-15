@@ -26,7 +26,7 @@ impl NodeParser for NowdocNode {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [nowdoc] on pos {}:{}",
+                    "NowdocNode: Node is of the wrong kind [{}] vs expected [nowdoc] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column

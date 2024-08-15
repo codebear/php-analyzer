@@ -18,15 +18,7 @@ impl NodeParser for BooleanNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "boolean" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [boolean] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("BooleanNode: Node is of the wrong kind [{}] vs expected [boolean] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

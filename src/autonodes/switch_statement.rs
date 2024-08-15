@@ -21,15 +21,7 @@ impl NodeParser for SwitchStatementNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "switch_statement" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [switch_statement] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("SwitchStatementNode: Node is of the wrong kind [{}] vs expected [switch_statement] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let body: SwitchBlockNode = Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         let condition: ParenthesizedExpressionNode =

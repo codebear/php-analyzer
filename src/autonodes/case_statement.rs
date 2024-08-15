@@ -21,15 +21,7 @@ impl NodeParser for CaseStatementNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "case_statement" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [case_statement] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("CaseStatementNode: Node is of the wrong kind [{}] vs expected [case_statement] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let value: _ExpressionNode = Into::<Result<_, _>>::into(

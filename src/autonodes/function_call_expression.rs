@@ -15,6 +15,7 @@ use crate::autonodes::qualified_name::QualifiedNameNode;
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -54,6 +55,11 @@ impl NodeParser for FunctionCallExpressionFunction {
             "comment" => FunctionCallExpressionFunction::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                FunctionCallExpressionFunction::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => FunctionCallExpressionFunction::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -108,7 +114,10 @@ impl NodeParser for FunctionCallExpressionFunction {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "FunctionCallExpressionFunction: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -121,6 +130,11 @@ impl FunctionCallExpressionFunction {
             "comment" => FunctionCallExpressionFunction::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                FunctionCallExpressionFunction::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => FunctionCallExpressionFunction::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -454,7 +468,7 @@ impl NodeParser for FunctionCallExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "function_call_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [function_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("FunctionCallExpressionNode: Node is of the wrong kind [{}] vs expected [function_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let arguments: ArgumentsNode =
             Into::<Result<_, _>>::into(node.parse_child("arguments", source))?;

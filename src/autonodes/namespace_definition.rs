@@ -21,7 +21,7 @@ impl NodeParser for NamespaceDefinitionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "namespace_definition" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [namespace_definition] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("NamespaceDefinitionNode: Node is of the wrong kind [{}] vs expected [namespace_definition] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let body: Option<CompoundStatementNode> =
             Into::<Result<_, _>>::into(node.parse_child("body", source))?;

@@ -3,6 +3,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::match_conditional_expression::MatchConditionalExpressionNode;
 use crate::autonodes::match_default_expression::MatchDefaultExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
@@ -27,6 +28,9 @@ impl NodeParser for MatchBlockChildren {
             "comment" => MatchBlockChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => MatchBlockChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => MatchBlockChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -40,7 +44,10 @@ impl NodeParser for MatchBlockChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "MatchBlockChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -53,6 +60,9 @@ impl MatchBlockChildren {
             "comment" => MatchBlockChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => MatchBlockChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => MatchBlockChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -172,15 +182,7 @@ impl NodeParser for MatchBlockNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "match_block" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [match_block] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("MatchBlockNode: Node is of the wrong kind [{}] vs expected [match_block] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

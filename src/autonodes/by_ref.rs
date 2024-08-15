@@ -9,6 +9,7 @@ use crate::autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExp
 use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpressionNode;
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -41,6 +42,9 @@ impl NodeParser for ByRefChildren {
             "comment" => ByRefChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => ByRefChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 ByRefChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -75,7 +79,10 @@ impl NodeParser for ByRefChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "ByRefChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -88,6 +95,9 @@ impl ByRefChildren {
             "comment" => ByRefChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => ByRefChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 ByRefChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -301,7 +311,7 @@ impl NodeParser for ByRefNode {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [by_ref] on pos {}:{}",
+                    "ByRefNode: Node is of the wrong kind [{}] vs expected [by_ref] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column

@@ -2,6 +2,7 @@ use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::argument::ArgumentNode;
 use crate::autonodes::comment::CommentNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variadic_placeholder::VariadicPlaceholderNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -27,6 +28,9 @@ impl NodeParser for ArgumentsChildren {
             "comment" => ArgumentsChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ArgumentsChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ArgumentsChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -38,7 +42,10 @@ impl NodeParser for ArgumentsChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "ArgumentsChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -51,6 +58,9 @@ impl ArgumentsChildren {
             "comment" => ArgumentsChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ArgumentsChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ArgumentsChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -165,15 +175,7 @@ impl NodeParser for ArgumentsNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "arguments" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [arguments] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("ArgumentsNode: Node is of the wrong kind [{}] vs expected [arguments] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

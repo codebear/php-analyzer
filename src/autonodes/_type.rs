@@ -6,6 +6,7 @@ use crate::autonodes::intersection_type::IntersectionTypeNode;
 use crate::autonodes::named_type::NamedTypeNode;
 use crate::autonodes::optional_type::OptionalTypeNode;
 use crate::autonodes::primitive_type::PrimitiveTypeNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::union_type::UnionTypeNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -35,6 +36,9 @@ impl NodeParser for _TypeNode {
             "comment" => _TypeNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => _TypeNode::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 _TypeNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -56,7 +60,10 @@ impl NodeParser for _TypeNode {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "_TypeNode: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -69,6 +76,9 @@ impl _TypeNode {
             "comment" => _TypeNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => _TypeNode::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 _TypeNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }

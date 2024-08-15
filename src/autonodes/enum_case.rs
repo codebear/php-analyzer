@@ -8,6 +8,7 @@ use crate::autonodes::integer::IntegerNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::nowdoc::NowdocNode;
 use crate::autonodes::string::StringNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -36,6 +37,9 @@ impl NodeParser for EnumCaseValue {
             "comment" => EnumCaseValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => EnumCaseValue::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 EnumCaseValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -50,7 +54,10 @@ impl NodeParser for EnumCaseValue {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "EnumCaseValue: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -63,6 +70,9 @@ impl EnumCaseValue {
             "comment" => EnumCaseValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => EnumCaseValue::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 EnumCaseValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -203,15 +213,7 @@ impl NodeParser for EnumCaseNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "enum_case" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [enum_case] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("EnumCaseNode: Node is of the wrong kind [{}] vs expected [enum_case] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let attributes: Option<AttributeListNode> =
             Into::<Result<_, _>>::into(node.parse_child("attributes", source))?;

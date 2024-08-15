@@ -21,7 +21,7 @@ impl NodeParser for TextNode {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [text] on pos {}:{}",
+                    "TextNode: Node is of the wrong kind [{}] vs expected [text] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column

@@ -3,6 +3,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::escape_sequence::EscapeSequenceNode;
 use crate::autonodes::string_value::StringValueNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
@@ -27,6 +28,9 @@ impl NodeParser for StringChildren {
             "comment" => StringChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => StringChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 StringChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -40,7 +44,10 @@ impl NodeParser for StringChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "StringChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -53,6 +60,9 @@ impl StringChildren {
             "comment" => StringChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => StringChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 StringChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -171,7 +181,7 @@ impl NodeParser for StringNode {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [string] on pos {}:{}",
+                    "StringNode: Node is of the wrong kind [{}] vs expected [string] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column

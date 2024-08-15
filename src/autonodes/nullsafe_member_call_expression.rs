@@ -21,6 +21,7 @@ use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -49,6 +50,11 @@ impl NodeParser for NullsafeMemberCallExpressionName {
             "comment" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                NullsafeMemberCallExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -69,10 +75,7 @@ impl NodeParser for NullsafeMemberCallExpressionName {
                 {
                     x
                 } else {
-                    return Err(ParseError::new(
-                        node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
-                    ));
+                    return Err(ParseError::new(node.range(), format!("NullsafeMemberCallExpressionName: Parse error, unexpected node-type: {}", node.kind())));
                 }
             }
         })
@@ -85,6 +88,11 @@ impl NullsafeMemberCallExpressionName {
             "comment" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                NullsafeMemberCallExpressionName::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => NullsafeMemberCallExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -255,6 +263,11 @@ impl NodeParser for NullsafeMemberCallExpressionObject {
             "comment" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                NullsafeMemberCallExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -338,7 +351,10 @@ impl NodeParser for NullsafeMemberCallExpressionObject {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "NullsafeMemberCallExpressionObject: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -351,6 +367,11 @@ impl NullsafeMemberCallExpressionObject {
             "comment" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                NullsafeMemberCallExpressionObject::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => NullsafeMemberCallExpressionObject::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -823,7 +844,7 @@ impl NodeParser for NullsafeMemberCallExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "nullsafe_member_call_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [nullsafe_member_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("NullsafeMemberCallExpressionNode: Node is of the wrong kind [{}] vs expected [nullsafe_member_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let arguments: ArgumentsNode =
             Into::<Result<_, _>>::into(node.parse_child("arguments", source))?;

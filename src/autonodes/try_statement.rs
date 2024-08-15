@@ -4,6 +4,7 @@ use crate::autonodes::catch_clause::CatchClauseNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::compound_statement::CompoundStatementNode;
 use crate::autonodes::finally_clause::FinallyClauseNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -29,6 +30,9 @@ impl NodeParser for TryStatementChildren {
             "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => TryStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => TryStatementChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -42,7 +46,10 @@ impl NodeParser for TryStatementChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "TryStatementChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -55,6 +62,9 @@ impl TryStatementChildren {
             "comment" => TryStatementChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => TryStatementChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => TryStatementChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -173,15 +183,7 @@ impl NodeParser for TryStatementNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "try_statement" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [try_statement] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("TryStatementNode: Node is of the wrong kind [{}] vs expected [try_statement] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let body: CompoundStatementNode = Into::<Result<_, _>>::into(

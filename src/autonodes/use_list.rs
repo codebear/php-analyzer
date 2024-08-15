@@ -1,6 +1,7 @@
 use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::use_as_clause::UseAsClauseNode;
 use crate::autonodes::use_instead_of_clause::UseInsteadOfClauseNode;
 use crate::autotree::NodeAccess;
@@ -27,6 +28,9 @@ impl NodeParser for UseListChildren {
             "comment" => UseListChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => UseListChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => {
                 UseListChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -40,7 +44,10 @@ impl NodeParser for UseListChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "UseListChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -53,6 +60,9 @@ impl UseListChildren {
             "comment" => UseListChildren::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => UseListChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => {
                 UseListChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -168,15 +178,7 @@ impl NodeParser for UseListNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "use_list" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [use_list] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("UseListNode: Node is of the wrong kind [{}] vs expected [use_list] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

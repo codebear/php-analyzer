@@ -9,6 +9,7 @@ use crate::autonodes::declaration_list::DeclarationListNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -36,6 +37,9 @@ impl NodeParser for ClassDeclarationModifier {
             "comment" => ClassDeclarationModifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ClassDeclarationModifier::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ClassDeclarationModifier::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -52,7 +56,10 @@ impl NodeParser for ClassDeclarationModifier {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "ClassDeclarationModifier: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -65,6 +72,9 @@ impl ClassDeclarationModifier {
             "comment" => ClassDeclarationModifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ClassDeclarationModifier::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ClassDeclarationModifier::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -200,6 +210,9 @@ impl NodeParser for ClassDeclarationChildren {
             "comment" => ClassDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ClassDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ClassDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -213,7 +226,10 @@ impl NodeParser for ClassDeclarationChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "ClassDeclarationChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -226,6 +242,9 @@ impl ClassDeclarationChildren {
             "comment" => ClassDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ClassDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ClassDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -349,15 +368,7 @@ impl NodeParser for ClassDeclarationNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "class_declaration" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [class_declaration] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("ClassDeclarationNode: Node is of the wrong kind [{}] vs expected [class_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(

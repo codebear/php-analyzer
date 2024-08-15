@@ -23,15 +23,7 @@ impl NodeParser for CatchClauseNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "catch_clause" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [catch_clause] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("CatchClauseNode: Node is of the wrong kind [{}] vs expected [catch_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let body: CompoundStatementNode =
             Into::<Result<_, _>>::into(node.parse_child("body", source))?;

@@ -6,6 +6,7 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::else_clause::ElseClauseNode;
 use crate::autonodes::else_if_clause::ElseIfClauseNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -31,6 +32,9 @@ impl NodeParser for IfStatementAlternative {
             "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => IfStatementAlternative::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => IfStatementAlternative::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -44,7 +48,10 @@ impl NodeParser for IfStatementAlternative {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "IfStatementAlternative: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -57,6 +64,9 @@ impl IfStatementAlternative {
             "comment" => IfStatementAlternative::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => IfStatementAlternative::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => IfStatementAlternative::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -176,6 +186,9 @@ impl NodeParser for IfStatementBody {
             "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => IfStatementBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => {
                 IfStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -192,7 +205,10 @@ impl NodeParser for IfStatementBody {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "IfStatementBody: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -206,6 +222,9 @@ impl IfStatementBody {
             "comment" => IfStatementBody::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => IfStatementBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => {
                 IfStatementBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -324,15 +343,7 @@ impl NodeParser for IfStatementNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "if_statement" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [if_statement] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("IfStatementNode: Node is of the wrong kind [{}] vs expected [if_statement] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let alternative: Option<Vec<Box<IfStatementAlternative>>> =
             Into::<Result<_, _>>::into(node.parse_child("alternative", source))?;

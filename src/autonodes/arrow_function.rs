@@ -8,6 +8,7 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::formal_parameters::FormalParametersNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -33,6 +34,9 @@ impl NodeParser for ArrowFunctionReturnType {
             "comment" => ArrowFunctionReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ArrowFunctionReturnType::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ArrowFunctionReturnType::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -49,7 +53,10 @@ impl NodeParser for ArrowFunctionReturnType {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "ArrowFunctionReturnType: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -63,6 +70,9 @@ impl ArrowFunctionReturnType {
             "comment" => ArrowFunctionReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ArrowFunctionReturnType::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ArrowFunctionReturnType::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -186,15 +196,7 @@ impl NodeParser for ArrowFunctionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "arrow_function" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [arrow_function] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("ArrowFunctionNode: Node is of the wrong kind [{}] vs expected [arrow_function] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(

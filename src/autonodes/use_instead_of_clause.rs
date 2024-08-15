@@ -3,6 +3,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::class_constant_access_expression::ClassConstantAccessExpressionNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
@@ -27,6 +28,11 @@ impl NodeParser for UseInsteadOfClauseChildren {
             "comment" => UseInsteadOfClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                UseInsteadOfClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => UseInsteadOfClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -40,7 +46,10 @@ impl NodeParser for UseInsteadOfClauseChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "UseInsteadOfClauseChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -53,6 +62,11 @@ impl UseInsteadOfClauseChildren {
             "comment" => UseInsteadOfClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                UseInsteadOfClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => UseInsteadOfClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -177,7 +191,7 @@ impl NodeParser for UseInsteadOfClauseNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "use_instead_of_clause" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [use_instead_of_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("UseInsteadOfClauseNode: Node is of the wrong kind [{}] vs expected [use_instead_of_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

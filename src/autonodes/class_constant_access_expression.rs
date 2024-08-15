@@ -21,6 +21,7 @@ use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -66,6 +67,11 @@ impl NodeParser for ClassConstantAccessExpressionClass {
             "comment" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                ClassConstantAccessExpressionClass::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -152,7 +158,10 @@ impl NodeParser for ClassConstantAccessExpressionClass {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "ClassConstantAccessExpressionClass: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -165,6 +174,11 @@ impl ClassConstantAccessExpressionClass {
             "comment" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                ClassConstantAccessExpressionClass::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => ClassConstantAccessExpressionClass::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -650,7 +664,7 @@ impl NodeParser for ClassConstantAccessExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "class_constant_access_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [class_constant_access_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("ClassConstantAccessExpressionNode: Node is of the wrong kind [{}] vs expected [class_constant_access_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let class: Box<ClassConstantAccessExpressionClass> =
             Into::<Result<_, _>>::into(node.parse_child("class", source))?;

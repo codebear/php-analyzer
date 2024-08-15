@@ -6,6 +6,7 @@ use crate::autonodes::clone_expression::CloneExpressionNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::include_expression::IncludeExpressionNode;
 use crate::autonodes::include_once_expression::IncludeOnceExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -35,6 +36,9 @@ impl NodeParser for CastExpressionValue {
             "comment" => CastExpressionValue::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => CastExpressionValue::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => CastExpressionValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -60,7 +64,10 @@ impl NodeParser for CastExpressionValue {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "CastExpressionValue: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -74,6 +81,9 @@ impl CastExpressionValue {
             "comment" => CastExpressionValue::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => CastExpressionValue::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => CastExpressionValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -236,15 +246,7 @@ impl NodeParser for CastExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "cast_expression" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [cast_expression] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("CastExpressionNode: Node is of the wrong kind [{}] vs expected [cast_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let type_: CastTypeNode = Into::<Result<_, _>>::into(node.parse_child("type", source))?;
         let value: Box<CastExpressionValue> =

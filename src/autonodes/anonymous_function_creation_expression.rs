@@ -8,6 +8,7 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::compound_statement::CompoundStatementNode;
 use crate::autonodes::formal_parameters::FormalParametersNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -33,6 +34,11 @@ impl NodeParser for AnonymousFunctionCreationExpressionReturnType {
             "comment" => AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
             )),
+            "text_interpolation" => {
+                AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
+                ))
+            }
             "ERROR" => AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::Error(
                 Box::new(ErrorNode::parse(node, source)?),
             )),
@@ -47,10 +53,7 @@ impl NodeParser for AnonymousFunctionCreationExpressionReturnType {
                 {
                     x
                 } else {
-                    return Err(ParseError::new(
-                        node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
-                    ));
+                    return Err(ParseError::new(node.range(), format!("AnonymousFunctionCreationExpressionReturnType: Parse error, unexpected node-type: {}", node.kind())));
                 }
             }
         })
@@ -63,6 +66,11 @@ impl AnonymousFunctionCreationExpressionReturnType {
             "comment" => AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
             )),
+            "text_interpolation" => {
+                AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
+                ))
+            }
             "ERROR" => AnonymousFunctionCreationExpressionReturnType::Extra(ExtraChild::Error(
                 Box::new(ErrorNode::parse(node, source)?),
             )),
@@ -199,7 +207,7 @@ impl NodeParser for AnonymousFunctionCreationExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "anonymous_function_creation_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [anonymous_function_creation_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("AnonymousFunctionCreationExpressionNode: Node is of the wrong kind [{}] vs expected [anonymous_function_creation_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(

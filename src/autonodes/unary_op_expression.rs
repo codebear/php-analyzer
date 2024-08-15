@@ -1,6 +1,7 @@
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -30,6 +31,11 @@ impl NodeParser for UnaryOpExpressionOperator {
             "comment" => UnaryOpExpressionOperator::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                UnaryOpExpressionOperator::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => UnaryOpExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -41,7 +47,10 @@ impl NodeParser for UnaryOpExpressionOperator {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "UnaryOpExpressionOperator: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -54,6 +63,11 @@ impl UnaryOpExpressionOperator {
             "comment" => UnaryOpExpressionOperator::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                UnaryOpExpressionOperator::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => UnaryOpExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -100,15 +114,7 @@ impl NodeParser for UnaryOpExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "unary_op_expression" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [unary_op_expression] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("UnaryOpExpressionNode: Node is of the wrong kind [{}] vs expected [unary_op_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let argument: _ExpressionNode =
             Into::<Result<_, _>>::into(node.parse_child("argument", source))?;

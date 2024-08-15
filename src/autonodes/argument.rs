@@ -4,6 +4,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variadic_unpacking::VariadicUnpackingNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -31,6 +32,9 @@ impl NodeParser for ArgumentChildren {
             "comment" => ArgumentChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ArgumentChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ArgumentChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -48,7 +52,10 @@ impl NodeParser for ArgumentChildren {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "ArgumentChildren: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -62,6 +69,9 @@ impl ArgumentChildren {
             "comment" => ArgumentChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ArgumentChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ArgumentChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -189,15 +199,7 @@ impl NodeParser for ArgumentNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "argument" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [argument] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("ArgumentNode: Node is of the wrong kind [{}] vs expected [argument] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let name: Option<NameNode> = Into::<Result<_, _>>::into(

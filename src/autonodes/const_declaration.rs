@@ -5,6 +5,7 @@ use crate::autonodes::attribute_list::AttributeListNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::const_element::ConstElementNode;
 use crate::autonodes::final_modifier::FinalModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -31,6 +32,9 @@ impl NodeParser for ConstDeclarationChildren {
             "comment" => ConstDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ConstDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ConstDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -44,7 +48,10 @@ impl NodeParser for ConstDeclarationChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "ConstDeclarationChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -57,6 +64,9 @@ impl ConstDeclarationChildren {
             "comment" => ConstDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ConstDeclarationChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ConstDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -179,15 +189,7 @@ impl NodeParser for ConstDeclarationNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "const_declaration" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [const_declaration] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("ConstDeclarationNode: Node is of the wrong kind [{}] vs expected [const_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(

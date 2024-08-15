@@ -15,6 +15,7 @@ use crate::autonodes::match_expression::MatchExpressionNode;
 use crate::autonodes::reference_assignment_expression::ReferenceAssignmentExpressionNode;
 use crate::autonodes::require_expression::RequireExpressionNode;
 use crate::autonodes::require_once_expression::RequireOnceExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::unary_op_expression::UnaryOpExpressionNode;
 use crate::autonodes::yield_expression::YieldExpressionNode;
 use crate::autotree::NodeAccess;
@@ -55,6 +56,9 @@ impl NodeParser for _ExpressionNode {
             "comment" => _ExpressionNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => _ExpressionNode::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => {
                 _ExpressionNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -113,7 +117,10 @@ impl NodeParser for _ExpressionNode {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "_ExpressionNode: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -127,6 +134,9 @@ impl _ExpressionNode {
             "comment" => _ExpressionNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => _ExpressionNode::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => {
                 _ExpressionNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }

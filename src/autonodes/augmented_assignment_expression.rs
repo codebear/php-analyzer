@@ -12,6 +12,7 @@ use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpress
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -61,6 +62,11 @@ impl NodeParser for AugmentedAssignmentExpressionLeft {
             "comment" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                AugmentedAssignmentExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -111,7 +117,10 @@ impl NodeParser for AugmentedAssignmentExpressionLeft {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "AugmentedAssignmentExpressionLeft: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -124,6 +133,11 @@ impl AugmentedAssignmentExpressionLeft {
             "comment" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                AugmentedAssignmentExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => AugmentedAssignmentExpressionLeft::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -451,6 +465,11 @@ impl NodeParser for AugmentedAssignmentExpressionOperator {
             "comment" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
             )),
+            "text_interpolation" => {
+                AugmentedAssignmentExpressionOperator::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
+                ))
+            }
             "ERROR" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -497,7 +516,10 @@ impl NodeParser for AugmentedAssignmentExpressionOperator {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                    "AugmentedAssignmentExpressionOperator: Parse error, unexpected node-type: {}",
+                    node.kind()
+                ),
                 ))
             }
         })
@@ -510,6 +532,11 @@ impl AugmentedAssignmentExpressionOperator {
             "comment" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Comment(
                 Box::new(CommentNode::parse(node, source)?),
             )),
+            "text_interpolation" => {
+                AugmentedAssignmentExpressionOperator::Extra(ExtraChild::TextInterpolation(
+                    Box::new(TextInterpolationNode::parse(node, source)?),
+                ))
+            }
             "ERROR" => AugmentedAssignmentExpressionOperator::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -601,7 +628,7 @@ impl NodeParser for AugmentedAssignmentExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "augmented_assignment_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [augmented_assignment_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("AugmentedAssignmentExpressionNode: Node is of the wrong kind [{}] vs expected [augmented_assignment_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let left: Box<AugmentedAssignmentExpressionLeft> =
             Into::<Result<_, _>>::into(node.parse_child("left", source))?;

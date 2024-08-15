@@ -2,6 +2,7 @@ use crate::analysis::state::AnalysisState;
 use crate::autonodes::_expression::_ExpressionNode;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -28,6 +29,11 @@ impl NodeParser for DynamicVariableNameChildren {
             "comment" => DynamicVariableNameChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                DynamicVariableNameChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => DynamicVariableNameChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -47,7 +53,10 @@ impl NodeParser for DynamicVariableNameChildren {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "DynamicVariableNameChildren: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -61,6 +70,11 @@ impl DynamicVariableNameChildren {
             "comment" => DynamicVariableNameChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                DynamicVariableNameChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => DynamicVariableNameChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -195,7 +209,7 @@ impl NodeParser for DynamicVariableNameNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "dynamic_variable_name" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [dynamic_variable_name] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("DynamicVariableNameNode: Node is of the wrong kind [{}] vs expected [dynamic_variable_name] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

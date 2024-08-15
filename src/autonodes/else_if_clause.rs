@@ -4,6 +4,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::colon_block::ColonBlockNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::parenthesized_expression::ParenthesizedExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -29,6 +30,9 @@ impl NodeParser for ElseIfClauseBody {
             "comment" => ElseIfClauseBody::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ElseIfClauseBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ElseIfClauseBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -45,7 +49,10 @@ impl NodeParser for ElseIfClauseBody {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "ElseIfClauseBody: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -59,6 +66,9 @@ impl ElseIfClauseBody {
             "comment" => ElseIfClauseBody::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ElseIfClauseBody::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ElseIfClauseBody::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -176,15 +186,7 @@ impl NodeParser for ElseIfClauseNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "else_if_clause" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [else_if_clause] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("ElseIfClauseNode: Node is of the wrong kind [{}] vs expected [else_if_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let body: Box<ElseIfClauseBody> =
             Into::<Result<_, _>>::into(node.parse_child("body", source))?;

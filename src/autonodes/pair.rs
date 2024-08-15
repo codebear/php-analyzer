@@ -4,6 +4,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::by_ref::ByRefNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::list_literal::ListLiteralNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -30,6 +31,9 @@ impl NodeParser for PairValue {
             "comment" => PairValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => PairValue::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 PairValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -47,7 +51,10 @@ impl NodeParser for PairValue {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "PairValue: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -61,6 +68,9 @@ impl PairValue {
             "comment" => PairValue::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => PairValue::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 PairValue::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -186,7 +196,7 @@ impl NodeParser for PairNode {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [pair] on pos {}:{}",
+                    "PairNode: Node is of the wrong kind [{}] vs expected [pair] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column

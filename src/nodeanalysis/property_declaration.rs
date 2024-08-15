@@ -50,8 +50,7 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
                     match &**extra {
                         ExtraChild::Comment(c) => Some(c),
 
-                        //ExtraChild::TextInterpolation(_) |
-                        ExtraChild::Error(_) => None,
+                        ExtraChild::TextInterpolation(_) | ExtraChild::Error(_) => None,
                     }
                 } else {
                     None

@@ -18,7 +18,7 @@ impl NodeParser for ParenthesizedExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "parenthesized_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [parenthesized_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("ParenthesizedExpressionNode: Node is of the wrong kind [{}] vs expected [parenthesized_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

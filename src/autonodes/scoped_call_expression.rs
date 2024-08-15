@@ -22,6 +22,7 @@ use crate::autonodes::relative_scope::RelativeScopeNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::string::StringNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -50,6 +51,9 @@ impl NodeParser for ScopedCallExpressionName {
             "comment" => ScopedCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ScopedCallExpressionName::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ScopedCallExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -70,7 +74,10 @@ impl NodeParser for ScopedCallExpressionName {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "ScopedCallExpressionName: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -84,6 +91,9 @@ impl ScopedCallExpressionName {
             "comment" => ScopedCallExpressionName::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => ScopedCallExpressionName::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => ScopedCallExpressionName::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -249,6 +259,11 @@ impl NodeParser for ScopedCallExpressionScope {
             "comment" => ScopedCallExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                ScopedCallExpressionScope::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => ScopedCallExpressionScope::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -325,7 +340,10 @@ impl NodeParser for ScopedCallExpressionScope {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "ScopedCallExpressionScope: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -338,6 +356,11 @@ impl ScopedCallExpressionScope {
             "comment" => ScopedCallExpressionScope::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                ScopedCallExpressionScope::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => ScopedCallExpressionScope::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -755,7 +778,7 @@ impl NodeParser for ScopedCallExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "scoped_call_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [scoped_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("ScopedCallExpressionNode: Node is of the wrong kind [{}] vs expected [scoped_call_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let arguments: ArgumentsNode =
             Into::<Result<_, _>>::into(node.parse_child("arguments", source))?;

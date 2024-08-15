@@ -3,6 +3,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::class_constant_access_expression::ClassConstantAccessExpressionNode;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::name::NameNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -29,6 +30,9 @@ impl NodeParser for UseAsClauseChildren {
             "comment" => UseAsClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => UseAsClauseChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => UseAsClauseChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -45,7 +49,10 @@ impl NodeParser for UseAsClauseChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "UseAsClauseChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -58,6 +65,9 @@ impl UseAsClauseChildren {
             "comment" => UseAsClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => UseAsClauseChildren::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => UseAsClauseChildren::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -192,15 +202,7 @@ impl NodeParser for UseAsClauseNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "use_as_clause" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [use_as_clause] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("UseAsClauseNode: Node is of the wrong kind [{}] vs expected [use_as_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

@@ -5,6 +5,7 @@ use crate::autonodes::intersection_type::IntersectionTypeNode;
 use crate::autonodes::named_type::NamedTypeNode;
 use crate::autonodes::optional_type::OptionalTypeNode;
 use crate::autonodes::primitive_type::PrimitiveTypeNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
@@ -31,6 +32,11 @@ impl NodeParser for DisjunctiveNormalFormTypeChildren {
             "comment" => DisjunctiveNormalFormTypeChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                DisjunctiveNormalFormTypeChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => DisjunctiveNormalFormTypeChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -50,7 +56,10 @@ impl NodeParser for DisjunctiveNormalFormTypeChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "DisjunctiveNormalFormTypeChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -63,6 +72,11 @@ impl DisjunctiveNormalFormTypeChildren {
             "comment" => DisjunctiveNormalFormTypeChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                DisjunctiveNormalFormTypeChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => DisjunctiveNormalFormTypeChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -213,7 +227,7 @@ impl NodeParser for DisjunctiveNormalFormTypeNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "disjunctive_normal_form_type" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [disjunctive_normal_form_type] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("DisjunctiveNormalFormTypeNode: Node is of the wrong kind [{}] vs expected [disjunctive_normal_form_type] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

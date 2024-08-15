@@ -21,15 +21,7 @@ impl NodeParser for MatchExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "match_expression" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [match_expression] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("MatchExpressionNode: Node is of the wrong kind [{}] vs expected [match_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let body: MatchBlockNode = Into::<Result<_, _>>::into(node.parse_child("body", source))?;
         let condition: ParenthesizedExpressionNode =

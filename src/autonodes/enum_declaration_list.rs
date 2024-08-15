@@ -3,6 +3,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::enum_case::EnumCaseNode;
 use crate::autonodes::method_declaration::MethodDeclarationNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::use_declaration::UseDeclarationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -29,6 +30,11 @@ impl NodeParser for EnumDeclarationListChildren {
             "comment" => EnumDeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                EnumDeclarationListChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => EnumDeclarationListChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -45,7 +51,10 @@ impl NodeParser for EnumDeclarationListChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "EnumDeclarationListChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -58,6 +67,11 @@ impl EnumDeclarationListChildren {
             "comment" => EnumDeclarationListChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                EnumDeclarationListChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => EnumDeclarationListChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -190,7 +204,7 @@ impl NodeParser for EnumDeclarationListNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "enum_declaration_list" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [enum_declaration_list] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("EnumDeclarationListNode: Node is of the wrong kind [{}] vs expected [enum_declaration_list] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

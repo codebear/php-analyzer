@@ -4,6 +4,7 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::namespace_aliasing_clause::NamespaceAliasingClauseNode;
 use crate::autonodes::qualified_name::QualifiedNameNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
@@ -29,6 +30,11 @@ impl NodeParser for NamespaceUseClauseChildren {
             "comment" => NamespaceUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                NamespaceUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => NamespaceUseClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -43,7 +49,10 @@ impl NodeParser for NamespaceUseClauseChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "NamespaceUseClauseChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -56,6 +65,11 @@ impl NamespaceUseClauseChildren {
             "comment" => NamespaceUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                NamespaceUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => NamespaceUseClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -188,7 +202,7 @@ impl NodeParser for NamespaceUseClauseNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "namespace_use_clause" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [namespace_use_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("NamespaceUseClauseNode: Node is of the wrong kind [{}] vs expected [namespace_use_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

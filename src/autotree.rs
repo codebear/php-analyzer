@@ -58,14 +58,15 @@ impl AutoTree {
 
     pub fn debug_dump_node(node: &Node, field_name: Option<&'static str>, level: usize) {
         let prefix = format!(
-            "{}:{}-{}:{}:",
+            "{}:{}-{}:{}-{}:",
             node.range().start_point.row + 1,
             node.range().start_point.column,
             node.range().end_point.row + 1,
             node.range().end_point.column,
+            level
         );
         eprintln!(
-            "{:10}{} {}{} ",
+            "{:20}{} {}{} ",
             prefix,
             "   ".repeat(level),
             if let Some(fname) = field_name {

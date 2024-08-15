@@ -2,6 +2,7 @@ use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::by_ref::ByRefNode;
 use crate::autonodes::comment::CommentNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -27,6 +28,11 @@ impl NodeParser for AnonymousFunctionUseClauseChildren {
             "comment" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                AnonymousFunctionUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -40,7 +46,10 @@ impl NodeParser for AnonymousFunctionUseClauseChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "AnonymousFunctionUseClauseChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -53,6 +62,11 @@ impl AnonymousFunctionUseClauseChildren {
             "comment" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                AnonymousFunctionUseClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => AnonymousFunctionUseClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -173,7 +187,7 @@ impl NodeParser for AnonymousFunctionUseClauseNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "anonymous_function_use_clause" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [anonymous_function_use_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("AnonymousFunctionUseClauseNode: Node is of the wrong kind [{}] vs expected [anonymous_function_use_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

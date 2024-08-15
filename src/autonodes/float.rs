@@ -21,7 +21,7 @@ impl NodeParser for FloatNode {
             return Err(ParseError::new(
                 range,
                 format!(
-                    "Node is of the wrong kind [{}] vs expected [float] on pos {}:{}",
+                    "FloatNode: Node is of the wrong kind [{}] vs expected [float] on pos {}:{}",
                     node.kind(),
                     range.start_point.row + 1,
                     range.start_point.column

@@ -12,6 +12,7 @@ use crate::autonodes::name::NameNode;
 use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::var_modifier::VarModifierNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autotree::ChildNodeParser;
@@ -40,6 +41,11 @@ impl NodeParser for MethodDeclarationReturnType {
             "comment" => MethodDeclarationReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                MethodDeclarationReturnType::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => MethodDeclarationReturnType::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -56,7 +62,10 @@ impl NodeParser for MethodDeclarationReturnType {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "MethodDeclarationReturnType: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -70,6 +79,11 @@ impl MethodDeclarationReturnType {
             "comment" => MethodDeclarationReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                MethodDeclarationReturnType::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => MethodDeclarationReturnType::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -195,6 +209,11 @@ impl NodeParser for MethodDeclarationChildren {
             "comment" => MethodDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                MethodDeclarationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => MethodDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -220,7 +239,10 @@ impl NodeParser for MethodDeclarationChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "MethodDeclarationChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -233,6 +255,11 @@ impl MethodDeclarationChildren {
             "comment" => MethodDeclarationChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                MethodDeclarationChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => MethodDeclarationChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -415,15 +442,7 @@ impl NodeParser for MethodDeclarationNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "method_declaration" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [method_declaration] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("MethodDeclarationNode: Node is of the wrong kind [{}] vs expected [method_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(

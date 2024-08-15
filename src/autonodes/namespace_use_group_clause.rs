@@ -3,6 +3,7 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autonodes::comment::CommentNode;
 use crate::autonodes::namespace_aliasing_clause::NamespaceAliasingClauseNode;
 use crate::autonodes::namespace_name::NamespaceNameNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
 use crate::autotree::ParseError;
@@ -27,6 +28,11 @@ impl NodeParser for NamespaceUseGroupClauseChildren {
             "comment" => NamespaceUseGroupClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                NamespaceUseGroupClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => NamespaceUseGroupClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -42,7 +48,10 @@ impl NodeParser for NamespaceUseGroupClauseChildren {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "NamespaceUseGroupClauseChildren: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -55,6 +64,11 @@ impl NamespaceUseGroupClauseChildren {
             "comment" => NamespaceUseGroupClauseChildren::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                NamespaceUseGroupClauseChildren::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => NamespaceUseGroupClauseChildren::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -182,7 +196,7 @@ impl NodeParser for NamespaceUseGroupClauseNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "namespace_use_group_clause" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [namespace_use_group_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("NamespaceUseGroupClauseNode: Node is of the wrong kind [{}] vs expected [namespace_use_group_clause] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
 
         Ok(Self {

@@ -22,6 +22,7 @@ use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::shell_command_expression::ShellCommandExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::throw_expression::ThrowExpressionNode;
 use crate::autonodes::update_expression::UpdateExpressionNode;
 use crate::autonodes::variable_name::VariableNameNode;
@@ -71,6 +72,9 @@ impl NodeParser for _PrimaryExpressionNode {
             "comment" => _PrimaryExpressionNode::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => _PrimaryExpressionNode::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => _PrimaryExpressionNode::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -161,7 +165,10 @@ impl NodeParser for _PrimaryExpressionNode {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "_PrimaryExpressionNode: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -175,6 +182,9 @@ impl _PrimaryExpressionNode {
             "comment" => _PrimaryExpressionNode::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => _PrimaryExpressionNode::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => _PrimaryExpressionNode::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),

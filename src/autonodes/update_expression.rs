@@ -11,6 +11,7 @@ use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpress
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -49,6 +50,9 @@ impl NodeParser for UpdateExpressionArgument {
             "comment" => UpdateExpressionArgument::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => UpdateExpressionArgument::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => UpdateExpressionArgument::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -95,7 +99,10 @@ impl NodeParser for UpdateExpressionArgument {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "UpdateExpressionArgument: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -108,6 +115,9 @@ impl UpdateExpressionArgument {
             "comment" => UpdateExpressionArgument::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => UpdateExpressionArgument::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => UpdateExpressionArgument::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -379,6 +389,9 @@ impl NodeParser for UpdateExpressionPostfix {
             "comment" => UpdateExpressionPostfix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => UpdateExpressionPostfix::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => UpdateExpressionPostfix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -388,7 +401,10 @@ impl NodeParser for UpdateExpressionPostfix {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "UpdateExpressionPostfix: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -401,6 +417,9 @@ impl UpdateExpressionPostfix {
             "comment" => UpdateExpressionPostfix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => UpdateExpressionPostfix::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => UpdateExpressionPostfix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -444,6 +463,9 @@ impl NodeParser for UpdateExpressionPrefix {
             "comment" => UpdateExpressionPrefix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => UpdateExpressionPrefix::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => UpdateExpressionPrefix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -453,7 +475,10 @@ impl NodeParser for UpdateExpressionPrefix {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "UpdateExpressionPrefix: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -466,6 +491,9 @@ impl UpdateExpressionPrefix {
             "comment" => UpdateExpressionPrefix::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => UpdateExpressionPrefix::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => UpdateExpressionPrefix::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -509,15 +537,7 @@ impl NodeParser for UpdateExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "update_expression" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [update_expression] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("UpdateExpressionNode: Node is of the wrong kind [{}] vs expected [update_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let argument: Box<UpdateExpressionArgument> =
             Into::<Result<_, _>>::into(node.parse_child("argument", source))?;

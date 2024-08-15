@@ -21,15 +21,7 @@ impl NodeParser for ConstElementNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "const_element" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [const_element] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("ConstElementNode: Node is of the wrong kind [{}] vs expected [const_element] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let name: NameNode = Into::<Result<_, _>>::into(node.parse_child("name", source))?;
         let value: _ExpressionNode = Into::<Result<_, _>>::into(node.parse_child("value", source))?;

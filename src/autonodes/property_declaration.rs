@@ -8,6 +8,7 @@ use crate::autonodes::final_modifier::FinalModifierNode;
 use crate::autonodes::property_element::PropertyElementNode;
 use crate::autonodes::readonly_modifier::ReadonlyModifierNode;
 use crate::autonodes::static_modifier::StaticModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::var_modifier::VarModifierNode;
 use crate::autonodes::visibility_modifier::VisibilityModifierNode;
 use crate::autotree::ChildNodeParser;
@@ -39,6 +40,11 @@ impl NodeParser for PropertyDeclarationModifiers {
             "comment" => PropertyDeclarationModifiers::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                PropertyDeclarationModifiers::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => PropertyDeclarationModifiers::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -64,7 +70,10 @@ impl NodeParser for PropertyDeclarationModifiers {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "PropertyDeclarationModifiers: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -77,6 +86,11 @@ impl PropertyDeclarationModifiers {
             "comment" => PropertyDeclarationModifiers::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                PropertyDeclarationModifiers::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => PropertyDeclarationModifiers::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -255,7 +269,7 @@ impl NodeParser for PropertyDeclarationNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "property_declaration" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [property_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("PropertyDeclarationNode: Node is of the wrong kind [{}] vs expected [property_declaration] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let mut skip_nodes: Vec<usize> = vec![];
         let attributes: Option<AttributeListNode> = Into::<Result<_, _>>::into(

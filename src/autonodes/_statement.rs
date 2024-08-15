@@ -25,6 +25,7 @@ use crate::autonodes::namespace_definition::NamespaceDefinitionNode;
 use crate::autonodes::namespace_use_declaration::NamespaceUseDeclarationNode;
 use crate::autonodes::return_statement::ReturnStatementNode;
 use crate::autonodes::switch_statement::SwitchStatementNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::trait_declaration::TraitDeclarationNode;
 use crate::autonodes::try_statement::TryStatementNode;
 use crate::autonodes::unset_statement::UnsetStatementNode;
@@ -79,6 +80,9 @@ impl NodeParser for _StatementNode {
             "comment" => _StatementNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => _StatementNode::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 _StatementNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }
@@ -170,7 +174,10 @@ impl NodeParser for _StatementNode {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "_StatementNode: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -183,6 +190,9 @@ impl _StatementNode {
             "comment" => _StatementNode::Extra(ExtraChild::Comment(Box::new(CommentNode::parse(
                 node, source,
             )?))),
+            "text_interpolation" => _StatementNode::Extra(ExtraChild::TextInterpolation(Box::new(
+                TextInterpolationNode::parse(node, source)?,
+            ))),
             "ERROR" => {
                 _StatementNode::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(node, source)?)))
             }

@@ -8,6 +8,7 @@ use crate::autonodes::compound_statement::CompoundStatementNode;
 use crate::autonodes::formal_parameters::FormalParametersNode;
 use crate::autonodes::name::NameNode;
 use crate::autonodes::reference_modifier::ReferenceModifierNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -33,6 +34,11 @@ impl NodeParser for FunctionDefinitionReturnType {
             "comment" => FunctionDefinitionReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                FunctionDefinitionReturnType::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => FunctionDefinitionReturnType::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -49,7 +55,10 @@ impl NodeParser for FunctionDefinitionReturnType {
                 } else {
                     return Err(ParseError::new(
                         node.range(),
-                        format!("Parse error, unexpected node-type: {}", node.kind()),
+                        format!(
+                            "FunctionDefinitionReturnType: Parse error, unexpected node-type: {}",
+                            node.kind()
+                        ),
                     ));
                 }
             }
@@ -63,6 +72,11 @@ impl FunctionDefinitionReturnType {
             "comment" => FunctionDefinitionReturnType::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                FunctionDefinitionReturnType::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => FunctionDefinitionReturnType::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -187,15 +201,7 @@ impl NodeParser for FunctionDefinitionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "function_definition" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [function_definition] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("FunctionDefinitionNode: Node is of the wrong kind [{}] vs expected [function_definition] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let attributes: Option<AttributeListNode> =
             Into::<Result<_, _>>::into(node.parse_child("attributes", source))?;

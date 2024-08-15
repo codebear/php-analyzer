@@ -13,6 +13,7 @@ use crate::autonodes::nullsafe_member_call_expression::NullsafeMemberCallExpress
 use crate::autonodes::scoped_call_expression::ScopedCallExpressionNode;
 use crate::autonodes::scoped_property_access_expression::ScopedPropertyAccessExpressionNode;
 use crate::autonodes::subscript_expression::SubscriptExpressionNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autonodes::variable_name::VariableNameNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
@@ -49,6 +50,11 @@ impl NodeParser for ReferenceAssignmentExpressionLeft {
             "comment" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                ReferenceAssignmentExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -102,7 +108,10 @@ impl NodeParser for ReferenceAssignmentExpressionLeft {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "ReferenceAssignmentExpressionLeft: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -115,6 +124,11 @@ impl ReferenceAssignmentExpressionLeft {
             "comment" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => {
+                ReferenceAssignmentExpressionLeft::Extra(ExtraChild::TextInterpolation(Box::new(
+                    TextInterpolationNode::parse(node, source)?,
+                )))
+            }
             "ERROR" => ReferenceAssignmentExpressionLeft::Extra(ExtraChild::Error(Box::new(
                 ErrorNode::parse(node, source)?,
             ))),
@@ -444,7 +458,7 @@ impl NodeParser for ReferenceAssignmentExpressionNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "reference_assignment_expression" {
-            return Err(ParseError::new(range, format!("Node is of the wrong kind [{}] vs expected [reference_assignment_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
+            return Err(ParseError::new(range, format!("ReferenceAssignmentExpressionNode: Node is of the wrong kind [{}] vs expected [reference_assignment_expression] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let left: Box<ReferenceAssignmentExpressionLeft> =
             Into::<Result<_, _>>::into(node.parse_child("left", source))?;

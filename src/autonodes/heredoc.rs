@@ -4,6 +4,7 @@ use crate::autonodes::comment::CommentNode;
 use crate::autonodes::heredoc_body::HeredocBodyNode;
 use crate::autonodes::heredoc_end::HeredocEndNode;
 use crate::autonodes::heredoc_start::HeredocStartNode;
+use crate::autonodes::text_interpolation::TextInterpolationNode;
 use crate::autotree::ChildNodeParser;
 use crate::autotree::NodeAccess;
 use crate::autotree::NodeParser;
@@ -31,6 +32,9 @@ impl NodeParser for HeredocIdentifier {
             "comment" => HeredocIdentifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => HeredocIdentifier::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => HeredocIdentifier::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -42,7 +46,10 @@ impl NodeParser for HeredocIdentifier {
             _ => {
                 return Err(ParseError::new(
                     node.range(),
-                    format!("Parse error, unexpected node-type: {}", node.kind()),
+                    format!(
+                        "HeredocIdentifier: Parse error, unexpected node-type: {}",
+                        node.kind()
+                    ),
                 ))
             }
         })
@@ -55,6 +62,9 @@ impl HeredocIdentifier {
             "comment" => HeredocIdentifier::Extra(ExtraChild::Comment(Box::new(
                 CommentNode::parse(node, source)?,
             ))),
+            "text_interpolation" => HeredocIdentifier::Extra(ExtraChild::TextInterpolation(
+                Box::new(TextInterpolationNode::parse(node, source)?),
+            )),
             "ERROR" => HeredocIdentifier::Extra(ExtraChild::Error(Box::new(ErrorNode::parse(
                 node, source,
             )?))),
@@ -170,15 +180,7 @@ impl NodeParser for HeredocNode {
     fn parse(node: Node, source: &[u8]) -> Result<Self, ParseError> {
         let range: Range = node.range().into();
         if node.kind() != "heredoc" {
-            return Err(ParseError::new(
-                range,
-                format!(
-                    "Node is of the wrong kind [{}] vs expected [heredoc] on pos {}:{}",
-                    node.kind(),
-                    range.start_point.row + 1,
-                    range.start_point.column
-                ),
-            ));
+            return Err(ParseError::new(range, format!("HeredocNode: Node is of the wrong kind [{}] vs expected [heredoc] on pos {}:{}", node.kind(), range.start_point.row+1, range.start_point.column)));
         }
         let end_tag: HeredocEndNode =
             Into::<Result<_, _>>::into(node.parse_child("end_tag", source))?;
