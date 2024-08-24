@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::shell_command_expression::ShellCommandExpressionNode,
     issue::IssueEmitter,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType, UnionType},
 };
 
 impl ShellCommandExpressionNode {
@@ -25,9 +25,7 @@ impl ShellCommandExpressionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
-        Some(UnionType::from(
-            &[DiscreteType::String, DiscreteType::NULL] as &[DiscreteType]
-        ))
+    ) -> Option<PHPType> {
+        Some(UnionType::from(&[DiscreteType::String, DiscreteType::NULL] as &[DiscreteType]).into())
     }
 }

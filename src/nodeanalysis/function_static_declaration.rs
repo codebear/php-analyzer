@@ -1,7 +1,7 @@
 use crate::{
     analysis::state::AnalysisState,
     autonodes::function_static_declaration::FunctionStaticDeclarationNode, issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 impl FunctionStaticDeclarationNode {
@@ -21,7 +21,7 @@ impl FunctionStaticDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

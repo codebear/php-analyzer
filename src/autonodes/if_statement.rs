@@ -15,7 +15,7 @@ use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
 
@@ -104,7 +104,7 @@ impl IfStatementAlternative {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             IfStatementAlternative::Extra(x) => x.get_utype(state, emitter),
             IfStatementAlternative::ElseClause(x) => x.get_utype(state, emitter),
@@ -263,7 +263,7 @@ impl IfStatementBody {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             IfStatementBody::Extra(x) => x.get_utype(state, emitter),
             IfStatementBody::_Statement(x) => x.get_utype(state, emitter),

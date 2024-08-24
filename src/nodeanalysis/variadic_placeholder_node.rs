@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::variadic_placeholder::VariadicPlaceholderNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl VariadicPlaceholderNode {
@@ -20,7 +20,7 @@ impl VariadicPlaceholderNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

@@ -25,7 +25,7 @@ use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
 
@@ -231,7 +231,7 @@ impl _ExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             _ExpressionNode::Extra(x) => x.get_utype(state, emitter),
             _ExpressionNode::_PrimaryExpression(x) => x.get_utype(state, emitter),

@@ -3,6 +3,7 @@ use std::{convert::TryInto, os::unix::prelude::OsStrExt};
 use crate::autonodes::array_element_initializer::ArrayElementInitializerValue;
 // use crate::autonodes::array_element_initializer::ArrayElementInitializerChildren;
 use crate::autotree::NodeAccess;
+use crate::types::union::PHPType;
 use crate::value::PHPArray;
 use crate::{
     analysis::state::AnalysisState,
@@ -27,15 +28,15 @@ impl ArrayCreationExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         if self.children.is_empty() {
             return Some(DiscreteType::Array.into());
         }
 
         let mut has_some_keys = false;
 
-        let mut value_types = UnionType::new();
-        let mut key_types = UnionType::new();
+        let mut value_types = vec![];
+        let mut key_types = vec![];
         for child in &self.children {
             if child.spread.is_some() {
                 // Noen barn har spread, da gir vi opp
@@ -44,12 +45,14 @@ impl ArrayCreationExpressionNode {
             if let Some(key) = &child.key {
                 has_some_keys = true;
                 let key_type = key.get_utype(state, emitter)?;
-                key_types.merge_into(key_type);
+                key_types.push(key_type);
             }
             let value_type = child.value.as_ref()?.get_utype(state, emitter)?;
-            value_types.merge_into(value_type);
+            value_types.push(value_type);
         }
+        let value_types = UnionType::flatten(value_types).into();
         if has_some_keys {
+            let key_types = UnionType::flatten(key_types).into();
             Some(DiscreteType::HashMap(key_types, value_types).into())
         } else {
             Some(DiscreteType::Vector(value_types).into())

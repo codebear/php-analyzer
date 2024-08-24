@@ -12,7 +12,7 @@ use crate::{
         binary::{BinaryAssignmentOperator, BinaryOperatorOperandAccess},
         operator::{Operator, Operators},
     },
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
     value::PHPValue,
 };
 
@@ -174,7 +174,7 @@ impl AugmentedAssignmentExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match *self.operator {
             AugmentedAssignmentExpressionOperator::Extra(_) => None,
             _ => self.operator.get_operator_utype(self, state, emitter),
@@ -191,11 +191,11 @@ impl BinaryOperatorOperandAccess for AugmentedAssignmentExpressionNode {
         self.right.get_php_value(state, &VoidEmitter::new())
     }
 
-    fn get_left_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+    fn get_left_type(&self, state: &mut AnalysisState) -> Option<PHPType> {
         self.left.get_utype(state, &VoidEmitter::new())
     }
 
-    fn get_right_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+    fn get_right_type(&self, state: &mut AnalysisState) -> Option<PHPType> {
         self.right.get_utype(state, &VoidEmitter::new())
     }
 }
@@ -206,7 +206,7 @@ impl BinaryAssignmentOperator for AugmentedAssignmentExpressionOperator {
         operands: &impl BinaryOperatorOperandAccess,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             AugmentedAssignmentExpressionOperator::ModAssign(oper) => {
                 oper.get_operator_utype(operands, state, emitter)
@@ -368,7 +368,7 @@ impl AugmentedAssignmentExpressionLeft {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match self {

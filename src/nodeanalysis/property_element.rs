@@ -14,7 +14,7 @@ use crate::{
         FileLocation,
     },
     symbols::Name,
-    types::union::UnionType,
+    types::{type_parser::TypeParser, union::PHPType},
 };
 
 impl PropertyElementNode {
@@ -34,7 +34,7 @@ impl PropertyElementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 
@@ -145,12 +145,16 @@ impl PropertyElementNode {
                 // void
                 match entry {
                     PHPDocEntry::Var(range, property_type, _opt_name, _opt_desc) => {
-                        comment_type =
-                            UnionType::from_parsed_type(property_type.clone(), state, emitter, None)
-                                .map(|x| (x, *range))
+                        comment_type = TypeParser::from_parsed_type(
+                            property_type.clone(),
+                            state,
+                            emitter,
+                            None,
+                        )
+                        .map(|x| (x, *range))
                     }
                     PHPDocEntry::Anything(range, comment) if doc_comment.entries.len() == 1 => {
-                        comment_type = UnionType::parse(comment.clone(), *range, state, emitter)
+                        comment_type = TypeParser::parse(comment.clone(), *range, state, emitter)
                             .map(|x| (x, *range));
                     }
                     _ => (),

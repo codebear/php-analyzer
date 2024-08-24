@@ -48,7 +48,7 @@ use crate::operators::right_shift::RightShiftOperator;
 use crate::operators::spaceship::SpaceshipOperator;
 use crate::operators::sub::SubOperator;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
 
@@ -402,7 +402,7 @@ impl BinaryExpressionRight {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             BinaryExpressionRight::Extra(x) => x.get_utype(state, emitter),
             BinaryExpressionRight::_Expression(x) => x.get_utype(state, emitter),

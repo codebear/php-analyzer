@@ -5,7 +5,9 @@ use crate::autonodes::any::AnyNodeRef;
 use crate::autotree::AutoTree;
 use crate::autotree::NodeAccess;
 use crate::config::PHPAnalyzeConfig;
+use crate::issue::Issue;
 use crate::issue::IssueEmitter;
+use crate::issue::IssuePosition;
 use crate::nodeanalysis::analysis::ErrorPassAnalyzableNode;
 use crate::nodeanalysis::analysis::FirstPassAnalyzeableNode;
 use crate::nodeanalysis::analysis::SecondPassAnalyzeableNode;
@@ -48,7 +50,7 @@ impl Analyzer {
         }
     }
 
-    pub fn parse(&mut self) -> Result<(), &'static str> {
+    pub fn parse(&mut self, emitter: &dyn IssueEmitter) -> Result<(), &'static str> {
         use crate::parser::PHPParser;
         let mut parser = PHPParser::new();
 
@@ -57,13 +59,18 @@ impl Analyzer {
         let stru = match parser.parse_struct(contents.clone()) {
             Ok(Some(stru)) => stru,
             Err(err) => {
-                eprintln!(
+                emitter.emit(Issue::ParseError(
+                    IssuePosition::new(&Some(self.content_id.clone().into()), err.range),
+                    err.error.clone().into(),
+                ));
+
+                /*eprintln!(
                     "ERROR: {}:{}:{}: {}",
                     self.content_id.to_string_lossy(),
                     err.range.start_point.row,
                     err.range.start_point.column,
                     err.error
-                );
+                );*/
                 return Err("TODO Trouble with something");
             }
             Ok(None) => return Err("TODO Trouble with something else"),

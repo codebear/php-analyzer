@@ -5,7 +5,7 @@ use crate::{
     phpdoc::types::PHPDocEntry,
     symboldata::class::FunctionArgumentData,
     symbols::Name,
-    types::union::{DiscreteType, UnionType},
+    types::{type_parser::TypeParser, union::PHPType},
     value::PHPValue,
 };
 
@@ -28,12 +28,12 @@ impl SimpleParameterNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let comment_type = self.get_declared_comment_type(state, emitter);
         let mut utype = comment_type.or_else(|| self.get_declared_native_type(state, emitter))?;
         if let Some(x) = &self.default_value {
             if let Some(PHPValue::NULL) = x.get_php_value(state, emitter) {
-                utype.types.insert(DiscreteType::NULL);
+                utype.insert_nullable();
             }
         }
         Some(utype)
@@ -47,12 +47,12 @@ impl SimpleParameterNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let param_data = self.get_parameter_data(state)?;
         if let Some(PHPDocEntry::Param(_range, union_of_types, _name, _desc)) =
             param_data.phpdoc_entry
         {
-            UnionType::from_parsed_type(union_of_types, state, emitter, None)
+            TypeParser::from_parsed_type(union_of_types, state, emitter, None)
         } else {
             param_data.inline_phpdoc_type.map(|x| x.1)
         }
@@ -79,7 +79,7 @@ impl SimpleParameterNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         self.type_.as_ref()?.get_utype(state, emitter)
     }
 

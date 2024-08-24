@@ -5,7 +5,7 @@ use crate::{
         subscript_expression::{SubscriptExpressionDereferenceable, SubscriptExpressionNode},
     },
     issue::{Issue, IssueEmitter},
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, DiscretlyAccessedType, PHPType, UnionType},
     value::PHPValue,
 };
 
@@ -18,16 +18,15 @@ impl SubscriptExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         if let Some(val) = self.get_php_value(state, emitter) {
             return val.get_utype();
         }
         let array_type = self.dereferenceable.get_utype(state, emitter)?;
 
         let index = self.index.as_ref()?;
-        let index_type = if let Some(itype) = index.get_utype(state, emitter) {
-            itype
-        } else {
+
+        let Some(index_type) = index.get_utype(state, emitter) else {
             if state.pass == 3 {
                 // Maybe it should be on pass 3
 
@@ -42,45 +41,55 @@ impl SubscriptExpressionNode {
             // If the array type is unknown, there is nothing more we can do...
             return None;
         }
+
         let mut ret_type = UnionType::new();
-        for dtype in array_type.types {
-            match dtype {
-                DiscreteType::String => {
-                    // String lookup. Index must be integer
-                    if let Some(DiscreteType::Int) = index_type.single_type() {
-                        ret_type.merge_into(UnionType::from(&[
-                            DiscreteType::String,
-                            DiscreteType::NULL,
-                        ]
-                            as &[DiscreteType]));
-                    } else {
-                        crate::missing!(
-                            "subscript.get_utype(..) string indexing with none integer index-type: {:?}",
-                            index_type,
-                        );
+
+        for datype in array_type.as_discrete_variants() {
+            match datype {
+                DiscretlyAccessedType::Discrete(dtype) => match dtype {
+                    DiscreteType::String => {
+                        // String lookup. Index must be integer
+                        if let Some(DiscreteType::Int) = index_type.single_type() {
+                            ret_type.append(UnionType::from_pair(
+                                DiscreteType::String,
+                                DiscreteType::NULL,
+                            ));
+                        } else {
+                            crate::missing!(
+                                    "subscript.get_utype(..) string indexing with none integer index-type: {:?}",
+                                    index_type,
+                                );
+                        }
                     }
-                }
-                DiscreteType::Named(_, _) => crate::missing!(
-                    "subscript.get_utype(..) what get's when looking up in named type with {:?}",
-                    index_type,
-                ),
-                DiscreteType::Generic(_, _) => crate::missing!(
-                    "subscript.get_utype(..) what get's when looking up in generic type with {:?}",
-                    index_type,
-                ),
-                DiscreteType::Int => {
-                    // This should emit
-                    crate::missing!("Emit something when attempting array lookup of Int");
-                }
-                _ => crate::missing!(
-                    "subscript.get_utype(..) what get's when looking up in {:?} with a {:?}",
-                    dtype,
-                    index_type
-                ),
+                    DiscreteType::Named(_, _) => {
+                        crate::missing!(
+                                "subscript.get_utype(..) what get's when looking up in named type with {:?}",
+                                index_type,
+                            )
+                    }
+                    DiscreteType::Generic(_, _) => {
+                        crate::missing!(
+                        "subscript.get_utype(..) what get's when looking up in generic type with {:?}",
+                        index_type,
+                    )
+                    }
+                    DiscreteType::Int => {
+                        // This should emit
+                        crate::missing!("Emit something when attempting array lookup of Int");
+                    }
+                    _ => crate::missing!(
+                        "subscript.get_utype(..) what get's when looking up in {:?} with a {:?}",
+                        dtype,
+                        index_type
+                    ),
+                },
+
+                DiscretlyAccessedType::Intersection(_) => todo!(),
             }
         }
+
         if ret_type.len() > 0 {
-            Some(ret_type)
+            Some(ret_type.into())
         } else {
             None
         }
@@ -128,13 +137,13 @@ impl SubscriptExpressionNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        _val_type: Option<UnionType>,
+        _val_type: Option<PHPType>,
         _value: Option<PHPValue>,
     ) {
         // FIXME determine have this should be done...
         self.dereferenceable.write_to(state, emitter, None, None);
 
-        if let Some(_) = self.get_key_value(state, emitter) {
+        if self.get_key_value(state, emitter).is_some() {
             crate::missing!("write_to subscript_expression_node with known index needs more logic");
         } else {
             crate::missing!(
@@ -149,7 +158,7 @@ impl SubscriptExpressionDereferenceable {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match self {

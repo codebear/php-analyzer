@@ -11,7 +11,7 @@ use crate::{
     issue::IssueEmitter,
     symboldata::class::ClassName,
     symbols::{FullyQualifiedName, Name},
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
     value::{ObjectInstance, PHPValue},
 };
 
@@ -141,7 +141,7 @@ impl ObjectCreationExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let data = self.get_creation_data();
         let maybe_fq_name = match &data.name {
             Some(ObjectCreationExpressionChildren::Name(n)) => {
@@ -200,7 +200,7 @@ impl ObjectCreationExpressionNode {
         name: &Name,
         fq_name: &FullyQualifiedName,
         object_creation_data: &ObjectCreationData,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let fq_class_name: ClassName = fq_name.into();
         let shared_class_data = state.symbol_data.get_class(&fq_class_name)?;
         // FIXME improve structure here
@@ -217,18 +217,12 @@ impl ObjectCreationExpressionNode {
             for func_arg in &constructor_data.arguments {
                 let in_type = in_argument_iter.next().cloned();
                 let arg_type = func_arg.get_type(state);
-                match (in_type, arg_type) {
-                    (Some(Some(in_type)), Some(arg_type)) => {
-                        // void
-                        if arg_type.contains_template() {
-                            self.infer_generic_type_into_map(
-                                &mut inner_generic_map,
-                                arg_type,
-                                in_type,
-                            );
-                        }
-                    }
-                    _ => (),
+                let (Some(Some(in_type)), Some(arg_type)) = (in_type, arg_type) else {
+                    continue;
+                };
+                // void
+                if arg_type.contains_template() {
+                    self.infer_generic_type_into_map(&mut inner_generic_map, arg_type, in_type);
                 }
                 //eprintln!("ARG: {}: {:?}", func_arg.name, func_arg.get_type(state));
             }

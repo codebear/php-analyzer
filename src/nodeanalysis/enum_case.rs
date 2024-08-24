@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::enum_case::EnumCaseNode, issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 impl EnumCaseNode {
@@ -20,7 +20,7 @@ impl EnumCaseNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

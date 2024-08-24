@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::heredoc::HeredocNode,
     issue::IssueEmitter,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
 };
 
 impl HeredocNode {
@@ -24,7 +24,7 @@ impl HeredocNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         Some(DiscreteType::String.into())
     }
 }

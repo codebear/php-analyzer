@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::named_label_statement::NamedLabelStatementNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl NamedLabelStatementNode {
@@ -20,7 +20,7 @@ impl NamedLabelStatementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

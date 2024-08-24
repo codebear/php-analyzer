@@ -7,7 +7,7 @@ use crate::{
     autotree::NodeAccess,
     issue::IssueEmitter,
     operators::operator::{Operator, Operators},
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
     value::{PHPFloat, PHPValue},
 };
 
@@ -20,7 +20,7 @@ impl UnaryOpExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match &*self.operator {
             UnaryOpExpressionOperator::Not(_) => Some(DiscreteType::Bool.into()),
             UnaryOpExpressionOperator::Add(_) => self

@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::_primary_expression::_PrimaryExpressionNode,
-    issue::IssueEmitter, types::union::UnionType, value::PHPValue,
+    issue::IssueEmitter, types::union::PHPType, value::PHPValue,
 };
 
 impl _PrimaryExpressionNode {
@@ -8,7 +8,7 @@ impl _PrimaryExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match self {

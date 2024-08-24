@@ -28,7 +28,7 @@ impl BinaryAssignmentOperator for AndAssignOperator {
         _operands: &impl BinaryOperatorOperandAccess,
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<crate::types::union::PHPType> {
         crate::missing_none!("{}.get_operator_utype(..)", self.brief_desc())
     }
 }

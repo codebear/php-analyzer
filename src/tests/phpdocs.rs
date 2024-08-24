@@ -8,7 +8,7 @@ use crate::{
         position::fake_range,
         types::{PHPDocComment, PHPDocEntry},
     },
-    types::parser::union_type,
+    types::parser::compound_type,
 };
 
 fn test_parse(buffer: OsString) -> Result<PHPDocComment, OsString> {
@@ -21,7 +21,7 @@ pub fn test_var() {
     assert!(true);
     // void
     if let Ok(phpdoc) = test_parse("/** @var int */".into()) {
-        let (_, reference_type) = union_type(false)(b"int").unwrap();
+        let (_, reference_type) = compound_type(false)(b"int").unwrap();
         // let range = fake_range(&OsString::new());
         assert_eq!(
             phpdoc.entries,
@@ -51,7 +51,7 @@ pub fn test_var2() {
                 */"
         .into(),
     ) {
-        let (_, reference_type) = union_type(false)(b"int").unwrap();
+        let (_, reference_type) = compound_type(false)(b"int").unwrap();
 
         assert_eq!(
             phpdoc.entries,
@@ -88,7 +88,6 @@ pub fn test_var2() {
 
 #[test]
 pub fn test_var3() {
-    assert!(true);
     // void
     if let Ok(phpdoc) = test_parse(
         "/** 
@@ -96,7 +95,7 @@ pub fn test_var3() {
                 */"
         .into(),
     ) {
-        let (_, reference_type) = union_type(false)(b"CantorPairing").unwrap();
+        let (_, reference_type) = compound_type(false)(b"CantorPairing").unwrap();
 
         assert_eq!(
             phpdoc.entries,

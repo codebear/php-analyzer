@@ -36,7 +36,7 @@ use crate::operators::right_shift_assign::RightShiftAssignOperator;
 use crate::operators::sub_assign::SubAssignOperator;
 use crate::operators::xor_assign::XorAssignOperator;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
 
@@ -221,7 +221,7 @@ impl AugmentedAssignmentExpressionLeft {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             AugmentedAssignmentExpressionLeft::Extra(x) => x.get_utype(state, emitter),
             AugmentedAssignmentExpressionLeft::CastExpression(x) => x.get_utype(state, emitter),

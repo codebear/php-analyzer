@@ -6,7 +6,7 @@ use crate::{
     },
     issue::VoidEmitter,
     symboldata::class::ClassName,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, DiscretlyAccessedType, PHPType, UnionType},
     value::PHPValue,
     Range,
 };
@@ -39,7 +39,7 @@ impl BinaryOperator for InstanceofOperator {
         _operands: &impl BinaryOperatorOperandAccess,
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         Some(DiscreteType::Bool.into())
     }
 
@@ -59,7 +59,7 @@ impl BinaryOperator for InstanceofOperator {
 
         let subject_type = operands.get_left_type(state)?;
 
-        let is_instanceof = subject_type.is_instanceof(expected_fq_name)?;
+        let is_instanceof = subject_type.is_instanceof(&expected_fq_name)?;
 
         Some(PHPValue::Boolean(is_instanceof))
         /*
@@ -89,79 +89,90 @@ impl BinaryOperatorBranchTypeHardening for InstanceofOperator {
         branch_side: crate::analysis::scope::BranchSide,
         state: &mut crate::analysis::state::AnalysisState,
     ) -> Option<std::sync::Arc<std::sync::RwLock<crate::analysis::scope::Scope>>> {
-        match (left, right) {
-            (_ExpressionNode::_PrimaryExpression(left), right) => {
-                // Attempt to find a class-name to check against
-                let cname = match right {
-                    BinaryExpressionRight::_Expression(_) => crate::missing_none!(),
-                    BinaryExpressionRight::DynamicVariableName(_) => {
-                        crate::missing_none!()
-                    }
-                    BinaryExpressionRight::MemberAccessExpression(_) => {
-                        crate::missing_none!()
-                    }
-                    BinaryExpressionRight::Name(n) => {
-                        Some(state.get_fq_symbol_name_from_local_name(&n.get_name()))
-                    }
-                    BinaryExpressionRight::NullsafeMemberAccessExpression(_) => {
-                        crate::missing_none!()
-                    }
-                    BinaryExpressionRight::QualifiedName(q) => Some(q.get_fq_name(state)),
-                    BinaryExpressionRight::ScopedPropertyAccessExpression(_) => {
-                        crate::missing_none!()
-                    }
-                    BinaryExpressionRight::SubscriptExpression(_) => {
-                        crate::missing_none!()
-                    }
-                    BinaryExpressionRight::VariableName(_) => crate::missing_none!(),
-                    BinaryExpressionRight::Extra(_) => crate::missing_none!(),
-                };
-                match (&**left, cname) {
-                    (_PrimaryExpressionNode::VariableName(var_name), Some(cname)) => {
-                        let symbol_data = state.symbol_data.clone();
-                        return Some(match branch_side {
-                            BranchSide::TrueBranch => {
-                                let class_name: ClassName = cname.clone().into();
-                                let _emitter = VoidEmitter::new();
-                                new_scope_with_harden_variable_type_based_on_filter(
-                                    scope,
-                                    var_name,
-                                    state,
-                                    move |dtype: &&DiscreteType| {
-                                        dtype.can_be_instance_of(cname.clone(), &symbol_data)
-                                    },
-                                    Some(Box::new(move |mut utype: UnionType| {
-                                        if utype.len() == 0 {
-                                            // In the case of no valid types left,
-                                            // for best DX we inject the type we checked against, because it
-                                            // is the only thing that will make sense
-                                            // inside the branch, however,
-                                            // the conditional should have detected this as an always-false
-                                            // statement, and emitted accordingly
-                                            utype.push(class_name.into());
-                                        }
-                                        utype
-                                    })),
-                                )
-                            }
-                            BranchSide::FalseBranch => {
-                                new_scope_with_harden_variable_type_based_on_filter(
-                                    scope,
-                                    var_name,
-                                    state,
-                                    move |dtype: &&DiscreteType| {
-                                        !dtype.can_be_instance_of(cname.clone(), &symbol_data)
-                                    },
-                                    None,
-                                )
-                            }
-                        });
-                    }
-                    _ => (),
-                }
+        let (_ExpressionNode::_PrimaryExpression(left), right) = (left, right) else {
+            return None;
+        };
+        // Attempt to find a class-name to check against
+        let cname = match right {
+            BinaryExpressionRight::_Expression(_) => crate::missing_none!(),
+            BinaryExpressionRight::DynamicVariableName(_) => {
+                crate::missing_none!()
             }
-            _ => (),
-        }
-        None
+            BinaryExpressionRight::MemberAccessExpression(_) => {
+                crate::missing_none!()
+            }
+            BinaryExpressionRight::Name(n) => {
+                Some(state.get_fq_symbol_name_from_local_name(&n.get_name()))
+            }
+            BinaryExpressionRight::NullsafeMemberAccessExpression(_) => {
+                crate::missing_none!()
+            }
+            BinaryExpressionRight::QualifiedName(q) => Some(q.get_fq_name(state)),
+            BinaryExpressionRight::ScopedPropertyAccessExpression(_) => {
+                crate::missing_none!()
+            }
+            BinaryExpressionRight::SubscriptExpression(_) => {
+                crate::missing_none!()
+            }
+            BinaryExpressionRight::VariableName(_) => crate::missing_none!(),
+            BinaryExpressionRight::Extra(_) => crate::missing_none!(),
+        };
+        let (_PrimaryExpressionNode::VariableName(var_name), Some(cname)) = (&**left, cname) else {
+            return None;
+        };
+        let symbol_data = state.symbol_data.clone();
+
+        let ptype = match branch_side {
+            BranchSide::TrueBranch => {
+                let class_name: ClassName = cname.clone().into();
+                let _emitter = VoidEmitter::new();
+                new_scope_with_harden_variable_type_based_on_filter(
+                    scope,
+                    var_name,
+                    state,
+                    move |datype: &&DiscretlyAccessedType| match datype {
+                        DiscretlyAccessedType::Discrete(dtype) => {
+                            dtype.can_be_instance_of(cname.clone(), &symbol_data)
+                        }
+
+                        DiscretlyAccessedType::Intersection(_) => {
+                            crate::missing!("Intersection type in instanceof branch hardening");
+                            true
+                        }
+                    },
+                    Some(Box::new(move |utype: PHPType| {
+                        if utype.as_discrete_variants().is_empty() {
+                            // In the case of no valid types left,
+                            // for best DX we inject the type we checked against, because it
+                            // is the only thing that will make sense
+                            // inside the branch, however,
+                            // the conditional should have detected this as an always-false
+                            // statement, and emitted accordingly
+                            let class_name_dtype: DiscreteType = class_name.into();
+                            UnionType::from_pair(utype, class_name_dtype).into()
+                        } else {
+                            utype
+                        }
+                    })),
+                )
+            }
+            BranchSide::FalseBranch => new_scope_with_harden_variable_type_based_on_filter(
+                scope,
+                var_name,
+                state,
+                move |datype: &&DiscretlyAccessedType| match datype {
+                    DiscretlyAccessedType::Discrete(dtype) => {
+                        !dtype.can_be_instance_of(cname.clone(), &symbol_data)
+                    }
+                    DiscretlyAccessedType::Intersection(_) => {
+                        crate::missing!("Intersection type in instanceof branch hardening");
+                        true
+                    }
+                },
+                None,
+            ),
+        };
+
+        Some(ptype)
     }
 }

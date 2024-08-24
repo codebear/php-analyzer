@@ -3,7 +3,7 @@ use crate::{
     autonodes::{_expression::_ExpressionNode, binary_expression::BinaryExpressionRight},
     issue::IssueEmitter,
     symbols::FullyQualifiedName,
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -15,8 +15,8 @@ pub enum InstanceOfSymbol {
 pub trait BinaryOperatorOperandAccess {
     fn get_left_value(&self, state: &mut AnalysisState) -> Option<PHPValue>;
     fn get_right_value(&self, state: &mut AnalysisState) -> Option<PHPValue>;
-    fn get_left_type(&self, state: &mut AnalysisState) -> Option<UnionType>;
-    fn get_right_type(&self, state: &mut AnalysisState) -> Option<UnionType>;
+    fn get_left_type(&self, state: &mut AnalysisState) -> Option<PHPType>;
+    fn get_right_type(&self, state: &mut AnalysisState) -> Option<PHPType>;
 
     ///
     /// Instanceof has some special needs that we chose to handle with a separate
@@ -33,7 +33,7 @@ pub trait BinaryOperator {
         _operands: &impl BinaryOperatorOperandAccess,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 
@@ -53,7 +53,7 @@ pub trait BinaryAssignmentOperator {
         _operands: &impl BinaryOperatorOperandAccess,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("BinaryAssignmentOperator.get_operator_utype(..)")
     }
 }

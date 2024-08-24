@@ -1,7 +1,7 @@
 use crate::{
     analysis::state::AnalysisState,
     autonodes::error_suppression_expression::ErrorSuppressionExpressionNode, issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 impl ErrorSuppressionExpressionNode {
@@ -23,7 +23,7 @@ impl ErrorSuppressionExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         self.child.get_utype(state, emitter)
         //crate::missing_none!("{}.get_utype(..)", self.kind())
     }

@@ -1,6 +1,6 @@
 use crate::autonodes::string_value::StringValueNode;
 use crate::types::union::DiscreteType;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::{analysis::state::AnalysisState, issue::IssueEmitter, value::PHPValue};
 
 impl StringValueNode {
@@ -19,7 +19,7 @@ impl StringValueNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         Some(DiscreteType::String.into())
     }
 }

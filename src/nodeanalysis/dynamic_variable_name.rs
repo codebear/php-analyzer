@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::dynamic_variable_name::DynamicVariableNameNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl DynamicVariableNameNode {
@@ -20,7 +20,7 @@ impl DynamicVariableNameNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

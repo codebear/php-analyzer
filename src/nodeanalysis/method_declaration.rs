@@ -16,7 +16,10 @@ use crate::{
         FileLocation,
     },
     symbols::Name,
-    types::union::{DiscreteType, SpecialType, UnionType},
+    types::{
+        type_parser::TypeParser,
+        union::{DiscreteType, PHPType, SpecialType, UnionType},
+    },
 };
 
 use super::{
@@ -47,7 +50,7 @@ impl MethodDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 
@@ -70,13 +73,13 @@ trait AnalysisOfFunctionLike {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType>;
+    ) -> Option<PHPType>;
 
     fn get_inferred_return_type(
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType>;
+    ) -> Option<PHPType>;
 
     // Her kan vi lag en get_overloaded_inferred_return_type_with_arguments(...) for overload-sjekking
 }
@@ -86,20 +89,20 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let ret = &self.return_type.as_ref()?;
         let utype = ret.get_utype(state, emitter)?;
-        let utype: UnionType = utype
-            .types
-            .iter()
-            .map(|x| match x {
-                DiscreteType::Special(SpecialType::Self_) => {
-                    let _cname = self.get_class_name(state);
-                    todo!()
-                }
-                x => x,
-            })
-            .collect();
+        let Some(cname) = self.get_class_name(state) else {
+            return Some(utype);
+        };
+        let utype = utype.map(&|discrete| match discrete {
+            DiscreteType::Special(SpecialType::Self_) => {
+                let _cname = &cname;
+                todo!("Inject self name");
+            }
+            x => x,
+        });
+
         Some(utype)
     }
 
@@ -107,7 +110,7 @@ impl AnalysisOfFunctionLike for MethodDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         todo!()
     }
 }
@@ -203,7 +206,7 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
                     for entry in &doc_comment.entries {
                         match entry {
                             PHPDocEntry::Return(range, ptype, _desc) => {
-                                comment_return_type = UnionType::from_parsed_type(
+                                comment_return_type = TypeParser::from_parsed_type(
                                     ptype.clone(),
                                     state,
                                     emitter,
@@ -321,7 +324,7 @@ impl SecondPassAnalyzeableNode for MethodDeclarationNode {
                         _ => continue,
                     };
 
-                    if let Some(utype) = UnionType::from_parsed_type(
+                    if let Some(utype) = TypeParser::from_parsed_type(
                         concrete_types.clone(),
                         state,
                         emitter,
@@ -425,7 +428,7 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
         for (r_type, _val) in returns {
             if let Some(t) = r_type {
                 // t;
-                ret_type.merge_into(t);
+                ret_type.append(t);
             } else {
                 ret_type = UnionType::new();
                 break;
@@ -450,7 +453,7 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
             let mut method_data = method.write().unwrap();
             method_data.return_count = return_count;
             if ret_type.len() > 0 {
-                method_data.inferred_return_type = Some(ret_type);
+                method_data.inferred_return_type = Some(ret_type.into());
             }
         }
         true

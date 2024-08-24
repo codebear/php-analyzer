@@ -6,6 +6,7 @@ use crate::{
     issue::{Issue, VoidEmitter},
     symboldata::class::{ClassType, MethodData},
     symbols::{Name, Symbol, SymbolClass, SymbolMethod},
+    types::union::{DiscretlyAccessedType, PHPType},
 };
 
 use crate::{
@@ -18,6 +19,8 @@ use crate::{
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
+
+use crate::types::phptype::TypeTraits;
 
 impl MemberCallExpressionNode {
     pub fn read_from(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
@@ -32,7 +35,7 @@ impl MemberCallExpressionNode {
         &self,
         state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         // FIXME
         // Find out what the return-type of the method is
         // If the method is marked for overload-analysis, and we
@@ -40,19 +43,17 @@ impl MemberCallExpressionNode {
 
         let methods = self.get_methods_data(state);
         let mut return_type = UnionType::new();
-        for maybe_method in methods {
-            if let Some((_class, method_data)) = maybe_method {
-                // eprintln!("METHOD_DATA: {:#?}", &method_data);
-                if method_data.generic_templates.is_some() {
-                    crate::missing!("Need to do something with generic_templates");
-                }
-
-                let call_return_type = method_data.get_return_type()?;
-                return_type.merge_into(call_return_type);
+        for (_class, method_data) in methods.into_iter().flatten() {
+            // eprintln!("METHOD_DATA: {:#?}", &method_data);
+            if method_data.generic_templates.is_some() {
+                crate::missing!("Need to do something with generic_templates");
             }
+
+            let call_return_type = method_data.get_return_type()?;
+            return_type.append(call_return_type);
         }
         if return_type.len() > 0 {
-            Some(return_type)
+            Some(return_type.into())
         } else {
             None
         }
@@ -170,12 +171,17 @@ impl MemberCallExpressionNode {
         let object_utype = self.object.get_utype(state, &emitter)?;
 
         let mut cnames = vec![];
-        for dtype in object_utype.types {
-            if let DiscreteType::NULL = dtype {
-                continue;
+        for datype in object_utype.as_discrete_variants() {
+            match datype {
+                DiscretlyAccessedType::Discrete(dtype) => {
+                    if let DiscreteType::NULL = dtype {
+                        continue;
+                    }
+                    let class_name = self.get_class_data_for_discrete_type(state, dtype);
+                    cnames.push(class_name);
+                }
+                DiscretlyAccessedType::Intersection(_) => todo!(),
             }
-            let class_name = self.get_class_data_for_discrete_type(state, dtype);
-            cnames.push(class_name);
         }
         Some(cnames)
     }
@@ -285,12 +291,18 @@ impl MemberCallExpressionNode {
         let object_utype = self.object.get_utype(state, emitter)?;
 
         let mut cnames = vec![];
-        for dtype in object_utype.types {
-            if let DiscreteType::NULL = dtype {
-                continue;
+
+        for datype in object_utype.as_discrete_variants() {
+            match datype {
+                DiscretlyAccessedType::Discrete(dtype) => {
+                    if let DiscreteType::NULL = dtype {
+                        continue;
+                    }
+                    let class_name = self.get_class_name_from_discrete_type(&dtype);
+                    cnames.push(class_name);
+                }
+                DiscretlyAccessedType::Intersection(_) => todo!(),
             }
-            let class_name = self.get_class_name_from_discrete_type(&dtype);
-            cnames.push(class_name);
         }
         Some(cnames)
     }

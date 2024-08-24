@@ -4,7 +4,7 @@ use crate::{
     analysis::state::AnalysisState,
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symbols::{FullyQualifiedName, Name},
-    types::union::{DiscreteType, UnionType},
+    types::union::DiscreteType,
     value::PHPValue,
 };
 
@@ -16,7 +16,7 @@ use std::{
 };
 
 use super::{FileLocation, SymbolData};
-use crate::types::union::from_vec_parsed_type;
+use crate::types::union::{from_vec_parsed_type, PHPType};
 
 type MethodName = Name;
 
@@ -188,7 +188,7 @@ impl ClassType {
             ClassType::Trait(_) => None,
         }
     }
-    pub fn with_generic_args(&self, generic_args: &Vec<UnionType>) -> Self {
+    pub fn with_generic_args(&self, generic_args: &Vec<PHPType>) -> Self {
         if !generic_args.is_empty() {
             crate::missing!("Gi ut en type som er typesatt med generiske argumenter");
         }
@@ -233,7 +233,7 @@ impl ClassType {
         self.get_method(&name, symbol_data)
     }
 
-    pub(crate) fn set_generic_concretes(&mut self, noe: BTreeMap<Name, UnionType>) {
+    pub(crate) fn set_generic_concretes(&mut self, noe: BTreeMap<Name, PHPType>) {
         match self {
             ClassType::None => (),
             ClassType::Class(c) => c.generic_concretes = Some(noe),
@@ -293,7 +293,7 @@ pub struct ClassData {
     pub phpdoc: Option<PHPDocComment>,
     pub deprecated: Option<OsString>,
     pub generic_templates: Option<Vec<Name>>,
-    pub generic_concretes: Option<BTreeMap<Name, UnionType>>,
+    pub generic_concretes: Option<BTreeMap<Name, PHPType>>,
 }
 
 impl ClassData {
@@ -740,13 +740,13 @@ impl TraitData {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct FunctionArgumentData {
     pub name: Name,
-    pub arg_type: Option<UnionType>,
+    pub arg_type: Option<PHPType>,
     pub default_value: Option<PHPValue>,
     pub nullable: bool,
     pub optional: bool,
-    pub inline_phpdoc_type: Option<(Range, UnionType)>,
+    pub inline_phpdoc_type: Option<(Range, PHPType)>,
     pub phpdoc_entry: Option<PHPDocEntry>,
-    pub phpdoc_type: Option<UnionType>,
+    pub phpdoc_type: Option<PHPType>,
     pub variadic: bool,
 }
 
@@ -763,7 +763,7 @@ impl PartialOrd for FunctionArgumentData {
 }
 
 impl FunctionArgumentData {
-    pub fn get_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+    pub fn get_type(&self, state: &mut AnalysisState) -> Option<PHPType> {
         // FIXME somewhere there needs to be emitted
         // an issue if the comment-type is incompatible with the native type
         if let Some(utype) = &self.phpdoc_type {
@@ -788,9 +788,9 @@ pub struct MethodData {
     pub declared_in: ClassName,
     pub position: FileLocation,
     pub return_count: usize,
-    pub php_return_type: Option<UnionType>,
-    pub comment_return_type: Option<(UnionType, Range)>,
-    pub inferred_return_type: Option<UnionType>,
+    pub php_return_type: Option<PHPType>,
+    pub comment_return_type: Option<(PHPType, Range)>,
+    pub inferred_return_type: Option<PHPType>,
     pub arguments: Vec<FunctionArgumentData>,
     pub variadic: bool,
     pub modifier: ClassModifier,
@@ -798,7 +798,7 @@ pub struct MethodData {
     pub visibility: ClassMemberVisibility,
     pub phpdoc: Option<PHPDocComment>,
     pub generic_templates: Option<Vec<Name>>,
-    pub generic_concretes: Option<BTreeMap<Name, UnionType>>,
+    pub generic_concretes: Option<BTreeMap<Name, PHPType>>,
 }
 
 impl MethodData {
@@ -827,7 +827,7 @@ impl MethodData {
         }
     }
 
-    pub(crate) fn get_return_type(&self) -> Option<UnionType> {
+    pub(crate) fn get_return_type(&self) -> Option<PHPType> {
         let call_return_type = self
             .comment_return_type
             .as_ref()
@@ -835,27 +835,11 @@ impl MethodData {
             .or(self.php_return_type.clone())
             .or(self.inferred_return_type.clone())?;
 
-        if let Some(concrete) = &self.generic_concretes {
-            let mut result = UnionType::new();
-            for x in call_return_type.types {
-                match x {
-                    DiscreteType::Template(name) => {
-                        let noe = concrete.get(&name);
+        let Some(concrete) = &self.generic_concretes else {
+            return Some(call_return_type);
+        };
 
-                        if let Some(u) = noe {
-                            result.merge_into(u.clone());
-                        } else {
-                            result.push(DiscreteType::Template(name));
-                        }
-                    }
-                    t => result.push(t),
-                }
-            }
-
-            Some(result)
-        } else {
-            Some(call_return_type)
-        }
+        Some(call_return_type.concretize_templates(concrete))
     }
 }
 
@@ -868,13 +852,13 @@ pub struct PropertyData {
     pub is_static: bool,
     pub readonly: bool,
     pub default_value: Option<PHPValue>,
-    pub declared_type: Option<UnionType>,
-    pub comment_type: Option<(UnionType, Range)>,
-    pub constructor_type: Option<UnionType>,
+    pub declared_type: Option<PHPType>,
+    pub comment_type: Option<(PHPType, Range)>,
+    pub constructor_type: Option<PHPType>,
     pub constructor_value: Option<PHPValue>,
     pub read_from: usize,
     pub written_to: usize,
-    pub written_data: Vec<(UnionType, Option<PHPValue>)>,
+    pub written_data: Vec<(PHPType, Option<PHPValue>)>,
     pub phpdoc: Option<PHPDocComment>,
     // void
 }

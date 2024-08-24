@@ -14,8 +14,8 @@ use nom::{
     Err, IResult, Slice,
 };
 //use tree_sitter::Range;
-use crate::parser::Range;
-use crate::types::{parse_types::UnionOfTypes, parser::union_type};
+use crate::types::parse_types::CompoundType;
+use crate::{parser::Range, types::parser::compound_type};
 
 use super::{position::PHPDocInput, types::PHPDocEntry};
 
@@ -177,7 +177,7 @@ fn var(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
     let start_range = input.1;
     let (input, _) = our_tag_no_case(b"@var")(input)?;
     let (input, _) = space1(input)?;
-    let (input, tdef) = our_union_type(input)?;
+    let (input, tdef) = our_compound_type(input)?;
     let (input, name) = opt(preceded(space1, var_name))(input)?;
     let (input, desc) = opt(preceded(space1, text_until_eol))(input)?;
     let range = from_until_ranges(start_range, input.1);
@@ -263,18 +263,18 @@ fn param(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
     let start_range = input.1;
     let (input, _) = our_tag_no_case(b"@param")(input)?;
     let (input, _) = space1(input)?;
-    let (input, utype) = our_union_type(input)?;
+    let (input, ctype) = our_compound_type(input)?;
     let (input, _) = space0(input)?;
     let (input, name) = opt(name_or_var_name)(input)?;
     let (input, desc) = opt(preceded(space1, text_until_eol))(input)?;
     let range = from_until_ranges(start_range, input.1);
-    Ok((input, PHPDocEntry::Param(range, utype, name, desc)))
+    Ok((input, PHPDocEntry::Param(range, ctype, name, desc)))
 }
 
-pub fn our_union_type(input: PHPDocInput) -> IResult<PHPDocInput, UnionOfTypes> {
+pub fn our_compound_type(input: PHPDocInput) -> IResult<PHPDocInput, CompoundType> {
     let pre_length = input.0.len();
     let pre_range = input.1;
-    match union_type(false)(input.0) {
+    match compound_type(false)(input.0) {
         Ok((remainder, utype)) => {
             let post_length = remainder.len();
             let consumed = pre_length - post_length;
@@ -299,7 +299,7 @@ fn parse_return(input: PHPDocInput) -> IResult<PHPDocInput, PHPDocEntry> {
     let start_range = input.1;
     let (input, _) = our_tag_no_case(b"@return")(input)?;
     let (input, _) = space1(input)?;
-    let (input, tdef) = our_union_type(input)?;
+    let (input, tdef) = our_compound_type(input)?;
     let (input, desc) = opt(preceded(space1, text_until_eol))(input)?;
     let end_range = input.1;
     let range = from_until_ranges(start_range, end_range);

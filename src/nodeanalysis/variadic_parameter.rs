@@ -5,7 +5,10 @@ use crate::{
     phpdoc::types::PHPDocEntry,
     symboldata::class::FunctionArgumentData,
     symbols::Name,
-    types::union::{DiscreteType, UnionType},
+    types::{
+        type_parser::TypeParser,
+        union::{DiscreteType, PHPType},
+    },
 };
 
 impl VariadicParameterNode {
@@ -29,7 +32,7 @@ impl VariadicParameterNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let comment_type = self.get_declared_comment_type(state, emitter);
         let utype = comment_type.or_else(|| self.get_declared_native_type(state, emitter))?;
         Some(utype)
@@ -39,7 +42,7 @@ impl VariadicParameterNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let vtype = self.type_.as_ref()?.get_utype(state, emitter)?;
         Some(DiscreteType::Vector(vtype).into())
     }
@@ -65,12 +68,12 @@ impl VariadicParameterNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let param_data = self.get_parameter_data(state)?;
-        if let Some(PHPDocEntry::Param(_range, union_of_types, _name, _desc)) =
+        if let Some(PHPDocEntry::Param(_range, compound_type, _name, _desc)) =
             param_data.phpdoc_entry
         {
-            UnionType::from_parsed_type(union_of_types, state, emitter, None)
+            TypeParser::from_parsed_type(compound_type, state, emitter, None)
         } else {
             param_data.inline_phpdoc_type.map(|x| x.1)
         }

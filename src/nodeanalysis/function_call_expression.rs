@@ -13,7 +13,7 @@ use crate::{
     nodeanalysis::lang::AnalysisOfType,
     symboldata::FunctionData,
     symbols::FullyQualifiedName,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
     value::PHPValue,
 };
 
@@ -29,7 +29,7 @@ impl FunctionCallExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         if let Some(data_handle) = self.get_func_data(state, emitter) {
             let data = data_handle.read().unwrap();
             // FIXME finn ut om dette er en optimal måte å bruke typedefinisjoner på

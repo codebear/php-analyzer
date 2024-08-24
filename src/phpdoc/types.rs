@@ -9,7 +9,7 @@ use crate::{
     analysis::state::AnalysisState,
     issue::IssueEmitter,
     parser::Range,
-    types::{parse_types::UnionOfTypes, union::UnionType},
+    types::{parse_types::CompoundType, type_parser::TypeParser, union::PHPType},
 };
 
 use super::phpdoc::parse_phpdoc;
@@ -21,17 +21,17 @@ pub enum PHPDocEntry {
     /// *  .0 type
     /// *  .1 Name
     /// *  .2 Description (The first word of descripton might be misinterpreted as name)
-    Var(Range, UnionOfTypes, Option<OsString>, Option<OsString>),
+    Var(Range, CompoundType, Option<OsString>, Option<OsString>),
 
     /// https://docs.phpdoc.org/guide/references/phpdoc/tags/param.html
     /// *  .0 type
     /// *  .1 Name Not actually optional, but declared as such to allow to parse badly declared params
     /// *  .2 Description  
-    Param(Range, UnionOfTypes, Option<OsString>, Option<OsString>),
+    Param(Range, CompoundType, Option<OsString>, Option<OsString>),
 
     /// *  .0 type
     /// *  .2 Description (The first word of descripton might be misinterpreted as name)
-    Return(Range, UnionOfTypes, Option<OsString>),
+    Return(Range, CompoundType, Option<OsString>),
 
     /// https://docs.phpdoc.org/guide/references/phpdoc/tags/desc.html
     Description(Range, OsString),
@@ -120,10 +120,10 @@ impl PHPDocComment {
         range: &Range,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<(Vec<Option<UnionType>>, Range)> {
+    ) -> Option<(Vec<Option<PHPType>>, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
-        let utype = UnionType::parse_generics(content.clone(), range, state, emitter)?;
+        let utype = TypeParser::parse_generics(content.clone(), range, state, emitter)?;
 
         Some((utype, range))
     }
@@ -133,10 +133,10 @@ impl PHPDocComment {
         range: &Range,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<(UnionType, Range)> {
+    ) -> Option<(PHPType, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
-        let utype = UnionType::parse(content.clone(), range, state, emitter)?;
+        let utype = TypeParser::parse(content.clone(), range, state, emitter)?;
 
         Some((utype, range))
     }
@@ -146,11 +146,41 @@ impl PHPDocComment {
         range: &Range,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<(UnionType, Range)> {
+    ) -> Option<(PHPType, Range)> {
         let (content, range) = Self::parse_inline_phpdoc_entry(buffer, range)?;
 
-        let utype = UnionType::parse_with_colon(content.clone(), range, state, emitter)?;
+        let utype = TypeParser::parse_with_colon(content.clone(), range, state, emitter)?;
 
         Some((utype, range))
+    }
+}
+
+impl PHPDocEntry {
+    pub fn range(&self) -> &Range {
+        match self {
+            PHPDocEntry::Var(range, _, _, _)
+            | PHPDocEntry::Param(range, _, _, _)
+            | PHPDocEntry::Return(range, _, _)
+            | PHPDocEntry::Description(range, _)
+            | PHPDocEntry::Deprecated(range, _)
+            | PHPDocEntry::See(range, _, _)
+            | PHPDocEntry::Template(range, _, _)
+            | PHPDocEntry::Author(range, _)
+            | PHPDocEntry::Version(range, _)
+            | PHPDocEntry::Todo(range, _)
+            | PHPDocEntry::Abstract(range)
+            | PHPDocEntry::Copyright(range, _)
+            | PHPDocEntry::General(range, _)
+            | PHPDocEntry::GeneralWithParam(range, _, _)
+            | PHPDocEntry::Anything(range, _)
+            | PHPDocEntry::EmptyLine(range) => range,
+        }
+    }
+
+    pub fn raw_str(&self, raw: &[u8]) -> OsString {
+        let range = self.range();
+        let start = range.start_byte;
+        let end = range.end_byte;
+        OsStr::from_bytes(&raw[start..end]).into()
     }
 }

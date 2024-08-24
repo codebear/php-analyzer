@@ -4,7 +4,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::boolean::BooleanNode,
     issue::IssueEmitter,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
     value::PHPValue,
 };
 
@@ -28,7 +28,7 @@ impl BooleanNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         Some(DiscreteType::Bool.into())
     }
 }

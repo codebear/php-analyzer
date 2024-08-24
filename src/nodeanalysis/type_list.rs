@@ -1,6 +1,8 @@
 use crate::{
-    analysis::state::AnalysisState, autonodes::type_list::TypeListNode, issue::IssueEmitter,
-    types::union::UnionType,
+    analysis::state::AnalysisState,
+    autonodes::type_list::TypeListNode,
+    issue::IssueEmitter,
+    types::union::{PHPType, UnionType},
 };
 
 impl TypeListNode {
@@ -20,15 +22,15 @@ impl TypeListNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let mut utype = UnionType::new();
         for tchild in &self.children {
             if let Some(t) = tchild.get_utype(state, emitter) {
-                utype.merge_into(t);
+                utype.append(t);
             }
         }
         if utype.len() > 0 {
-            Some(utype)
+            Some(utype.into())
         } else {
             None
         }

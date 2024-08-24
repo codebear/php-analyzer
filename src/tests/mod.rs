@@ -20,13 +20,12 @@ use std::{
 };
 
 use crate::{
-    analysis::analyzer::Analyzer,
-    analysis::state::AnalysisState,
+    analysis::{analyzer::Analyzer, state::AnalysisState},
     config::PHPAnalyzeConfig,
     issue::{Issue, IssueEmitter},
     symboldata::{FunctionData, SymbolData},
     symbols::FullyQualifiedName,
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -76,7 +75,7 @@ impl IssueEmitter for TestEmitter {
 #[derive(Debug)]
 pub struct EvaluationResult {
     pub function_data: Option<FunctionData>,
-    pub return_type: Option<UnionType>,
+    pub return_type: Option<PHPType>,
     pub return_value: Option<PHPValue>,
     pub symbol_data: Option<Arc<SymbolData>>,
     pub issues: Vec<Issue>,
@@ -116,7 +115,7 @@ where
         state.pass = 1;
         let mut analyzer =
             Analyzer::new_from_buffer(config, outer_buffer.clone(), Some(buffer_name.clone()));
-        assert!(analyzer.parse().is_ok());
+        assert!(analyzer.parse(&emitter).is_ok());
 
         // analyzer.dump();
         analyzer.first_pass(&mut state, &emitter);
@@ -127,7 +126,7 @@ where
         state.pass = 2;
         let mut analyzer =
             Analyzer::new_from_buffer(config, outer_buffer.clone(), Some(buffer_name.clone()));
-        assert!(analyzer.parse().is_ok());
+        assert!(analyzer.parse(&emitter).is_ok());
 
         // analyzer.dump();
         analyzer.second_pass(&mut state, &emitter);
@@ -139,7 +138,7 @@ where
             state.pass = 3 + idx;
             let mut analyzer =
                 Analyzer::new_from_buffer(config, outer_buffer.clone(), Some(buffer_name.clone()));
-            assert!(analyzer.parse().is_ok());
+            assert!(analyzer.parse(&emitter).is_ok());
             analyzer.third_pass(&mut state, &emitter);
         }
     }
@@ -161,12 +160,13 @@ fn evaluate_php_code_in_function<T: Into<OsString>>(
     outer_buffer.push(buffer.into());
     outer_buffer.push("}");
 
+    let emitter = TestEmitter::new();
+
     let mut analyzer = Analyzer::new_from_buffer(config, outer_buffer, Some("test_buffer".into()));
-    assert!(analyzer.parse().is_ok());
+    assert!(analyzer.parse(&emitter).is_ok());
 
     let mut state = AnalysisState::new();
     crate::native::register(&mut state);
-    let emitter = TestEmitter::new();
     // analyzer.dump();
     analyzer.first_pass(&mut state, &emitter);
     analyzer.second_pass(&mut state, &emitter);
@@ -196,7 +196,7 @@ fn evaluate_php_code_in_function<T: Into<OsString>>(
     result
 }
 
-fn get_inferred_return_type<T: Into<OsString>>(buffer: T) -> Option<UnionType> {
+fn get_inferred_return_type<T: Into<OsString>>(buffer: T) -> Option<PHPType> {
     evaluate_php_code_in_function(Default::default(), buffer).return_type
 }
 

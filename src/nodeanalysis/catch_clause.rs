@@ -1,7 +1,7 @@
 use crate::autonodes::any::AnyNodeRef;
+use crate::types::union::PHPType;
 use crate::{
     analysis::state::AnalysisState, autonodes::catch_clause::CatchClauseNode, issue::IssueEmitter,
-    types::union::UnionType,
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -25,7 +25,7 @@ impl CatchClauseNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

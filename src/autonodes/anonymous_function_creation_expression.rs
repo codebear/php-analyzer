@@ -17,7 +17,7 @@ use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
 
@@ -109,7 +109,7 @@ impl AnonymousFunctionCreationExpressionReturnType {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             AnonymousFunctionCreationExpressionReturnType::Extra(x) => x.get_utype(state, emitter),
             AnonymousFunctionCreationExpressionReturnType::_Type(x) => x.get_utype(state, emitter),

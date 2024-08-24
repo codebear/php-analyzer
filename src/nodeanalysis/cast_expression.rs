@@ -4,7 +4,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::cast_expression::CastExpressionNode,
     issue::IssueEmitter,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
 };
 
 impl CastExpressionNode {
@@ -32,7 +32,7 @@ impl CastExpressionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let cast = self.type_.get_raw().to_ascii_lowercase(); // .as_bytes();
         match cast.as_bytes() {
             b"string" => Some(DiscreteType::String.into()),

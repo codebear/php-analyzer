@@ -3,7 +3,7 @@ use crate::{
     autonodes::const_declaration::{ConstDeclarationChildren, ConstDeclarationNode},
     issue::{Issue, IssueEmitter},
     symboldata::class::ClassType,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::analysis::FirstPassAnalyzeableNode;
@@ -26,7 +26,7 @@ impl ConstDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

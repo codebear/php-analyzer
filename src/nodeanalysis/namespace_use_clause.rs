@@ -7,7 +7,7 @@ use crate::{
     autotree::NodeAccess,
     issue::{Issue, IssueEmitter},
     symbols::{FullyQualifiedName, Name},
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::analysis::{
@@ -29,7 +29,7 @@ impl NamespaceUseClauseNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 }

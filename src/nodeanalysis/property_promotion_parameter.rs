@@ -1,5 +1,6 @@
 use crate::autonodes::property_promotion_parameter::PropertyPromotionParameterNode;
-use crate::{analysis::state::AnalysisState, issue::IssueEmitter, types::union::UnionType};
+use crate::types::union::PHPType;
+use crate::{analysis::state::AnalysisState, issue::IssueEmitter};
 
 impl PropertyPromotionParameterNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -18,7 +19,7 @@ impl PropertyPromotionParameterNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

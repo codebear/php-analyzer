@@ -2,6 +2,8 @@ use std::{collections::HashMap, ffi::OsString};
 
 //use tree_sitter::Range;
 use crate::parser::Range;
+use crate::types::type_parser::TypeParser;
+use crate::types::union::PHPType;
 use crate::{
     analysis::state::AnalysisState,
     autonodes::formal_parameters::{FormalParametersChildren, FormalParametersNode},
@@ -10,7 +12,7 @@ use crate::{
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::class::FunctionArgumentData,
     symbols::Name,
-    types::union::{from_vec_parsed_type, UnionType},
+    types::union::{from_vec_parsed_type},
 };
 
 use crate::autotree::NodeAccess;
@@ -40,7 +42,7 @@ impl FormalParametersNode {
     ) -> Vec<FunctionArgumentData> {
         let mut params = vec![];
         let mut raw_comment: Option<(OsString, Range)> = None;
-        let mut inline_phpdoc_type: Option<(Range, UnionType)> = None;
+        let mut inline_phpdoc_type: Option<(Range, PHPType)> = None;
         let mut children: Vec<_> = self
             .children
             .iter()
@@ -159,7 +161,7 @@ impl FormalParametersNode {
         range: &Range,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<(Range, UnionType)> {
+    ) -> Option<(Range, PHPType)> {
         let phpdoc_entries = PHPDocComment::parse(raw, range).ok()?;
         if phpdoc_entries.entries.len() != 1 {
             return None;
@@ -171,7 +173,7 @@ impl FormalParametersNode {
                 return None;
             };
 
-        let utype = UnionType::parse(content.clone(), *range, state, emitter)?;
+        let utype = TypeParser::parse(content.clone(), *range, state, emitter)?;
 
         Some((*range, utype))
     }

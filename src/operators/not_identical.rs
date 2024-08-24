@@ -1,4 +1,8 @@
-use crate::{types::union::DiscreteType, value::PHPValue, Range};
+use crate::{
+    types::union::{DiscreteType, PHPType},
+    value::PHPValue,
+    Range,
+};
 
 use super::{
     binary::{BinaryOperator, BinaryOperatorOperandAccess},
@@ -28,7 +32,7 @@ impl BinaryOperator for NotIdenticalOperator {
         _operands: &impl BinaryOperatorOperandAccess,
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<PHPType> {
         Some(DiscreteType::Bool.into())
     }
 

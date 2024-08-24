@@ -1,4 +1,5 @@
 use crate::autotree::NodeAccess;
+use crate::types::union::PHPType;
 use crate::{
     analysis::state::AnalysisState,
     autonodes::union_type::{UnionTypeChildren, UnionTypeNode},
@@ -23,7 +24,7 @@ impl UnionTypeNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let mut utype = UnionType::new();
         for child in &self.children {
             if let Some(sometype) = match &**child {
@@ -33,7 +34,7 @@ impl UnionTypeNode {
 
                 UnionTypeChildren::Extra(_) => continue,
             } {
-                utype.merge_into(sometype)
+                utype.append(sometype)
             } else {
                 emitter.emit(Issue::UnknownType(
                     state.pos_from_range(child.range()),
@@ -43,7 +44,7 @@ impl UnionTypeNode {
             }
         }
         if utype.len() > 0 {
-            Some(utype)
+            Some(utype.into())
         } else {
             None
         }

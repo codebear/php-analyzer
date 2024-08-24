@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, return_statement::ReturnStatementNode},
     issue::{Issue, IssueEmitter},
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -25,7 +25,7 @@ impl ReturnStatementNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         if let Some(child) = &self.child {
             child.get_utype(state, emitter)
         } else {

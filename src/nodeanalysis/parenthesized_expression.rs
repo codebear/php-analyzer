@@ -1,7 +1,7 @@
 use crate::{
     analysis::state::AnalysisState,
     autonodes::parenthesized_expression::ParenthesizedExpressionNode, issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 impl ParenthesizedExpressionNode {
@@ -21,7 +21,7 @@ impl ParenthesizedExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         self.child.get_utype(state, emitter)
     }
 }

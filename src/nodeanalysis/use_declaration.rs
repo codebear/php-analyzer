@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::use_declaration::UseDeclarationNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl UseDeclarationNode {
@@ -20,7 +20,7 @@ impl UseDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

@@ -7,7 +7,7 @@ use crate::{
         },
     },
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -23,7 +23,7 @@ impl ScopedPropertyAccessExpressionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 
@@ -39,7 +39,7 @@ impl ScopedPropertyAccessExpressionNode {
         &self,
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn IssueEmitter,
-        _val_type: Option<UnionType>,
+        _val_type: Option<PHPType>,
         _value: Option<PHPValue>,
     ) {
         crate::missing!();

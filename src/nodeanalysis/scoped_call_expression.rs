@@ -6,7 +6,7 @@ use crate::{
     issue::{IssueEmitter, VoidEmitter},
     symboldata::class::{ClassName, MethodData},
     symbols::{Name, SymbolClass, SymbolMethod},
-    types::union::{DiscreteType, SpecialType, UnionType},
+    types::union::{DiscreteType, PHPType, SpecialType},
     value::PHPValue,
 };
 
@@ -145,7 +145,7 @@ impl ScopedCallExpressionNode {
         &self,
         state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let (class_name, method_data) = self.get_method_data(state)?;
 
         // FIXME sjekk etter `static`, og konverter til fq_class_name
@@ -158,19 +158,15 @@ impl ScopedCallExpressionNode {
         } else {
             return None;
         };
-        let mut ret_type = UnionType::new();
-        for ut in utype.types {
-            match ut {
-                DiscreteType::Special(SpecialType::Static) => {
-                    // Find static called class
-                    ret_type.push(DiscreteType::Named(
-                        class_name.get_name().clone(),
-                        class_name.get_fq_name().clone(),
-                    ))
-                }
-                _ => ret_type.push(ut),
-            }
-        }
+
+        let ret_type = utype.map(&|discrete| match discrete {
+            DiscreteType::Special(SpecialType::Static) => DiscreteType::Named(
+                class_name.get_name().clone(),
+                class_name.get_fq_name().clone(),
+            ),
+            _ => discrete,
+        });
+
         Some(ret_type)
     }
 

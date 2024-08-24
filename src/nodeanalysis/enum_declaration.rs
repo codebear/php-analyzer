@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::enum_declaration::EnumDeclarationNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl EnumDeclarationNode {
@@ -20,7 +20,7 @@ impl EnumDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::list_literal::{ListLiteralChildren, ListLiteralNode},
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -23,7 +23,7 @@ impl ListLiteralNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 
@@ -31,7 +31,7 @@ impl ListLiteralNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         if let Some(_) = val_type {

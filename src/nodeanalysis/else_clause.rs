@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::else_clause::ElseClauseNode, issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 // use super::analysis::AnalyzeableRoundTwoNode;
@@ -23,7 +23,7 @@ impl ElseClauseNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         // crate::missing_none!("{}.get_utype(..)", self.kind())
         None
     }

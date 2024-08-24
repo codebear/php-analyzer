@@ -5,7 +5,7 @@ use crate::{
         assignment_expression::{AssignmentExpressionLeft, AssignmentExpressionNode},
     },
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -30,7 +30,7 @@ impl AssignmentExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         self.right.get_utype(state, emitter)
     }
 }
@@ -44,7 +44,7 @@ impl AssignmentExpressionLeft {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match self {

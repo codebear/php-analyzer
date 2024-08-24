@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::unset_statement::UnsetStatementNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl UnsetStatementNode {
@@ -20,7 +20,7 @@ impl UnsetStatementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

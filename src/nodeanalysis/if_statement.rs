@@ -2,10 +2,10 @@ use crate::analysis::scope::{BranchSide, BranchableScope};
 use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
 use crate::issue::Issue;
+use crate::types::union::PHPType;
 use crate::{
     autonodes::if_statement::{IfStatementAlternative, IfStatementNode},
     issue::IssueEmitter,
-    types::union::UnionType,
     value::PHPValue,
 };
 
@@ -30,7 +30,7 @@ impl IfStatementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

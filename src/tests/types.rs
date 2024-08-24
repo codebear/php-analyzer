@@ -6,7 +6,10 @@ use crate::{
     analysis::state::AnalysisState,
     issue::VoidEmitter,
     parser::Range,
-    types::union::{DiscreteType, UnionType},
+    types::{
+        type_parser::TypeParser,
+        union::{DiscreteType, PHPType},
+    },
 };
 
 #[test]
@@ -20,10 +23,9 @@ fn parse_array() {
     };
     let emitter = VoidEmitter::new();
 
-    let res = UnionType::parse(OsString::from("array<string>"), range, &mut state, &emitter);
+    let res = TypeParser::parse(OsString::from("array<string>"), range, &mut state, &emitter);
     if let Some(utype) = res {
-        let ref_utype =
-            UnionType::from(DiscreteType::Vector(UnionType::from(DiscreteType::String)));
+        let ref_utype = PHPType::from(DiscreteType::Vector(PHPType::from(DiscreteType::String)));
         assert_eq!(utype, ref_utype);
     } else {
         assert!(false);

@@ -6,7 +6,7 @@ use crate::{
     autotree::NodeAccess,
     errornode::ErrorNode,
     issue::{Issue, IssueEmitter},
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::analysis::ErrorPassAnalyzableNode;
@@ -26,7 +26,7 @@ impl ErrorNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 }

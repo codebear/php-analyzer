@@ -7,7 +7,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::string::{StringChildren, StringNode},
     issue::IssueEmitter,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
     value::PHPValue,
 };
 
@@ -31,7 +31,7 @@ impl StringNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         Some(DiscreteType::String.into())
     }
 }

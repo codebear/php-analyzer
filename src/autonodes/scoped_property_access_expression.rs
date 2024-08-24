@@ -30,7 +30,7 @@ use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
 
@@ -123,7 +123,7 @@ impl ScopedPropertyAccessExpressionName {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             ScopedPropertyAccessExpressionName::Extra(x) => x.get_utype(state, emitter),
             ScopedPropertyAccessExpressionName::DynamicVariableName(x) => {
@@ -474,7 +474,7 @@ impl ScopedPropertyAccessExpressionScope {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             ScopedPropertyAccessExpressionScope::Extra(x) => x.get_utype(state, emitter),
             ScopedPropertyAccessExpressionScope::ArrayCreationExpression(x) => {

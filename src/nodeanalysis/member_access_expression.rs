@@ -11,7 +11,7 @@ use crate::{
     issue::{Issue, IssueEmitter, VoidEmitter},
     symboldata::class::{ClassMemberVisibility, ClassName, ClassType, PropertyData},
     symbols::{Name, Symbol},
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, DiscretlyAccessedType, PHPType, UnionType},
     value::PHPValue,
 };
 
@@ -44,7 +44,7 @@ impl MemberAccessExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let data = self.get_property_data(state, emitter)?;
         // eprintln!("Property data: {:?}", *unlocked);
         if let Some(x) = data.declared_type {
@@ -66,7 +66,7 @@ impl MemberAccessExpressionNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         _value: Option<PHPValue>,
     ) {
         // FIXME
@@ -77,9 +77,9 @@ impl MemberAccessExpressionNode {
                 let mut property_data = writable.write().unwrap();
                 // void
                 if let Some(val_type) = val_type {
-                    if let Some(mut t) = property_data.constructor_type.take() {
-                        t.merge_into(val_type);
-                        property_data.constructor_type = Some(t)
+                    if let Some(t) = property_data.constructor_type.take() {
+                        property_data.constructor_type =
+                            Some(UnionType::from_pair(val_type, t).into())
                     } else {
                         property_data.constructor_type = Some(val_type);
                     }
@@ -146,9 +146,11 @@ impl MemberAccessExpressionNode {
     pub fn get_symbols(&self, state: &mut AnalysisState) -> Option<Vec<Symbol>> {
         let types = self.get_utype(state, &VoidEmitter::new())?;
         let mut symbols: Vec<_> = vec![];
-        for dtype in types.types {
-            // void
-            symbols.push(dtype.into());
+        for dtype in types.as_discrete_variants() {
+            match dtype {
+                DiscretlyAccessedType::Discrete(d) => symbols.push(d.into()),
+                DiscretlyAccessedType::Intersection(_) => crate::missing!("What to do?"),
+            }
         }
 
         Some(symbols)

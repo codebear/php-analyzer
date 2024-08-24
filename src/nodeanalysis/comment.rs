@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::comment::CommentNode, issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 impl CommentNode {
@@ -18,7 +18,7 @@ impl CommentNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 

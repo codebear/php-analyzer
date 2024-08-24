@@ -1,5 +1,6 @@
 use std::sync::{Arc, RwLock};
 
+use crate::types::union::PHPType;
 use crate::{
     analysis::data::VarData, autonodes::any::AnyNodeRef, autotree::NodeAccess, issue::Issue,
     symbols::Name,
@@ -23,7 +24,7 @@ impl VariableNameNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let lock = if let Some(lock) = self.get_var_data(state) {
             lock.clone()
         } else {
@@ -38,7 +39,7 @@ impl VariableNameNode {
             .map(|x| x.0)
             .collect();
         if !noe.is_empty() {
-            return Some(UnionType::from(noe));
+            return Some(UnionType::from(noe).into());
         }
 
         if let Some(t) = &data.comment_declared_type {
@@ -118,7 +119,7 @@ impl VariableNameNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         let val_data = self.get_or_create_var_data(state);
@@ -158,7 +159,7 @@ impl AnalysisOfType for VariableNameNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         if state.pass == 1 {
             todo!("Hvorfor kommer vi hit på pass 1");
         }
@@ -178,7 +179,7 @@ impl AnalysisOfType for VariableNameNode {
         &self,
         state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let scope_handle = state.current_scope();
         let scope = scope_handle.read().ok()?;
 
@@ -192,7 +193,8 @@ impl AnalysisOfType for VariableNameNode {
             .map(|x| x.0)
             .collect();
         if !noe.is_empty() {
-            Some(UnionType::from(noe))
+            let utype = UnionType::from(noe);
+            Some(PHPType::Union(utype))
         } else {
             None
         }

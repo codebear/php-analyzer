@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::do_statement::DoStatementNode, issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 impl DoStatementNode {
@@ -20,7 +20,7 @@ impl DoStatementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

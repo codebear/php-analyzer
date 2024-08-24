@@ -1,6 +1,7 @@
 use crate::analysis::scope::BranchableScope;
 use crate::autonodes::any::AnyNodeRef;
 use crate::issue::Issue;
+use crate::types::union::PHPType;
 use crate::{
     analysis::state::AnalysisState, autonodes::conditional_expression::ConditionalExpressionNode,
     issue::IssueEmitter, types::union::UnionType, value::PHPValue,
@@ -70,7 +71,7 @@ impl ConditionalExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         // If the conditional term is of known value it gives us 2 possible different routes to analyze this from
         // one the one side we can asure that both the true and false branches yields the same compatible type
         // or we can just ignore the branch that is guaranteed not to be call.
@@ -98,7 +99,8 @@ impl ConditionalExpressionNode {
         }?;
 
         let alt_2_type = self.alternative.get_utype(state, emitter)?;
-        Some(UnionType::from(&[&alt_1_type, &alt_2_type] as &[&UnionType]))
+
+        Some(UnionType::from_pair(alt_1_type, alt_2_type).into())
     }
 }
 

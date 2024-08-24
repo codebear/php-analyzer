@@ -4,7 +4,7 @@ use crate::{
     autotree::NodeAccess,
     issue::{Issue, IssueEmitter},
     symbols::{FullyQualifiedName, Name},
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -115,7 +115,7 @@ impl QualifiedNameNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

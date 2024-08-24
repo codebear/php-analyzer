@@ -1,7 +1,7 @@
 use crate::{
     symbols::FullyQualifiedName,
     tests::evaluate_php_buffers,
-    types::union::{DiscreteType, UnionType},
+    types::{type_parser::TypeParser, union::DiscreteType},
 };
 use std::ffi::OsString;
 
@@ -60,7 +60,7 @@ fn test_class_template() -> Result<(), &'static str> {
         .ok_or("data of function test_return_class not found")?;
     {
         let data = func.read().unwrap();
-        let expected = UnionType::parse_simple("X<String>".into()).unwrap();
+        let expected = TypeParser::parse_simple("X<String>".into()).unwrap();
         assert_eq!(data.inferred_return_type, Some(expected));
     }
 

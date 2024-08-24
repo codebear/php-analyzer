@@ -4,7 +4,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::float::FloatNode,
     issue::IssueEmitter,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
     value::{PHPFloat, PHPValue},
 };
 
@@ -33,7 +33,7 @@ impl FloatNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         Some(DiscreteType::Float.into())
     }
 }

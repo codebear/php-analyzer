@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, argument::ArgumentNode},
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -26,7 +26,7 @@ impl ArgumentNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         self.child.get_utype(state, emitter)
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::relative_scope::RelativeScopeNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 /// `self`, `static` og `parent`
@@ -19,7 +19,7 @@ impl RelativeScopeNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 }

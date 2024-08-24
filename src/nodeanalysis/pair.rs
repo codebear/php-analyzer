@@ -1,5 +1,6 @@
 use crate::autonodes::pair::PairNode;
-use crate::{analysis::state::AnalysisState, issue::IssueEmitter, types::union::UnionType};
+use crate::types::union::PHPType;
+use crate::{analysis::state::AnalysisState, issue::IssueEmitter};
 
 impl PairNode {
     pub fn read_from(&self, _state: &mut AnalysisState, _emitter: &dyn IssueEmitter) {
@@ -18,7 +19,7 @@ impl PairNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

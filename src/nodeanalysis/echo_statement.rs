@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, echo_statement::EchoStatementNode},
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -25,7 +25,7 @@ impl EchoStatementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 }

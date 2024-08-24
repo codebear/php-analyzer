@@ -1,5 +1,5 @@
 use crate::{
-    types::union::DiscreteType,
+    types::union::{DiscreteType, PHPType},
     value::{PHPFloat, PHPValue},
     Range,
 };
@@ -32,7 +32,7 @@ impl BinaryOperator for MultOperator {
         operands: &impl BinaryOperatorOperandAccess,
         state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<PHPType> {
         let ltype = operands.get_left_type(state)?.single_type()?;
         let rtype = operands.get_right_type(state)?.single_type()?;
         match (&ltype, &rtype) {

@@ -14,7 +14,7 @@ use crate::{
         binary::{BinaryOperator, BinaryOperatorOperandAccess, InstanceOfSymbol},
         operator::{Operator, Operators},
     },
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -55,7 +55,7 @@ impl BinaryExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         /*
          * There is a challenge here in that the matematical operators for the most part return int or float, regardless
          * of input, so you could argue that `anything + anything` should be a union(int|float) or similar, however
@@ -68,7 +68,7 @@ impl BinaryExpressionNode {
         match &*self.operator {
             // String
             BinaryExpressionOperator::Extra(_) => None,
-            // Mulig denne bør få Option<UnionType> her for å få
+            // Mulig denne bør få Option<PHPType> her for å få
             // bedre sluttresultat
             op => op.get_operator_utype(self, state, emitter),
         }
@@ -81,7 +81,7 @@ impl BinaryOperator for BinaryExpressionOperator {
         operands: &impl BinaryOperatorOperandAccess,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             BinaryExpressionOperator::NotEqual(operator) => {
                 operator.get_operator_utype(operands, state, emitter)
@@ -457,7 +457,7 @@ impl BinaryOperatorOperandAccess for BinaryExpressionNode {
         self.left.get_php_value(state, &VoidEmitter::new())
     }
 
-    fn get_left_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+    fn get_left_type(&self, state: &mut AnalysisState) -> Option<PHPType> {
         self.left.get_utype(state, &VoidEmitter::new())
     }
 
@@ -465,7 +465,7 @@ impl BinaryOperatorOperandAccess for BinaryExpressionNode {
         self.right.get_php_value(state, &VoidEmitter::new())
     }
 
-    fn get_right_type(&self, state: &mut AnalysisState) -> Option<UnionType> {
+    fn get_right_type(&self, state: &mut AnalysisState) -> Option<PHPType> {
         self.right.get_utype(state, &VoidEmitter::new())
     }
 

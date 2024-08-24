@@ -1,7 +1,7 @@
 use crate::{
     analysis::state::AnalysisState,
     autonodes::nullsafe_member_access_expression::NullsafeMemberAccessExpressionNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl NullsafeMemberAccessExpressionNode {
@@ -21,7 +21,7 @@ impl NullsafeMemberAccessExpressionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

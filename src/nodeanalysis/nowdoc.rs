@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::nowdoc::NowdocNode, issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 impl NowdocNode {
@@ -20,7 +20,7 @@ impl NowdocNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::text_interpolation::TextInterpolationNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl TextInterpolationNode {
@@ -18,7 +18,7 @@ impl TextInterpolationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 }

@@ -23,7 +23,7 @@ use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use std::sync::OnceLock;
 use tree_sitter::Node;
@@ -122,7 +122,7 @@ impl MethodDeclarationReturnType {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             MethodDeclarationReturnType::Extra(x) => x.get_utype(state, emitter),
             MethodDeclarationReturnType::_Type(x) => x.get_utype(state, emitter),
@@ -313,7 +313,7 @@ impl MethodDeclarationChildren {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             MethodDeclarationChildren::Extra(x) => x.get_utype(state, emitter),
             MethodDeclarationChildren::AbstractModifier(x) => x.get_utype(state, emitter),

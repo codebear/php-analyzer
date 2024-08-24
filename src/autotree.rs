@@ -38,7 +38,10 @@ impl AutoTree {
     pub fn new(tree: Tree, source: Vec<u8>) -> Result<Self, ParseError> {
         let root_node = tree.root_node();
         if root_node.kind() != "program" {
-            panic!("Root node is not a program?");
+            return Err(ParseError::new(
+                root_node.range(),
+                "Root node is not a program".into(),
+            ));
         }
         // Usefull if parsing failes:
         // Self::debug_dump_tree(&tree);

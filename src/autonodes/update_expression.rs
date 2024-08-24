@@ -24,7 +24,7 @@ use crate::operators::decrement::DecrementOperator;
 use crate::operators::increment::IncrementOperator;
 use crate::operators::operator::Operator;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
 
@@ -197,7 +197,7 @@ impl UpdateExpressionArgument {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             UpdateExpressionArgument::Extra(x) => x.get_utype(state, emitter),
             UpdateExpressionArgument::CastExpression(x) => x.get_utype(state, emitter),

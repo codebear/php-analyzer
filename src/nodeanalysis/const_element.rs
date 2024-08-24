@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::const_element::ConstElementNode,
-    issue::IssueEmitter, symbols::Name, types::union::UnionType,
+    issue::IssueEmitter, symbols::Name, types::union::PHPType,
 };
 
 impl ConstElementNode {
@@ -21,7 +21,7 @@ impl ConstElementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 

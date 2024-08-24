@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, switch_statement::SwitchStatementNode},
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -26,7 +26,7 @@ impl SwitchStatementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

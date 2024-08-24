@@ -17,7 +17,7 @@ use crate::symboldata::FunctionData;
 use crate::symboldata::SymbolData;
 use crate::symbols::FullyQualifiedName;
 use crate::symbols::Name;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use std::collections::HashMap;
 
@@ -26,7 +26,7 @@ use super::scope::{Scope, ScopeStack};
 #[derive(Debug)]
 pub struct ConstantData {
     pub fq_name: FullyQualifiedName,
-    pub values: HashMap<(OsString, Range), (UnionType, Option<PHPValue>)>,
+    pub values: HashMap<(OsString, Range), (PHPType, Option<PHPValue>)>,
 }
 
 impl ConstantData {
@@ -41,7 +41,7 @@ impl ConstantData {
         &mut self,
         filename: OsString,
         range: Range,
-        constant_type: UnionType,
+        constant_type: PHPType,
         val: Option<PHPValue>,
     ) {
         //
@@ -133,7 +133,7 @@ pub struct FunctionState {
     pub name: Option<Name>,
     pub is_method: bool,
     pub scope_stack: RwLock<ScopeStack>,
-    pub returns: RwLock<Vec<(Option<UnionType>, Option<PHPValue>)>>,
+    pub returns: RwLock<Vec<(Option<PHPType>, Option<PHPValue>)>>,
     pub data: Option<FunctionDataPointer>,
 }
 
@@ -148,7 +148,7 @@ impl FunctionState {
         }
     }
 
-    pub fn add_return(&self, ret_type: Option<UnionType>, ret_value: Option<PHPValue>) {
+    pub fn add_return(&self, ret_type: Option<PHPType>, ret_value: Option<PHPValue>) {
         let mut rets = self.returns.write().expect("Noe");
         rets.push((ret_type, ret_value));
     }

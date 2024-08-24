@@ -9,7 +9,7 @@ use crate::{
         FileLocation,
     },
     symbols::Name,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::{
@@ -36,7 +36,7 @@ impl TraitDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 

@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::clone_expression::CloneExpressionNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl CloneExpressionNode {
@@ -20,7 +20,7 @@ impl CloneExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         self.child.get_utype(state, emitter)
     }
 }

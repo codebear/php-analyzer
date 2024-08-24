@@ -22,7 +22,10 @@ use crate::{
         FileLocation,
     },
     symbols::{FullyQualifiedName, Name},
-    types::union::UnionType,
+    types::{
+        type_parser::TypeParser,
+        union::{PHPType, UnionType},
+    },
 };
 
 use super::{
@@ -58,7 +61,7 @@ impl ClassDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 
@@ -297,7 +300,7 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                 match pname_u8v {
                                     b"extends" | b"implements" | b"inherits" | b"mixin" => {
                                         if let Some(ptype) =
-                                            UnionType::parse(data.clone(), *range, state, emitter)
+                                            TypeParser::parse(data.clone(), *range, state, emitter)
                                         {
                                             match pname_u8v {
                                                 b"extends" | b"inherits" => {
@@ -322,8 +325,13 @@ impl FirstPassAnalyzeableNode for ClassDeclarationNode {
                                                     }
                                                 }
                                                 b"implements" => {
-                                                    let mut types: Vec<_> =
-                                                        ptype.types.into_iter().collect();
+                                                    let mut types: Vec<_> = vec![];
+                                                    for dtype in ptype.as_discrete_variants() {
+                                                        match dtype {
+                                                            crate::types::union::DiscretlyAccessedType::Discrete(d) => types.push(d),
+                                                            crate::types::union::DiscretlyAccessedType::Intersection(_) => crate::missing!("We got an intersection in interface-expected land... Needs looking into"),
+                                                        }
+                                                    }
                                                     phpdoc_interfaces.append(&mut types);
                                                 }
                                                 b"mixin" => {

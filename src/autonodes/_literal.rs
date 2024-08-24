@@ -17,7 +17,7 @@ use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use tree_sitter::Node;
 
@@ -126,7 +126,7 @@ impl _LiteralNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             _LiteralNode::Extra(x) => x.get_utype(state, emitter),
             _LiteralNode::Boolean(x) => x.get_utype(state, emitter),

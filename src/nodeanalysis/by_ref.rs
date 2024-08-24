@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::by_ref::ByRefNode, issue::IssueEmitter,
-    types::union::UnionType, value::PHPValue,
+    types::union::PHPType, value::PHPValue,
 };
 
 impl ByRefNode {
@@ -20,7 +20,7 @@ impl ByRefNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         self.child.get_utype(state, emitter)
     }
 
@@ -28,7 +28,7 @@ impl ByRefNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match &*self.child {

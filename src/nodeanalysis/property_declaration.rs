@@ -6,9 +6,10 @@ use crate::autonodes::any::AnyNodeRef;
 // use crate::autonodes::property_declaration::PropertyDeclarationProperties;
 use crate::autotree::NodeAccess;
 use crate::extra::ExtraChild;
+use crate::types::union::PHPType;
 use crate::{
     analysis::state::AnalysisState, autonodes::property_declaration::PropertyDeclarationNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter,
 };
 
 impl PropertyDeclarationNode {
@@ -28,7 +29,7 @@ impl PropertyDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

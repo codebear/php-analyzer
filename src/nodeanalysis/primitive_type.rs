@@ -4,7 +4,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::primitive_type::PrimitiveTypeNode,
     issue::IssueEmitter,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
 };
 
 impl PrimitiveTypeNode {
@@ -24,22 +24,25 @@ impl PrimitiveTypeNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let raw = self.get_raw().to_ascii_lowercase();
-        Some(match raw.as_bytes() {
-            b"callable" => UnionType::from(DiscreteType::Callable),
-            b"string" => UnionType::from(DiscreteType::String),
-            b"int" => UnionType::from(DiscreteType::Int),
-            b"array" => UnionType::from(DiscreteType::Array),
-            b"bool" => UnionType::from(DiscreteType::Bool),
-            b"void" => UnionType::from(DiscreteType::Void),
-            b"float" => UnionType::from(DiscreteType::Float),
+
+        let dtype = match raw.as_bytes() {
+            b"callable" => DiscreteType::Callable,
+            b"string" => DiscreteType::String,
+            b"int" => DiscreteType::Int,
+            b"array" => DiscreteType::Array,
+            b"bool" => DiscreteType::Bool,
+            b"void" => DiscreteType::Void,
+            b"float" => DiscreteType::Float,
             _ => {
                 return crate::missing_none!(
                     "Finn type from PrimitiveType like {:?}",
                     self.get_raw()
                 )
             }
-        })
+        };
+
+        Some(PHPType::Discrete(Box::new(dtype)))
     }
 }

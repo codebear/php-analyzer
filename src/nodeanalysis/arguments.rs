@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::arguments::ArgumentsNode, issue::IssueEmitter,
-    types::union::UnionType, value::PHPValue,
+    types::union::PHPType, value::PHPValue,
 };
 
 impl ArgumentsNode {
@@ -22,7 +22,7 @@ impl ArgumentsNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 
@@ -41,7 +41,7 @@ impl ArgumentsNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Vec<Option<UnionType>> {
+    ) -> Vec<Option<PHPType>> {
         self.children
             .iter()
             .map(|x| x.get_utype(state, emitter))

@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::sequence_expression::SequenceExpressionNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl SequenceExpressionNode {
@@ -22,7 +22,7 @@ impl SequenceExpressionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 }

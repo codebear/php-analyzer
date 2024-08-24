@@ -1,7 +1,7 @@
 use crate::{
     analysis::state::AnalysisState,
     autonodes::reference_assignment_expression::ReferenceAssignmentExpressionNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl ReferenceAssignmentExpressionNode {
@@ -21,7 +21,7 @@ impl ReferenceAssignmentExpressionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

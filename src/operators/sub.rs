@@ -1,5 +1,5 @@
 use crate::{
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType, UnionType},
     value::{PHPFloat, PHPValue},
     Range,
 };
@@ -32,7 +32,7 @@ impl BinaryOperator for SubOperator {
         operands: &impl BinaryOperatorOperandAccess,
         state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<PHPType> {
         let ltype = operands.get_left_type(state)?.single_type()?;
         let rtype = operands.get_right_type(state)?.single_type()?;
 
@@ -45,10 +45,9 @@ impl BinaryOperator for SubOperator {
 
             // These are failures in PHP8
             (DiscreteType::String, DiscreteType::Int)
-            | (DiscreteType::Int, DiscreteType::String) => Some(UnionType::from(vec![
-                DiscreteType::Int,
-                DiscreteType::Float,
-            ])),
+            | (DiscreteType::Int, DiscreteType::String) => {
+                Some(UnionType::from(vec![DiscreteType::Int, DiscreteType::Float]).into())
+            }
             (DiscreteType::String, DiscreteType::Float)
             | (DiscreteType::Float, DiscreteType::String) => Some(DiscreteType::Float.into()),
 

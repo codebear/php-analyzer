@@ -2,7 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{any::AnyNodeRef, namespace_use_group::NamespaceUseGroupNode},
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::analysis::{
@@ -24,7 +24,7 @@ impl NamespaceUseGroupNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         None
     }
 }

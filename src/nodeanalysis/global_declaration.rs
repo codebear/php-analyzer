@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::global_declaration::GlobalDeclarationNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl GlobalDeclarationNode {
@@ -20,7 +20,7 @@ impl GlobalDeclarationNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

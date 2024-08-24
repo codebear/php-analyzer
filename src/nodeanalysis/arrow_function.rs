@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::arrow_function::ArrowFunctionNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl ArrowFunctionNode {
@@ -20,7 +20,7 @@ impl ArrowFunctionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::require_expression::RequireExpressionNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl RequireExpressionNode {
@@ -20,7 +20,7 @@ impl RequireExpressionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

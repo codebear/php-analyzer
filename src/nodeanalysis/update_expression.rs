@@ -9,7 +9,7 @@ use crate::{
     },
     issue::{Issue, IssueEmitter},
     operators::operator::Operators,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
     value::{PHPFloat, PHPValue},
 };
 
@@ -25,7 +25,7 @@ impl UpdateExpressionArgument {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match self {
@@ -117,7 +117,7 @@ impl UpdateExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         if let Some(prefix) = &self.prefix {
             let expr_type = self.argument.get_utype(state, emitter)?.single_type()?;
 

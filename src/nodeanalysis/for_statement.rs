@@ -3,7 +3,7 @@ use crate::{
     autonodes::{any::AnyNodeRef, for_statement::ForStatementNode},
     autotree::NodeAccess,
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -25,7 +25,7 @@ impl ForStatementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

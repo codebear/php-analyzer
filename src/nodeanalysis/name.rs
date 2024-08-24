@@ -4,7 +4,7 @@ use crate::{
     autotree::NodeAccess,
     issue::{Issue, IssueEmitter},
     symbols::{FullyQualifiedName, Name},
-    types::union::UnionType,
+    types::union::PHPType,
     value::PHPValue,
 };
 
@@ -46,7 +46,7 @@ impl NameNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         if let Some(v) = self.get_php_value(state, emitter) {
             v.get_utype()
         } else {

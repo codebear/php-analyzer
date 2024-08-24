@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::abstract_modifier::AbstractModifierNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl AbstractModifierNode {
@@ -20,7 +20,7 @@ impl AbstractModifierNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

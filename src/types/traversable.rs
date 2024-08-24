@@ -2,25 +2,31 @@ use std::sync::Arc;
 
 use crate::{symboldata::SymbolData, symbols::FullyQualifiedName, types::union::DiscreteType};
 
-use super::union::UnionType;
+use super::union::{DiscretlyAccessedType, PHPType, UnionType};
 
-pub fn get_key_type(
-    traversable_type: &UnionType,
-    symbol_data: Arc<SymbolData>,
-) -> Option<UnionType> {
+pub fn get_key_type(traversable_type: &PHPType, symbol_data: Arc<SymbolData>) -> Option<PHPType> {
     let mut types = UnionType::new();
-    for ttype in &traversable_type.types {
-        let vtype = match get_key_type_from_discrete_type(ttype, symbol_data.clone()) {
-            Some(t) => t,
-            None => {
-                return crate::missing_none!("Failed to extract key-type from traversable-type")
-            }
-        };
 
-        types.merge_into(vtype);
+    for datype in traversable_type.as_discrete_variants() {
+        match datype {
+            DiscretlyAccessedType::Discrete(ttype) => {
+                match get_key_type_from_discrete_type(&ttype, symbol_data.clone()) {
+                    Some(t) => types.append(t),
+                    None => {
+                        return crate::missing_none!(
+                            "Failed to extract key-type from traversable-type 1"
+                        )
+                    }
+                };
+            }
+            DiscretlyAccessedType::Intersection(_) => {
+                return crate::missing_none!("Failed to extract key-type from traversable-type 2")
+            }
+        }
     }
+
     if types.len() > 0 {
-        Some(types)
+        Some(types.into())
     } else {
         None
     }
@@ -29,7 +35,7 @@ pub fn get_key_type(
 fn get_key_type_from_discrete_type(
     ttype: &DiscreteType,
     symbol_data: Arc<SymbolData>,
-) -> Option<UnionType> {
+) -> Option<PHPType> {
     // todo!("Get key from {:?}", utype);
 
     match ttype {
@@ -49,23 +55,28 @@ fn get_key_type_from_discrete_type(
     }
 }
 
-pub fn get_value_type(
-    traversable_type: &UnionType,
-    symbol_data: Arc<SymbolData>,
-) -> Option<UnionType> {
+pub fn get_value_type(traversable_type: &PHPType, symbol_data: Arc<SymbolData>) -> Option<PHPType> {
     let mut types = UnionType::new();
-    for ttype in &traversable_type.types {
-        let vtype = match get_value_type_from_discrete_type(ttype, symbol_data.clone()) {
-            Some(t) => t,
-            None => {
-                return crate::missing_none!("Failed to extract value-type from traversable-type")
+    for datype in traversable_type.as_discrete_variants() {
+        match datype {
+            DiscretlyAccessedType::Discrete(ttype) => {
+                match get_value_type_from_discrete_type(&ttype, symbol_data.clone()) {
+                    Some(t) => types.append(t),
+                    None => {
+                        return crate::missing_none!(
+                            "Failed to extract value-type from traversable-type 1"
+                        )
+                    }
+                };
+            }
+            DiscretlyAccessedType::Intersection(_) => {
+                return crate::missing_none!("Failed to extract value-type from traversable-type 2")
             }
         };
-
-        types.merge_into(vtype);
     }
+
     if types.len() > 0 {
-        Some(types)
+        Some(types.into())
     } else {
         None
     }
@@ -74,7 +85,7 @@ pub fn get_value_type(
 fn get_value_type_from_discrete_type(
     traversable_type: &DiscreteType,
     symbol_data: Arc<SymbolData>,
-) -> Option<UnionType> {
+) -> Option<PHPType> {
     match traversable_type {
         // Vectors are indiced by int
         DiscreteType::Vector(v) => Some(v.clone()),
@@ -111,9 +122,9 @@ fn get_value_type_from_discrete_type(
 
 fn get_value_type_from_class_type(
     fq_name: &FullyQualifiedName,
-    generic_args: &Vec<UnionType>,
+    generic_args: &Vec<PHPType>,
     symbol_data: Arc<SymbolData>,
-) -> Option<UnionType> {
+) -> Option<PHPType> {
     let locked_cdata = symbol_data.get_class(&fq_name.into())?;
     let cdata = locked_cdata.read().ok()?;
     let cdata = cdata.with_generic_args(generic_args);
@@ -145,9 +156,9 @@ fn get_value_type_from_class_type(
 
 fn get_key_type_from_class_type(
     _fq_name: &FullyQualifiedName,
-    _generic_args: &Vec<UnionType>,
+    _generic_args: &Vec<PHPType>,
     _symbol_data: Arc<SymbolData>,
-) -> Option<UnionType> {
+) -> Option<PHPType> {
     // todo!("BALLE2: {:?}", fq_name);
     crate::missing_none!(
         "Need to extract a value_type from a generic-type , Perhaps it's traversable or similar"

@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::namespace_name::NamespaceNameNode,
-    issue::IssueEmitter, symbols::FullyQualifiedName, types::union::UnionType,
+    issue::IssueEmitter, symbols::FullyQualifiedName, types::union::PHPType,
 };
 
 impl NamespaceNameNode {
@@ -28,7 +28,7 @@ impl NamespaceNameNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

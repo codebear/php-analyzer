@@ -32,7 +32,7 @@ impl BinaryOperator for DivOperator {
         operands: &impl BinaryOperatorOperandAccess,
         state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<crate::types::union::PHPType> {
         let ltype = operands.get_left_type(state)?.single_type()?;
         let rtype = operands.get_right_type(state)?.single_type()?;
         crate::missing!("Fix saa denne er mer union-type-basert");

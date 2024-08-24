@@ -6,7 +6,7 @@ use crate::symbols::FullyQualifiedName;
 use crate::symbols::Name;
 use crate::symbols::Symbol;
 use crate::symbols::SymbolClass;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 
 use self::class::ClassName;
@@ -86,15 +86,15 @@ impl From<IssuePosition> for FileLocation {
 pub struct FunctionData {
     pub name: FullyQualifiedName,
     pub position: FileLocation,
-    pub php_return_type: Option<UnionType>,
-    pub comment_return_type: Option<(UnionType, Range)>,
-    pub inferred_return_type: Option<UnionType>,
+    pub php_return_type: Option<PHPType>,
+    pub comment_return_type: Option<(PHPType, Range)>,
+    pub inferred_return_type: Option<PHPType>,
     pub arguments: Vec<FunctionArgumentData>,
     pub variadic: bool,
     pub deterministic: bool,
     pub pure: bool,
     pub return_value: Option<PHPValue>,
-    pub overload_map: HashMap<Vec<PHPValue>, Option<UnionType>>,
+    pub overload_map: HashMap<Vec<PHPValue>, Option<PHPType>>,
     pub generic_templates: Option<Vec<Name>>,
 }
 

@@ -4,7 +4,6 @@ use std::{
 };
 
 //use tree_sitter::Range;
-use crate::parser::Range;
 use crate::{
     analysis::scope::BranchableScope,
     autonodes::any::AnyNodeRef,
@@ -13,6 +12,7 @@ use crate::{
     phpdoc::types::{PHPDocComment, PHPDocEntry},
     symboldata::FileLocation,
     symbols::{FullyQualifiedName, Name},
+    types::type_parser::TypeParser,
 };
 use crate::{
     analysis::state::{AnalysisState, FunctionState},
@@ -22,6 +22,7 @@ use crate::{
     types::union::UnionType,
     value::PHPValue,
 };
+use crate::{parser::Range, types::union::PHPType};
 
 use super::analysis::{FirstPassAnalyzeableNode, ThirdPassAnalyzeableNode};
 
@@ -52,7 +53,7 @@ impl FunctionDefinitionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 
@@ -70,15 +71,12 @@ impl FunctionDefinitionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         let ret = &self.return_type.as_ref()?;
         ret.get_utype(state, emitter)
     }
 
-    fn get_inline_phpdoc_return_type(
-        &self,
-        state: &mut AnalysisState,
-    ) -> Option<(UnionType, Range)> {
+    fn get_inline_phpdoc_return_type(&self, state: &mut AnalysisState) -> Option<(PHPType, Range)> {
         let arg_range = self.parameters.range;
         let statement_range = self.body.range;
 
@@ -132,7 +130,7 @@ impl FirstPassAnalyzeableNode for FunctionDefinitionNode {
                     for entry in &doc_comment.entries {
                         match entry {
                             PHPDocEntry::Return(range, ptype, _desc) => {
-                                comment_return_type = UnionType::from_parsed_type(
+                                comment_return_type = TypeParser::from_parsed_type(
                                     ptype.clone(),
                                     state,
                                     emitter,
@@ -281,15 +279,17 @@ impl ThirdPassAnalyzeableNode for FunctionDefinitionNode {
         for (r_type, _val) in returns {
             if let Some(t) = r_type {
                 // t;
-                ret_type.merge_into(t);
+                ret_type.append(t);
             } else {
                 return true;
             }
         }
 
+        let ret_type: PHPType = ret_type.into();
+
         if let Some(function) = self.get_function_data(state, emitter) {
             let mut function_data = function.write().unwrap();
-            function_data.inferred_return_type = Some(ret_type);
+            function_data.inferred_return_type = Some(ret_type.simplify());
             function_data.return_value = return_value;
         }
         true

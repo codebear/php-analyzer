@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::visibility_modifier::VisibilityModifierNode,
-    issue::IssueEmitter, symboldata::class::ClassMemberVisibility, types::union::UnionType,
+    issue::IssueEmitter, symboldata::class::ClassMemberVisibility, types::union::PHPType,
 };
 
 impl VisibilityModifierNode {
@@ -20,7 +20,7 @@ impl VisibilityModifierNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 

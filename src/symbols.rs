@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     symboldata::class::ClassName,
-    types::union::{DiscreteType, SpecialType, UnionType},
+    types::union::{DiscreteType, PHPType, SpecialType},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -176,7 +176,7 @@ impl FullyQualifiedName {
         self.path.append(&mut path);
     }
 
-    pub fn get_utype(&self) -> UnionType {
+    pub fn get_utype(&self) -> PHPType {
         let dtype: DiscreteType = ClassName::new_with_fq_name(self.clone()).into();
         dtype.into()
     }

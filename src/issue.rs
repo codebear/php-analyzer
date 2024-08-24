@@ -5,12 +5,9 @@ use std::{
 };
 
 //use tree_sitter::Range;
-use crate::parser::Range;
+use crate::{parser::Range, types::union::PHPType};
 
-use crate::{
-    symbols::{FullyQualifiedName, Name},
-    types::union::UnionType,
-};
+use crate::symbols::{FullyQualifiedName, Name};
 
 #[derive(Clone, Debug)]
 
@@ -60,8 +57,8 @@ pub enum Issue {
     NotAVerifiedCallableVariable(IssuePosition, Name),
     // The variable is not callable
     NotACallableVariable(IssuePosition, Name),
-    DecrementIsIllegalOnType(IssuePosition, UnionType),
-    IncrementIsIllegalOnType(IssuePosition, UnionType),
+    DecrementIsIllegalOnType(IssuePosition, PHPType),
+    IncrementIsIllegalOnType(IssuePosition, PHPType),
 
     UnknownConstant(IssuePosition, FullyQualifiedName),
     UnreachableCode(IssuePosition),

@@ -7,6 +7,7 @@ use super::{
     binary::{BinaryAssignmentOperator, BinaryOperatorOperandAccess},
     operator::Operator,
 };
+use crate::types::phptype::TypeTraits;
 #[derive(Clone, Debug)]
 
 pub struct AddAssignOperator(pub Range);
@@ -31,7 +32,7 @@ impl BinaryAssignmentOperator for AddAssignOperator {
         operands: &impl BinaryOperatorOperandAccess,
         state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<crate::types::union::PHPType> {
         if let Some(left_type) = operands.get_left_type(state) {
             if left_type.is_float() {
                 return Some(DiscreteType::Float.into());
@@ -45,6 +46,6 @@ impl BinaryAssignmentOperator for AddAssignOperator {
         let mut utype = UnionType::new();
         utype.push(DiscreteType::Int);
         utype.push(DiscreteType::Float);
-        Some(utype)
+        Some(utype.into())
     }
 }

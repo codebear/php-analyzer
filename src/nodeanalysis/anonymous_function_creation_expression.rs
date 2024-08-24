@@ -5,7 +5,7 @@ use crate::{
         any::AnyNodeRef,
     },
     issue::IssueEmitter,
-    types::union::UnionType,
+    types::union::PHPType,
 };
 
 use super::analysis::ThirdPassAnalyzeableNode;
@@ -30,7 +30,7 @@ impl AnonymousFunctionCreationExpressionNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

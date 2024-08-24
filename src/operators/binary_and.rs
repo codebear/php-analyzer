@@ -28,7 +28,7 @@ impl BinaryOperator for BinaryAndOperator {
         _operands: &impl BinaryOperatorOperandAccess,
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<crate::types::union::PHPType> {
         Some(DiscreteType::Int.into())
     }
 

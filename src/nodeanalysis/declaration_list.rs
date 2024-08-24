@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, autonodes::declaration_list::DeclarationListNode,
-    issue::IssueEmitter, types::union::UnionType,
+    issue::IssueEmitter, types::union::PHPType,
 };
 
 impl DeclarationListNode {
@@ -20,7 +20,7 @@ impl DeclarationListNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 }

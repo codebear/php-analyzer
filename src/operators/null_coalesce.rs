@@ -1,4 +1,4 @@
-use crate::Range;
+use crate::{types::union::PHPType, Range};
 
 use super::{
     binary::{BinaryOperator, BinaryOperatorOperandAccess},
@@ -28,7 +28,7 @@ impl BinaryOperator for NullCoalesceOperator {
         operands: &impl BinaryOperatorOperandAccess,
         state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<PHPType> {
         //if let Some(val) = self.get_php_value(state, emitter) {
         //    return val.get_utype();
         //}

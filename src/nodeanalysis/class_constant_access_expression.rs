@@ -4,11 +4,11 @@ use crate::autonodes::class_constant_access_expression::ClassConstantAccessExpre
 use crate::autotree::NodeAccess;
 use crate::issue::{Issue, VoidEmitter};
 use crate::symbols::Name;
-use crate::types::union::{DiscreteType, SpecialType};
+use crate::types::union::{DiscreteType, DiscretlyAccessedType, PHPType, SpecialType};
 use crate::{
     analysis::state::AnalysisState,
     autonodes::class_constant_access_expression::ClassConstantAccessExpressionNode,
-    issue::IssueEmitter, symboldata::class::ClassName, types::union::UnionType, value::PHPValue,
+    issue::IssueEmitter, symboldata::class::ClassName, value::PHPValue,
 };
 
 use super::analysis::SecondPassAnalyzeableNode;
@@ -22,7 +22,7 @@ impl ClassConstantAccessExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         // this should return a `class-string<_>` type if
         // it is a ::class-constant-reference
         let constant_name = self.constant.get_name();
@@ -177,23 +177,29 @@ impl ClassConstantAccessExpressionNode {
 
                 if let Some(var_type) = n.get_utype(state, &VoidEmitter::new()) {
                     let mut names = vec![];
-                    for dtype in &var_type.types {
-                        match &dtype {
-                            DiscreteType::Special(SpecialType::ClassString(Some(
-                                maybe_fq_name,
-                            ))) => names.push(maybe_fq_name.into()),
-                            DiscreteType::Named(name, fq_name) => {
-                                names
-                                    .push(ClassName::new_with_names(name.clone(), fq_name.clone()));
-                            }
-                            DiscreteType::Unknown => return None,
-                            _ => {
-                                return crate::missing_none!(
-                                    "Hvordan hente en verdi ut av {:?} at {}",
-                                    dtype,
-                                    state.pos_as_string(self.range())
-                                )
-                            }
+
+                    for variant in var_type.as_discrete_variants() {
+                        match variant {
+                            DiscretlyAccessedType::Discrete(dtype) => match &dtype {
+                                DiscreteType::Special(SpecialType::ClassString(Some(
+                                    maybe_fq_name,
+                                ))) => names.push(maybe_fq_name.into()),
+                                DiscreteType::Named(name, fq_name) => {
+                                    names.push(ClassName::new_with_names(
+                                        name.clone(),
+                                        fq_name.clone(),
+                                    ));
+                                }
+                                DiscreteType::Unknown => return None,
+                                _ => {
+                                    return crate::missing_none!(
+                                        "Hvordan hente en verdi ut av {:?} at {}",
+                                        dtype,
+                                        state.pos_as_string(self.range())
+                                    )
+                                }
+                            },
+                            DiscretlyAccessedType::Intersection(_) => todo!(),
                         }
                     }
                     if !names.is_empty() {

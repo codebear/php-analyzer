@@ -1,5 +1,5 @@
 use crate::{
-    autonodes::_expression::_ExpressionNode, issue::IssueEmitter, missing, types::union::UnionType,
+    autonodes::_expression::_ExpressionNode, issue::IssueEmitter, missing, types::union::PHPType,
     value::PHPValue,
 };
 
@@ -8,7 +8,7 @@ impl _ExpressionNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match self {

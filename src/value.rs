@@ -8,7 +8,7 @@ use std::{
 
 use crate::{
     symbols::FullyQualifiedName,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscreteType, PHPType},
 };
 
 use std::hash::Hash;
@@ -17,7 +17,7 @@ use std::hash::Hash;
 pub struct ObjectInstance {
     pub fq_name: FullyQualifiedName,
     pub constructor_args: Option<Vec<Option<PHPValue>>>,
-    pub generic_concretes: Option<Vec<UnionType>>,
+    pub generic_concretes: Option<Vec<PHPType>>,
 }
 
 impl ObjectInstance {
@@ -34,7 +34,7 @@ impl ObjectInstance {
 
     pub fn new_with_generics(
         fq_name: FullyQualifiedName,
-        _generic_concretes: Vec<UnionType>,
+        _generic_concretes: Vec<PHPType>,
         constructor_args: Option<Vec<Option<PHPValue>>>,
     ) -> Self {
         Self {
@@ -45,7 +45,7 @@ impl ObjectInstance {
     }
 
     // An object instance can't have unknown type, so it's not an option
-    pub fn get_utype(&self) -> UnionType {
+    pub fn get_utype(&self) -> PHPType {
         self.fq_name.get_utype()
     }
 }
@@ -142,7 +142,7 @@ pub enum PHPValue {
 }
 
 impl PHPValue {
-    pub fn get_utype(&self) -> Option<crate::types::union::UnionType> {
+    pub fn get_utype(&self) -> Option<PHPType> {
         Some(
             match self {
                 PHPValue::NULL => DiscreteType::NULL,
@@ -450,7 +450,7 @@ impl PHPArray {
         }
     }
 
-    pub(crate) fn get_type_by_key(&self, php_idx: PHPValue) -> Option<UnionType> {
+    pub(crate) fn get_type_by_key(&self, php_idx: PHPValue) -> Option<PHPType> {
         let v = self.get_value_by_key(php_idx)?;
         v.get_utype()
     }

@@ -1,11 +1,14 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+};
 
 use crate::symbols::{FullyQualifiedName, Name};
 
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TypeStruct {
     pub type_name: TypeName,
-    pub generics: Option<Vec<Vec<ConcreteType>>>,
+    pub generics: Option<Vec<CompoundType>>,
 }
 
 impl std::fmt::Display for TypeStruct {
@@ -13,20 +16,11 @@ impl std::fmt::Display for TypeStruct {
         write!(f, "{}", &self.type_name)?;
         if let Some(generics) = &self.generics {
             write!(f, "<")?;
-            let mut i = 0;
-            for gen_param in generics {
-                let mut j = 0;
+            for (i, gen_param) in generics.iter().enumerate() {
                 if i > 0 {
                     write!(f, ", ")?;
                 }
-                i += 1;
-                for utype_part in gen_param {
-                    if j > 0 {
-                        write!(f, " | ")?;
-                    }
-                    j += 1;
-                    write!(f, "{}", utype_part)?;
-                }
+                write!(f, "{}", gen_param)?;
             }
             write!(f, ">")?;
         }
@@ -69,9 +63,9 @@ impl ShapeStruct {
 }
 
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub struct ShapeEntry(pub Option<(ShapeKey, bool)>, pub Vec<ConcreteType>);
+pub struct ShapeEntry(pub Option<(ShapeKey, bool)>, pub CompoundType);
 
-impl std::fmt::Display for ShapeEntry {
+impl Display for ShapeEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some((k, optional)) = &self.0 {
             write!(f, "{}", &k)?;
@@ -79,30 +73,91 @@ impl std::fmt::Display for ShapeEntry {
                 write!(f, "?")?;
             }
         }
-        let x = 0;
-        for v in &self.1 {
-            if x > 0 {
-                write!(f, " | ")?;
-            }
-            write!(f, "{}", &v)?
-        }
-        Ok(())
+        Display::fmt(&self.1, f)
     }
 }
 
 pub type UnionOfTypes = Vec<ConcreteType>;
 
-pub type ArgumentVector = Vec<UnionOfTypes>;
+pub type IntersectionOfTypes = Vec<ConcreteType>;
 
-pub type ReturnType = UnionOfTypes;
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum CompoundType {
+    Union(UnionOfTypes),
+    Intersection(IntersectionOfTypes),
+    Single(ConcreteType),
+}
+
+impl CompoundType {
+    pub fn len(&self) -> usize {
+        match self {
+            CompoundType::Union(u) => u.len(),
+            CompoundType::Intersection(i) => i.len(),
+            CompoundType::Single(_) => 1,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn first(&self) -> Option<&ConcreteType> {
+        match self {
+            CompoundType::Union(u) => u.first(),
+            CompoundType::Intersection(i) => i.first(),
+            CompoundType::Single(s) => Some(s),
+        }
+    }
+
+    pub(crate) fn if_single_type(&self) -> Option<&ConcreteType> {
+        match self {
+            CompoundType::Union(u) if u.len() == 1 => Some(&u[0]),
+            CompoundType::Intersection(i) if i.len() == 1 => {
+                crate::missing!("Probably wrong as an intersection could evaluate to single type?");
+                Some(&i[0])
+            }
+            CompoundType::Single(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl Display for CompoundType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompoundType::Union(u) => u.fmt(f),
+            CompoundType::Intersection(i) => i.fmt(f),
+            CompoundType::Single(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl IntoIterator for CompoundType {
+    type Item = ConcreteType;
+
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            CompoundType::Union(u) => u.into_iter(),
+            CompoundType::Intersection(i) => i.into_iter(),
+            CompoundType::Single(s) => vec![s].into_iter(),
+        }
+    }
+}
+
+pub type ArgumentVector = Vec<CompoundType>;
+
+pub type ReturnType = CompoundType;
 
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum ParsedType {
     Type(TypeStruct),
     Shape(Vec<ShapeEntry>),
-    Callable(ArgumentVector, Option<ReturnType>),
+    Callable(ArgumentVector, Option<Box<ReturnType>>),
     ClassType(TypeName, Name),
     CallableUntyped,
+    Parenthesized(Box<CompoundType>),
 }
 
 impl std::fmt::Display for ParsedType {
@@ -111,12 +166,10 @@ impl std::fmt::Display for ParsedType {
             ParsedType::Type(t) => write!(f, "{}", t),
             ParsedType::Shape(s) => {
                 write!(f, "array{{")?;
-                let mut i = 0;
-                for x in s {
+                for (i, x) in s.iter().enumerate() {
                     if i > 0 {
                         write!(f, ",")?;
                     }
-                    i += 1;
                     write!(f, "{}", x)?;
                 }
                 write!(f, "}}")
@@ -124,6 +177,7 @@ impl std::fmt::Display for ParsedType {
             ParsedType::Callable(argv, rettype) => write!(f, "callable({:?}):{:?}", argv, rettype),
             ParsedType::ClassType(typename, name) => write!(f, "{}::{}", typename, name),
             ParsedType::CallableUntyped => write!(f, "callable"),
+            ParsedType::Parenthesized(pt) => write!(f, "({})", pt),
         }
     }
 }

@@ -1,9 +1,10 @@
 use crate::analysis::state::AnalysisState;
 use crate::autonodes::any::AnyNodeRef;
+use crate::autotree::NodeAccess;
 use crate::issue::IssueEmitter;
 use crate::nodeanalysis::analysis::FirstPassAnalyzeableNode;
 use crate::nodeanalysis::analysis::IntoFirstPassAnalyzeable;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 
 use super::analysis::ErrorPassAnalyzableNode;
@@ -198,7 +199,7 @@ impl AnyNodeRef<'_> {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match self {

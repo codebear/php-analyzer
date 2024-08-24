@@ -18,7 +18,7 @@ use crate::errornode::ErrorNode;
 use crate::extra::ExtraChild;
 use crate::issue::IssueEmitter;
 use crate::parser::Range;
-use crate::types::union::UnionType;
+use crate::types::union::PHPType;
 use crate::value::PHPValue;
 use std::sync::OnceLock;
 use tree_sitter::Node;
@@ -116,7 +116,7 @@ impl ClassDeclarationModifier {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             ClassDeclarationModifier::Extra(x) => x.get_utype(state, emitter),
             ClassDeclarationModifier::AbstractModifier(x) => x.get_utype(state, emitter),
@@ -282,7 +282,7 @@ impl ClassDeclarationChildren {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         match self {
             ClassDeclarationChildren::Extra(x) => x.get_utype(state, emitter),
             ClassDeclarationChildren::BaseClause(x) => x.get_utype(state, emitter),

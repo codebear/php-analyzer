@@ -7,7 +7,7 @@ use crate::{
     issue::{Issue, IssueEmitter},
     types::{
         traversable::{get_key_type, get_value_type},
-        union::UnionType,
+        union::PHPType,
     },
 };
 
@@ -31,7 +31,7 @@ impl ForeachStatementNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-    ) -> Option<UnionType> {
+    ) -> Option<PHPType> {
         crate::missing_none!("{}.get_utype(..)", self.kind())
     }
 
@@ -108,7 +108,7 @@ impl ForeachStatementValue {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn IssueEmitter,
-        val_type: Option<UnionType>,
+        val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
         match self {

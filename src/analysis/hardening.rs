@@ -13,7 +13,7 @@ use crate::{
     },
     issue::VoidEmitter,
     operators::binary::BinaryOperatorBranchTypeHardening,
-    types::union::{DiscreteType, UnionType},
+    types::union::{DiscretlyAccessedType, PHPType, UnionType},
 };
 
 use super::{
@@ -29,10 +29,10 @@ pub fn new_scope_with_harden_variable_type_based_on_filter<P>(
     variable_node: &VariableNameNode,
     state: &mut AnalysisState,
     predicate: P,
-    final_utype_wrapper: Option<Box<dyn FnOnce(UnionType) -> UnionType>>,
+    final_utype_wrapper: Option<Box<dyn FnOnce(PHPType) -> PHPType>>,
 ) -> Arc<RwLock<Scope>>
 where
-    P: Sized + FnMut(&&DiscreteType) -> bool,
+    P: Sized + FnMut(&&DiscretlyAccessedType) -> bool,
 {
     // FIXME
     // If this is a nullable type and we're evaluated as true, for other types than,
@@ -47,8 +47,14 @@ where
     } else {
         return new_scope;
     };
+    let vtypes: Vec<PHPType> = utype
+        .as_discrete_variants()
+        .iter()
+        .map(|x| x.into())
+        .collect();
+    let utype = UnionType::from(vtypes);
 
-    let new_type = utype.filter_types(predicate);
+    let new_type: PHPType = utype.filter_types(predicate).into();
 
     let new_type = if let Some(wrapper) = final_utype_wrapper {
         wrapper(new_type)
@@ -347,8 +353,20 @@ impl BranchTypeHardening for VariableNameNode {
         state: &mut AnalysisState,
     ) -> Arc<RwLock<Scope>> {
         let predicate = match branch_side {
-            BranchSide::TrueBranch => |dtype: &&DiscreteType| dtype.can_evaluate_to_true(),
-            BranchSide::FalseBranch => |dtype: &&DiscreteType| dtype.can_evaluate_to_false(),
+            BranchSide::TrueBranch => |datype: &&DiscretlyAccessedType| match datype {
+                DiscretlyAccessedType::Discrete(dtype) => dtype.can_evaluate_to_true(),
+                DiscretlyAccessedType::Intersection(_) => {
+                    crate::missing!("Intersection in VariableNameNode");
+                    true
+                }
+            },
+            BranchSide::FalseBranch => |datype: &&DiscretlyAccessedType| match datype {
+                DiscretlyAccessedType::Discrete(dtype) => dtype.can_evaluate_to_false(),
+                DiscretlyAccessedType::Intersection(_) => {
+                    crate::missing!("Intersection in VariableNameNode");
+                    true
+                }
+            },
         };
         new_scope_with_harden_variable_type_based_on_filter(scope, self, state, predicate, None)
     }

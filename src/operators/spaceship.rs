@@ -1,4 +1,7 @@
-use crate::{types::union::DiscreteType, Range};
+use crate::{
+    types::union::{DiscreteType, PHPType},
+    Range,
+};
 
 use super::{
     binary::{BinaryOperator, BinaryOperatorOperandAccess},
@@ -28,7 +31,7 @@ impl BinaryOperator for SpaceshipOperator {
         _operands: &impl BinaryOperatorOperandAccess,
         _state: &mut crate::analysis::state::AnalysisState,
         _emitter: &dyn crate::issue::IssueEmitter,
-    ) -> Option<crate::types::union::UnionType> {
+    ) -> Option<PHPType> {
         Some(DiscreteType::Int.into())
     }
 
