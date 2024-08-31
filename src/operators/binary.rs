@@ -2,6 +2,7 @@ use crate::{
     analysis::state::AnalysisState,
     autonodes::{_expression::_ExpressionNode, binary_expression::BinaryExpressionRight},
     issue::IssueEmitter,
+    symboldata::class::ClassName,
     symbols::FullyQualifiedName,
     types::union::PHPType,
     value::PHPValue,
@@ -10,6 +11,26 @@ use crate::{
 #[derive(Debug)]
 pub enum InstanceOfSymbol {
     FullyQualifiedName(FullyQualifiedName),
+}
+
+impl TryFrom<InstanceOfSymbol> for ClassName {
+    type Error = &'static str;
+
+    fn try_from(value: InstanceOfSymbol) -> Result<Self, Self::Error> {
+        match value {
+            InstanceOfSymbol::FullyQualifiedName(fq) => Ok(fq.into()),
+        }
+    }
+}
+
+impl TryFrom<&InstanceOfSymbol> for ClassName {
+    type Error = &'static str;
+
+    fn try_from(value: &InstanceOfSymbol) -> Result<Self, Self::Error> {
+        match value {
+            InstanceOfSymbol::FullyQualifiedName(fq) => Ok(fq.into()),
+        }
+    }
 }
 
 pub trait BinaryOperatorOperandAccess {

@@ -172,7 +172,7 @@ impl ClassType {
             ClassType::None => panic!(),
             ClassType::Class(c) => c.get_or_create_property(property_name, position),
             ClassType::Interface(_) => None,
-            ClassType::Trait(_) => None,
+            ClassType::Trait(t) => t.get_or_create_property(property_name, position),
         }
     }
 
@@ -683,6 +683,7 @@ pub struct TraitData {
     pub position: FileLocation,
     pub base_name: Option<ClassName>,
     pub methods: HashMap<Name, Arc<RwLock<MethodData>>>,
+    pub properties: HashMap<Name, Arc<RwLock<PropertyData>>>,
     pub is_native: bool,
     pub phpdoc: Option<PHPDocComment>,
     pub generic_templates: Option<Vec<Name>>,
@@ -695,6 +696,7 @@ impl TraitData {
             position,
             base_name: None,
             methods: HashMap::new(),
+            properties: HashMap::new(),
             is_native: false,
             phpdoc: None,
             generic_templates: None,
@@ -723,6 +725,24 @@ impl TraitData {
             .or_insert_with(|| Arc::new(RwLock::new(MethodData::new(position, trait_name))));
 
         entry.clone()
+    }
+
+    pub(crate) fn get_or_create_property(
+        &mut self,
+        property_name: &Name,
+        position: FileLocation,
+    ) -> Option<Arc<RwLock<PropertyData>>> {
+        let entry = self
+            .properties
+            .entry(property_name.clone())
+            .or_insert_with(|| {
+                Arc::new(RwLock::new(PropertyData::new(
+                    position,
+                    property_name.clone(),
+                )))
+            });
+
+        Some(entry.clone())
     }
 
     fn get_fq_name(&self) -> FullyQualifiedName {

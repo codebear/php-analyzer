@@ -48,7 +48,12 @@ impl FirstPassAnalyzeableNode for ConstDeclarationNode {
                     if maybe_value.is_none() {
                         emitter.emit(Issue::ParseAnomaly(
                             self.pos(state),
-                            format!("Couldn't resolve class const content for {:?}", name).into(),
+                            format!(
+                                "Couldn't resolve class const content for {:?} from {}",
+                                name,
+                                c.kind()
+                            )
+                            .into(),
                         ));
                     }
                     // let value = c.get_php_value(state, emitter);

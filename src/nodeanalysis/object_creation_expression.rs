@@ -11,7 +11,7 @@ use crate::{
     issue::IssueEmitter,
     symboldata::class::ClassName,
     symbols::{FullyQualifiedName, Name},
-    types::union::{DiscreteType, PHPType},
+    types::union::{DiscreteType, DiscretlyAccessedType, PHPType},
     value::{ObjectInstance, PHPValue},
 };
 
@@ -245,15 +245,18 @@ impl ObjectCreationExpressionNode {
 
     pub(crate) fn infer_generic_type_into_map(
         &self,
-        generic_map: &mut HashMap<Name, UnionType>,
-        templated_type: UnionType,
-        in_type: UnionType,
+        generic_map: &mut HashMap<Name, PHPType>,
+        templated_type: PHPType,
+        in_type: PHPType,
     ) -> Option<()> {
-        if templated_type.len() != 1 {
-            crate::missing!("Handled of templated union types with multiple types");
-            return None;
+        let mut templated_type_variants = templated_type.as_discrete_variants();
+        if templated_type_variants.len() != 1 {
+            return crate::missing_none!("Handle of templated union types with multiple types");
         }
-        let template_type = templated_type.types.iter().next()?;
+        let templated_type = templated_type_variants.pop().expect("We checked len");
+        let DiscretlyAccessedType::Discrete(template_type) = templated_type else {
+            return crate::missing_none!("Handle of templated intersection types");
+        };
 
         match template_type {
             DiscreteType::Template(tname) => {
@@ -264,6 +267,7 @@ impl ObjectCreationExpressionNode {
             }
             _ => (),
         }
+
         None
     }
 }

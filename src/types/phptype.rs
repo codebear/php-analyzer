@@ -1,6 +1,6 @@
 use crate::{
     analysis::state::AnalysisState, issue::IssueEmitter, missing,
-    operators::binary::InstanceOfSymbol, parser::Range,
+    operators::binary::InstanceOfSymbol, parser::Range, types::union::DiscretlyAccessedType,
 };
 
 use super::union::{Consequences, DiscreteType, PHPType};
@@ -76,8 +76,31 @@ impl PHPType {
         }
     }
 
-    pub(crate) fn is_instanceof(&self, other: &InstanceOfSymbol) -> Option<bool> {
-        todo!();
+    pub(crate) fn is_instanceof(
+        &self,
+        other: &InstanceOfSymbol,
+        state: &AnalysisState,
+    ) -> Option<bool> {
+        let mut is_false = false;
+        let mut is_true = false;
+        for t in self.as_discrete_variants() {
+            if let Some(res) = match t {
+                DiscretlyAccessedType::Discrete(d) => d.is_instanceof(other, state),
+                DiscretlyAccessedType::Intersection(i) => i.is_instanceof(other, state),
+            } {
+                if res {
+                    is_true = true;
+                } else {
+                    is_false = true;
+                }
+            }
+        }
+        match (is_false, is_true) {
+            (true, true) => crate::missing_none!("both true and false, what should we do here?"),
+            (true, false) => Some(false),
+            (false, true) => Some(true),
+            (false, false) => crate::missing_none!("both true and false, what should we do here?"),
+        }
     }
 
     pub(crate) fn map(&self, discrete: &impl Fn(DiscreteType) -> DiscreteType) -> Self {
@@ -156,7 +179,7 @@ impl TypeTraits for PHPType {
     fn is_nullable(&self) -> bool {
         match self {
             PHPType::Union(u) => u.is_nullable(),
-            PHPType::Intersection(_) => todo!(),
+            PHPType::Intersection(i) => i.is_nullable(),
             PHPType::Discrete(d) => d.is_nullable(),
         }
     }
@@ -177,7 +200,7 @@ impl TypeTraits for PHPType {
         }
     }
 
-    fn is_same_type(&self, other: &Self) -> bool {
+    fn is_same_type(&self, _other: &Self) -> bool {
         todo!("Check if types are the same");
     }
 

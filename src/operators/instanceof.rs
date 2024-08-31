@@ -59,7 +59,7 @@ impl BinaryOperator for InstanceofOperator {
 
         let subject_type = operands.get_left_type(state)?;
 
-        let is_instanceof = subject_type.is_instanceof(&expected_fq_name)?;
+        let is_instanceof = subject_type.is_instanceof(&expected_fq_name, state)?;
 
         Some(PHPValue::Boolean(is_instanceof))
         /*

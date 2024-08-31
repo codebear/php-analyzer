@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
 use crate::{
-    analysis::state::AnalysisState, issue::IssueEmitter, missing, parser::Range,
-    types::union::DiscretlyAccessedType,
+    analysis::state::AnalysisState, issue::IssueEmitter, missing,
+    operators::binary::InstanceOfSymbol, parser::Range, types::union::DiscretlyAccessedType,
 };
 
 use super::{
@@ -11,7 +11,7 @@ use super::{
 };
 
 impl IntersectionType {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             types: Default::default(),
         }
@@ -24,7 +24,7 @@ impl IntersectionType {
         //if self.types.len() == 1 {
         //    return self.types.iter().next().cloned();
         //}
-        None
+        // None
     }
 
     pub(crate) fn ensure_valid(
@@ -60,8 +60,12 @@ impl IntersectionType {
         }
     }
 
-    pub(crate) fn is_instanceof(&self, other: &IntersectionType) -> bool {
-        todo!();
+    pub(crate) fn is_instanceof(
+        &self,
+        _other: &InstanceOfSymbol,
+        _state: &AnalysisState,
+    ) -> Option<bool> {
+        crate::missing_none!("Check instanceof for an intersection-type")
     }
 
     pub(crate) fn map(&self, discrete: &impl Fn(DiscreteType) -> DiscreteType) -> Self {
@@ -95,6 +99,12 @@ impl IntersectionType {
 
             vec![DiscretlyAccessedType::Intersection(self.clone())]
         }
+    }
+}
+
+impl Default for IntersectionType {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

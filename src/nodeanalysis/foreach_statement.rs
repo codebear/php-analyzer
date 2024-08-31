@@ -58,10 +58,12 @@ impl ForeachStatementEntry {
     pub fn get_value_node(&self) -> Option<AnyNodeRef> {
         match self {
             ForeachStatementEntry::_Expression(e) => Some(e.as_any()),
-            ForeachStatementEntry::ByRef(_) => todo!(),
-            ForeachStatementEntry::ListLiteral(_) => todo!(),
+            ForeachStatementEntry::ByRef(_) => crate::missing_none!("get_value_node for ByRef"),
+            ForeachStatementEntry::ListLiteral(_) => {
+                crate::missing_none!("get_value_node for ListLiteral")
+            }
             ForeachStatementEntry::Pair(p) => Some(p.value.as_any()),
-            ForeachStatementEntry::Extra(_) => todo!(),
+            ForeachStatementEntry::Extra(_) => None,
         }
     }
 }

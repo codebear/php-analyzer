@@ -303,8 +303,16 @@ impl FirstPassAnalyzeableNode for MethodDeclarationNode {
 
 impl SecondPassAnalyzeableNode for MethodDeclarationNode {
     fn analyze_second_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        let Some(locked_data) = self.get_method_data(state) else {
+            emitter.emit(Issue::ParseAnomaly(
+                self.pos(state),
+                "Missing method data in second pass".into(),
+            ));
+            return;
+        };
+
         // Check types used in phpdoc
-        let locked_data = self.get_method_data(state).unwrap();
+
         {
             let method_data = locked_data.read().unwrap();
             if let Some(phpdoc) = &method_data.phpdoc {
@@ -378,7 +386,13 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
             }
         };
 
-        let locked_data = self.get_method_data(state).unwrap();
+        let Some(locked_data) = self.get_method_data(state) else {
+            emitter.emit(Issue::ParseAnomaly(
+                self.pos(state),
+                "Missing method data in second pass".into(),
+            ));
+            return true;
+        };
 
         let function = FunctionState::new_method(self.get_declared_name(), locked_data);
         state.in_function_stack.push(function);

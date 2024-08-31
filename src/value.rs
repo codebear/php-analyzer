@@ -139,6 +139,7 @@ pub enum PHPValue {
     Array(PHPArray),
     // .0 = Fully qualified class name, .1 = Constructor arg-vector
     ObjectInstance(ObjectInstance),
+    Enum(FullyQualifiedName, &'static str),
 }
 
 impl PHPValue {
@@ -152,6 +153,7 @@ impl PHPValue {
                 PHPValue::String(_) => DiscreteType::String,
                 PHPValue::Array(_) => DiscreteType::Array,
                 PHPValue::ObjectInstance(i) => return Some(i.get_utype()),
+                PHPValue::Enum(fq_name, _) => return Some(fq_name.get_utype()),
             }
             .into(),
         )
@@ -174,6 +176,7 @@ impl PHPValue {
             PHPValue::String(s) => PHPValue::String(s.clone()),
             PHPValue::Array(_) => PHPValue::String(OsStr::from_bytes(b"Array").to_os_string()),
             PHPValue::ObjectInstance(_) => return crate::missing_none!("ObjectInstance?"),
+            PHPValue::Enum(_fq_name, _) => return crate::missing_none!("PHPValue::Enum?"),
         })
     }
 
@@ -221,6 +224,7 @@ impl PHPValue {
             PHPValue::ObjectInstance(_) => {
                 return crate::missing_none!("ObjectInstance.as_php_int()")
             }
+            PHPValue::Enum(_, _) => return crate::missing_none!("Enum.as_php_int()"),
         })
     }
 
@@ -249,6 +253,7 @@ impl PHPValue {
             }
             PHPValue::Array(v) => PHPValue::Boolean(!v.is_empty()),
             PHPValue::ObjectInstance(_) => PHPValue::Boolean(true),
+            PHPValue::Enum(_, _) => return crate::missing_none!("Enum.as_php_bool()"),
         })
     }
 
@@ -262,6 +267,7 @@ impl PHPValue {
             PHPValue::String(_) => return crate::missing_none!(),
             PHPValue::Array(_) => return crate::missing_none!(),
             PHPValue::ObjectInstance(_) => return crate::missing_none!(),
+            PHPValue::Enum(_, _) => return crate::missing_none!(),
         })
     }
 
@@ -285,6 +291,9 @@ impl PHPValue {
             PHPValue::Array(_) => return self.as_php_bool().and_then(|x| x.as_php_float()),
             PHPValue::ObjectInstance(_) => {
                 return crate::missing_none!("ObjectInstance to f64 conversion is inadequate")
+            }
+            PHPValue::Enum(_, _) => {
+                return crate::missing_none!("Enum to f64 conversion is inadequate")
             }
         })
     }
@@ -366,6 +375,7 @@ impl PHPValue {
             PHPValue::String(_) => Some(self.clone()),
             PHPValue::Array(_) => None,
             PHPValue::ObjectInstance(_) => None,
+            PHPValue::Enum(_, _) => crate::missing_none!(),
         }
     }
 
@@ -378,6 +388,7 @@ impl PHPValue {
             PHPValue::String(s) => format!(r#""{:?}""#, s).into(),
             PHPValue::Array(_) => todo!(),
             PHPValue::ObjectInstance(_) => todo!(),
+            PHPValue::Enum(_, _) => todo!(),
         }
     }
 

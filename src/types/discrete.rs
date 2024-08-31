@@ -233,28 +233,37 @@ impl DiscreteType {
         }
     }
 
-    pub(crate) fn is_instanceof(&self, fqname: &InstanceOfSymbol) -> Option<bool> {
+    pub(crate) fn is_instanceof(
+        &self,
+        potential_parent_type: &InstanceOfSymbol,
+        state: &AnalysisState,
+    ) -> Option<bool> {
         match self {
-            DiscreteType::Named(a, b) => {
-                crate::missing!("Check named against InstanceOfSymbol");
+            DiscreteType::Named(_, potential_child_type) => {
+                let potential_child_name: ClassName = potential_child_type.into();
+                let potential_parent_type_name: ClassName =
+                    potential_parent_type.try_into().ok()?;
+                let locked_child_type_data = state.symbol_data.get_class(&potential_child_name)?;
+                let child_type_data = locked_child_type_data.read().ok()?;
+                let is_instance_of = child_type_data
+                    .instanceof(&potential_parent_type_name, state.symbol_data.clone());
+                Some(is_instance_of)
                 //return false;
             }
             DiscreteType::Generic(a, b) => {
-                crate::missing!("Check generic against InstanceOfSymbol");
+                crate::missing_none!("Check generic against InstanceOfSymbol")
                 //return false;
             }
             DiscreteType::ClassType(a, b) => {
-                crate::missing!("Check ClassType against InstanceOfSymbol");
+                crate::missing_none!("Check ClassType against InstanceOfSymbol")
                 //return false;
             }
-            DiscreteType::Unknown => {
-                return None;
-            }
+            DiscreteType::Unknown => None,
+            DiscreteType::NULL => Some(false),
             _ => {
-                return crate::missing_none!("Check ClassType against {:?}", self);
+                crate::missing_none!("Check ClassType against {:?}", self)
             }
         }
-        None
     }
 
     pub(crate) fn check_type_casing(
@@ -437,6 +446,7 @@ impl TypeTraits for DiscreteType {
             DiscreteType::Object => false,
             DiscreteType::Named(_, _) => false,
             DiscreteType::Unknown => false,
+            DiscreteType::Generic(base_type, _generic_type_vector) => base_type.is_nullable(),
             _ => {
                 crate::missing!(
                     "Is [{:?}] nullable, as return false? THIS IS WRONG! I ASSUME! ",

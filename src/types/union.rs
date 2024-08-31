@@ -166,7 +166,7 @@ impl PHPType {
     }
 
     /// See [DiscretlyAccessedType] for more details
-    pub(crate) fn as_discrete_variants(&self) -> Vec<DiscretlyAccessedType> {
+    pub fn as_discrete_variants(&self) -> Vec<DiscretlyAccessedType> {
         let simple = self.simplify();
         match simple {
             PHPType::Union(u) => u.as_discrete_variants(),
@@ -340,12 +340,16 @@ impl UnionType {
         }
     }
 
-    pub(crate) fn is_instanceof(&self, fqname: &InstanceOfSymbol) -> Option<bool> {
+    pub(crate) fn is_instanceof(
+        &self,
+        fqname: &InstanceOfSymbol,
+        state: &AnalysisState,
+    ) -> Option<bool> {
         let mut is_true = false;
         let mut is_false = false;
 
         for t in &self.types {
-            if let Some(x) = t.is_instanceof(fqname) {
+            if let Some(x) = t.is_instanceof(fqname, state) {
                 if x {
                     is_true = true;
                 } else {
@@ -365,6 +369,10 @@ impl UnionType {
 
     pub fn len(&self) -> usize {
         self.types.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.types.is_empty()
     }
 
     ///
@@ -648,21 +656,39 @@ impl Eq for Consequence {
 }
 
 pub(crate) fn from_vec_parsed_type(
-    ptypes: CompoundType,
+    compound_type: CompoundType,
     state: &mut AnalysisState,
     maybe_emitter: Option<&dyn IssueEmitter>,
     temp_generics: Option<&Vec<Name>>,
 ) -> Option<PHPType> {
-    let mut utype = UnionType::new();
-    for ptype in ptypes {
-        utype.merge_into(from_parsed_type(
-            ptype,
-            state,
-            maybe_emitter,
-            temp_generics,
-        )?);
+    match compound_type {
+        CompoundType::Union(union) => {
+            let mut utype = UnionType::new();
+            for t in union {
+                utype.append(from_parsed_type(t, state, maybe_emitter, temp_generics)?);
+            }
+            if utype.is_empty() {
+                None
+            } else {
+                Some(utype.into())
+            }
+        }
+        CompoundType::Intersection(parsed_intersection) => {
+            // void
+            let mut types = vec![];
+            for t in parsed_intersection {
+                let Some(xx) = from_parsed_type(t, state, maybe_emitter, temp_generics) else {
+                    return crate::missing_none!("Failed to parse intersection type");
+                };
+                types.push(xx);
+            }
+
+            Some(IntersectionType::from(types).into())
+        }
+        CompoundType::Single(single) => {
+            from_parsed_type(single, state, maybe_emitter, temp_generics)
+        }
     }
-    Some(utype.into())
 }
 
 fn from_parsed_type(
@@ -791,25 +817,30 @@ fn from_type_struct(
             b"iterable" => Some(DiscreteType::Iterable),
             b"null" => Some(DiscreteType::NULL),
             b"class-string" => {
-                if let Some(gen) = &type_struct.generics {
+                let result = if let Some(gen) = &type_struct.generics {
                     // FIXME emit or othervise make sure that any problems here aren't overlooked
-                    let noe = if gen.len() == 1 {
-                        let x = &gen[0];
-                        if let Some(y) = x.if_single_type() {
-                            if y.nullable {
-                                return None;
-                            }
-                            match &y.ptype {
-                                ParsedType::Type(z) if z.generics.is_none() => z.type_name.clone(),
-                                _ => return None,
-                            }
-                        } else {
-                            crate::missing!(
-                                "This could probably be improved to handle more complex types"
-                            );
+
+                    if gen.len() != 1 {
+                        return None;
+                    }
+
+                    let x = &gen[0];
+
+                    let noe = if let Some(y) = x.if_single_type() {
+                        if y.nullable {
                             return None;
                         }
+                        match &y.ptype {
+                            ParsedType::Type(z) if z.generics.is_none() => z.type_name.clone(),
+                            // ParsedType::ClassType(fqname, constant_name) => fqname.clone(),
+                            unknown_something => {
+                                return crate::missing_none!("This could probably be improved to handle more complex types: {:?}", unknown_something);
+                            }
+                        }
                     } else {
+                        crate::missing!(
+                            "This could probably be improved to handle more complex types"
+                        );
                         return None;
                     };
 
@@ -823,7 +854,12 @@ fn from_type_struct(
                     ))))
                 } else {
                     Some(DiscreteType::Special(SpecialType::ClassString(None)))
+                };
+
+                if let Some(noe) = result {
+                    return Some(noe.into());
                 }
+                None
             }
             b"object" => Some(DiscreteType::Object),
             b"array" => {
@@ -990,13 +1026,17 @@ impl From<ClassName> for DiscreteType {
 }
 
 impl From<UnionType> for PHPType {
-    fn from(utype: UnionType) -> Self {
-        PHPType::Union(utype)
+    fn from(mut utype: UnionType) -> Self {
+        if utype.len() == 1 {
+            utype.types.pop_first().expect("We checked that len is 1")
+        } else {
+            PHPType::Union(utype)
+        }
     }
 }
 impl From<&UnionType> for PHPType {
     fn from(utype: &UnionType) -> Self {
-        PHPType::Union(utype.clone())
+        utype.into()
     }
 }
 

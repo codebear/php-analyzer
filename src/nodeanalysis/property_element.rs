@@ -45,11 +45,16 @@ impl PropertyElementNode {
     pub fn get_property_data(
         &self,
         state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
     ) -> Option<Arc<RwLock<PropertyData>>> {
         let property_name = self.get_property_name();
         let class = if let Some(c) = &state.in_class {
             c
         } else {
+            emitter.emit(Issue::ParseAnomaly(
+                state.pos_from_range(self.range()),
+                "Property outside of class".into(),
+            ));
             return None;
         };
         state
@@ -68,13 +73,14 @@ impl PropertyElementNode {
         emitter: &dyn IssueEmitter,
         declaration: &PropertyDeclarationNode,
     ) {
-        let data_handle = if let Some(handle) = self.get_property_data(state) {
+        let data_handle = if let Some(handle) = self.get_property_data(state, emitter) {
             handle
         } else {
             emitter.emit(Issue::ParseAnomaly(
                 self.pos(state),
                 "Unable to get property data".into(),
             ));
+            crate::missing!("Unable to get property data, maybe an internal bug");
             return;
         };
 
@@ -181,13 +187,14 @@ impl PropertyElementNode {
         _declaration: &PropertyDeclarationNode,
     ) {
         // eprintln!("round three property element");
-        let data_handle = if let Some(handle) = self.get_property_data(state) {
+        let data_handle = if let Some(handle) = self.get_property_data(state, emitter) {
             handle
         } else {
             emitter.emit(Issue::ParseAnomaly(
                 self.pos(state),
                 "Unable to get property data".into(),
             ));
+            crate::missing!("Unable to get property data, maybe an internal bug");
             return;
         };
 

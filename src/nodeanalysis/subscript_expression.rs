@@ -84,11 +84,11 @@ impl SubscriptExpressionNode {
                     ),
                 },
 
-                DiscretlyAccessedType::Intersection(_) => todo!(),
+                DiscretlyAccessedType::Intersection(i) => crate::missing!("subscript.get_utype(..) what get's when looking up in intersection type with {:?}", i),
             }
         }
 
-        if ret_type.len() > 0 {
+        if !ret_type.is_empty() {
             Some(ret_type.into())
         } else {
             None

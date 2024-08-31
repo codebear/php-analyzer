@@ -371,8 +371,12 @@ impl BinaryExpressionRight {
     }
 }
 
-impl FirstPassAnalyzeableNode for BinaryExpressionNode {
-    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+impl BinaryExpressionNode {
+    pub fn first_pass_check_instanceof(
+        &self,
+        state: &mut AnalysisState,
+        emitter: &dyn IssueEmitter,
+    ) {
         // thing to check:
         //
         // Dependening on versions, a left-hand side of instanceof can not be a constant
@@ -403,6 +407,44 @@ impl FirstPassAnalyzeableNode for BinaryExpressionNode {
             "In PHP less than 7.3.0 constants can not be on the left side of instanceof"
                 .to_string(),
         ));
+    }
+}
+
+impl FirstPassAnalyzeableNode for BinaryExpressionNode {
+    fn analyze_first_pass(&self, state: &mut AnalysisState, emitter: &dyn IssueEmitter) {
+        match *self.operator {
+            BinaryExpressionOperator::NotEqual(_) => crate::missing!(),
+            BinaryExpressionOperator::NotIdentical(_) => crate::missing!(),
+            BinaryExpressionOperator::Mod(_) => crate::missing!(),
+            BinaryExpressionOperator::BinaryAnd(_) => crate::missing!(),
+            BinaryExpressionOperator::BooleanAnd(_) => crate::missing!(),
+            BinaryExpressionOperator::Mult(_) => crate::missing!(),
+            BinaryExpressionOperator::Exponential(_) => crate::missing!(),
+            BinaryExpressionOperator::Add(_) => crate::missing!(),
+            BinaryExpressionOperator::Sub(_) => crate::missing!(),
+            BinaryExpressionOperator::Concat(_) => crate::missing!(),
+            BinaryExpressionOperator::Div(_) => crate::missing!(),
+            BinaryExpressionOperator::LessThan(_) => crate::missing!(),
+            BinaryExpressionOperator::LeftShift(_) => crate::missing!(),
+            BinaryExpressionOperator::LessThanOrEqual(_) => crate::missing!(),
+            BinaryExpressionOperator::Spaceship(_) => crate::missing!(),
+            BinaryExpressionOperator::Equal(_) => crate::missing!(),
+            BinaryExpressionOperator::Identical(_) => crate::missing!(),
+            BinaryExpressionOperator::GreaterThan(_) => crate::missing!(),
+            BinaryExpressionOperator::GreaterThanOrEqual(_) => crate::missing!(),
+            BinaryExpressionOperator::RightShift(_) => crate::missing!(),
+            BinaryExpressionOperator::NullCoalesce(_) => crate::missing!(),
+            BinaryExpressionOperator::BinaryXor(_) => crate::missing!(),
+            BinaryExpressionOperator::LogicalAnd(_) => crate::missing!(),
+            BinaryExpressionOperator::Instanceof(_) => {
+                self.first_pass_check_instanceof(state, emitter)
+            }
+            BinaryExpressionOperator::LogicalOr(_) => crate::missing!(),
+            BinaryExpressionOperator::LogicalXor(_) => crate::missing!(),
+            BinaryExpressionOperator::BinaryOr(_) => crate::missing!(),
+            BinaryExpressionOperator::BooleanOr(_) => crate::missing!(),
+            BinaryExpressionOperator::Extra(_) => crate::missing!(),
+        }
     }
 }
 
@@ -471,20 +513,36 @@ impl BinaryOperatorOperandAccess for BinaryExpressionNode {
 
     fn get_right_symbol(&self, state: &mut AnalysisState) -> Option<InstanceOfSymbol> {
         match &*self.right {
-            BinaryExpressionRight::_Expression(_) => todo!(),
-            BinaryExpressionRight::DynamicVariableName(_) => todo!(),
-            BinaryExpressionRight::MemberAccessExpression(_) => todo!(),
+            BinaryExpressionRight::_Expression(_) => {
+                crate::missing_none!("binary get_right_symbol with _Expression")
+            }
+            BinaryExpressionRight::DynamicVariableName(_) => {
+                crate::missing_none!("binary get_right_symbol with DynamicVariableName")
+            }
+            BinaryExpressionRight::MemberAccessExpression(_) => {
+                crate::missing_none!("binary get_right_symbol with MemberAccessExpression")
+            }
             BinaryExpressionRight::Name(n) => Some(InstanceOfSymbol::FullyQualifiedName(
                 state.get_fq_symbol_name_from_local_name(&n.get_name()),
             )),
-            BinaryExpressionRight::NullsafeMemberAccessExpression(_) => todo!(),
+            BinaryExpressionRight::NullsafeMemberAccessExpression(_) => {
+                crate::missing_none!("binary get_right_symbol with NullsafeMemberAccessExpression")
+            }
             BinaryExpressionRight::QualifiedName(q) => {
                 Some(InstanceOfSymbol::FullyQualifiedName(q.get_fq_name(state)))
             }
-            BinaryExpressionRight::ScopedPropertyAccessExpression(_) => todo!(),
-            BinaryExpressionRight::SubscriptExpression(_) => todo!(),
-            BinaryExpressionRight::VariableName(_) => todo!(),
-            BinaryExpressionRight::Extra(_) => todo!(),
+            BinaryExpressionRight::ScopedPropertyAccessExpression(_) => {
+                crate::missing_none!("binary get_right_symbol with ScopedPropertyAccessExpression")
+            }
+            BinaryExpressionRight::SubscriptExpression(_) => {
+                crate::missing_none!("binary get_right_symbol with SubscriptExpression")
+            }
+            BinaryExpressionRight::VariableName(_) => {
+                crate::missing_none!("binary get_right_symbol with VariableName")
+            }
+            BinaryExpressionRight::Extra(_) => {
+                crate::missing_none!("binary get_right_symbol with Extra")
+            }
         }
     }
 }

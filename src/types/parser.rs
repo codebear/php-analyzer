@@ -48,8 +48,6 @@ pub fn compound_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], Compou
             map(intersection_type(multiline), CompoundType::Intersection),
             // union type
             map(union_type(multiline), CompoundType::Union),
-            // parenthesises
-            parenthesized_type(multiline),
             // single type
             map(concrete_type(multiline), CompoundType::Single),
         ))(input)
@@ -141,11 +139,12 @@ fn one_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ParsedType> {
             callable_type(multiline),
             tuple_type(multiline),
             normal_type_with_optional_generics(multiline),
+            parenthesized_type(multiline),
         ))(input)
     }
 }
 
-fn parenthesized_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], CompoundType> {
+fn parenthesized_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], ParsedType> {
     move |input| {
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, _) = tag(b"(")(input)?;
@@ -153,6 +152,7 @@ fn parenthesized_type(multiline: bool) -> impl Fn(&[u8]) -> IResult<&[u8], Compo
         let (input, ptype) = compound_type(multiline)(input)?;
         let (input, _) = ourspace0(multiline)(input)?;
         let (input, _) = tag(b")")(input)?;
+        let ptype = ParsedType::Parenthesized(Box::new(ptype));
         Ok((input, ptype))
     }
 }

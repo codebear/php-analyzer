@@ -22,7 +22,12 @@ impl ConstElementNode {
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
     ) -> Option<PHPType> {
-        crate::missing_none!("{}.get_utype(..)", self.kind())
+        crate::missing!("{}.get_utype(..)", self.kind());
+        if let Some(value) = self.get_php_value(_state, _emitter) {
+            value.get_utype()
+        } else {
+            None
+        }
     }
 
     pub fn get_const_name(&self) -> Name {

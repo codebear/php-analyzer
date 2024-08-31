@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use super::union::{from_vec_parsed_type, PHPType};
 use std::{
     ffi::{OsStr, OsString},
@@ -59,7 +62,7 @@ impl TypeParser {
             Some(utype)
         } else {
             eprintln!(
-                "Parsing of type: {:?} failed, parsed into: {:?}",
+                "Converting to type: {:?} failed, parsed into this: {:?}",
                 type_str, parsed_type
             );
             None
@@ -117,7 +120,7 @@ impl TypeParser {
                 Some(utype)
             } else {
                 eprintln!(
-                    "Parsing of type: {:?} failed, parsed into: {:?}",
+                    "Converting to type: {:?} from vec failed, parsed into this: {:?}",
                     type_str, parsed_type
                 );
                 None

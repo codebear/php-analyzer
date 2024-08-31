@@ -103,7 +103,7 @@ impl UpdateExpressionNode {
                 (_, PHPValue::String(_)) => crate::missing_none!("++$str/--$str does funky things"),
                 (_, PHPValue::Array(_)) => None, // this emits in analysis round two
                 (_, PHPValue::ObjectInstance(_)) => None, // this emits in analysis round two,
-
+                (_, PHPValue::Enum(_, _)) => crate::missing_none!("Enum increment/decrement"),
                 (UpdateExpressionPrefix::Extra(_), _) => None,
             }
         } else if self.postfix.is_some() {
@@ -291,7 +291,8 @@ impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
                             oi.get_utype(),
                         ));
                         None
-                    }
+                    },
+                    PHPValue::Enum(_, _) => crate::missing_none!(),
                 },
                 Some(Operator::Decrement) => match val {
                     PHPValue::NULL => None,
@@ -318,6 +319,7 @@ impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
                         //                        emitter.emit(state.filename.as_ref(), self.range, "-- is illegal on type".into());
                         None
                     }
+                    PHPValue::Enum(_, _) => crate::missing_none!(),
                 },
                 _ => None,
             };

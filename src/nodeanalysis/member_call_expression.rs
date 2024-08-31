@@ -180,7 +180,9 @@ impl MemberCallExpressionNode {
                     let class_name = self.get_class_data_for_discrete_type(state, dtype);
                     cnames.push(class_name);
                 }
-                DiscretlyAccessedType::Intersection(_) => todo!(),
+                DiscretlyAccessedType::Intersection(i) => {
+                    return crate::missing_none!("Get class datas for intersection-types")
+                }
             }
         }
         Some(cnames)
@@ -301,7 +303,12 @@ impl MemberCallExpressionNode {
                     let class_name = self.get_class_name_from_discrete_type(&dtype);
                     cnames.push(class_name);
                 }
-                DiscretlyAccessedType::Intersection(_) => todo!(),
+                DiscretlyAccessedType::Intersection(i) => {
+                    return crate::missing_none!(
+                        "get_object_class_names from intersection-types: {:#?}",
+                        i
+                    );
+                }
             }
         }
         Some(cnames)

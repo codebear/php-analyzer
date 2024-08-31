@@ -81,6 +81,9 @@ impl IntoThirdPassAnalyzeable for AnyNodeRef<'_> {
     {
         Some(match self {
             AnyNodeRef::ClassDeclaration(c) => cb(*c),
+            AnyNodeRef::TraitDeclaration(t) => cb(*t),
+            AnyNodeRef::InterfaceDeclaration(i) => cb(*i),
+
             AnyNodeRef::MethodDeclaration(md) => cb(*md),
 
             AnyNodeRef::EchoStatement(e) => cb(*e),
@@ -121,8 +124,6 @@ impl IntoThirdPassAnalyzeable for AnyNodeRef<'_> {
 
             AnyNodeRef::ConditionalExpression(ce) => cb(*ce),
             AnyNodeRef::ReturnStatement(ret) => cb(*ret),
-            AnyNodeRef::TraitDeclaration(t) => cb(*t),
-            AnyNodeRef::InterfaceDeclaration(i) => cb(*i),
             AnyNodeRef::ScopedPropertyAccessExpression(ret) => cb(*ret),
             _ => return None,
         })
