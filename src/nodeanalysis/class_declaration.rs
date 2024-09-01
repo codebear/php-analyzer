@@ -470,7 +470,7 @@ impl ThirdPassAnalyzeableNode for ClassDeclarationNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let class_name = self.get_class_name(state);
         state.in_class = Some(ClassState::Class(class_name, self.get_class_data(state)));

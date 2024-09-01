@@ -39,7 +39,7 @@ impl ThirdPassAnalyzeableNode for ReturnStatementNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let (ret_type, ret_value) = if let Some(child) = &self.child {
             child.read_from(state, emitter);

@@ -34,14 +34,13 @@ impl ListLiteralNode {
         val_type: Option<PHPType>,
         value: Option<PHPValue>,
     ) {
-        if let Some(_) = val_type {
+        if val_type.is_some() {
             crate::missing!("list(..) = .. har type, som blir ignorert");
         }
-        if let Some(_) = value {
+        if value.is_some() {
             crate::missing!("list(..) = .. har verdi, som blir ignorert");
         }
-        let mut idx = 0;
-        for child in &self.children {
+        for (idx, child) in self.children.iter().enumerate() {
             match &**child {
                 ListLiteralChildren::_Expression(_) => {
                     crate::missing!("list({:?}) write to", child.kind())
@@ -84,7 +83,10 @@ impl ListLiteralNode {
                     let mut sub_value = None;
                     match &value {
                         Some(PHPValue::Array(a)) => {
-                            let php_idx = PHPValue::Int(idx);
+                            let php_idx = PHPValue::Int(
+                                idx.try_into()
+                                    .expect("This loop can't be so long that it overflows an i64"),
+                            );
                             sub_value = a.get_value_by_key(php_idx.clone());
                             sub_val_type = a.get_type_by_key(php_idx);
                         }
@@ -103,7 +105,6 @@ impl ListLiteralNode {
 
                 ListLiteralChildren::Extra(_) => (),
             }
-            idx += 1;
         }
         crate::missing!("list literal write_to");
     }

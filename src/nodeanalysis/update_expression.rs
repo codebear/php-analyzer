@@ -261,7 +261,7 @@ impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;
@@ -291,7 +291,7 @@ impl ThirdPassAnalyzeableNode for UpdateExpressionNode {
                             oi.get_utype(),
                         ));
                         None
-                    },
+                    }
                     PHPValue::Enum(_, _) => crate::missing_none!(),
                 },
                 Some(Operator::Decrement) => match val {

@@ -259,7 +259,7 @@ impl ThirdPassAnalyzeableNode for AugmentedAssignmentExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         self.right.read_from(state, emitter);
         let maybe_right_utype = self.right.get_utype(state, emitter);

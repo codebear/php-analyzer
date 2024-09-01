@@ -9,7 +9,7 @@ impl ThirdPassAnalyzeableNode for SwitchBlockNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         crate::missing!();
         self.analyze_third_pass_children(&self.as_any(), state, emitter, path)

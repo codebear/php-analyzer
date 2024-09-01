@@ -51,7 +51,7 @@ impl ThirdPassAnalyzeableNode for ScopedPropertyAccessExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         if !self.scope.as_any().analyze_third_pass(state, emitter, path) {
             return false;
@@ -66,7 +66,7 @@ impl ThirdPassAnalyzeableNode for ScopedPropertyAccessExpressionName {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         match self {
             ScopedPropertyAccessExpressionName::DynamicVariableName(dv) => {

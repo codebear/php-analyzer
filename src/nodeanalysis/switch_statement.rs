@@ -35,7 +35,7 @@ impl ThirdPassAnalyzeableNode for SwitchStatementNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         self.condition.read_from(state, emitter);
         crate::missing!("analyze_round_two of switch");

@@ -73,7 +73,7 @@ impl ThirdPassAnalyzeableNode for ForeachStatementNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         self.traversable.read_from(state, emitter);
 

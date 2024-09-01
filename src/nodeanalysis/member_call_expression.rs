@@ -52,7 +52,7 @@ impl MemberCallExpressionNode {
             let call_return_type = method_data.get_return_type()?;
             return_type.append(call_return_type);
         }
-        if return_type.len() > 0 {
+        if !return_type.is_empty() {
             Some(return_type.into())
         } else {
             None
@@ -358,7 +358,7 @@ impl ThirdPassAnalyzeableNode for MemberCallExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         self.object.read_from(state, emitter);
         self.name.read_from(state, emitter);

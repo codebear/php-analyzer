@@ -40,7 +40,7 @@ impl ThirdPassAnalyzeableNode for AnonymousFunctionCreationExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let function = FunctionState::new_anonymous();
         state.in_function_stack.push(function);

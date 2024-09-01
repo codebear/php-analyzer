@@ -43,7 +43,7 @@ impl UnionTypeNode {
                 utype.push(DiscreteType::Unknown);
             }
         }
-        if utype.len() > 0 {
+        if !utype.is_empty() {
             Some(utype.into())
         } else {
             None

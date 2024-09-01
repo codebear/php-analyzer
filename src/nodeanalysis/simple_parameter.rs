@@ -67,12 +67,7 @@ impl SimpleParameterNode {
             FunctionDataPointer::Function(f) => f.read().unwrap().arguments.clone(),
         };
 
-        for arg in args {
-            if arg.name == name {
-                return Some(arg);
-            }
-        }
-        None
+        args.into_iter().find(|arg| arg.name == name)
     }
 
     pub fn get_declared_native_type(
@@ -101,7 +96,7 @@ impl ThirdPassAnalyzeableNode for SimpleParameterNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        _path: &Vec<AnyNodeRef>,
+        _path: &[AnyNodeRef],
     ) -> bool {
         let scope = state.current_scope();
 

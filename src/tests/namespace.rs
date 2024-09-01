@@ -278,10 +278,7 @@ fn test_namespace_and_root_class_ref() -> Result<(), &'static str> {
     // should have one issue on bad casing
     assert_eq!(result.issues.len(), 1);
     for issue in result.issues {
-        match issue {
-            Issue::WrongClassNameCasing(_, _, _) => assert!(true),
-            _ => unreachable!("Should only be a WrongClassNameCasing issue here"),
-        }
+        assert!(matches!(issue, Issue::WrongClassNameCasing(_, _, _)));
     }
     let fname = FullyQualifiedName::from(r"\bar\test_new_x");
 

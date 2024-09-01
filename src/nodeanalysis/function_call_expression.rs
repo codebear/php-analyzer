@@ -271,7 +271,7 @@ impl ThirdPassAnalyzeableNode for FunctionCallExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let data = self.get_func_data(state, emitter);
 

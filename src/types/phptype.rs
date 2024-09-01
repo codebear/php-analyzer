@@ -9,7 +9,7 @@ impl PHPType {
     pub(crate) fn is_same_type(&self, other: &PHPType) -> bool {
         match (self, other) {
             (PHPType::Union(a), PHPType::Union(b)) => a.is_same_type(b),
-            (PHPType::Intersection(a), PHPType::Intersection(b)) => todo!("a.is_same_type(b)"),
+            (PHPType::Intersection(a), PHPType::Intersection(_b)) => todo!("a.is_same_type(b)"),
             (PHPType::Discrete(a), PHPType::Discrete(b)) => a.is_same_type(b),
             _ => {
                 missing!("Check if types are the same");

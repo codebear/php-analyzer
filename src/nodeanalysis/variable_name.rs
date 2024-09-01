@@ -142,7 +142,7 @@ impl ThirdPassAnalyzeableNode for VariableNameNode {
         &self,
         state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-        _path: &Vec<AnyNodeRef>,
+        _path: &[AnyNodeRef],
     ) -> bool {
         let vname = self.get_variable_name();
         let curr_scope = state.current_scope();

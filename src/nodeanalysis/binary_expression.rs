@@ -453,7 +453,7 @@ impl ThirdPassAnalyzeableNode for BinaryExpressionNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         /* if let Some(operator) = &self.operator  {
             match &**operator {

@@ -189,7 +189,7 @@ pub struct LookingForNode {
     pub pos: Point,
     pub callback: Arc<
         RwLock<
-            Option<Box<dyn FnOnce(AnyNodeRef, &mut AnalysisState, &Vec<AnyNodeRef>) + Send + Sync>>,
+            Option<Box<dyn FnOnce(AnyNodeRef, &mut AnalysisState, &[AnyNodeRef]) + Send + Sync>>,
         >,
     >,
 }
@@ -384,7 +384,7 @@ impl AnalysisState {
 }
 
 impl LookingForNode {
-    pub fn found(&self, child: AnyNodeRef, state: &mut AnalysisState, path: &Vec<AnyNodeRef>) {
+    pub fn found(&self, child: AnyNodeRef, state: &mut AnalysisState, path: &[AnyNodeRef]) {
         let mut handle = self.callback.write().unwrap();
         let cb = handle.take().expect("Already consumed the callback?");
         eprintln!(

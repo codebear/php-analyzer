@@ -75,7 +75,7 @@ pub trait ThirdPassAnalyzeableNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool;
 
     fn analyze_third_pass_children(
@@ -83,9 +83,9 @@ pub trait ThirdPassAnalyzeableNode {
         node_ref: &AnyNodeRef,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
-        let mut our_path = path.clone();
+        let mut our_path = path.to_vec();
         our_path.push(node_ref.clone());
 
         for child in node_ref.children_any() {

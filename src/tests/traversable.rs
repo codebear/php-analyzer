@@ -31,5 +31,5 @@ fn test_traversable() {
         Some(DiscreteType::Named("DOMElement".into(), "\\DOMElement".into()).into())
     );*/
     assert_eq!(result.issues.len(), 0);
-    assert!(false); // Missing real test case
+    todo!(); // Missing real test case
 }

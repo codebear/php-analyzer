@@ -25,7 +25,7 @@ pub fn get_key_type(traversable_type: &PHPType, symbol_data: Arc<SymbolData>) ->
         }
     }
 
-    if types.len() > 0 {
+    if !types.is_empty() {
         Some(types.into())
     } else {
         None
@@ -75,7 +75,7 @@ pub fn get_value_type(traversable_type: &PHPType, symbol_data: Arc<SymbolData>) 
         };
     }
 
-    if types.len() > 0 {
+    if !types.is_empty() {
         Some(types.into())
     } else {
         None
@@ -156,7 +156,7 @@ fn get_value_type_from_class_type(
 
 fn get_key_type_from_class_type(
     _fq_name: &FullyQualifiedName,
-    _generic_args: &Vec<PHPType>,
+    _generic_args: &[PHPType],
     _symbol_data: Arc<SymbolData>,
 ) -> Option<PHPType> {
     // todo!("BALLE2: {:?}", fq_name);

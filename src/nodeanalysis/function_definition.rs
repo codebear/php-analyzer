@@ -230,7 +230,7 @@ impl ThirdPassAnalyzeableNode for FunctionDefinitionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let data = if let Some(dt) = self.get_function_data(state, emitter) {
             dt

@@ -35,7 +35,7 @@ impl ThirdPassAnalyzeableNode for TryStatementNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         // FIXME noe scope-greier
         crate::missing!();

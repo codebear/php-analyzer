@@ -109,7 +109,7 @@ impl ThirdPassAnalyzeableNode for InterfaceDeclarationNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let if_name = self.get_interface_name(state);
         state.last_doc_comment = None;

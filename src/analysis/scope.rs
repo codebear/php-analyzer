@@ -59,7 +59,7 @@ impl Scope {
     }
 
     pub fn get_or_create_local_var(&mut self, var_name: Name) -> Arc<RwLock<VarData>> {
-        if self.vars.get(&var_name).is_none() {
+        if !self.vars.contains_key(&var_name) {
             self.vars.insert(
                 var_name.clone(),
                 Arc::new(RwLock::new(VarData::new(var_name.clone()))),

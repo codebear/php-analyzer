@@ -381,7 +381,7 @@ impl UnionType {
     pub fn single_type(&self) -> Option<DiscreteType> {
         let dist_types = self.as_discrete_variants();
         if dist_types.len() == 1 {
-            match dist_types.iter().next().cloned() {
+            match dist_types.first().cloned() {
                 Some(DiscretlyAccessedType::Discrete(d)) => Some(d),
                 _ => None,
             }

@@ -45,7 +45,7 @@ impl ThirdPassAnalyzeableNode for NamespaceUseClauseNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        _path: &Vec<AnyNodeRef>,
+        _path: &[AnyNodeRef],
     ) -> bool {
         self.analyze_first_pass(state, emitter);
 

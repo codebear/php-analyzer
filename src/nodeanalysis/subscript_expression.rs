@@ -233,7 +233,7 @@ impl ThirdPassAnalyzeableNode for SubscriptExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         if let Some(i) = self.index.as_ref() {
             i.read_from(state, emitter)

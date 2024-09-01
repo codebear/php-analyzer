@@ -46,7 +46,7 @@ impl ThirdPassAnalyzeableNode for NamespaceUseGroupNode {
         &self,
         _state: &mut AnalysisState,
         _emitter: &dyn IssueEmitter,
-        _path: &Vec<AnyNodeRef>,
+        _path: &[AnyNodeRef],
     ) -> bool {
         todo!("WHAT: {:?}", self);
     }

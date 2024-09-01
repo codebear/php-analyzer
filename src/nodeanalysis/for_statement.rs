@@ -35,7 +35,7 @@ impl ThirdPassAnalyzeableNode for ForStatementNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         // first analyze initializer, to make sure the condition-block doesn't falsely emit missing variables or similar
         if let Some(false) = self

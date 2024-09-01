@@ -35,7 +35,7 @@ impl ThirdPassAnalyzeableNode for EchoStatementNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         self.child.read_from(state, emitter);
 

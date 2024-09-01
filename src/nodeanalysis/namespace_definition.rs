@@ -78,7 +78,7 @@ impl ThirdPassAnalyzeableNode for NamespaceDefinitionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        _path: &Vec<AnyNodeRef>,
+        _path: &[AnyNodeRef],
     ) -> bool {
         if self.name.is_some() {
             let namespace = self.get_namespace();

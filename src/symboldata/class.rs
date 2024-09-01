@@ -433,11 +433,8 @@ impl ClassData {
         if let Some(base) = &self.base_class_name {
             if let Some(cdata_handle) = state.symbol_data.get_class(base) {
                 let cdata = cdata_handle.read().unwrap();
-                match &*cdata {
-                    ClassType::Class(c) => {
-                        return c.get_property(property_name, state);
-                    }
-                    _ => (),
+                if let ClassType::Class(c) = &*cdata {
+                    return c.get_property(property_name, state);
                 }
             }
         }

@@ -34,7 +34,7 @@ fn object_type() {
     if let Some(DiscreteType::Named(_, fq)) = ret_type.single_type() {
         assert_eq!(FullyQualifiedName::from("\\Balle"), fq);
     } else {
-        assert!(false);
+        unreachable!("Didn't get proper type");
     }
 }
 

@@ -67,6 +67,7 @@ impl DiscreteType {
             DiscreteType::Named(_, fqname) => {
                 if let Some(_cdata_handle) = state.symbol_data.get_class(&fqname.into()) {
                     // alles ok?
+                    crate::missing!("Validate that generic arguments are as expected");
                 } else {
                     // let fqnames: String = format!("{}", fqname);
 
@@ -88,24 +89,10 @@ impl DiscreteType {
                     ))
                 }
             }
-            _a @ DiscreteType::Generic(dtype, _utypes) => {
+            DiscreteType::Generic(dtype, generic_arguments) => {
                 dtype.ensure_valid(state, emitter, range, allow_unforfilled_templates);
-                match &**dtype {
-                    DiscreteType::Named(_, fqname) => {
-                        if let Some(_cdata_handle) = state.symbol_data.get_class(&fqname.into()) {
-                            // alles ok?
-                            crate::missing!("Validate that generic arguments are as expected");
-                        } else {
-                            // let fqnames: String = format!("{}", fqname);
-
-                            // eprintln!("BALLE4 Unknown class {}, {:?}", fqnames, fqname);
-                            emitter.emit(Issue::UnknownClass(
-                                state.pos_from_range(*range),
-                                fqname.clone(),
-                            ))
-                        }
-                    }
-                    _ => (),
+                for generic_type in generic_arguments {
+                    generic_type.ensure_valid(state, emitter, range, allow_unforfilled_templates);
                 }
             }
         }
@@ -250,11 +237,11 @@ impl DiscreteType {
                 Some(is_instance_of)
                 //return false;
             }
-            DiscreteType::Generic(a, b) => {
+            DiscreteType::Generic(_a, _b) => {
                 crate::missing_none!("Check generic against InstanceOfSymbol")
                 //return false;
             }
-            DiscreteType::ClassType(a, b) => {
+            DiscreteType::ClassType(_a, _b) => {
                 crate::missing_none!("Check ClassType against InstanceOfSymbol")
                 //return false;
             }
@@ -380,7 +367,7 @@ impl DiscreteType {
     pub(crate) fn concretize_templates(&self, concrete: &BTreeMap<Name, PHPType>) -> PHPType {
         match self {
             dtype @ DiscreteType::Template(name) => {
-                if let Some(concrete_type) = concrete.get(&name) {
+                if let Some(concrete_type) = concrete.get(name) {
                     concrete_type.clone()
                 } else {
                     dtype.into()
@@ -393,31 +380,19 @@ impl DiscreteType {
 
 impl TypeTraits for DiscreteType {
     fn is_int(&self) -> bool {
-        match self {
-            DiscreteType::Int => true,
-            _ => false,
-        }
+        matches!(self, DiscreteType::Int)
     }
 
     fn is_float(&self) -> bool {
-        match self {
-            DiscreteType::Float => true,
-            _ => false,
-        }
+        matches!(self, DiscreteType::Float)
     }
 
     fn is_string(&self) -> bool {
-        match self {
-            DiscreteType::String => true,
-            _ => false,
-        }
+        matches!(self, DiscreteType::String)
     }
 
     fn is_bool(&self) -> bool {
-        match self {
-            DiscreteType::Bool => true,
-            _ => false,
-        }
+        matches!(self, DiscreteType::Bool)
     }
 
     fn is_callable(&self) -> bool {
@@ -457,7 +432,7 @@ impl TypeTraits for DiscreteType {
         }
     }
 
-    fn is_same_type(&self, other: &Self) -> bool {
+    fn is_same_type(&self, _other: &Self) -> bool {
         todo!()
     }
 

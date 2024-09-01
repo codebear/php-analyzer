@@ -48,7 +48,7 @@ pub fn test_phpdoc(buf: &[u8], expect_entries: usize) {
     let parse_input = PHPDocInput(buf, fake_range(&buffer));
     match parse_phpdoc(parse_input) {
         Ok((rest, phpdoc)) => {
-            assert!(rest.len() == 0);
+            assert!(rest.is_empty());
 
             assert_eq!(phpdoc.len(), expect_entries);
             eprintln!("BOLLOCKS: len={}, {:#?}", phpdoc.len(), phpdoc);

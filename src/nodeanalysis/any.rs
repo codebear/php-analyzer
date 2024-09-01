@@ -178,7 +178,7 @@ impl ThirdPassAnalyzeableNode for AnyNodeRef<'_> {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         if let Some(carry_on) =
             self.with_third_pass_analyzeable(&mut |x: &dyn ThirdPassAnalyzeableNode| {

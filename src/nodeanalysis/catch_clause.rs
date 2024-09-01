@@ -35,7 +35,7 @@ impl ThirdPassAnalyzeableNode for CatchClauseNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         crate::missing!();
         let scope = state.current_scope();

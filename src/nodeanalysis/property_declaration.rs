@@ -60,14 +60,11 @@ impl FirstPassAnalyzeableNode for PropertyDeclarationNode {
                 None
             };
 
-            match extra_comment {
-                Some(c) => {
-                    if state.last_doc_comment.is_none() {
-                        state.last_doc_comment = Some((c.get_raw(), c.range()));
-                        inline_doc_comment = true;
-                    }
+            if let Some(c) = extra_comment {
+                if state.last_doc_comment.is_none() {
+                    state.last_doc_comment = Some((c.get_raw(), c.range()));
+                    inline_doc_comment = true;
                 }
-                None => (),
             }
 
             prop.analyze_round_one_with_declaration(state, emitter, self);
@@ -106,7 +103,7 @@ impl ThirdPassAnalyzeableNode for PropertyDeclarationNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        _path: &Vec<AnyNodeRef>,
+        _path: &[AnyNodeRef],
     ) -> bool {
         for prop in &self.children {
             //            match &**prop {

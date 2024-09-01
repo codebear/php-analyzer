@@ -36,7 +36,7 @@ impl ThirdPassAnalyzeableNode for ArgumentNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         if !self.analyze_third_pass_children(&self.as_any(), state, emitter, path) {
             return false;

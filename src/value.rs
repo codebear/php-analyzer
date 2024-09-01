@@ -243,9 +243,7 @@ impl PHPValue {
             }
             PHPValue::Float(_) => return crate::missing_none!("Non real float .as_php_bool()"),
             PHPValue::String(s) => {
-                if s.len() == 0 {
-                    PHPValue::Boolean(false)
-                } else if s.eq("0") {
+                if s.len() == 0 || s.eq("0") {
                     PHPValue::Boolean(false)
                 } else {
                     PHPValue::Boolean(true)
@@ -393,18 +391,15 @@ impl PHPValue {
     }
 
     pub fn is_null(&self) -> bool {
-        match self {
-            PHPValue::NULL => true,
-            _ => false,
-        }
+        matches!(self, PHPValue::NULL)
     }
 
-    pub(crate) fn unique(values: &Vec<PHPValue>) -> Vec<PHPValue> {
+    pub(crate) fn unique(values: &[PHPValue]) -> Vec<PHPValue> {
         let map: HashSet<_> = values.iter().cloned().collect();
         map.iter().cloned().collect()
     }
 
-    pub(crate) fn single_unique(values: &Vec<PHPValue>) -> Option<PHPValue> {
+    pub(crate) fn single_unique(values: &[PHPValue]) -> Option<PHPValue> {
         let unique_values = Self::unique(values);
         if unique_values.len() != 1 {
             return None;

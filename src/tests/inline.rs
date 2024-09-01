@@ -93,10 +93,10 @@ pub fn test_noe() {
             eprintln!("Class: {:#?}", &class);
             let _property = class.get_property(&"balle".into(), &state);
         } else {
-            assert!(false);
+            unreachable!();
         }
     } else {
-        assert!(false);
+        unreachable!();
     }
 }
 

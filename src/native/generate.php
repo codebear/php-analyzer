@@ -40,7 +40,19 @@ function rust_value($val)
         }
         return "PHPValue::Array(PHPArray::Empty)";
     }
+    if (is_object($val)) {
+        if ($val instanceof \UnitEnum) {
+            list($fqname, $variant) = explode("::",var_export($val, true), 2);
+
+            return "PHPValue::Enum(FullyQualifiedName::from(r\"".var_export($fqname, true)."\"), r\"".var_export($variant, true)."\")";
+        }
+        var_dump(gettype($val));
+        $ref = new \ReflectionClass($val);
+        var_dump($ref->getInterfaces());
+    }
+
     var_dump(['m' => __METHOD__, 'l' => __LINE__, 'v' => $val]);
+    var_dump("CRITICAL FAILURE GENERATING 1");
     die;
 }
 
@@ -71,17 +83,22 @@ function rust_type(ReflectionType $type)
                     return "DiscreteType::Callable.into()";
                 case 'object':
                     return "DiscreteType::Object.into()";
+                case 'true':
+                    return "DiscreteType::True.into()";
+                case 'false':
+                    return "DiscreteType::False.into()";
             }
             var_dump(__METHOD__, __LINE__, $type->getName());
+            var_dump("CRITICAL FAILURE GENERATING 2");
             die;
         } else {
             $cname = $type->getName();
             if ($cname[0] == '\\') {
                 $fq_cname = $cname;
-                $parts = explode("\\", $cname);
+                $parts = explode("\\r#", $cname);
                 $cname = array_pop($parts);
             } else {
-                $fq_cname = "\\" . $type->getName();
+                $fq_cname = "\\r#" . $type->getName();
             }
             return sprintf(
                 'DiscreteType::Named(r"%s".into(), r"%s".into()).into()',
@@ -97,11 +114,12 @@ function rust_type(ReflectionType $type)
 
             $types[] = $rust_type;
         }
-        return "UnionType::from(&[" . implode(",", $types) . "] as &[DiscreteType])";
+        return "UnionType::from(&[" . implode(",", $types) . "] as &[DiscreteType]).into()";
     }
 
     var_dump("UNKNOWN TYPE");
     var_dump($type);
+    var_dump("CRITICAL FAILURE GENERATING 3");
     die;
 }
 
@@ -173,9 +191,10 @@ function rust_type_opt(ReflectionType $type)
             }
             $types[] = $x;
         }
-        return "Some(UnionType::from(&[" . implode(",", $types) . "] as &[DiscreteType]))";
+        return "Some(UnionType::from(&[" . implode(",", $types) . "] as &[DiscreteType]).into())";
     }
     var_dump(__METHOD__, __LINE__, $type);
+    var_dump("CRITICAL FAILURE GENERATING 4");
     die;
 }
 
@@ -221,7 +240,7 @@ foreach (get_defined_functions()['internal'] as $function) {
             "FunctionArgumentData {
             name: \"%s\".into(),
             
-            // pub arg_type: Option<UnionType>,
+            // pub arg_type: Option<PHPType>,
             arg_type: %s,
             // pub default_value: Option<PHPValue>,
             default_value: %s,
@@ -397,7 +416,7 @@ foreach (get_declared_classes() as $class) {
     }
     foreach ($ref->getConstants() as $const_name => $const_val) {
         $class_rs .= "
-        class_data.constants.insert(r#\"$const_name\"#.into(), " . rust_value($const_val) . ");
+        class_data.constants.insert(r#\"$const_name\"#.into(), Some(" . rust_value($const_val) . "));
         ";
     }
 
@@ -473,8 +492,8 @@ foreach (get_declared_classes() as $class) {
     if (!array_key_exists($mod, $class_mods)) {
         $class_mods[$mod] = "";
     }
-    $root_mods_func[$mod] .= " classes::$nlccname::register_$nlccname(state);\n";
-    $class_mods[$mod] .= "pub mod $nlccname;\n";
+    $root_mods_func[$mod] .= " classes::r#$nlccname::register_$nlccname(state);\n";
+    $class_mods[$mod] .= "pub mod r#$nlccname;\n";
     $fname = "$ver/$mod/classes/$nlccname.rs";
     putfile($fname, $class_rs);
 }
@@ -501,8 +520,8 @@ foreach ($root_mods as $mod => $root_mod) {
     }
     $root_mod .= "}\n";
     putfile("$ver/$mod/mod.rs", $root_mod);
-    $ver_mod .= "pub mod $mod;\n";
-    $ver_mod_func .= " $mod::register(state);\n";
+    $ver_mod .= "pub mod r#$mod;\n";
+    $ver_mod_func .= " r#$mod::register(state);\n";
 }
 $ver_mod .= "\nuse crate::analysis::state::AnalysisState;
 \n\npub fn register(state: &mut AnalysisState) {\n";

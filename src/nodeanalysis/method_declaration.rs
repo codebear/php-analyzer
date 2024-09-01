@@ -368,7 +368,7 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let _pdata = match &state.in_class {
             Some(ClassState::Interface(_, _)) => {
@@ -466,7 +466,7 @@ impl ThirdPassAnalyzeableNode for MethodDeclarationNode {
         if let Some(method) = self.get_method_data(state) {
             let mut method_data = method.write().unwrap();
             method_data.return_count = return_count;
-            if ret_type.len() > 0 {
+            if !ret_type.is_empty() {
                 method_data.inferred_return_type = Some(ret_type.into());
             }
         }

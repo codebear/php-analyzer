@@ -35,10 +35,10 @@ extern crate lazy_static;
 
 extern crate nom;
 
-static VERBOSE_MISSING: bool = false;
+pub static VERBOSE_MISSING: bool = false;
 
 lazy_static! {
-    static ref MISSING_FEATURES: Arc<RwLock<HashMap<String, usize>>> =
+    pub static ref MISSING_FEATURES: Arc<RwLock<HashMap<String, usize>>> =
         Arc::new(RwLock::new(HashMap::new()));
 }
 

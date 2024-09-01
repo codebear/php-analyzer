@@ -29,7 +29,7 @@ impl TypeListNode {
                 utype.append(t);
             }
         }
-        if utype.len() > 0 {
+        if !utype.is_empty() {
             Some(utype.into())
         } else {
             None

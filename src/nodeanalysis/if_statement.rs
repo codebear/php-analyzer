@@ -40,7 +40,7 @@ impl ThirdPassAnalyzeableNode for IfStatementNode {
         &self,
         state: &mut crate::analysis::state::AnalysisState,
         emitter: &dyn crate::issue::IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let scope = state.current_scope();
         self.condition.read_from(state, emitter);
@@ -161,7 +161,7 @@ impl ThirdPassAnalyzeableNode for IfStatementAlternative {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let else_if = match self {
             IfStatementAlternative::ElseClause(e) => {

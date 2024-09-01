@@ -100,7 +100,7 @@ impl ThirdPassAnalyzeableNode for TraitDeclarationNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         let trait_name = self.get_trait_name(state);
         state.last_doc_comment = None;

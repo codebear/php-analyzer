@@ -88,12 +88,10 @@ impl RFind<u8> for &[u8] {
 
 impl LFind<u8> for &[u8] {
     fn lfind(&self, item: u8) -> Option<usize> {
-        let mut pos: usize = 0;
-        for b in self.iter() {
+        for (pos, b) in self.iter().enumerate() {
             if *b == item {
                 return Some(pos);
             }
-            pos += 1;
         }
         None
     }

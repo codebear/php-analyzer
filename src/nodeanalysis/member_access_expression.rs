@@ -195,7 +195,7 @@ impl ThirdPassAnalyzeableNode for MemberAccessExpressionNode {
         &self,
         state: &mut AnalysisState,
         emitter: &dyn IssueEmitter,
-        path: &Vec<AnyNodeRef>,
+        path: &[AnyNodeRef],
     ) -> bool {
         self.object.read_from(state, emitter);
 
@@ -216,9 +216,7 @@ impl ThirdPassAnalyzeableNode for MemberAccessExpressionNode {
                 if let Some(property_name) = maybe_property_name {
                     match &*(cdata_handle.read().unwrap()) {
                         ClassType::Class(c) => {
-                            if let Some(_) = c.get_property(&property_name, state) {
-                                // void
-                            } else {
+                            if c.get_property(&property_name, state).is_none() {
                                 emitter.emit(Issue::UnknownProperty(
                                     self.pos(state),
                                     cname.fq_name.clone(),
